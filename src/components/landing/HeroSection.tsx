@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Calendar, Sparkles } from "lucide-react";
+import logo from "@/assets/logo.webp";
+import icon from "@/assets/icon.png";
 
 export function HeroSection() {
   return (
@@ -14,27 +16,37 @@ export function HeroSection() {
 
       <div className="container mx-auto px-4 pt-24 pb-16 relative z-10">
         <div className="max-w-4xl mx-auto text-center">
+          {/* Logo Destacado */}
+          <div className="mb-8 animate-fade-in">
+            <img 
+              src={logo} 
+              alt="Salão Cloud" 
+              className="h-20 md:h-28 lg:h-32 w-auto mx-auto drop-shadow-xl"
+              style={{ mixBlendMode: 'multiply' }}
+            />
+          </div>
+
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent border border-accent/20 mb-8 animate-fade-in">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent border border-accent/20 mb-8 animate-fade-in" style={{ animationDelay: "0.1s" }}>
             <Sparkles size={16} />
             <span className="text-sm font-medium">14 dias grátis para testar</span>
           </div>
 
           {/* Main Headline */}
-          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 animate-fade-in-up" style={{ animationDelay: "0.1s" }}>
+          <h1 className="font-display text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold mb-6 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
             <span className="text-gradient-primary">Menos preocupação.</span>
             <br />
             <span className="text-foreground">Mais clientes.</span>
           </h1>
 
           {/* Subheadline */}
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-in-up" style={{ animationDelay: "0.2s" }}>
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
             Gerencie seu salão ou barbearia de forma simples e inteligente. 
             Agendamentos, profissionais e clientes — tudo em um só lugar.
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
             <Button
               size="lg"
               className="bg-gradient-gold hover:opacity-90 text-foreground font-semibold px-8 h-14 text-base glow-gold group"
@@ -59,7 +71,7 @@ export function HeroSection() {
           </div>
 
           {/* Social proof */}
-          <div className="mt-16 flex flex-col items-center gap-4 animate-fade-in-up" style={{ animationDelay: "0.4s" }}>
+          <div className="mt-16 flex flex-col items-center gap-4 animate-fade-in-up" style={{ animationDelay: "0.5s" }}>
             <div className="flex -space-x-3">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div

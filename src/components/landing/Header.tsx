@@ -31,8 +31,13 @@ export function Header() {
       }`}
     >
       <div className="container mx-auto px-4 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <img src={logo} alt="Salão Cloud" className="h-10 w-auto" />
+        <Link to="/" className="flex items-center gap-3">
+          <img 
+            src={logo} 
+            alt="Salão Cloud" 
+            className="h-12 md:h-14 w-auto drop-shadow-md" 
+            style={{ mixBlendMode: 'multiply' }}
+          />
         </Link>
 
         {/* Desktop Navigation */}
