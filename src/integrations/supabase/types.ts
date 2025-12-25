@@ -442,6 +442,114 @@ export type Database = {
           },
         ]
       }
+      platform_coupon_redemptions: {
+        Row: {
+          applied_to_plan: string | null
+          coupon_id: string
+          discount_amount: number | null
+          establishment_id: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          redeemed_at: string
+        }
+        Insert: {
+          applied_to_plan?: string | null
+          coupon_id: string
+          discount_amount?: number | null
+          establishment_id: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          redeemed_at?: string
+        }
+        Update: {
+          applied_to_plan?: string | null
+          coupon_id?: string
+          discount_amount?: number | null
+          establishment_id?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          redeemed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_coupon_redemptions_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "platform_coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_coupon_redemptions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_coupons: {
+        Row: {
+          applicable_plans: string[] | null
+          applies_to: string
+          code: string
+          created_at: string
+          created_by: string | null
+          current_redemptions: number
+          description: string | null
+          discount_type: string
+          discount_value: number
+          id: string
+          is_active: boolean
+          max_redemptions: number | null
+          min_months: number | null
+          name: string
+          updated_at: string
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          applicable_plans?: string[] | null
+          applies_to?: string
+          code: string
+          created_at?: string
+          created_by?: string | null
+          current_redemptions?: number
+          description?: string | null
+          discount_type?: string
+          discount_value: number
+          id?: string
+          is_active?: boolean
+          max_redemptions?: number | null
+          min_months?: number | null
+          name: string
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          applicable_plans?: string[] | null
+          applies_to?: string
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          current_redemptions?: number
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean
+          max_redemptions?: number | null
+          min_months?: number | null
+          name?: string
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       professional_services: {
         Row: {
           id: string

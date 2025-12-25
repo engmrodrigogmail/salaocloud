@@ -10,6 +10,7 @@ import {
   X,
   ChevronDown,
   Shield,
+  Ticket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +27,7 @@ const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/establishments", label: "Estabelecimentos", icon: Building2 },
   { href: "/admin/users", label: "Usuários", icon: Users },
+  { href: "/admin/coupons", label: "Cupons", icon: Ticket },
   { href: "/admin/settings", label: "Configurações", icon: Settings },
 ];
 
