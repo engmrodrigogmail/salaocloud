@@ -1,8 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Calendar, Sparkles } from "lucide-react";
-import logo from "@/assets/logo.webp";
-import icon from "@/assets/icon.png";
 
 export function HeroSection() {
   return (
@@ -16,18 +14,8 @@ export function HeroSection() {
 
       <div className="container mx-auto px-4 pt-24 pb-16 relative z-10">
         <div className="max-w-4xl mx-auto text-center">
-          {/* Logo Destacado */}
-          <div className="mb-8 animate-fade-in">
-            <img 
-              src={logo} 
-              alt="Salão Cloud" 
-              className="h-20 md:h-28 lg:h-32 w-auto mx-auto drop-shadow-xl"
-              style={{ mixBlendMode: 'multiply' }}
-            />
-          </div>
-
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent border border-accent/20 mb-8 animate-fade-in" style={{ animationDelay: "0.1s" }}>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent border border-accent/20 mb-8 animate-fade-in">
             <Sparkles size={16} />
             <span className="text-sm font-medium">14 dias grátis para testar</span>
           </div>
