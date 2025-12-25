@@ -97,6 +97,51 @@ export type Database = {
           },
         ]
       }
+      client_loyalty_points: {
+        Row: {
+          client_id: string
+          created_at: string
+          id: string
+          loyalty_program_id: string
+          points_balance: number
+          total_points_earned: number
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          id?: string
+          loyalty_program_id: string
+          points_balance?: number
+          total_points_earned?: number
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          id?: string
+          loyalty_program_id?: string
+          points_balance?: number
+          total_points_earned?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_loyalty_points_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_loyalty_points_loyalty_program_id_fkey"
+            columns: ["loyalty_program_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           created_at: string
@@ -134,6 +179,108 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "clients_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      coupon_usage: {
+        Row: {
+          appointment_id: string | null
+          client_id: string | null
+          coupon_id: string
+          id: string
+          used_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          client_id?: string | null
+          coupon_id: string
+          id?: string
+          used_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          client_id?: string | null
+          coupon_id?: string
+          id?: string
+          used_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coupon_usage_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_usage_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_usage_coupon_id_fkey"
+            columns: ["coupon_id"]
+            isOneToOne: false
+            referencedRelation: "discount_coupons"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discount_coupons: {
+        Row: {
+          code: string
+          created_at: string
+          current_uses: number
+          description: string | null
+          discount_type: string
+          discount_value: number
+          establishment_id: string
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          min_purchase_value: number | null
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          current_uses?: number
+          description?: string | null
+          discount_type?: string
+          discount_value: number
+          establishment_id: string
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_purchase_value?: number | null
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          current_uses?: number
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          establishment_id?: string
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          min_purchase_value?: number | null
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "discount_coupons_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
@@ -209,6 +356,91 @@ export type Database = {
           zip_code?: string | null
         }
         Relationships: []
+      }
+      loyalty_programs: {
+        Row: {
+          created_at: string
+          description: string | null
+          establishment_id: string
+          id: string
+          is_active: boolean
+          name: string
+          points_per_currency: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          establishment_id: string
+          id?: string
+          is_active?: boolean
+          name: string
+          points_per_currency?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          establishment_id?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          points_per_currency?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_programs_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_rewards: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          loyalty_program_id: string
+          name: string
+          points_required: number
+          reward_type: string
+          reward_value: number
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          loyalty_program_id: string
+          name: string
+          points_required: number
+          reward_type?: string
+          reward_value: number
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          loyalty_program_id?: string
+          name?: string
+          points_required?: number
+          reward_type?: string
+          reward_value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_rewards_loyalty_program_id_fkey"
+            columns: ["loyalty_program_id"]
+            isOneToOne: false
+            referencedRelation: "loyalty_programs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       professional_services: {
         Row: {
@@ -325,6 +557,59 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      promotions: {
+        Row: {
+          applicable_services: string[] | null
+          created_at: string
+          description: string | null
+          discount_type: string
+          discount_value: number
+          end_date: string
+          establishment_id: string
+          id: string
+          is_active: boolean
+          name: string
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          applicable_services?: string[] | null
+          created_at?: string
+          description?: string | null
+          discount_type?: string
+          discount_value: number
+          end_date: string
+          establishment_id: string
+          id?: string
+          is_active?: boolean
+          name: string
+          start_date: string
+          updated_at?: string
+        }
+        Update: {
+          applicable_services?: string[] | null
+          created_at?: string
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          end_date?: string
+          establishment_id?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_categories: {
         Row: {
