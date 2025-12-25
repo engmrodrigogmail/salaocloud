@@ -32,7 +32,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
           {/* Brand column */}
           <div className="lg:col-span-2">
-            <img src={logo} alt="Salão Cloud" className="h-10 w-auto mb-4 brightness-0 invert" />
+            <img src={logo} alt="Salão Cloud" className="h-14 w-auto mb-4 brightness-0 invert" />
             <p className="text-background/70 mb-6 max-w-sm">
               Menos preocupação. Mais clientes. O sistema completo para gestão de salões e barbearias.
             </p>
