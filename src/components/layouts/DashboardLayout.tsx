@@ -12,6 +12,9 @@ import {
   ChevronDown,
   Building2,
   UserCircle,
+  Gift,
+  Ticket,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +33,8 @@ const navItems = [
   { href: "/dashboard/profissionais", label: "Profissionais", icon: Users },
   { href: "/dashboard/servicos", label: "Serviços", icon: Scissors },
   { href: "/dashboard/clientes", label: "Clientes", icon: UserCircle },
+  { href: "/dashboard/fidelidade", label: "Fidelidade", icon: Star },
+  { href: "/dashboard/promocoes", label: "Promoções", icon: Gift },
   { href: "/dashboard/configuracoes", label: "Configurações", icon: Settings },
 ];
 

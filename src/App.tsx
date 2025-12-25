@@ -26,6 +26,8 @@ import Services from "./pages/dashboard/Services";
 import Professionals from "./pages/dashboard/Professionals";
 import Agenda from "./pages/dashboard/Agenda";
 import Clients from "./pages/dashboard/Clients";
+import Loyalty from "./pages/dashboard/Loyalty";
+import Promotions from "./pages/dashboard/Promotions";
 import EstablishmentSettings from "./pages/dashboard/Settings";
 
 const queryClient = new QueryClient();
@@ -124,6 +126,22 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["establishment"]}>
                   <Clients />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/fidelidade"
+              element={
+                <ProtectedRoute allowedRoles={["establishment"]}>
+                  <Loyalty />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard/promocoes"
+              element={
+                <ProtectedRoute allowedRoles={["establishment"]}>
+                  <Promotions />
                 </ProtectedRoute>
               }
             />
