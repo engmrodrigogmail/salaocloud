@@ -11,6 +11,8 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
+import BookingPage from "./pages/booking/BookingPage";
+import ClientDashboard from "./pages/client/ClientDashboard";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -130,6 +132,19 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["establishment"]}>
                   <EstablishmentSettings />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Public booking page */}
+            <Route path="/agendar/:slug" element={<BookingPage />} />
+
+            {/* Client routes */}
+            <Route
+              path="/meus-agendamentos"
+              element={
+                <ProtectedRoute allowedRoles={["client"]}>
+                  <ClientDashboard />
                 </ProtectedRoute>
               }
             />
