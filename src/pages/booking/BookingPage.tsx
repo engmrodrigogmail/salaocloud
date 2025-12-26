@@ -35,6 +35,7 @@ const BookingPage = () => {
   
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+  const [clientCpf, setClientCpf] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [notes, setNotes] = useState("");
 
@@ -104,20 +105,90 @@ const BookingPage = () => {
     return dates;
   };
 
+  const formatCpf = (value: string) => {
+    const numbers = value.replace(/\D/g, "").slice(0, 11);
+    if (numbers.length <= 3) return numbers;
+    if (numbers.length <= 6) return `${numbers.slice(0, 3)}.${numbers.slice(3)}`;
+    if (numbers.length <= 9) return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`;
+    return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9)}`;
+  };
+
+  const formatPhone = (value: string) => {
+    const numbers = value.replace(/\D/g, "").slice(0, 11);
+    if (numbers.length <= 2) return numbers;
+    if (numbers.length <= 7) return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+  };
+
   const handleSubmit = async () => {
     if (!establishment || !selectedService || !selectedProfessional || !selectedDate || !selectedTime) {
       toast.error("Por favor, complete todas as etapas");
       return;
     }
 
-    if (!clientName.trim() || !clientPhone.trim()) {
-      toast.error("Nome e telefone são obrigatórios");
+    if (!clientName.trim() || !clientPhone.trim() || !clientCpf.trim()) {
+      toast.error("Nome, telefone e CPF são obrigatórios");
+      return;
+    }
+
+    const cpfClean = clientCpf.replace(/\D/g, "");
+    const phoneClean = clientPhone.replace(/\D/g, "");
+
+    if (cpfClean.length !== 11) {
+      toast.error("CPF inválido");
+      return;
+    }
+
+    if (phoneClean.length < 10) {
+      toast.error("Telefone inválido");
       return;
     }
 
     setSubmitting(true);
 
     try {
+      // Check if client already exists or create new one
+      let clientId: string | null = null;
+      
+      const { data: existingClient } = await supabase
+        .from("clients")
+        .select("id")
+        .eq("establishment_id", establishment.id)
+        .eq("cpf", cpfClean)
+        .maybeSingle();
+
+      if (existingClient) {
+        clientId = existingClient.id;
+        // Update client info if needed
+        await supabase
+          .from("clients")
+          .update({ 
+            name: clientName.trim(),
+            phone: phoneClean,
+            email: clientEmail || null
+          })
+          .eq("id", existingClient.id);
+      } else {
+        // Create new client
+        const { data: newClient, error: clientError } = await supabase
+          .from("clients")
+          .insert({
+            establishment_id: establishment.id,
+            name: clientName.trim(),
+            phone: phoneClean,
+            cpf: cpfClean,
+            email: clientEmail || null,
+          })
+          .select("id")
+          .single();
+
+        if (clientError) {
+          console.error("Error creating client:", clientError);
+        } else {
+          clientId = newClient.id;
+        }
+      }
+
       const [hours, minutes] = selectedTime.split(":").map(Number);
       const scheduledAt = setMinutes(setHours(selectedDate, hours), minutes);
 
@@ -129,8 +200,9 @@ const BookingPage = () => {
         duration_minutes: selectedService.duration_minutes,
         price: selectedService.price,
         client_name: clientName,
-        client_phone: clientPhone,
+        client_phone: phoneClean,
         client_email: clientEmail || null,
+        client_id: clientId,
         notes: notes || null,
         status: "pending",
       });
@@ -413,12 +485,31 @@ const BookingPage = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="phone">Telefone *</Label>
+                  <Label htmlFor="cpf">CPF *</Label>
+                  <Input
+                    id="cpf"
+                    value={clientCpf}
+                    onChange={(e) => setClientCpf(formatCpf(e.target.value))}
+                    placeholder="000.000.000-00"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Celular *</Label>
                   <Input
                     id="phone"
                     value={clientPhone}
-                    onChange={(e) => setClientPhone(e.target.value)}
+                    onChange={(e) => setClientPhone(formatPhone(e.target.value))}
                     placeholder="(11) 99999-9999"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">E-mail (opcional)</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={clientEmail}
+                    onChange={(e) => setClientEmail(e.target.value)}
+                    placeholder="seu@email.com"
                   />
                 </div>
                 <div>
@@ -449,7 +540,7 @@ const BookingPage = () => {
                 </Button>
                 <Button
                   onClick={handleSubmit}
-                  disabled={submitting || !clientName.trim() || !clientPhone.trim()}
+                  disabled={submitting || !clientName.trim() || !clientPhone.trim() || !clientCpf.trim()}
                 >
                   {submitting ? (
                     <Loader2 className="h-4 w-4 animate-spin mr-2" />

@@ -1,5 +1,5 @@
 import { DashboardLayout } from "@/components/layouts/DashboardLayout";
-import { Settings as SettingsIcon, Building2, Link, Bell } from "lucide-react";
+import { Building2, Link, Bell, Menu, Users } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function EstablishmentSettings() {
   const [establishment, setEstablishment] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [showCatalog, setShowCatalog] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -27,17 +28,48 @@ export default function EstablishmentSettings() {
         .maybeSingle();
 
       setEstablishment(data);
+      setShowCatalog(data?.show_catalog || false);
       setLoading(false);
     };
 
     fetchEstablishment();
   }, [user]);
 
-  const copyLink = () => {
+  const copyBookingLink = () => {
     if (establishment?.slug) {
-      navigator.clipboard.writeText(`https://salaocloud.com.br/${establishment.slug}`);
-      toast({ title: "Link copiado!" });
+      navigator.clipboard.writeText(`${window.location.origin}/agendar/${establishment.slug}`);
+      toast({ title: "Link de agendamento copiado!" });
     }
+  };
+
+  const copyClientLink = () => {
+    if (establishment?.slug) {
+      navigator.clipboard.writeText(`${window.location.origin}/cliente/${establishment.slug}`);
+      toast({ title: "Link do portal do cliente copiado!" });
+    }
+  };
+
+  const handleShowCatalogChange = async (checked: boolean) => {
+    if (!establishment) return;
+    
+    setShowCatalog(checked);
+    
+    const { error } = await supabase
+      .from("establishments")
+      .update({ show_catalog: checked })
+      .eq("id", establishment.id);
+
+    if (error) {
+      toast({ title: "Erro ao atualizar", variant: "destructive" });
+      setShowCatalog(!checked);
+      return;
+    }
+
+    toast({ 
+      title: checked 
+        ? "Cardápio de serviços ativado!" 
+        : "Cardápio de serviços desativado" 
+    });
   };
 
   if (loading) {
@@ -94,25 +126,73 @@ export default function EstablishmentSettings() {
             </CardContent>
           </Card>
 
-          {/* Booking Link */}
+          {/* Client Catalog */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Menu className="h-5 w-5" />
+                Cardápio de Serviços
+              </CardTitle>
+              <CardDescription>
+                Controle a visibilidade dos seus serviços para os clientes
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="show-catalog" className="flex flex-col gap-1">
+                  <span>Exibir cardápio de serviços</span>
+                  <span className="text-sm text-muted-foreground font-normal">
+                    Quando ativo, os clientes podem visualizar seus serviços e preços no portal
+                  </span>
+                </Label>
+                <Switch 
+                  id="show-catalog" 
+                  checked={showCatalog}
+                  onCheckedChange={handleShowCatalogChange}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Links */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Link className="h-5 w-5" />
-                Link de Agendamento
+                Links para Clientes
               </CardTitle>
               <CardDescription>
-                Compartilhe esse link com seus clientes
+                Compartilhe esses links com seus clientes
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="flex gap-2">
-                <Input
-                  value={`salaocloud.com.br/${establishment?.slug || ""}`}
-                  readOnly
-                  className="font-mono"
-                />
-                <Button onClick={copyLink}>Copiar</Button>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label>Link de Agendamento</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={`${window.location.origin}/agendar/${establishment?.slug || ""}`}
+                    readOnly
+                    className="font-mono text-sm"
+                  />
+                  <Button onClick={copyBookingLink}>Copiar</Button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  Portal do Cliente
+                </Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={`${window.location.origin}/cliente/${establishment?.slug || ""}`}
+                    readOnly
+                    className="font-mono text-sm"
+                  />
+                  <Button onClick={copyClientLink}>Copiar</Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Neste portal, clientes cadastrados podem ver agendamentos, serviços, fidelidade e promoções
+                </p>
               </div>
             </CardContent>
           </Card>

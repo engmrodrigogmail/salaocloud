@@ -14,6 +14,7 @@ import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import BookingPage from "./pages/booking/BookingPage";
 import ClientDashboard from "./pages/client/ClientDashboard";
+import ClientPortal from "./pages/client/ClientPortal";
 
 // Admin Pages
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -185,6 +186,9 @@ const App = () => (
 
               {/* Public booking page */}
               <Route path="/agendar/:slug" element={<BookingPage />} />
+              
+              {/* Client portal for establishments */}
+              <Route path="/cliente/:slug" element={<ClientPortal />} />
 
               {/* Client routes */}
               <Route
