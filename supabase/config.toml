@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.customer-portal]
 verify_jwt = false
+
+[functions.stripe-data]
+verify_jwt = false
+
+[functions.stripe-sync]
+verify_jwt = false

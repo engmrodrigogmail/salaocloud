@@ -12,6 +12,7 @@ import {
   Shield,
   Ticket,
   Package,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,7 @@ const navItems = [
   { href: "/admin/users", label: "Usuários", icon: Users },
   { href: "/admin/coupons", label: "Cupons", icon: Ticket },
   { href: "/admin/plans", label: "Planos", icon: Package },
+  { href: "/admin/stripe", label: "Stripe", icon: CreditCard },
   { href: "/admin/settings", label: "Configurações", icon: Settings },
 ];
 

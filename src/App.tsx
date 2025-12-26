@@ -20,6 +20,7 @@ import AdminEstablishments from "./pages/admin/Establishments";
 import AdminUsers from "./pages/admin/Users";
 import AdminCoupons from "./pages/admin/Coupons";
 import AdminPlans from "./pages/admin/Plans";
+import AdminStripe from "./pages/admin/Stripe";
 import AdminSettings from "./pages/admin/Settings";
 
 // Dashboard Pages
@@ -94,6 +95,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["super_admin"]}>
                   <AdminPlans />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/stripe"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin"]}>
+                  <AdminStripe />
                 </ProtectedRoute>
               }
             />
