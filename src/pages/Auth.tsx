@@ -45,6 +45,11 @@ export default function Auth() {
   const { toast } = useToast();
   const { signIn, signUp, user, role, loading } = useAuth();
 
+  const debugEnabled = import.meta.env.DEV;
+  const debug = (...args: unknown[]) => {
+    if (debugEnabled) console.debug("[Auth]", ...args);
+  };
+
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
@@ -57,6 +62,13 @@ export default function Auth() {
 
   // Redirect based on role when user is authenticated
   useEffect(() => {
+    debug("state", {
+      isSignup,
+      loading,
+      hasUser: !!user,
+      role,
+    });
+
     if (!loading && user) {
       if (role === "super_admin") {
         navigate("/admin");
@@ -69,12 +81,16 @@ export default function Auth() {
         navigate("/onboarding");
       }
     }
-  }, [user, role, loading, navigate]);
+  }, [user, role, loading, navigate, isSignup]);
 
   const handleLogin = async (data: LoginFormData) => {
+    debug("login_submit", { emailLen: data.email.length });
+
     setIsLoading(true);
     const { error } = await signIn(data.email, data.password);
     setIsLoading(false);
+
+    debug("login_result", { ok: !error, error: error ? error.message : null });
 
     if (error) {
       let message = "Erro ao fazer login. Tente novamente.";
@@ -92,9 +108,16 @@ export default function Auth() {
   };
 
   const handleSignup = async (data: SignupFormData) => {
+    debug("signup_submit", {
+      emailLen: data.email.length,
+      fullNameLen: data.fullName?.length ?? 0,
+    });
+
     setIsLoading(true);
     const { error } = await signUp(data.email, data.password, data.fullName);
     setIsLoading(false);
+
+    debug("signup_result", { ok: !error, error: error ? error.message : null });
 
     if (error) {
       let message = "Erro ao criar conta. Tente novamente.";
@@ -150,7 +173,11 @@ export default function Auth() {
 
           {isSignup ? (
             <Form {...signupForm}>
-              <form onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-5">
+              <form
+                onSubmit={signupForm.handleSubmit(handleSignup)}
+                className="space-y-5"
+                autoComplete="off"
+              >
                 <FormField
                   control={signupForm.control}
                   name="email"
@@ -159,10 +186,22 @@ export default function Auth() {
                       <FormLabel>Email</FormLabel>
                       <FormControl>
                         <Input
+                          {...field}
                           type="email"
                           placeholder="seu@email.com"
                           autoComplete="email"
-                          {...field}
+                          onPointerDown={() => debug("pointer", { field: "signup.email" })}
+                          onFocus={(e) =>
+                            debug("focus", {
+                              field: "signup.email",
+                              disabled: e.currentTarget.disabled,
+                              readOnly: e.currentTarget.readOnly,
+                            })
+                          }
+                          onChange={(e) => {
+                            debug("change", { field: "signup.email", len: e.target.value.length });
+                            field.onChange(e);
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -178,12 +217,24 @@ export default function Auth() {
                       <FormLabel>Nome completo (opcional)</FormLabel>
                       <FormControl>
                         <Input
+                          {...field}
                           type="text"
                           placeholder="Seu nome (opcional)"
                           autoComplete="name"
                           autoCapitalize="words"
                           inputMode="text"
-                          {...field}
+                          onPointerDown={() => debug("pointer", { field: "signup.fullName" })}
+                          onFocus={(e) =>
+                            debug("focus", {
+                              field: "signup.fullName",
+                              disabled: e.currentTarget.disabled,
+                              readOnly: e.currentTarget.readOnly,
+                            })
+                          }
+                          onChange={(e) => {
+                            debug("change", { field: "signup.fullName", len: e.target.value.length });
+                            field.onChange(e);
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -200,10 +251,22 @@ export default function Auth() {
                       <FormControl>
                         <div className="relative">
                           <Input
+                            {...field}
                             type={showPassword ? "text" : "password"}
                             placeholder="••••••••"
                             autoComplete="new-password"
-                            {...field}
+                            onPointerDown={() => debug("pointer", { field: "signup.password" })}
+                            onFocus={(e) =>
+                              debug("focus", {
+                                field: "signup.password",
+                                disabled: e.currentTarget.disabled,
+                                readOnly: e.currentTarget.readOnly,
+                              })
+                            }
+                            onChange={(e) => {
+                              debug("change", { field: "signup.password", len: e.target.value.length });
+                              field.onChange(e);
+                            }}
                           />
                           <button
                             type="button"
@@ -227,10 +290,22 @@ export default function Auth() {
                       <FormLabel>Confirmar senha</FormLabel>
                       <FormControl>
                         <Input
+                          {...field}
                           type={showPassword ? "text" : "password"}
                           placeholder="••••••••"
                           autoComplete="new-password"
-                          {...field}
+                          onPointerDown={() => debug("pointer", { field: "signup.confirmPassword" })}
+                          onFocus={(e) =>
+                            debug("focus", {
+                              field: "signup.confirmPassword",
+                              disabled: e.currentTarget.disabled,
+                              readOnly: e.currentTarget.readOnly,
+                            })
+                          }
+                          onChange={(e) => {
+                            debug("change", { field: "signup.confirmPassword", len: e.target.value.length });
+                            field.onChange(e);
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -253,7 +328,11 @@ export default function Auth() {
             </Form>
           ) : (
             <Form {...loginForm}>
-              <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-5">
+              <form
+                onSubmit={loginForm.handleSubmit(handleLogin)}
+                className="space-y-5"
+                autoComplete="off"
+              >
                 <FormField
                   control={loginForm.control}
                   name="email"
@@ -261,7 +340,23 @@ export default function Auth() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="seu@email.com" {...field} />
+                        <Input
+                          type="email"
+                          placeholder="seu@email.com"
+                          autoComplete="email"
+                          onFocus={(e) =>
+                            debug("focus", {
+                              field: "login.email",
+                              disabled: e.currentTarget.disabled,
+                              readOnly: e.currentTarget.readOnly,
+                            })
+                          }
+                          onChange={(e) => {
+                            debug("change", { field: "login.email", len: e.target.value.length });
+                            field.onChange(e);
+                          }}
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -279,6 +374,18 @@ export default function Auth() {
                           <Input
                             type={showPassword ? "text" : "password"}
                             placeholder="••••••••"
+                            autoComplete="current-password"
+                            onFocus={(e) =>
+                              debug("focus", {
+                                field: "login.password",
+                                disabled: e.currentTarget.disabled,
+                                readOnly: e.currentTarget.readOnly,
+                              })
+                            }
+                            onChange={(e) => {
+                              debug("change", { field: "login.password", len: e.target.value.length });
+                              field.onChange(e);
+                            }}
                             {...field}
                           />
                           <button
