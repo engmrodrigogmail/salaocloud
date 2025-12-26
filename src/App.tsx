@@ -19,6 +19,7 @@ import AdminDashboard from "./pages/admin/Dashboard";
 import AdminEstablishments from "./pages/admin/Establishments";
 import AdminUsers from "./pages/admin/Users";
 import AdminCoupons from "./pages/admin/Coupons";
+import AdminPlans from "./pages/admin/Plans";
 import AdminSettings from "./pages/admin/Settings";
 
 // Dashboard Pages
@@ -85,6 +86,14 @@ const App = () => (
               element={
                 <ProtectedRoute allowedRoles={["super_admin"]}>
                   <AdminCoupons />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/plans"
+              element={
+                <ProtectedRoute allowedRoles={["super_admin"]}>
+                  <AdminPlans />
                 </ProtectedRoute>
               }
             />

@@ -11,6 +11,7 @@ import {
   ChevronDown,
   Shield,
   Ticket,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,6 +29,7 @@ const navItems = [
   { href: "/admin/establishments", label: "Estabelecimentos", icon: Building2 },
   { href: "/admin/users", label: "Usuários", icon: Users },
   { href: "/admin/coupons", label: "Cupons", icon: Ticket },
+  { href: "/admin/plans", label: "Planos", icon: Package },
   { href: "/admin/settings", label: "Configurações", icon: Settings },
 ];
 

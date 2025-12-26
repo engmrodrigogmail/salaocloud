@@ -1,0 +1,604 @@
+import { useState, useEffect } from "react";
+import { AdminLayout } from "@/components/layouts/AdminLayout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Edit, Trash2, GripVertical, Plus, X, Star, Package } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+
+interface SubscriptionPlan {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  price_monthly: number;
+  price_yearly: number | null;
+  features: string[];
+  limits: Record<string, number | boolean>;
+  is_active: boolean;
+  is_highlighted: boolean;
+  badge: string | null;
+  cta_text: string;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+const DEFAULT_LIMITS = {
+  max_professionals: 2,
+  max_services: 20,
+  whatsapp_reminders: false,
+  reports: false,
+  commissions: false,
+  api_access: false,
+  multi_units: false,
+};
+
+export default function AdminPlans() {
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const [planForm, setPlanForm] = useState({
+    slug: "",
+    name: "",
+    description: "",
+    price_monthly: 0,
+    price_yearly: 0,
+    features: [] as string[],
+    limits: { ...DEFAULT_LIMITS },
+    is_active: true,
+    is_highlighted: false,
+    badge: "",
+    cta_text: "Começar Grátis",
+    display_order: 0,
+  });
+
+  const [newFeature, setNewFeature] = useState("");
+
+  useEffect(() => {
+    fetchPlans();
+  }, []);
+
+  const fetchPlans = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("subscription_plans" as any)
+      .select("*")
+      .order("display_order", { ascending: true });
+
+    if (error) {
+      toast.error("Erro ao carregar planos");
+      console.error(error);
+    } else {
+      const parsedData = (data || []).map((plan: any) => ({
+        ...plan,
+        features: Array.isArray(plan.features) ? plan.features : [],
+        limits: typeof plan.limits === 'object' && plan.limits !== null ? plan.limits : DEFAULT_LIMITS,
+      }));
+      setPlans(parsedData);
+    }
+    setLoading(false);
+  };
+
+  const handleEdit = (plan: SubscriptionPlan) => {
+    setEditingPlan(plan);
+    setPlanForm({
+      slug: plan.slug,
+      name: plan.name,
+      description: plan.description || "",
+      price_monthly: plan.price_monthly,
+      price_yearly: plan.price_yearly || 0,
+      features: plan.features,
+      limits: { ...DEFAULT_LIMITS, ...plan.limits },
+      is_active: plan.is_active,
+      is_highlighted: plan.is_highlighted,
+      badge: plan.badge || "",
+      cta_text: plan.cta_text,
+      display_order: plan.display_order,
+    });
+    setIsDialogOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!editingPlan) return;
+
+    const { error } = await supabase
+      .from("subscription_plans" as any)
+      .update({
+        slug: planForm.slug,
+        name: planForm.name,
+        description: planForm.description || null,
+        price_monthly: planForm.price_monthly,
+        price_yearly: planForm.price_yearly || null,
+        features: planForm.features,
+        limits: planForm.limits,
+        is_active: planForm.is_active,
+        is_highlighted: planForm.is_highlighted,
+        badge: planForm.badge || null,
+        cta_text: planForm.cta_text,
+        display_order: planForm.display_order,
+      })
+      .eq("id", editingPlan.id);
+
+    if (error) {
+      toast.error("Erro ao salvar plano");
+      console.error(error);
+    } else {
+      toast.success("Plano atualizado com sucesso!");
+      fetchPlans();
+      setIsDialogOpen(false);
+      setEditingPlan(null);
+    }
+  };
+
+  const handleToggleActive = async (plan: SubscriptionPlan) => {
+    const { error } = await supabase
+      .from("subscription_plans" as any)
+      .update({ is_active: !plan.is_active })
+      .eq("id", plan.id);
+
+    if (error) {
+      toast.error("Erro ao atualizar status");
+    } else {
+      fetchPlans();
+    }
+  };
+
+  const handleToggleHighlighted = async (plan: SubscriptionPlan) => {
+    const { error } = await supabase
+      .from("subscription_plans" as any)
+      .update({ is_highlighted: !plan.is_highlighted })
+      .eq("id", plan.id);
+
+    if (error) {
+      toast.error("Erro ao atualizar destaque");
+    } else {
+      fetchPlans();
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Tem certeza que deseja excluir este plano?")) return;
+
+    const { error } = await supabase
+      .from("subscription_plans" as any)
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      toast.error("Erro ao excluir plano");
+    } else {
+      toast.success("Plano excluído!");
+      fetchPlans();
+    }
+  };
+
+  const addFeature = () => {
+    if (newFeature.trim()) {
+      setPlanForm({
+        ...planForm,
+        features: [...planForm.features, newFeature.trim()],
+      });
+      setNewFeature("");
+    }
+  };
+
+  const removeFeature = (index: number) => {
+    setPlanForm({
+      ...planForm,
+      features: planForm.features.filter((_, i) => i !== index),
+    });
+  };
+
+  const updateLimit = (key: string, value: number | boolean) => {
+    setPlanForm({
+      ...planForm,
+      limits: { ...planForm.limits, [key]: value },
+    });
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+    }).format(price);
+  };
+
+  const stats = {
+    totalPlans: plans.length,
+    activePlans: plans.filter((p) => p.is_active).length,
+    highlightedPlan: plans.find((p) => p.is_highlighted)?.name || "Nenhum",
+  };
+
+  return (
+    <AdminLayout>
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-3xl font-display font-bold">Planos de Assinatura</h1>
+            <p className="text-muted-foreground">
+              Gerencie os planos de assinatura da plataforma
+            </p>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total de Planos</CardTitle>
+              <Package className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalPlans}</div>
+              <p className="text-xs text-muted-foreground">{stats.activePlans} ativos</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Planos Ativos</CardTitle>
+              <Star className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.activePlans}</div>
+              <p className="text-xs text-muted-foreground">Visíveis para clientes</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Plano em Destaque</CardTitle>
+              <Star className="h-4 w-4 text-primary" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.highlightedPlan}</div>
+              <p className="text-xs text-muted-foreground">Mais recomendado</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Plans Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Todos os Planos</CardTitle>
+            <CardDescription>
+              Clique em um plano para editar seus detalhes
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">#</TableHead>
+                    <TableHead>Nome</TableHead>
+                    <TableHead>Preço Mensal</TableHead>
+                    <TableHead>Preço Anual</TableHead>
+                    <TableHead>Features</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Destaque</TableHead>
+                    <TableHead className="text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {plans.map((plan) => (
+                    <TableRow key={plan.id}>
+                      <TableCell>
+                        <GripVertical className="h-4 w-4 text-muted-foreground" />
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{plan.name}</span>
+                          {plan.badge && (
+                            <Badge variant="secondary">{plan.badge}</Badge>
+                          )}
+                        </div>
+                        <span className="text-xs text-muted-foreground">{plan.slug}</span>
+                      </TableCell>
+                      <TableCell>{formatPrice(plan.price_monthly)}</TableCell>
+                      <TableCell>
+                        {plan.price_yearly ? formatPrice(plan.price_yearly) : "-"}
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-muted-foreground">
+                          {plan.features.length} features
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Switch
+                          checked={plan.is_active}
+                          onCheckedChange={() => handleToggleActive(plan)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Switch
+                          checked={plan.is_highlighted}
+                          onCheckedChange={() => handleToggleHighlighted(plan)}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(plan)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDelete(plan.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Edit Dialog */}
+        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Editar Plano: {editingPlan?.name}</DialogTitle>
+              <DialogDescription>
+                Atualize os detalhes, preços e limites do plano
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-6 py-4">
+              {/* Basic Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Slug</Label>
+                  <Input
+                    value={planForm.slug}
+                    onChange={(e) =>
+                      setPlanForm({ ...planForm, slug: e.target.value })
+                    }
+                    placeholder="basic"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Nome</Label>
+                  <Input
+                    value={planForm.name}
+                    onChange={(e) =>
+                      setPlanForm({ ...planForm, name: e.target.value })
+                    }
+                    placeholder="Básico"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Descrição</Label>
+                <Textarea
+                  value={planForm.description}
+                  onChange={(e) =>
+                    setPlanForm({ ...planForm, description: e.target.value })
+                  }
+                  placeholder="Descrição do plano..."
+                />
+              </div>
+
+              {/* Pricing */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Preço Mensal (R$)</Label>
+                  <Input
+                    type="number"
+                    value={planForm.price_monthly}
+                    onChange={(e) =>
+                      setPlanForm({
+                        ...planForm,
+                        price_monthly: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Preço Anual (R$)</Label>
+                  <Input
+                    type="number"
+                    value={planForm.price_yearly}
+                    onChange={(e) =>
+                      setPlanForm({
+                        ...planForm,
+                        price_yearly: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Appearance */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Badge (opcional)</Label>
+                  <Input
+                    value={planForm.badge}
+                    onChange={(e) =>
+                      setPlanForm({ ...planForm, badge: e.target.value })
+                    }
+                    placeholder="Mais Popular"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Texto do Botão (CTA)</Label>
+                  <Input
+                    value={planForm.cta_text}
+                    onChange={(e) =>
+                      setPlanForm({ ...planForm, cta_text: e.target.value })
+                    }
+                    placeholder="Começar Grátis"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <Label>Plano Ativo</Label>
+                  <Switch
+                    checked={planForm.is_active}
+                    onCheckedChange={(checked) =>
+                      setPlanForm({ ...planForm, is_active: checked })
+                    }
+                  />
+                </div>
+                <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <Label>Destacar Plano</Label>
+                  <Switch
+                    checked={planForm.is_highlighted}
+                    onCheckedChange={(checked) =>
+                      setPlanForm({ ...planForm, is_highlighted: checked })
+                    }
+                  />
+                </div>
+              </div>
+
+              {/* Features */}
+              <div className="space-y-3">
+                <Label>Features do Plano</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={newFeature}
+                    onChange={(e) => setNewFeature(e.target.value)}
+                    placeholder="Nova feature..."
+                    onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addFeature())}
+                  />
+                  <Button type="button" variant="outline" onClick={addFeature}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {planForm.features.map((feature, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-2 bg-muted rounded-md"
+                    >
+                      <span className="text-sm">{feature}</span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => removeFeature(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Limits */}
+              <div className="space-y-3">
+                <Label>Limites do Plano</Label>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">
+                      Máx. Profissionais (-1 = ilimitado)
+                    </Label>
+                    <Input
+                      type="number"
+                      value={planForm.limits.max_professionals as number}
+                      onChange={(e) =>
+                        updateLimit("max_professionals", parseInt(e.target.value) || 0)
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-sm text-muted-foreground">
+                      Máx. Serviços (-1 = ilimitado)
+                    </Label>
+                    <Input
+                      type="number"
+                      value={planForm.limits.max_services as number}
+                      onChange={(e) =>
+                        updateLimit("max_services", parseInt(e.target.value) || 0)
+                      }
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <Label className="text-sm">Lembretes WhatsApp</Label>
+                    <Switch
+                      checked={planForm.limits.whatsapp_reminders as boolean}
+                      onCheckedChange={(checked) =>
+                        updateLimit("whatsapp_reminders", checked)
+                      }
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <Label className="text-sm">Relatórios</Label>
+                    <Switch
+                      checked={planForm.limits.reports as boolean}
+                      onCheckedChange={(checked) => updateLimit("reports", checked)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <Label className="text-sm">Controle Comissões</Label>
+                    <Switch
+                      checked={planForm.limits.commissions as boolean}
+                      onCheckedChange={(checked) => updateLimit("commissions", checked)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded-lg">
+                    <Label className="text-sm">Acesso API</Label>
+                    <Switch
+                      checked={planForm.limits.api_access as boolean}
+                      onCheckedChange={(checked) => updateLimit("api_access", checked)}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-3 border rounded-lg col-span-2">
+                    <Label className="text-sm">Multi-unidades</Label>
+                    <Switch
+                      checked={planForm.limits.multi_units as boolean}
+                      onCheckedChange={(checked) => updateLimit("multi_units", checked)}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <Button onClick={handleSave} className="w-full">
+                Salvar Alterações
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </AdminLayout>
+  );
+}
