@@ -25,6 +25,23 @@ import {
 import { Edit, Trash2, GripVertical, Plus, X, Star, Package } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface SubscriptionPlan {
   id: string;
@@ -54,12 +71,109 @@ const DEFAULT_LIMITS = {
   multi_units: false,
 };
 
+// Sortable Row Component
+interface SortableRowProps {
+  plan: SubscriptionPlan;
+  formatPrice: (price: number) => string;
+  handleToggleActive: (plan: SubscriptionPlan) => void;
+  handleToggleHighlighted: (plan: SubscriptionPlan) => void;
+  handleEdit: (plan: SubscriptionPlan) => void;
+  handleDelete: (id: string) => void;
+}
+
+function SortableRow({
+  plan,
+  formatPrice,
+  handleToggleActive,
+  handleToggleHighlighted,
+  handleEdit,
+  handleDelete,
+}: SortableRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: plan.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  return (
+    <TableRow ref={setNodeRef} style={style}>
+      <TableCell>
+        <button
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-1 hover:bg-muted rounded"
+        >
+          <GripVertical className="h-4 w-4 text-muted-foreground" />
+        </button>
+      </TableCell>
+      <TableCell>
+        <div className="flex items-center gap-2">
+          <span className="font-medium">{plan.name}</span>
+          {plan.badge && <Badge variant="secondary">{plan.badge}</Badge>}
+        </div>
+        <span className="text-xs text-muted-foreground">{plan.slug}</span>
+      </TableCell>
+      <TableCell>{formatPrice(plan.price_monthly)}</TableCell>
+      <TableCell>
+        {plan.price_yearly ? formatPrice(plan.price_yearly) : "-"}
+      </TableCell>
+      <TableCell>
+        <span className="text-sm text-muted-foreground">
+          {plan.features.length} features
+        </span>
+      </TableCell>
+      <TableCell>
+        <Switch
+          checked={plan.is_active}
+          onCheckedChange={() => handleToggleActive(plan)}
+        />
+      </TableCell>
+      <TableCell>
+        <Switch
+          checked={plan.is_highlighted}
+          onCheckedChange={() => handleToggleHighlighted(plan)}
+        />
+      </TableCell>
+      <TableCell className="text-right">
+        <div className="flex items-center justify-end gap-2">
+          <Button variant="ghost" size="icon" onClick={() => handleEdit(plan)}>
+            <Edit className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleDelete(plan.id)}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
+}
+
 export default function AdminPlans() {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const getDefaultForm = () => ({
     slug: "",
@@ -205,6 +319,34 @@ export default function AdminPlans() {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = plans.findIndex((p) => p.id === active.id);
+      const newIndex = plans.findIndex((p) => p.id === over.id);
+
+      const newPlans = arrayMove(plans, oldIndex, newIndex);
+      setPlans(newPlans);
+
+      // Update display_order for all affected plans
+      const updates = newPlans.map((plan, index) => ({
+        id: plan.id,
+        display_order: index + 1,
+      }));
+
+      // Update each plan's display_order in the database
+      for (const update of updates) {
+        await supabase
+          .from("subscription_plans" as any)
+          .update({ display_order: update.display_order })
+          .eq("id", update.id);
+      }
+
+      toast.success("Ordem dos planos atualizada!");
+    }
+  };
+
   const handleToggleActive = async (plan: SubscriptionPlan) => {
     const { error } = await supabase
       .from("subscription_plans" as any)
@@ -339,7 +481,7 @@ export default function AdminPlans() {
           <CardHeader>
             <CardTitle>Todos os Planos</CardTitle>
             <CardDescription>
-              Clique em um plano para editar seus detalhes
+              Arraste para reordenar os planos. A ordem será refletida na página de preços.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -348,77 +490,44 @@ export default function AdminPlans() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead>Nome</TableHead>
-                    <TableHead>Preço Mensal</TableHead>
-                    <TableHead>Preço Anual</TableHead>
-                    <TableHead>Features</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Destaque</TableHead>
-                    <TableHead className="text-right">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {plans.map((plan) => (
-                    <TableRow key={plan.id}>
-                      <TableCell>
-                        <GripVertical className="h-4 w-4 text-muted-foreground" />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{plan.name}</span>
-                          {plan.badge && (
-                            <Badge variant="secondary">{plan.badge}</Badge>
-                          )}
-                        </div>
-                        <span className="text-xs text-muted-foreground">{plan.slug}</span>
-                      </TableCell>
-                      <TableCell>{formatPrice(plan.price_monthly)}</TableCell>
-                      <TableCell>
-                        {plan.price_yearly ? formatPrice(plan.price_yearly) : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-muted-foreground">
-                          {plan.features.length} features
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Switch
-                          checked={plan.is_active}
-                          onCheckedChange={() => handleToggleActive(plan)}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <Switch
-                          checked={plan.is_highlighted}
-                          onCheckedChange={() => handleToggleHighlighted(plan)}
-                        />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(plan)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(plan.id)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">#</TableHead>
+                      <TableHead>Nome</TableHead>
+                      <TableHead>Preço Mensal</TableHead>
+                      <TableHead>Preço Anual</TableHead>
+                      <TableHead>Features</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Destaque</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    <SortableContext
+                      items={plans.map((p) => p.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {plans.map((plan) => (
+                        <SortableRow
+                          key={plan.id}
+                          plan={plan}
+                          formatPrice={formatPrice}
+                          handleToggleActive={handleToggleActive}
+                          handleToggleHighlighted={handleToggleHighlighted}
+                          handleEdit={handleEdit}
+                          handleDelete={handleDelete}
+                        />
+                      ))}
+                    </SortableContext>
+                  </TableBody>
+                </Table>
+              </DndContext>
             )}
           </CardContent>
         </Card>
