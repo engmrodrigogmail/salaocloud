@@ -53,6 +53,7 @@ interface PlatformCoupon {
   discount_value: number;
   applies_to: string;
   applicable_plans: string[];
+  applicable_features: string[];
   max_redemptions: number | null;
   current_redemptions: number;
   min_months: number | null;
@@ -79,6 +80,14 @@ const SUBSCRIPTION_PLANS = [
   { value: "premium", label: "Premium" },
 ];
 
+const SAAS_FEATURES = [
+  { value: "whatsapp_reminders", label: "Lembretes WhatsApp" },
+  { value: "reports", label: "Relatórios" },
+  { value: "commissions", label: "Controle de Comissões" },
+  { value: "api_access", label: "Acesso à API" },
+  { value: "multi_units", label: "Multi-unidades" },
+];
+
 export default function AdminCoupons() {
   const { user } = useAuth();
   const [coupons, setCoupons] = useState<PlatformCoupon[]>([]);
@@ -96,6 +105,7 @@ export default function AdminCoupons() {
     discount_value: 10,
     applies_to: "subscription",
     applicable_plans: [] as string[],
+    applicable_features: [] as string[],
     max_redemptions: "",
     min_months: "1",
     valid_from: "",
@@ -152,6 +162,7 @@ export default function AdminCoupons() {
         discount_value: couponForm.discount_value,
         applies_to: couponForm.applies_to,
         applicable_plans: couponForm.applicable_plans,
+        applicable_features: couponForm.applicable_features,
         max_redemptions: couponForm.max_redemptions ? parseInt(couponForm.max_redemptions) : null,
         min_months: couponForm.min_months ? parseInt(couponForm.min_months) : 1,
         valid_from: couponForm.valid_from || new Date().toISOString(),
@@ -188,6 +199,7 @@ export default function AdminCoupons() {
         discount_value: couponForm.discount_value,
         applies_to: couponForm.applies_to,
         applicable_plans: couponForm.applicable_plans,
+        applicable_features: couponForm.applicable_features,
         max_redemptions: couponForm.max_redemptions ? parseInt(couponForm.max_redemptions) : null,
         min_months: couponForm.min_months ? parseInt(couponForm.min_months) : 1,
         valid_from: couponForm.valid_from,
@@ -242,6 +254,7 @@ export default function AdminCoupons() {
       discount_value: 10,
       applies_to: "subscription",
       applicable_plans: [],
+      applicable_features: [],
       max_redemptions: "",
       min_months: "1",
       valid_from: "",
@@ -277,6 +290,13 @@ export default function AdminCoupons() {
       ? couponForm.applicable_plans.filter((p) => p !== plan)
       : [...couponForm.applicable_plans, plan];
     setCouponForm({ ...couponForm, applicable_plans: newPlans });
+  };
+
+  const handleFeatureToggle = (feature: string) => {
+    const newFeatures = couponForm.applicable_features.includes(feature)
+      ? couponForm.applicable_features.filter((f) => f !== feature)
+      : [...couponForm.applicable_features, feature];
+    setCouponForm({ ...couponForm, applicable_features: newFeatures });
   };
 
   const stats = {
@@ -402,6 +422,26 @@ export default function AdminCoupons() {
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Deixe vazio para aplicar a todos os planos
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label>Funcionalidades Aplicáveis</Label>
+                  <div className="flex flex-wrap gap-4">
+                    {SAAS_FEATURES.map((feature) => (
+                      <div key={feature.value} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`feature-${feature.value}`}
+                          checked={couponForm.applicable_features.includes(feature.value)}
+                          onCheckedChange={() => handleFeatureToggle(feature.value)}
+                        />
+                        <Label htmlFor={`feature-${feature.value}`} className="font-normal">
+                          {feature.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Selecione funcionalidades específicas para aplicar desconto (ex: desconto em WhatsApp)
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -619,6 +659,7 @@ export default function AdminCoupons() {
                                     discount_value: coupon.discount_value,
                                     applies_to: coupon.applies_to,
                                     applicable_plans: coupon.applicable_plans || [],
+                                    applicable_features: coupon.applicable_features || [],
                                     max_redemptions: coupon.max_redemptions?.toString() || "",
                                     min_months: coupon.min_months?.toString() || "1",
                                     valid_from: coupon.valid_from.slice(0, 16),
