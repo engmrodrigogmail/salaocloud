@@ -811,6 +811,63 @@ export type Database = {
           },
         ]
       }
+      subscription_plans: {
+        Row: {
+          badge: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          features: string[]
+          id: string
+          is_active: boolean
+          is_highlighted: boolean
+          name: string
+          price_monthly: number
+          price_yearly: number | null
+          slug: string
+          stripe_price_id_monthly: string | null
+          stripe_price_id_yearly: string | null
+          stripe_product_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          badge?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          features?: string[]
+          id?: string
+          is_active?: boolean
+          is_highlighted?: boolean
+          name: string
+          price_monthly?: number
+          price_yearly?: number | null
+          slug: string
+          stripe_price_id_monthly?: string | null
+          stripe_price_id_yearly?: string | null
+          stripe_product_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          badge?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          features?: string[]
+          id?: string
+          is_active?: boolean
+          is_highlighted?: boolean
+          name?: string
+          price_monthly?: number
+          price_yearly?: number | null
+          slug?: string
+          stripe_price_id_monthly?: string | null
+          stripe_price_id_yearly?: string | null
+          stripe_product_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
