@@ -59,8 +59,9 @@ export default function AdminPlans() {
   const [loading, setLoading] = useState(true);
   const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
-  const [planForm, setPlanForm] = useState({
+  const getDefaultForm = () => ({
     slug: "",
     name: "",
     description: "",
@@ -72,8 +73,10 @@ export default function AdminPlans() {
     is_highlighted: false,
     badge: "",
     cta_text: "Começar Grátis",
-    display_order: 0,
+    display_order: plans.length + 1,
   });
+
+  const [planForm, setPlanForm] = useState(getDefaultForm());
 
   const [newFeature, setNewFeature] = useState("");
 
@@ -102,7 +105,18 @@ export default function AdminPlans() {
     setLoading(false);
   };
 
+  const handleCreate = () => {
+    setIsCreating(true);
+    setEditingPlan(null);
+    setPlanForm({
+      ...getDefaultForm(),
+      display_order: plans.length + 1,
+    });
+    setIsDialogOpen(true);
+  };
+
   const handleEdit = (plan: SubscriptionPlan) => {
+    setIsCreating(false);
     setEditingPlan(plan);
     setPlanForm({
       slug: plan.slug,
@@ -119,6 +133,44 @@ export default function AdminPlans() {
       display_order: plan.display_order,
     });
     setIsDialogOpen(true);
+  };
+
+  const handleSaveNew = async () => {
+    if (!planForm.slug || !planForm.name) {
+      toast.error("Slug e nome são obrigatórios");
+      return;
+    }
+
+    const { error } = await supabase
+      .from("subscription_plans" as any)
+      .insert({
+        slug: planForm.slug,
+        name: planForm.name,
+        description: planForm.description || null,
+        price_monthly: planForm.price_monthly,
+        price_yearly: planForm.price_yearly || null,
+        features: planForm.features,
+        limits: planForm.limits,
+        is_active: planForm.is_active,
+        is_highlighted: planForm.is_highlighted,
+        badge: planForm.badge || null,
+        cta_text: planForm.cta_text,
+        display_order: planForm.display_order,
+      });
+
+    if (error) {
+      if (error.code === "23505") {
+        toast.error("Já existe um plano com este slug");
+      } else {
+        toast.error("Erro ao criar plano");
+        console.error(error);
+      }
+    } else {
+      toast.success("Plano criado com sucesso!");
+      fetchPlans();
+      setIsDialogOpen(false);
+      setIsCreating(false);
+    }
   };
 
   const handleSave = async () => {
@@ -242,6 +294,10 @@ export default function AdminPlans() {
               Gerencie os planos de assinatura da plataforma
             </p>
           </div>
+          <Button onClick={handleCreate} className="gap-2">
+            <Plus size={20} />
+            Novo Plano
+          </Button>
         </div>
 
         {/* Stats Cards */}
@@ -367,13 +423,17 @@ export default function AdminPlans() {
           </CardContent>
         </Card>
 
-        {/* Edit Dialog */}
+        {/* Create/Edit Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Editar Plano: {editingPlan?.name}</DialogTitle>
+              <DialogTitle>
+                {isCreating ? "Novo Plano" : `Editar Plano: ${editingPlan?.name}`}
+              </DialogTitle>
               <DialogDescription>
-                Atualize os detalhes, preços e limites do plano
+                {isCreating 
+                  ? "Crie um novo plano de assinatura" 
+                  : "Atualize os detalhes, preços e limites do plano"}
               </DialogDescription>
             </DialogHeader>
 
@@ -592,8 +652,11 @@ export default function AdminPlans() {
                 </div>
               </div>
 
-              <Button onClick={handleSave} className="w-full">
-                Salvar Alterações
+              <Button 
+                onClick={isCreating ? handleSaveNew : handleSave} 
+                className="w-full"
+              >
+                {isCreating ? "Criar Plano" : "Salvar Alterações"}
               </Button>
             </div>
           </DialogContent>
