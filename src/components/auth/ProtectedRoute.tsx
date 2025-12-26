@@ -1,6 +1,7 @@
 import { ReactNode } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
@@ -15,6 +16,7 @@ export function ProtectedRoute({
   requireRole = false 
 }: ProtectedRouteProps) {
   const { user, role, loading } = useAuth();
+  const { isImpersonating, impersonatedRole } = useImpersonation();
 
   if (loading) {
     return (
@@ -28,11 +30,23 @@ export function ProtectedRoute({
     return <Navigate to="/auth" replace />;
   }
 
+  // Super admin can access any route when impersonating
+  if (role === "super_admin" && isImpersonating && impersonatedRole) {
+    // If impersonating, check if the impersonated role matches the allowed roles
+    if (allowedRoles && allowedRoles.includes(impersonatedRole)) {
+      return <>{children}</>;
+    }
+  }
+
+  // Normal role-based access control
   if (allowedRoles && role && !allowedRoles.includes(role)) {
-    // Redirect to appropriate dashboard based on role
+    // Super admin can access everything
     if (role === "super_admin") {
-      return <Navigate to="/admin" replace />;
-    } else if (role === "establishment") {
+      return <>{children}</>;
+    }
+    
+    // Redirect to appropriate dashboard based on role
+    if (role === "establishment") {
       return <Navigate to="/dashboard" replace />;
     } else if (role === "client") {
       return <Navigate to="/meus-agendamentos" replace />;

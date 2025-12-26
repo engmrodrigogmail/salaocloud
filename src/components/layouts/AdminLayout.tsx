@@ -13,6 +13,8 @@ import {
   Ticket,
   Package,
   CreditCard,
+  Eye,
+  UserCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,8 +23,11 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import logo from "@/assets/logo.webp";
 
 const navItems = [
@@ -44,10 +49,20 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { startImpersonation } = useImpersonation();
 
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
+  };
+
+  const handleImpersonate = (role: "establishment" | "client") => {
+    startImpersonation(role);
+    if (role === "establishment") {
+      navigate("/dashboard");
+    } else if (role === "client") {
+      navigate("/meus-agendamentos");
+    }
   };
 
   return (
@@ -70,28 +85,56 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           </Link>
         </div>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="gap-2">
-              <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-white text-sm font-medium">
-                {user?.email?.charAt(0).toUpperCase()}
-              </div>
-              <span className="hidden sm:inline">{user?.email}</span>
-              <ChevronDown size={16} />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuItem onClick={() => navigate("/admin/settings")}>
-              <Settings size={16} className="mr-2" />
-              Configurações
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
-              <LogOut size={16} className="mr-2" />
-              Sair
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2">
+          {/* Impersonation Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Eye size={16} />
+                <span className="hidden sm:inline">Ver como</span>
+                <ChevronDown size={14} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Visualizar perfil como:</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuItem onClick={() => handleImpersonate("establishment")}>
+                  <Building2 size={16} className="mr-2" />
+                  Estabelecimento
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleImpersonate("client")}>
+                  <UserCircle size={16} className="mr-2" />
+                  Cliente
+                </DropdownMenuItem>
+              </DropdownMenuGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* User Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="gap-2">
+                <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-white text-sm font-medium">
+                  {user?.email?.charAt(0).toUpperCase()}
+                </div>
+                <span className="hidden sm:inline">{user?.email}</span>
+                <ChevronDown size={16} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuItem onClick={() => navigate("/admin/settings")}>
+                <Settings size={16} className="mr-2" />
+                Configurações
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
+                <LogOut size={16} className="mr-2" />
+                Sair
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </header>
 
       {/* Sidebar */}

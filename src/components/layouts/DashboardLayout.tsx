@@ -25,6 +25,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import logo from "@/assets/logo.webp";
 
 const navItems = [
@@ -47,6 +49,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
+  const { isImpersonating } = useImpersonation();
 
   const handleSignOut = async () => {
     await signOut();
@@ -55,8 +58,11 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-muted/30">
+      {/* Impersonation Banner */}
+      <ImpersonationBanner />
+
       {/* Top bar */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-background border-b border-border z-50 flex items-center justify-between px-4">
+      <header className={`fixed left-0 right-0 h-16 bg-background border-b border-border z-50 flex items-center justify-between px-4 ${isImpersonating ? 'top-10' : 'top-0'}`}>
         <div className="flex items-center gap-4">
           <button
             className="lg:hidden p-2"
@@ -95,7 +101,9 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-16 left-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-300 z-40 ${
+        className={`fixed left-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-300 z-40 ${
+          isImpersonating ? 'top-[104px]' : 'top-16'
+        } ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
@@ -130,7 +138,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
       )}
 
       {/* Main content */}
-      <main className="pt-16 lg:pl-64">
+      <main className={`lg:pl-64 ${isImpersonating ? 'pt-[104px]' : 'pt-16'}`}>
         <div className="p-6">{children}</div>
       </main>
     </div>
