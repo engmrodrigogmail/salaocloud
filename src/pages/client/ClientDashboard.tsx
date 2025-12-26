@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,7 @@ import { toast } from "sonner";
 import { Calendar, Clock, User, LogOut, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Appointment = Tables<"appointments"> & {
@@ -19,6 +21,7 @@ type Appointment = Tables<"appointments"> & {
 
 const ClientDashboard = () => {
   const { user, signOut } = useAuth();
+  const { isImpersonating } = useImpersonation();
   const navigate = useNavigate();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -107,14 +110,19 @@ const ClientDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background">
+      {/* Impersonation Banner */}
+      <ImpersonationBanner />
+
       {/* Header */}
-      <header className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">
+      <header className={`bg-card/80 backdrop-blur-sm border-b border-border sticky z-50 ${isImpersonating ? 'top-10' : 'top-0'}`}>
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-xl font-display font-bold text-foreground">Meus Agendamentos</h1>
-          <Button variant="ghost" size="sm" onClick={handleSignOut}>
-            <LogOut className="h-4 w-4 mr-2" />
-            Sair
-          </Button>
+          {!isImpersonating && (
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4 mr-2" />
+              Sair
+            </Button>
+          )}
         </div>
       </header>
 
@@ -125,9 +133,14 @@ const ClientDashboard = () => {
               <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h2 className="text-xl font-semibold mb-2">Nenhum agendamento encontrado</h2>
               <p className="text-muted-foreground mb-4">
-                Você ainda não possui nenhum agendamento registrado.
+                {isImpersonating 
+                  ? "Este perfil ainda não possui nenhum agendamento registrado."
+                  : "Você ainda não possui nenhum agendamento registrado."
+                }
               </p>
-              <Button onClick={() => navigate("/")}>Fazer um Agendamento</Button>
+              {!isImpersonating && (
+                <Button onClick={() => navigate("/")}>Fazer um Agendamento</Button>
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -165,7 +178,7 @@ const ClientDashboard = () => {
                       <p className="font-bold text-accent text-lg">
                         R$ {Number(appointment.price).toFixed(2)}
                       </p>
-                      {appointment.status === "pending" && (
+                      {appointment.status === "pending" && !isImpersonating && (
                         <Button
                           variant="destructive"
                           size="sm"
