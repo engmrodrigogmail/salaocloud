@@ -144,6 +144,7 @@ export type Database = {
       }
       clients: {
         Row: {
+          cpf: string | null
           created_at: string
           email: string | null
           establishment_id: string
@@ -155,6 +156,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          cpf?: string | null
           created_at?: string
           email?: string | null
           establishment_id: string
@@ -166,6 +168,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          cpf?: string | null
           created_at?: string
           email?: string | null
           establishment_id?: string
@@ -300,6 +303,7 @@ export type Database = {
           name: string
           owner_id: string
           phone: string | null
+          show_catalog: boolean
           slug: string
           state: string | null
           status: Database["public"]["Enums"]["establishment_status"]
@@ -322,6 +326,7 @@ export type Database = {
           name: string
           owner_id: string
           phone?: string | null
+          show_catalog?: boolean
           slug: string
           state?: string | null
           status?: Database["public"]["Enums"]["establishment_status"]
@@ -344,6 +349,7 @@ export type Database = {
           name?: string
           owner_id?: string
           phone?: string | null
+          show_catalog?: boolean
           slug?: string
           state?: string | null
           status?: Database["public"]["Enums"]["establishment_status"]
@@ -894,6 +900,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      format_cpf: { Args: { cpf_raw: string }; Returns: string }
       get_user_establishment_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
