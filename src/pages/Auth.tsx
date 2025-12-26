@@ -158,7 +158,11 @@ export default function Auth() {
                     <FormItem>
                       <FormLabel>Nome completo (opcional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="Seu nome" {...field} />
+                        <Input 
+                          placeholder="Seu nome" 
+                          autoComplete="name"
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -172,7 +176,12 @@ export default function Auth() {
                     <FormItem>
                       <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input type="email" placeholder="seu@email.com" {...field} />
+                        <Input 
+                          type="email" 
+                          placeholder="seu@email.com" 
+                          autoComplete="email"
+                          {...field} 
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
