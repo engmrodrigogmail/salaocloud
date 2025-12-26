@@ -153,15 +153,16 @@ export default function Auth() {
               <form onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-5">
                 <FormField
                   control={signupForm.control}
-                  name="fullName"
+                  name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Nome completo (opcional)</FormLabel>
+                      <FormLabel>Email</FormLabel>
                       <FormControl>
-                        <Input 
-                          placeholder="Seu nome" 
-                          autoComplete="name"
-                          {...field} 
+                        <Input
+                          type="email"
+                          placeholder="seu@email.com"
+                          autoComplete="email"
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -171,16 +172,18 @@ export default function Auth() {
 
                 <FormField
                   control={signupForm.control}
-                  name="email"
+                  name="fullName"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>Nome completo (opcional)</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="email" 
-                          placeholder="seu@email.com" 
-                          autoComplete="email"
-                          {...field} 
+                        <Input
+                          type="text"
+                          placeholder="Seu nome (opcional)"
+                          autoComplete="name"
+                          autoCapitalize="words"
+                          inputMode="text"
+                          {...field}
                         />
                       </FormControl>
                       <FormMessage />
@@ -199,6 +202,7 @@ export default function Auth() {
                           <Input
                             type={showPassword ? "text" : "password"}
                             placeholder="••••••••"
+                            autoComplete="new-password"
                             {...field}
                           />
                           <button
@@ -225,6 +229,7 @@ export default function Auth() {
                         <Input
                           type={showPassword ? "text" : "password"}
                           placeholder="••••••••"
+                          autoComplete="new-password"
                           {...field}
                         />
                       </FormControl>
