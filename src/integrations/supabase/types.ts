@@ -492,6 +492,7 @@ export type Database = {
       }
       platform_coupons: {
         Row: {
+          applicable_features: string[] | null
           applicable_plans: string[] | null
           applies_to: string
           code: string
@@ -511,6 +512,7 @@ export type Database = {
           valid_until: string | null
         }
         Insert: {
+          applicable_features?: string[] | null
           applicable_plans?: string[] | null
           applies_to?: string
           code: string
@@ -530,6 +532,7 @@ export type Database = {
           valid_until?: string | null
         }
         Update: {
+          applicable_features?: string[] | null
           applicable_plans?: string[] | null
           applies_to?: string
           code?: string
