@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label";
 import { CouponInput } from "./CouponInput";
 import { ValidatedCoupon } from "@/hooks/useCouponValidation";
 import { supabase } from "@/integrations/supabase/client";
-import { Check } from "lucide-react";
+import { Check, Loader2, CreditCard } from "lucide-react";
+import { toast } from "sonner";
 
 interface Plan {
   id: string;
@@ -17,6 +18,8 @@ interface Plan {
   description: string | null;
   price_monthly: number;
   price_yearly: number | null;
+  stripe_price_id_monthly: string | null;
+  stripe_price_id_yearly: string | null;
   features: string[];
   is_highlighted: boolean;
   badge: string | null;
@@ -38,12 +41,13 @@ export function CheckoutSummary({ onCheckoutComplete }: CheckoutSummaryProps) {
   const [appliedCoupon, setAppliedCoupon] = useState<ValidatedCoupon | null>(null);
   const [discountAmount, setDiscountAmount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
   useEffect(() => {
     const fetchPlans = async () => {
       const { data, error } = await supabase
         .from("subscription_plans" as any)
-        .select("id, slug, name, description, price_monthly, price_yearly, features, is_highlighted, badge")
+        .select("id, slug, name, description, price_monthly, price_yearly, stripe_price_id_monthly, stripe_price_id_yearly, features, is_highlighted, badge")
         .eq("is_active", true)
         .order("display_order", { ascending: true });
 
@@ -53,7 +57,6 @@ export function CheckoutSummary({ onCheckoutComplete }: CheckoutSummaryProps) {
           features: Array.isArray(plan.features) ? plan.features : [],
         }));
         setPlans(parsedPlans);
-        // Select highlighted plan by default, or first plan
         const defaultPlan = parsedPlans.find((p: Plan) => p.is_highlighted) || parsedPlans[0];
         if (defaultPlan) {
           setSelectedPlanSlug(defaultPlan.slug);
@@ -80,7 +83,6 @@ export function CheckoutSummary({ onCheckoutComplete }: CheckoutSummaryProps) {
 
   const handleCouponApplied = (coupon: ValidatedCoupon | null, discount: number) => {
     setAppliedCoupon(coupon);
-    // Recalculate discount based on current base price
     if (coupon) {
       if (coupon.discount_type === "percentage") {
         setDiscountAmount((basePrice * coupon.discount_value) / 100);
@@ -92,7 +94,6 @@ export function CheckoutSummary({ onCheckoutComplete }: CheckoutSummaryProps) {
     }
   };
 
-  // Recalculate discount when base price changes
   useEffect(() => {
     if (appliedCoupon) {
       if (appliedCoupon.discount_type === "percentage") {
@@ -110,14 +111,56 @@ export function CheckoutSummary({ onCheckoutComplete }: CheckoutSummaryProps) {
     }).format(price);
   };
 
-  const handleCheckout = () => {
-    if (selectedPlan) {
-      onCheckoutComplete?.({
-        plan: selectedPlan,
-        billingCycle,
-        coupon: appliedCoupon,
-        finalPrice,
+  const handleCheckout = async () => {
+    if (!selectedPlan) return;
+
+    setCheckoutLoading(true);
+
+    try {
+      const priceId = billingCycle === "yearly" && selectedPlan.stripe_price_id_yearly
+        ? selectedPlan.stripe_price_id_yearly
+        : selectedPlan.stripe_price_id_monthly;
+
+      if (!priceId) {
+        toast.error("Plano não configurado para pagamento");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("create-checkout", {
+        body: {
+          priceId,
+          planSlug: selectedPlan.slug,
+          couponCode: appliedCoupon?.code || null,
+          billingCycle,
+        },
       });
+
+      if (error) {
+        console.error("Checkout error:", error);
+        toast.error("Erro ao iniciar checkout. Tente novamente.");
+        return;
+      }
+
+      if (data?.url) {
+        // Open Stripe checkout in new tab
+        window.open(data.url, "_blank");
+        
+        onCheckoutComplete?.({
+          plan: selectedPlan,
+          billingCycle,
+          coupon: appliedCoupon,
+          finalPrice,
+        });
+
+        toast.success("Redirecionando para o pagamento...");
+      } else {
+        toast.error("Erro ao criar sessão de checkout");
+      }
+    } catch (err) {
+      console.error("Checkout error:", err);
+      toast.error("Erro inesperado. Tente novamente.");
+    } finally {
+      setCheckoutLoading(false);
     }
   };
 
@@ -125,7 +168,7 @@ export function CheckoutSummary({ onCheckoutComplete }: CheckoutSummaryProps) {
     return (
       <Card className="w-full max-w-md">
         <CardContent className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </CardContent>
       </Card>
     );
@@ -272,9 +315,19 @@ export function CheckoutSummary({ onCheckoutComplete }: CheckoutSummaryProps) {
           className="w-full"
           size="lg"
           onClick={handleCheckout}
-          disabled={!selectedPlan}
+          disabled={!selectedPlan || checkoutLoading}
         >
-          Continuar para pagamento
+          {checkoutLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Processando...
+            </>
+          ) : (
+            <>
+              <CreditCard className="mr-2 h-4 w-4" />
+              Continuar para pagamento
+            </>
+          )}
         </Button>
       </CardFooter>
     </Card>
