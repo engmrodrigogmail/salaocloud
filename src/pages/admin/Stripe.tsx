@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -23,6 +24,10 @@ import {
   UserMinus,
   Activity,
   Clock,
+  Bell,
+  AlertCircle,
+  Zap,
+  Webhook,
 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
@@ -86,6 +91,13 @@ interface Statistics {
   }>;
 }
 
+interface DesyncAlert {
+  type: "critical" | "warning" | "info";
+  title: string;
+  message: string;
+  action?: string;
+}
+
 export default function AdminStripe() {
   const [stripeStatus, setStripeStatus] = useState<"online" | "offline" | "checking">("checking");
   const [stripeProducts, setStripeProducts] = useState<StripeProduct[]>([]);
@@ -94,6 +106,9 @@ export default function AdminStripe() {
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
+  const [desyncAlerts, setDesyncAlerts] = useState<DesyncAlert[]>([]);
+  const [autoSyncEnabled, setAutoSyncEnabled] = useState(true);
+  const [lastSyncCheck, setLastSyncCheck] = useState<Date | null>(null);
 
   // Selection states
   const [selectedStripeProducts, setSelectedStripeProducts] = useState<string[]>([]);
@@ -122,6 +137,66 @@ export default function AdminStripe() {
       second: "2-digit",
     });
   };
+
+  const checkDesyncAlerts = useCallback((status: SyncStatus | null, lastSyncTime: Date | null) => {
+    const alerts: DesyncAlert[] = [];
+
+    if (!status) return alerts;
+
+    // Check if desynchronized
+    if (!status.isSynced) {
+      const desyncedPlans = status.details.filter(
+        (d) => !d.hasStripeProduct || !d.hasStripePrice || !d.priceMatch
+      );
+
+      if (desyncedPlans.length > 0) {
+        alerts.push({
+          type: "warning",
+          title: "Planos Dessincronizados",
+          message: `${desyncedPlans.length} plano(s) estão fora de sincronia com o Stripe: ${desyncedPlans.map(p => p.name).join(", ")}`,
+          action: "Sincronize os planos para manter consistência",
+        });
+      }
+    }
+
+    // Check for unlinked portal plans
+    if (status.unlinkedPortalPlans > 0) {
+      alerts.push({
+        type: "info",
+        title: "Planos não vinculados",
+        message: `${status.unlinkedPortalPlans} plano(s) do portal não estão vinculados ao Stripe`,
+        action: "Exporte os planos para o Stripe ou vincule-os manualmente",
+      });
+    }
+
+    // Check if last sync was more than 24 hours ago
+    if (lastSyncTime) {
+      const hoursSinceSync = (Date.now() - lastSyncTime.getTime()) / (1000 * 60 * 60);
+      if (hoursSinceSync > 24) {
+        alerts.push({
+          type: "critical",
+          title: "Sincronização Atrasada",
+          message: `A última verificação de sincronização foi há mais de 24 horas (${Math.floor(hoursSinceSync)} horas)`,
+          action: "Atualize os dados para verificar o status atual",
+        });
+      }
+    }
+
+    // Check for price mismatches
+    const priceMismatches = status.details.filter(
+      (d) => d.hasStripeProduct && d.hasStripePrice && !d.priceMatch
+    );
+    if (priceMismatches.length > 0) {
+      alerts.push({
+        type: "critical",
+        title: "Divergência de Preços",
+        message: `${priceMismatches.length} plano(s) têm preços diferentes no portal e no Stripe: ${priceMismatches.map(p => p.name).join(", ")}`,
+        action: "Isso pode causar cobranças incorretas - sincronize imediatamente",
+      });
+    }
+
+    return alerts;
+  }, []);
 
   const checkStripeStatus = useCallback(async () => {
     try {
@@ -169,10 +244,18 @@ export default function AdminStripe() {
       });
       if (error) throw error;
       setSyncStatus(data);
+      setLastSyncCheck(new Date());
+      
+      // Generate alerts based on sync status
+      const alerts = checkDesyncAlerts(data, new Date());
+      setDesyncAlerts(alerts);
+      
+      return data;
     } catch (error) {
       console.error("Error fetching sync status:", error);
+      return null;
     }
-  }, []);
+  }, [checkDesyncAlerts]);
 
   const fetchStatistics = useCallback(async () => {
     try {
@@ -200,12 +283,19 @@ export default function AdminStripe() {
     setLoading(false);
   }, [checkStripeStatus, fetchStripeProducts, fetchPortalPlans, fetchSyncStatus, fetchStatistics]);
 
+  // Auto-sync: check sync status every 5 minutes when enabled
   useEffect(() => {
     refreshAll();
-    // Auto-refresh every 5 minutes
-    const interval = setInterval(refreshAll, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, [refreshAll]);
+    
+    if (autoSyncEnabled) {
+      const interval = setInterval(() => {
+        fetchSyncStatus();
+        setLastUpdate(new Date());
+      }, 5 * 60 * 1000);
+      
+      return () => clearInterval(interval);
+    }
+  }, [refreshAll, autoSyncEnabled, fetchSyncStatus]);
 
   const handleExportToStripe = async () => {
     if (selectedPortalPlans.length === 0) {
@@ -261,6 +351,10 @@ export default function AdminStripe() {
     }
   };
 
+  const dismissAlert = (index: number) => {
+    setDesyncAlerts((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const getStatusIcon = () => {
     switch (stripeStatus) {
       case "online":
@@ -290,6 +384,21 @@ export default function AdminStripe() {
     );
   };
 
+  const getAlertIcon = (type: string) => {
+    switch (type) {
+      case "critical":
+        return <AlertCircle className="h-4 w-4" />;
+      case "warning":
+        return <AlertTriangle className="h-4 w-4" />;
+      default:
+        return <Bell className="h-4 w-4" />;
+    }
+  };
+
+  const getAlertVariant = (type: string): "default" | "destructive" => {
+    return type === "critical" ? "destructive" : "default";
+  };
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -301,14 +410,52 @@ export default function AdminStripe() {
               Monitore e gerencie a integração com o Stripe
             </p>
           </div>
-          <Button onClick={refreshAll} disabled={loading}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-            Atualizar
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={autoSyncEnabled ? "default" : "outline"}
+              size="sm"
+              onClick={() => setAutoSyncEnabled(!autoSyncEnabled)}
+            >
+              <Zap className={`h-4 w-4 mr-2 ${autoSyncEnabled ? "text-yellow-300" : ""}`} />
+              {autoSyncEnabled ? "Auto-Sync Ativo" : "Auto-Sync Inativo"}
+            </Button>
+            <Button onClick={refreshAll} disabled={loading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+              Atualizar
+            </Button>
+          </div>
         </div>
 
+        {/* Desync Alerts */}
+        {desyncAlerts.length > 0 && (
+          <div className="space-y-3">
+            {desyncAlerts.map((alert, index) => (
+              <Alert key={index} variant={getAlertVariant(alert.type)}>
+                {getAlertIcon(alert.type)}
+                <AlertTitle className="flex items-center justify-between">
+                  <span>{alert.title}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 w-6 p-0"
+                    onClick={() => dismissAlert(index)}
+                  >
+                    <XCircle className="h-4 w-4" />
+                  </Button>
+                </AlertTitle>
+                <AlertDescription>
+                  <p>{alert.message}</p>
+                  {alert.action && (
+                    <p className="text-sm mt-1 font-medium">{alert.action}</p>
+                  )}
+                </AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        )}
+
         {/* Status and Sync Cards */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-sm font-medium">Status do Stripe</CardTitle>
@@ -348,6 +495,22 @@ export default function AdminStripe() {
               </div>
               <p className="text-xs text-muted-foreground">
                 Fuso horário de Brasília
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Webhook</CardTitle>
+              <Webhook className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <Badge variant="default" className="bg-green-500">
+                <CheckCircle className="h-3 w-3 mr-1" />
+                Ativo
+              </Badge>
+              <p className="text-xs text-muted-foreground mt-2">
+                Eventos Stripe em tempo real
               </p>
             </CardContent>
           </Card>
