@@ -34,6 +34,10 @@ import PortalSettings from "./pages/portal/Settings";
 
 // Interno Pages (Establishment Internal - operations)
 import InternoDashboard from "./pages/interno/Dashboard";
+import InternoAgenda from "./pages/interno/Agenda";
+
+// Portal Agenda
+import PortalAgenda from "./pages/portal/Agenda";
 
 const queryClient = new QueryClient();
 
@@ -120,6 +124,7 @@ const App = () => (
 
               {/* Portal routes - Establishment Admin (configuration & settings) */}
               <Route path="/portal/:slug" element={<PortalDashboard />} />
+              <Route path="/portal/:slug/agenda" element={<PortalAgenda />} />
               <Route path="/portal/:slug/profissionais" element={<PortalProfessionals />} />
               <Route path="/portal/:slug/servicos" element={<PortalServices />} />
               <Route path="/portal/:slug/clientes" element={<PortalClients />} />
@@ -129,6 +134,7 @@ const App = () => (
 
               {/* Interno routes - Establishment Internal Operations */}
               <Route path="/interno/:slug" element={<InternoDashboard />} />
+              <Route path="/interno/:slug/agenda" element={<InternoAgenda />} />
 
               {/* Public client portal - /{slug} opens client booking page */}
               <Route path="/:slug" element={<ClientPortal />} />

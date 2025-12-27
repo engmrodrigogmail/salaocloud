@@ -14,6 +14,7 @@ import {
   Star,
   CreditCard,
   FolderKanban,
+  Calendar,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -62,6 +63,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
 
   const navItems = [
     { href: `/portal/${slug}`, label: "Dashboard", icon: LayoutDashboard },
+    { href: `/portal/${slug}/agenda`, label: "Agenda", icon: Calendar },
     { href: `/portal/${slug}/profissionais`, label: "Profissionais", icon: Users },
     { href: `/portal/${slug}/servicos`, label: "Serviços", icon: Scissors },
     { href: `/portal/${slug}/clientes`, label: "Clientes", icon: UserCircle },
