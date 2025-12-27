@@ -16,7 +16,6 @@ interface Plan {
   features: string[];
   is_highlighted: boolean;
   badge: string | null;
-  cta_text: string;
   display_order: number;
 }
 
@@ -26,59 +25,55 @@ const fallbackPlans: Plan[] = [
     id: "1",
     slug: "basic",
     name: "Básico",
-    description: "Perfeito pra quem tá começando",
-    price_monthly: 49,
-    price_yearly: 470,
+    description: "Ideal para pequenos negócios que estão começando",
+    price_monthly: 99,
+    price_yearly: 950,
     features: [
-      "Até 2 profissionais",
-      "Agenda online ilimitada",
-      "Página de agendamento",
-      "Gestão de clientes",
-      "Suporte por email",
+      "Até 3 profissionais",
+      "Agenda básica",
+      "Notificações por email",
+      "Relatórios básicos",
     ],
     is_highlighted: false,
     badge: null,
-    cta_text: "Começar Grátis",
     display_order: 1,
   },
   {
     id: "2",
     slug: "professional",
     name: "Profissional",
-    description: "O mais escolhido pelos salões",
-    price_monthly: 99,
-    price_yearly: 950,
+    description: "Para negócios em crescimento que precisam de mais recursos",
+    price_monthly: 199,
+    price_yearly: 1900,
     features: [
-      "Até 5 profissionais",
-      "Tudo do plano Básico",
-      "Lembretes por WhatsApp",
-      "Relatórios completos",
-      "Controle de comissões",
-      "Suporte prioritário",
+      "Até 10 profissionais",
+      "Agenda avançada",
+      "Notificações WhatsApp",
+      "Relatórios avançados",
+      "Programa de fidelidade",
+      "Cupons de desconto",
     ],
     is_highlighted: true,
     badge: "Mais Popular",
-    cta_text: "Começar Grátis",
     display_order: 2,
   },
   {
     id: "3",
     slug: "premium",
     name: "Premium",
-    description: "Para salões que querem voar",
-    price_monthly: 199,
-    price_yearly: 1910,
+    description: "Solução completa para negócios estabelecidos",
+    price_monthly: 399,
+    price_yearly: 3800,
     features: [
       "Profissionais ilimitados",
-      "Tudo do plano Profissional",
+      "Todas as funcionalidades",
+      "API de integração",
+      "Suporte prioritário",
       "Multi-unidades",
-      "API para integrações",
-      "Relatórios avançados",
-      "Gerente de conta dedicado",
+      "Personalização da marca",
     ],
     is_highlighted: false,
     badge: null,
-    cta_text: "Falar com Vendas",
     display_order: 3,
   },
 ];
@@ -91,8 +86,8 @@ export function PricingSection() {
   useEffect(() => {
     const fetchPlans = async () => {
       const { data, error } = await supabase
-        .from("subscription_plans" as any)
-        .select("id, slug, name, description, price_monthly, price_yearly, features, is_highlighted, badge, cta_text, display_order")
+        .from("subscription_plans")
+        .select("id, slug, name, description, price_monthly, price_yearly, features, is_highlighted, badge, display_order")
         .eq("is_active", true)
         .order("display_order", { ascending: true });
 
@@ -270,7 +265,9 @@ export function PricingSection() {
                       }`}
                       asChild
                     >
-                      <Link to="/auth?mode=signup">{plan.cta_text}</Link>
+                      <Link to="/auth?mode=signup">
+                        {plan.slug === "premium" ? "Falar com Vendas" : "Começar Grátis"}
+                      </Link>
                     </Button>
                   </div>
                 </div>
