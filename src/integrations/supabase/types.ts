@@ -294,6 +294,7 @@ export type Database = {
       establishments: {
         Row: {
           address: string | null
+          cancellation_policy: string | null
           city: string | null
           created_at: string
           description: string | null
@@ -317,6 +318,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          cancellation_policy?: string | null
           city?: string | null
           created_at?: string
           description?: string | null
@@ -340,6 +342,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          cancellation_policy?: string | null
           city?: string | null
           created_at?: string
           description?: string | null
@@ -558,6 +561,41 @@ export type Database = {
           valid_until?: string | null
         }
         Relationships: []
+      }
+      professional_blocked_times: {
+        Row: {
+          created_at: string
+          end_time: string
+          id: string
+          professional_id: string
+          reason: string | null
+          start_time: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          id?: string
+          professional_id: string
+          reason?: string | null
+          start_time: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          id?: string
+          professional_id?: string
+          reason?: string | null
+          start_time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professional_blocked_times_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       professional_services: {
         Row: {

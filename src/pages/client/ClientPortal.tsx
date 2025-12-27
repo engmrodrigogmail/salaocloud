@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,18 +7,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { 
   Calendar, Clock, User, Phone, CreditCard, ArrowLeft, 
-  Loader2, Store, Scissors, Star, Gift, LogOut 
+  Loader2, Store, Scissors, Star, Gift, LogOut, Filter,
+  ChevronLeft, ChevronRight, AlertCircle, FileText
 } from "lucide-react";
-import { format } from "date-fns";
+import { format, addDays, setHours, setMinutes, startOfDay, isBefore, addMinutes, isAfter, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
 
-type Establishment = Tables<"establishments">;
+type Establishment = Tables<"establishments"> & { cancellation_policy?: string | null };
 type Service = Tables<"services">;
 type Client = Tables<"clients">;
+type Professional = Tables<"professionals">;
 type Appointment = Tables<"appointments"> & {
   services?: { name: string } | null;
   professionals?: { name: string } | null;
@@ -27,6 +30,14 @@ type LoyaltyProgram = Tables<"loyalty_programs">;
 type LoyaltyPoints = Tables<"client_loyalty_points">;
 type LoyaltyReward = Tables<"loyalty_rewards">;
 type Promotion = Tables<"promotions">;
+type ScheduleSlot = {
+  id: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  professional_id: string;
+  service_id: string;
+  status: string;
+};
 
 const ClientPortal = () => {
   const { slug } = useParams();
@@ -35,25 +46,48 @@ const ClientPortal = () => {
   const [loading, setLoading] = useState(true);
   const [authenticating, setAuthenticating] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [checkingCpf, setCheckingCpf] = useState(false);
+  const [cpfChecked, setCpfChecked] = useState(false);
+  const [clientExists, setClientExists] = useState(false);
   
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [client, setClient] = useState<Client | null>(null);
   const [services, setServices] = useState<Service[]>([]);
+  const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const [allAppointments, setAllAppointments] = useState<ScheduleSlot[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loyaltyProgram, setLoyaltyProgram] = useState<LoyaltyProgram | null>(null);
   const [loyaltyPoints, setLoyaltyPoints] = useState<LoyaltyPoints | null>(null);
   const [rewards, setRewards] = useState<LoyaltyReward[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
+  const [professionalServices, setProfessionalServices] = useState<{professional_id: string, service_id: string}[]>([]);
+  
+  // CPF check form
+  const [cpfToCheck, setCpfToCheck] = useState("");
   
   // Login form
   const [cpf, setCpf] = useState("");
   const [phone, setPhone] = useState("");
   
   // Registration form
-  const [isRegistering, setIsRegistering] = useState(false);
   const [registerName, setRegisterName] = useState("");
   const [registerCpf, setRegisterCpf] = useState("");
   const [registerPhone, setRegisterPhone] = useState("");
+
+  // Booking state
+  const [isBooking, setIsBooking] = useState(false);
+  const [bookingStep, setBookingStep] = useState(1);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
+  const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [confirming, setConfirming] = useState(false);
+  const [policyAccepted, setPolicyAccepted] = useState(false);
+
+  // Filters for agenda view
+  const [filterDate, setFilterDate] = useState<Date>(startOfDay(new Date()));
+  const [filterService, setFilterService] = useState<string>("all");
+  const [filterProfessional, setFilterProfessional] = useState<string>("all");
 
   useEffect(() => {
     if (slug) {
@@ -78,17 +112,32 @@ const ClientPortal = () => {
 
       setEstablishment(est);
       
-      // Fetch services if catalog is enabled
-      if (est.show_catalog) {
-        const { data: servicesData } = await supabase
-          .from("services")
-          .select("*")
-          .eq("establishment_id", est.id)
-          .eq("is_active", true)
-          .order("name");
-        
-        setServices(servicesData || []);
-      }
+      // Fetch services
+      const { data: servicesData } = await supabase
+        .from("services")
+        .select("*")
+        .eq("establishment_id", est.id)
+        .eq("is_active", true)
+        .order("name");
+      
+      setServices(servicesData || []);
+
+      // Fetch professionals
+      const { data: professionalsData } = await supabase
+        .from("professionals")
+        .select("*")
+        .eq("establishment_id", est.id)
+        .eq("is_active", true)
+        .order("name");
+      
+      setProfessionals(professionalsData || []);
+
+      // Fetch professional_services
+      const { data: psData } = await supabase
+        .from("professional_services")
+        .select("professional_id, service_id");
+      
+      setProfessionalServices(psData || []);
 
       // Fetch active promotions
       const { data: promotionsData } = await supabase
@@ -145,6 +194,46 @@ const ClientPortal = () => {
     return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
   };
 
+  // Step 1: Check if CPF exists
+  const handleCheckCpf = async () => {
+    if (!establishment) return;
+    
+    const cpfClean = cpfToCheck.replace(/\D/g, "");
+    
+    if (cpfClean.length !== 11) {
+      toast.error("CPF inválido");
+      return;
+    }
+
+    setCheckingCpf(true);
+
+    try {
+      const { data: clientData, error } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("establishment_id", establishment.id)
+        .eq("cpf", cpfClean)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      setCpfChecked(true);
+      
+      if (clientData) {
+        setClientExists(true);
+        setCpf(formatCpf(cpfClean));
+      } else {
+        setClientExists(false);
+        setRegisterCpf(formatCpf(cpfClean));
+      }
+    } catch (error) {
+      console.error("Error checking CPF:", error);
+      toast.error("Erro ao verificar CPF");
+    } finally {
+      setCheckingCpf(false);
+    }
+  };
+
   const handleLogin = async () => {
     if (!establishment) return;
     
@@ -175,13 +264,14 @@ const ClientPortal = () => {
       if (error) throw error;
 
       if (!clientData) {
-        toast.error("Cliente não encontrado. Verifique seus dados ou faça seu cadastro.");
+        toast.error("Telefone não confere com o cadastro. Verifique seus dados.");
         return;
       }
 
       setClient(clientData);
       setIsAuthenticated(true);
       await fetchClientData(clientData.id);
+      await fetchAllAppointments();
       toast.success(`Bem-vindo(a), ${clientData.name}!`);
     } catch (error) {
       console.error("Error authenticating:", error);
@@ -215,19 +305,6 @@ const ClientPortal = () => {
     setAuthenticating(true);
 
     try {
-      // Check if client already exists
-      const { data: existingClient } = await supabase
-        .from("clients")
-        .select("id")
-        .eq("establishment_id", establishment.id)
-        .eq("cpf", cpfClean)
-        .maybeSingle();
-
-      if (existingClient) {
-        toast.error("CPF já cadastrado neste estabelecimento");
-        return;
-      }
-
       const { data: newClient, error } = await supabase
         .from("clients")
         .insert({
@@ -256,6 +333,7 @@ const ClientPortal = () => {
           });
       }
       
+      await fetchAllAppointments();
       toast.success(`Cadastro realizado com sucesso, ${newClient.name}!`);
     } catch (error) {
       console.error("Error registering:", error);
@@ -267,7 +345,7 @@ const ClientPortal = () => {
 
   const fetchClientData = async (clientId: string) => {
     try {
-      // Fetch appointments
+      // Fetch client appointments
       const { data: appointmentsData } = await supabase
         .from("appointments")
         .select(`
@@ -296,6 +374,24 @@ const ClientPortal = () => {
     }
   };
 
+  const fetchAllAppointments = async () => {
+    if (!establishment) return;
+    
+    try {
+      // Fetch all appointments for the establishment (for availability checking)
+      // We only get the schedules without client info for privacy
+      const { data } = await supabase
+        .from("appointments")
+        .select("id, scheduled_at, duration_minutes, professional_id, service_id, status")
+        .eq("establishment_id", establishment.id)
+        .in("status", ["pending", "confirmed"]);
+      
+      setAllAppointments(data || []);
+    } catch (error) {
+      console.error("Error fetching all appointments:", error);
+    }
+  };
+
   const handleLogout = () => {
     setClient(null);
     setIsAuthenticated(false);
@@ -303,6 +399,11 @@ const ClientPortal = () => {
     setLoyaltyPoints(null);
     setCpf("");
     setPhone("");
+    setCpfToCheck("");
+    setCpfChecked(false);
+    setClientExists(false);
+    setIsBooking(false);
+    setBookingStep(1);
   };
 
   const handleCancelAppointment = async (appointmentId: string) => {
@@ -317,6 +418,7 @@ const ClientPortal = () => {
       toast.success("Agendamento cancelado");
       if (client) {
         fetchClientData(client.id);
+        fetchAllAppointments();
       }
     } catch (error) {
       console.error("Error cancelling:", error);
@@ -333,6 +435,173 @@ const ClientPortal = () => {
     };
     const { label, variant } = variants[status] || { label: status, variant: "outline" as const };
     return <Badge variant={variant}>{label}</Badge>;
+  };
+
+  // Get professionals that can perform a given service
+  const getProfessionalsForService = (serviceId: string) => {
+    const profIds = professionalServices
+      .filter(ps => ps.service_id === serviceId)
+      .map(ps => ps.professional_id);
+    
+    // If no specific mapping, return all professionals
+    if (profIds.length === 0) {
+      return professionals;
+    }
+    
+    return professionals.filter(p => profIds.includes(p.id));
+  };
+
+  // Check if a time slot is available
+  const isTimeSlotAvailable = (date: Date, time: string, professionalId: string | null, durationMinutes: number) => {
+    const [hours, minutes] = time.split(":").map(Number);
+    const slotStart = setMinutes(setHours(date, hours), minutes);
+    const slotEnd = addMinutes(slotStart, durationMinutes);
+
+    return !allAppointments.some(apt => {
+      if (apt.status === "cancelled") return false;
+      if (professionalId && apt.professional_id !== professionalId) return false;
+      
+      const aptStart = parseISO(apt.scheduled_at);
+      const aptEnd = addMinutes(aptStart, apt.duration_minutes);
+      
+      // Check for overlap
+      return (isBefore(slotStart, aptEnd) && isAfter(slotEnd, aptStart));
+    });
+  };
+
+  // Generate available time slots for a date and optional professional
+  const generateAvailableSlots = (date: Date, professionalId: string | null, durationMinutes: number) => {
+    const slots: { time: string; available: boolean }[] = [];
+    const now = new Date();
+    
+    for (let hour = 8; hour < 20; hour++) {
+      for (const minute of [0, 30]) {
+        const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+        const slotTime = setMinutes(setHours(date, hour), minute);
+        
+        // Skip past times for today
+        if (isBefore(slotTime, now)) {
+          continue;
+        }
+        
+        const available = isTimeSlotAvailable(date, time, professionalId, durationMinutes);
+        slots.push({ time, available });
+      }
+    }
+    return slots;
+  };
+
+  // Find alternative suggestions when a slot is not available
+  const findAlternatives = (date: Date, time: string, serviceId: string, preferredProfessionalId: string | null) => {
+    const service = services.find(s => s.id === serviceId);
+    if (!service) return { sameProf: [], otherProfs: [] };
+
+    const availableProfs = getProfessionalsForService(serviceId);
+    const [hours, minutes] = time.split(":").map(Number);
+    
+    // Same professional, different times on same day
+    const sameProfAlternatives: { time: string; professional: Professional }[] = [];
+    if (preferredProfessionalId) {
+      const prof = professionals.find(p => p.id === preferredProfessionalId);
+      if (prof) {
+        // Check 2 hours before and after
+        for (let h = Math.max(8, hours - 2); h <= Math.min(19, hours + 2); h++) {
+          for (const m of [0, 30]) {
+            const altTime = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+            if (altTime !== time && isTimeSlotAvailable(date, altTime, preferredProfessionalId, service.duration_minutes)) {
+              sameProfAlternatives.push({ time: altTime, professional: prof });
+            }
+          }
+        }
+      }
+    }
+
+    // Other professionals at the same time
+    const otherProfAlternatives: { time: string; professional: Professional }[] = [];
+    for (const prof of availableProfs) {
+      if (prof.id !== preferredProfessionalId) {
+        if (isTimeSlotAvailable(date, time, prof.id, service.duration_minutes)) {
+          otherProfAlternatives.push({ time, professional: prof });
+        }
+      }
+    }
+
+    return { sameProf: sameProfAlternatives.slice(0, 3), otherProfs: otherProfAlternatives.slice(0, 3) };
+  };
+
+  const handleBookingSubmit = async () => {
+    if (!establishment || !client || !selectedService || !selectedDate || !selectedTime) {
+      toast.error("Complete todos os campos obrigatórios");
+      return;
+    }
+
+    if (establishment.cancellation_policy && !policyAccepted) {
+      toast.error("Você precisa aceitar a política de cancelamento");
+      return;
+    }
+
+    // Find a professional if not selected
+    let professionalId = selectedProfessional?.id;
+    if (!professionalId) {
+      const availableProfs = getProfessionalsForService(selectedService.id);
+      const firstAvailable = availableProfs.find(p => 
+        isTimeSlotAvailable(selectedDate, selectedTime, p.id, selectedService.duration_minutes)
+      );
+      if (firstAvailable) {
+        professionalId = firstAvailable.id;
+      } else {
+        toast.error("Nenhum profissional disponível para este horário");
+        return;
+      }
+    }
+
+    setConfirming(true);
+
+    try {
+      const [hours, minutes] = selectedTime.split(":").map(Number);
+      const scheduledAt = setMinutes(setHours(selectedDate, hours), minutes);
+
+      const { error } = await supabase.from("appointments").insert({
+        establishment_id: establishment.id,
+        service_id: selectedService.id,
+        professional_id: professionalId,
+        scheduled_at: scheduledAt.toISOString(),
+        duration_minutes: selectedService.duration_minutes,
+        price: selectedService.price,
+        client_name: client.name,
+        client_phone: client.phone,
+        client_id: client.id,
+        status: "pending",
+      });
+
+      if (error) throw error;
+
+      toast.success("Agendamento realizado com sucesso!");
+      setIsBooking(false);
+      setBookingStep(1);
+      setSelectedService(null);
+      setSelectedProfessional(null);
+      setSelectedDate(null);
+      setSelectedTime(null);
+      setPolicyAccepted(false);
+      fetchClientData(client.id);
+      fetchAllAppointments();
+    } catch (error) {
+      console.error("Error creating appointment:", error);
+      toast.error("Erro ao criar agendamento");
+    } finally {
+      setConfirming(false);
+    }
+  };
+
+  // Generate dates for date picker
+  const generateDates = () => {
+    const dates: Date[] = [];
+    const today = startOfDay(new Date());
+    for (let i = 0; i < 14; i++) {
+      dates.push(addDays(today, i));
+    }
+    return dates;
   };
 
   if (loading) {
@@ -374,16 +643,92 @@ const ClientPortal = () => {
 
           <Card>
             <CardHeader>
-              <CardTitle>{isRegistering ? "Novo Cadastro" : "Acesse sua conta"}</CardTitle>
+              <CardTitle>
+                {!cpfChecked ? "Identificação" : clientExists ? "Acesse sua conta" : "Novo Cadastro"}
+              </CardTitle>
               <CardDescription>
-                {isRegistering 
-                  ? "Preencha seus dados para se cadastrar"
-                  : "Entre com seu CPF e celular"
+                {!cpfChecked 
+                  ? "Informe seu CPF para verificarmos seu cadastro"
+                  : clientExists 
+                    ? "Confirme seu telefone para continuar"
+                    : "Preencha seus dados para se cadastrar"
                 }
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {isRegistering ? (
+              {!cpfChecked ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="cpfCheck">CPF</Label>
+                    <div className="relative">
+                      <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="cpfCheck"
+                        value={cpfToCheck}
+                        onChange={(e) => setCpfToCheck(formatCpf(e.target.value))}
+                        placeholder="000.000.000-00"
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  <Button 
+                    className="w-full" 
+                    onClick={handleCheckCpf}
+                    disabled={checkingCpf || cpfToCheck.replace(/\D/g, "").length !== 11}
+                  >
+                    {checkingCpf ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : null}
+                    Verificar CPF
+                  </Button>
+                </>
+              ) : clientExists ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="cpf">CPF</Label>
+                    <div className="relative">
+                      <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="cpf"
+                        value={cpf}
+                        readOnly
+                        className="pl-10 bg-muted"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phone">Celular cadastrado</Label>
+                    <div className="relative">
+                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="phone"
+                        value={phone}
+                        onChange={(e) => setPhone(formatPhone(e.target.value))}
+                        placeholder="(11) 99999-9999"
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  <Button 
+                    className="w-full" 
+                    onClick={handleLogin}
+                    disabled={authenticating}
+                  >
+                    {authenticating ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : null}
+                    Entrar
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    className="w-full"
+                    onClick={() => { setCpfChecked(false); setCpfToCheck(""); }}
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Voltar
+                  </Button>
+                </>
+              ) : (
                 <>
                   <div className="space-y-2">
                     <Label htmlFor="name">Nome Completo</Label>
@@ -401,9 +746,8 @@ const ClientPortal = () => {
                       <Input
                         id="regCpf"
                         value={registerCpf}
-                        onChange={(e) => setRegisterCpf(formatCpf(e.target.value))}
-                        placeholder="000.000.000-00"
-                        className="pl-10"
+                        readOnly
+                        className="pl-10 bg-muted"
                       />
                     </div>
                   </div>
@@ -433,70 +777,301 @@ const ClientPortal = () => {
                   <Button 
                     variant="ghost" 
                     className="w-full"
-                    onClick={() => setIsRegistering(false)}
+                    onClick={() => { setCpfChecked(false); setCpfToCheck(""); }}
                   >
-                    Já tenho cadastro
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="cpf">CPF</Label>
-                    <div className="relative">
-                      <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="cpf"
-                        value={cpf}
-                        onChange={(e) => setCpf(formatCpf(e.target.value))}
-                        placeholder="000.000.000-00"
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Celular</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="phone"
-                        value={phone}
-                        onChange={(e) => setPhone(formatPhone(e.target.value))}
-                        placeholder="(11) 99999-9999"
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  <Button 
-                    className="w-full" 
-                    onClick={handleLogin}
-                    disabled={authenticating}
-                  >
-                    {authenticating ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : null}
-                    Entrar
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    className="w-full"
-                    onClick={() => setIsRegistering(true)}
-                  >
-                    Não tenho cadastro
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Voltar
                   </Button>
                 </>
               )}
             </CardContent>
           </Card>
+        </div>
+      </div>
+    );
+  }
 
-          <div className="mt-6 text-center">
-            <Button 
-              variant="link" 
-              onClick={() => navigate(`/${slug}`)}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Voltar para agendamento
-            </Button>
-          </div>
+  // Booking flow
+  if (isBooking) {
+    const availableSlots = selectedDate && selectedService 
+      ? generateAvailableSlots(selectedDate, selectedProfessional?.id || null, selectedService.duration_minutes)
+      : [];
+
+    const alternatives = selectedDate && selectedTime && selectedService && !isTimeSlotAvailable(
+      selectedDate, selectedTime, selectedProfessional?.id || null, selectedService.duration_minutes
+    ) ? findAlternatives(selectedDate, selectedTime, selectedService.id, selectedProfessional?.id || null) : null;
+
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background py-8 px-4">
+        <div className="max-w-2xl mx-auto">
+          <Button variant="ghost" onClick={() => setIsBooking(false)} className="mb-4">
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Voltar ao Portal
+          </Button>
+
+          <h1 className="text-2xl font-display font-bold text-foreground mb-6">
+            Novo Agendamento
+          </h1>
+
+          {/* Step 1: Select Service */}
+          {bookingStep === 1 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Scissors className="h-5 w-5 text-primary" />
+                  Escolha o Serviço
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {services.map((service) => (
+                  <div
+                    key={service.id}
+                    onClick={() => setSelectedService(service)}
+                    className={`p-4 rounded-lg border cursor-pointer transition-all hover:border-primary/50 ${
+                      selectedService?.id === service.id
+                        ? "border-primary bg-primary/5"
+                        : "border-border"
+                    }`}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="font-semibold">{service.name}</h3>
+                        {service.description && (
+                          <p className="text-sm text-muted-foreground">{service.description}</p>
+                        )}
+                        <p className="text-sm text-muted-foreground mt-1">
+                          <Clock className="h-3 w-3 inline mr-1" />
+                          {service.duration_minutes} min
+                        </p>
+                      </div>
+                      {establishment.show_catalog && (
+                        <p className="font-bold text-accent">
+                          R$ {Number(service.price).toFixed(2)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                <div className="flex justify-end mt-6">
+                  <Button onClick={() => setBookingStep(2)} disabled={!selectedService}>
+                    Próximo <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 2: Select Date and Time */}
+          {bookingStep === 2 && selectedService && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-primary" />
+                  Escolha a Data e Horário
+                </CardTitle>
+                <CardDescription>
+                  Serviço: {selectedService.name} ({selectedService.duration_minutes} min)
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Optional Professional Selection */}
+                <div>
+                  <Label className="text-base font-semibold mb-3 block">Profissional (opcional)</Label>
+                  <Select 
+                    value={selectedProfessional?.id || "any"}
+                    onValueChange={(v) => {
+                      if (v === "any") {
+                        setSelectedProfessional(null);
+                      } else {
+                        const prof = professionals.find(p => p.id === v);
+                        setSelectedProfessional(prof || null);
+                      }
+                      setSelectedTime(null);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Qualquer profissional disponível" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="any">Qualquer profissional disponível</SelectItem>
+                      {getProfessionalsForService(selectedService.id).map((prof) => (
+                        <SelectItem key={prof.id} value={prof.id}>{prof.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Date Selection */}
+                <div>
+                  <Label className="text-base font-semibold mb-3 block">Data</Label>
+                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                    {generateDates().map((date) => (
+                      <button
+                        key={date.toISOString()}
+                        onClick={() => { setSelectedDate(date); setSelectedTime(null); }}
+                        className={`p-2 rounded-lg border text-center transition-all hover:border-primary/50 ${
+                          selectedDate?.toDateString() === date.toDateString()
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border"
+                        }`}
+                      >
+                        <p className="text-xs uppercase">
+                          {format(date, "EEE", { locale: ptBR })}
+                        </p>
+                        <p className="text-lg font-bold">{format(date, "dd")}</p>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Time Selection */}
+                {selectedDate && (
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">Horário</Label>
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                      {availableSlots.map(({ time, available }) => (
+                        <button
+                          key={time}
+                          onClick={() => available && setSelectedTime(time)}
+                          disabled={!available}
+                          className={`p-2 rounded-lg border text-center transition-all ${
+                            !available 
+                              ? "border-muted bg-muted text-muted-foreground cursor-not-allowed"
+                              : selectedTime === time
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-border hover:border-primary/50"
+                          }`}
+                        >
+                          {available ? time : "Ocupado"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Alternative suggestions */}
+                {alternatives && (alternatives.sameProf.length > 0 || alternatives.otherProfs.length > 0) && (
+                  <div className="bg-muted p-4 rounded-lg">
+                    <p className="font-semibold flex items-center gap-2 mb-3">
+                      <AlertCircle className="h-4 w-4 text-warning" />
+                      Horário indisponível. Sugestões:
+                    </p>
+                    {alternatives.sameProf.length > 0 && (
+                      <div className="mb-3">
+                        <p className="text-sm text-muted-foreground mb-2">Mesmo profissional, outros horários:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {alternatives.sameProf.map((alt, i) => (
+                            <Button
+                              key={i}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedTime(alt.time)}
+                            >
+                              {alt.time}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {alternatives.otherProfs.length > 0 && (
+                      <div>
+                        <p className="text-sm text-muted-foreground mb-2">Outros profissionais no mesmo horário:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {alternatives.otherProfs.map((alt, i) => (
+                            <Button
+                              key={i}
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedProfessional(alt.professional);
+                                setSelectedTime(alt.time);
+                              }}
+                            >
+                              {alt.professional.name}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex justify-between mt-6">
+                  <Button variant="outline" onClick={() => setBookingStep(1)}>
+                    <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
+                  </Button>
+                  <Button
+                    onClick={() => setBookingStep(3)}
+                    disabled={!selectedDate || !selectedTime}
+                  >
+                    Próximo <ChevronRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Step 3: Confirmation */}
+          {bookingStep === 3 && selectedService && selectedDate && selectedTime && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="h-5 w-5 text-primary" />
+                  Confirme seu Agendamento
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Summary */}
+                <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+                  <p><strong>Serviço:</strong> {selectedService.name}</p>
+                  <p><strong>Duração:</strong> {selectedService.duration_minutes} minutos</p>
+                  {establishment.show_catalog && (
+                    <p><strong>Valor:</strong> R$ {Number(selectedService.price).toFixed(2)}</p>
+                  )}
+                  <p><strong>Profissional:</strong> {selectedProfessional?.name || "Será definido conforme disponibilidade"}</p>
+                  <p><strong>Data:</strong> {format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
+                  <p><strong>Horário:</strong> {selectedTime}</p>
+                </div>
+
+                {/* Cancellation Policy */}
+                {establishment.cancellation_policy && (
+                  <div className="border border-border rounded-lg p-4">
+                    <h4 className="font-semibold flex items-center gap-2 mb-2">
+                      <AlertCircle className="h-4 w-4 text-warning" />
+                      Política de Cancelamento
+                    </h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {establishment.cancellation_policy}
+                    </p>
+                    <label className="flex items-center gap-2 mt-4 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={policyAccepted}
+                        onChange={(e) => setPolicyAccepted(e.target.checked)}
+                        className="rounded border-border"
+                      />
+                      <span className="text-sm">Li e aceito a política de cancelamento</span>
+                    </label>
+                  </div>
+                )}
+
+                <div className="flex justify-between mt-6">
+                  <Button variant="outline" onClick={() => setBookingStep(2)}>
+                    <ChevronLeft className="mr-2 h-4 w-4" /> Voltar
+                  </Button>
+                  <Button
+                    onClick={handleBookingSubmit}
+                    disabled={confirming || (!!establishment.cancellation_policy && !policyAccepted)}
+                  >
+                    {confirming ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : null}
+                    Confirmar Agendamento
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     );
@@ -522,11 +1097,15 @@ const ClientPortal = () => {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <Tabs defaultValue="appointments" className="space-y-6">
+        <Tabs defaultValue="booking" className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="appointments">
+            <TabsTrigger value="booking">
               <Calendar className="h-4 w-4 mr-2 hidden sm:inline" />
-              Agenda
+              Agendar
+            </TabsTrigger>
+            <TabsTrigger value="appointments">
+              <Clock className="h-4 w-4 mr-2 hidden sm:inline" />
+              Meus
             </TabsTrigger>
             {establishment.show_catalog && (
               <TabsTrigger value="services">
@@ -538,20 +1117,31 @@ const ClientPortal = () => {
               <Star className="h-4 w-4 mr-2 hidden sm:inline" />
               Fidelidade
             </TabsTrigger>
-            <TabsTrigger value="promotions">
-              <Gift className="h-4 w-4 mr-2 hidden sm:inline" />
-              Promoções
-            </TabsTrigger>
           </TabsList>
 
-          {/* Appointments Tab */}
-          <TabsContent value="appointments" className="space-y-4">
+          {/* Booking Tab */}
+          <TabsContent value="booking" className="space-y-4">
             <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold">Meus Agendamentos</h2>
-              <Button onClick={() => navigate(`/${slug}`)}>
-                Novo Agendamento
-              </Button>
+              <h2 className="text-lg font-semibold">Agendar Serviço</h2>
             </div>
+            
+            <Card>
+              <CardContent className="p-6 text-center">
+                <Calendar className="h-12 w-12 text-primary mx-auto mb-4" />
+                <h3 className="font-semibold mb-2">Pronto para agendar?</h3>
+                <p className="text-muted-foreground mb-4">
+                  Escolha o serviço, data e horário de sua preferência
+                </p>
+                <Button onClick={() => { setIsBooking(true); setBookingStep(1); }}>
+                  Iniciar Agendamento
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* My Appointments Tab */}
+          <TabsContent value="appointments" className="space-y-4">
+            <h2 className="text-lg font-semibold">Meus Agendamentos</h2>
 
             {appointments.length === 0 ? (
               <Card>
@@ -586,9 +1176,11 @@ const ClientPortal = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
-                        <p className="font-bold text-accent">
-                          R$ {Number(appointment.price).toFixed(2)}
-                        </p>
+                        {establishment.show_catalog && (
+                          <p className="font-bold text-accent">
+                            R$ {Number(appointment.price).toFixed(2)}
+                          </p>
+                        )}
                         {appointment.status === "pending" && (
                           <Button
                             variant="destructive"
@@ -719,53 +1311,6 @@ const ClientPortal = () => {
                   </div>
                 )}
               </>
-            )}
-          </TabsContent>
-
-          {/* Promotions Tab */}
-          <TabsContent value="promotions" className="space-y-4">
-            <h2 className="text-lg font-semibold">Promoções Ativas</h2>
-            
-            {promotions.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <Gift className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">Nenhuma promoção ativa no momento</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid gap-4 md:grid-cols-2">
-                {promotions.map((promo) => (
-                  <Card key={promo.id} className="border-accent/30">
-                    <CardContent className="p-4">
-                      <div className="flex items-start gap-3">
-                        <div className="p-2 rounded-full bg-accent/10">
-                          <Gift className="h-5 w-5 text-accent" />
-                        </div>
-                        <div className="flex-1">
-                          <h4 className="font-semibold">{promo.name}</h4>
-                          {promo.description && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                              {promo.description}
-                            </p>
-                          )}
-                          <div className="mt-2 flex items-center gap-2">
-                            <Badge variant="outline">
-                              {promo.discount_type === "percentage" 
-                                ? `${promo.discount_value}% OFF`
-                                : `R$ ${Number(promo.discount_value).toFixed(2)} OFF`
-                              }
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                              Até {format(new Date(promo.end_date), "dd/MM/yyyy")}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
             )}
           </TabsContent>
         </Tabs>
