@@ -45,7 +45,7 @@ interface Establishment {
 export default function InternoAgenda() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, role, loading: authLoading } = useAuth();
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -53,6 +53,10 @@ export default function InternoAgenda() {
   const [professionals, setProfessionals] = useState<Professional[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<"day" | "week" | "month" | "year">("week");
+  
+  // Professional-specific state
+  const [currentProfessionalId, setCurrentProfessionalId] = useState<string | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
   
   // Dialog states
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
@@ -91,6 +95,13 @@ export default function InternoAgenda() {
     }
   }, [establishment?.id, currentDate, viewMode]);
 
+  // Auto-set filter to current professional's agenda if user is a professional
+  useEffect(() => {
+    if (role === "professional" && currentProfessionalId && filterProfessional === "all") {
+      setFilterProfessional(currentProfessionalId);
+    }
+  }, [role, currentProfessionalId]);
+
   const fetchEstablishment = async () => {
     try {
       const { data, error } = await supabase
@@ -104,9 +115,26 @@ export default function InternoAgenda() {
         return;
       }
 
-      if (data.owner_id !== user?.id) {
-        navigate("/");
-        return;
+      // Check if user is owner OR a professional of this establishment
+      const ownerCheck = data.owner_id === user?.id;
+      setIsOwner(ownerCheck);
+      
+      if (!ownerCheck) {
+        // Check if user is a professional of this establishment
+        const { data: professional } = await supabase
+          .from("professionals")
+          .select("id")
+          .eq("establishment_id", data.id)
+          .eq("user_id", user?.id)
+          .maybeSingle();
+        
+        if (!professional) {
+          navigate("/");
+          return;
+        }
+        
+        // Store the professional's ID for filtering
+        setCurrentProfessionalId(professional.id);
       }
 
       setEstablishment(data);
@@ -440,12 +468,17 @@ export default function InternoAgenda() {
                   ))}
                 </SelectContent>
               </Select>
-              <Select value={filterProfessional} onValueChange={setFilterProfessional}>
+              <Select 
+                value={filterProfessional} 
+                onValueChange={setFilterProfessional}
+                disabled={role === "professional" && !isOwner}
+              >
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="Profissional" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Todos Profissionais</SelectItem>
+                  {/* Only show "Todos" option for owners */}
+                  {isOwner && <SelectItem value="all">Todos Profissionais</SelectItem>}
                   {professionals.map(p => (
                     <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
                   ))}

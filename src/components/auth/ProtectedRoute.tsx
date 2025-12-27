@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  allowedRoles?: ("super_admin" | "establishment" | "client")[];
+  allowedRoles?: ("super_admin" | "establishment" | "client" | "professional")[];
   requireRole?: boolean;
 }
 
@@ -50,6 +50,9 @@ export function ProtectedRoute({
       return <Navigate to="/dashboard" replace />;
     } else if (role === "client") {
       return <Navigate to="/meus-agendamentos" replace />;
+    } else if (role === "professional") {
+      // Professionals need to be redirected to their establishment's interno page
+      return <Navigate to="/" replace />;
     }
     return <Navigate to="/" replace />;
   }

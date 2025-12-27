@@ -31,26 +31,28 @@ interface InternoLayoutProps {
 export function InternoLayout({ children }: InternoLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [establishmentName, setEstablishmentName] = useState("");
+  const [isOwner, setIsOwner] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
-  const { user, signOut } = useAuth();
+  const { user, role, signOut } = useAuth();
 
   useEffect(() => {
-    if (slug) {
+    if (slug && user) {
       fetchEstablishment();
     }
-  }, [slug]);
+  }, [slug, user]);
 
   const fetchEstablishment = async () => {
     const { data } = await supabase
       .from("establishments")
-      .select("name")
+      .select("name, owner_id")
       .eq("slug", slug)
       .single();
     
     if (data) {
       setEstablishmentName(data.name);
+      setIsOwner(data.owner_id === user?.id);
     }
   };
 
@@ -90,13 +92,16 @@ export function InternoLayout({ children }: InternoLayoutProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => navigate(`/portal/${slug}`)}
-          >
-            Portal Admin
-          </Button>
+          {/* Only show Portal Admin button to establishment owners and super_admin */}
+          {(isOwner || role === "super_admin") && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => navigate(`/portal/${slug}`)}
+            >
+              Portal Admin
+            </Button>
+          )}
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

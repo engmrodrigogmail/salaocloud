@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, ReactNode, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 
-type ImpersonatedRole = "establishment" | "client" | null;
+type ImpersonatedRole = "establishment" | "client" | "professional" | null;
 
 interface ImpersonationContextType {
   impersonatedRole: ImpersonatedRole;
@@ -9,7 +9,7 @@ interface ImpersonationContextType {
   impersonatedEstablishmentId: string | null;
   startImpersonation: (role: ImpersonatedRole, establishmentId?: string) => void;
   stopImpersonation: () => void;
-  effectiveRole: "super_admin" | "establishment" | "client" | null;
+  effectiveRole: "super_admin" | "establishment" | "client" | "professional" | null;
 }
 
 const ImpersonationContext = createContext<ImpersonationContextType | undefined>(undefined);
