@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/logo.webp";
+import logo from "@/assets/logo-salaocloud.png";
 
 interface InternoLayoutProps {
   children: React.ReactNode;
