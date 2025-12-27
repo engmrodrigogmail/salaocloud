@@ -939,7 +939,12 @@ export type Database = {
     }
     Functions: {
       format_cpf: { Args: { cpf_raw: string }; Returns: string }
+      get_professional_establishment_id: {
+        Args: { _user_id: string }
+        Returns: string
+      }
       get_user_establishment_id: { Args: { _user_id: string }; Returns: string }
+      get_user_professional_id: { Args: { _user_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -949,7 +954,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "super_admin" | "establishment" | "client"
+      app_role: "super_admin" | "establishment" | "client" | "professional"
       appointment_status: "pending" | "confirmed" | "completed" | "cancelled"
       establishment_status: "pending" | "active" | "suspended"
       subscription_plan: "basic" | "professional" | "premium" | "trial"
@@ -1080,7 +1085,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "establishment", "client"],
+      app_role: ["super_admin", "establishment", "client", "professional"],
       appointment_status: ["pending", "confirmed", "completed", "cancelled"],
       establishment_status: ["pending", "active", "suspended"],
       subscription_plan: ["basic", "professional", "premium", "trial"],
