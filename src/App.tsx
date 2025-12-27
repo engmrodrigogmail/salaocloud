@@ -12,11 +12,9 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
-import BookingPage from "./pages/booking/BookingPage";
-import ClientDashboard from "./pages/client/ClientDashboard";
 import ClientPortal from "./pages/client/ClientPortal";
 
-// Admin Pages
+// Admin Pages (SaaS Super Admin)
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminEstablishments from "./pages/admin/Establishments";
 import AdminUsers from "./pages/admin/Users";
@@ -25,15 +23,17 @@ import AdminPlans from "./pages/admin/Plans";
 import AdminStripe from "./pages/admin/Stripe";
 import AdminSettings from "./pages/admin/Settings";
 
-// Dashboard Pages
-import EstablishmentDashboard from "./pages/dashboard/Dashboard";
-import Services from "./pages/dashboard/Services";
-import Professionals from "./pages/dashboard/Professionals";
-import Agenda from "./pages/dashboard/Agenda";
-import Clients from "./pages/dashboard/Clients";
-import Loyalty from "./pages/dashboard/Loyalty";
-import Promotions from "./pages/dashboard/Promotions";
-import EstablishmentSettings from "./pages/dashboard/Settings";
+// Portal Pages (Establishment Admin - configuration & settings)
+import PortalDashboard from "./pages/portal/Dashboard";
+import PortalServices from "./pages/portal/Services";
+import PortalProfessionals from "./pages/portal/Professionals";
+import PortalClients from "./pages/portal/Clients";
+import PortalLoyalty from "./pages/portal/Loyalty";
+import PortalPromotions from "./pages/portal/Promotions";
+import PortalSettings from "./pages/portal/Settings";
+
+// Interno Pages (Establishment Internal - operations)
+import InternoDashboard from "./pages/interno/Dashboard";
 
 const queryClient = new QueryClient();
 
@@ -60,7 +60,7 @@ const App = () => (
                 }
               />
 
-              {/* Super Admin routes */}
+              {/* Super Admin routes (SaaS administration) */}
               <Route
                 path="/admin"
                 element={
@@ -118,87 +118,20 @@ const App = () => (
                 }
               />
 
-              {/* Establishment routes */}
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute allowedRoles={["super_admin", "establishment"]}>
-                    <EstablishmentDashboard />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/agenda"
-                element={
-                  <ProtectedRoute allowedRoles={["super_admin", "establishment"]}>
-                    <Agenda />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/profissionais"
-                element={
-                  <ProtectedRoute allowedRoles={["super_admin", "establishment"]}>
-                    <Professionals />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/servicos"
-                element={
-                  <ProtectedRoute allowedRoles={["super_admin", "establishment"]}>
-                    <Services />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/clientes"
-                element={
-                  <ProtectedRoute allowedRoles={["super_admin", "establishment"]}>
-                    <Clients />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/fidelidade"
-                element={
-                  <ProtectedRoute allowedRoles={["super_admin", "establishment"]}>
-                    <Loyalty />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/promocoes"
-                element={
-                  <ProtectedRoute allowedRoles={["super_admin", "establishment"]}>
-                    <Promotions />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/dashboard/configuracoes"
-                element={
-                  <ProtectedRoute allowedRoles={["super_admin", "establishment"]}>
-                    <EstablishmentSettings />
-                  </ProtectedRoute>
-                }
-              />
+              {/* Portal routes - Establishment Admin (configuration & settings) */}
+              <Route path="/portal/:slug" element={<PortalDashboard />} />
+              <Route path="/portal/:slug/profissionais" element={<PortalProfessionals />} />
+              <Route path="/portal/:slug/servicos" element={<PortalServices />} />
+              <Route path="/portal/:slug/clientes" element={<PortalClients />} />
+              <Route path="/portal/:slug/fidelidade" element={<PortalLoyalty />} />
+              <Route path="/portal/:slug/promocoes" element={<PortalPromotions />} />
+              <Route path="/portal/:slug/configuracoes" element={<PortalSettings />} />
 
-              {/* Public booking page */}
-              <Route path="/agendar/:slug" element={<BookingPage />} />
-              
-              {/* Client portal for establishments */}
-              <Route path="/cliente/:slug" element={<ClientPortal />} />
+              {/* Interno routes - Establishment Internal Operations */}
+              <Route path="/interno/:slug" element={<InternoDashboard />} />
 
-              {/* Client routes */}
-              <Route
-                path="/meus-agendamentos"
-                element={
-                  <ProtectedRoute allowedRoles={["super_admin", "client"]}>
-                    <ClientDashboard />
-                  </ProtectedRoute>
-                }
-              />
+              {/* Public client portal - /{slug} opens client booking page */}
+              <Route path="/:slug" element={<ClientPortal />} />
 
               {/* Catch-all */}
               <Route path="*" element={<NotFound />} />
