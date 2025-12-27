@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { Tab, TabWithDetails, TabItem, TabPayment } from "@/types/tabs";
+import { useCommissionCalculator } from "./useCommissionCalculator";
 
 export function useTabs(establishmentId: string | null) {
+  const { processTabCommissions } = useCommissionCalculator(establishmentId);
   const [tabs, setTabs] = useState<TabWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -91,7 +93,7 @@ export function useTabs(establishmentId: string | null) {
     }
   };
 
-  const closeTab = async (tabId: string, payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[]) => {
+  const closeTab = async (tabId: string, payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[], items: TabItem[] = []) => {
     try {
       // Insert payments
       if (payments.length > 0) {
@@ -99,6 +101,14 @@ export function useTabs(establishmentId: string | null) {
           .from("tab_payments")
           .insert(payments.map(p => ({ ...p, tab_id: tabId })));
         if (paymentsError) throw paymentsError;
+      }
+
+      // Calculate and save commissions automatically
+      if (items.length > 0) {
+        const result = await processTabCommissions(tabId, items);
+        if (result.count > 0) {
+          console.log(`Generated ${result.count} commission(s) totaling R$ ${result.total.toFixed(2)}`);
+        }
       }
 
       // Close tab
