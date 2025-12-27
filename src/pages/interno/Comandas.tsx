@@ -129,7 +129,7 @@ export default function InternoComandas() {
 
   const handleCheckout = async (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[]) => {
     if (!selectedTab) return;
-    const success = await closeTab(selectedTab.id, payments);
+    const success = await closeTab(selectedTab.id, payments, items);
     if (success) { setCheckoutOpen(false); setSelectedTab(null); }
   };
 
