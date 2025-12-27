@@ -451,6 +451,59 @@ export type Database = {
           },
         ]
       }
+      payment_methods: {
+        Row: {
+          allows_installments: boolean
+          created_at: string
+          display_order: number | null
+          establishment_id: string
+          has_interest: boolean | null
+          id: string
+          interest_rate: number | null
+          is_active: boolean
+          max_installments: number | null
+          name: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          allows_installments?: boolean
+          created_at?: string
+          display_order?: number | null
+          establishment_id: string
+          has_interest?: boolean | null
+          id?: string
+          interest_rate?: number | null
+          is_active?: boolean
+          max_installments?: number | null
+          name: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          allows_installments?: boolean
+          created_at?: string
+          display_order?: number | null
+          establishment_id?: string
+          has_interest?: boolean | null
+          id?: string
+          interest_rate?: number | null
+          is_active?: boolean
+          max_installments?: number | null
+          name?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payment_methods_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       platform_coupon_redemptions: {
         Row: {
           applied_to_plan: string | null
@@ -561,6 +614,77 @@ export type Database = {
           valid_until?: string | null
         }
         Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          key: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          establishment_id: string
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          establishment_id: string
+          id?: string
+          is_active?: boolean
+          name: string
+          price?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          establishment_id?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "products_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       professional_blocked_times: {
         Row: {
@@ -911,6 +1035,229 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      tab_items: {
+        Row: {
+          added_by: string | null
+          created_at: string
+          description: string | null
+          id: string
+          item_type: string
+          name: string
+          product_id: string | null
+          professional_id: string | null
+          quantity: number
+          service_id: string | null
+          tab_id: string
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          added_by?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_type?: string
+          name: string
+          product_id?: string | null
+          professional_id?: string | null
+          quantity?: number
+          service_id?: string | null
+          tab_id: string
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          added_by?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          item_type?: string
+          name?: string
+          product_id?: string | null
+          professional_id?: string | null
+          quantity?: number
+          service_id?: string | null
+          tab_id?: string
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tab_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tab_items_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tab_items_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tab_items_tab_id_fkey"
+            columns: ["tab_id"]
+            isOneToOne: false
+            referencedRelation: "tabs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tab_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          has_interest: boolean | null
+          id: string
+          installments: number | null
+          interest_amount: number | null
+          notes: string | null
+          payment_method_id: string | null
+          payment_method_name: string
+          tab_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          has_interest?: boolean | null
+          id?: string
+          installments?: number | null
+          interest_amount?: number | null
+          notes?: string | null
+          payment_method_id?: string | null
+          payment_method_name: string
+          tab_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          has_interest?: boolean | null
+          id?: string
+          installments?: number | null
+          interest_amount?: number | null
+          notes?: string | null
+          payment_method_id?: string | null
+          payment_method_name?: string
+          tab_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tab_payments_payment_method_id_fkey"
+            columns: ["payment_method_id"]
+            isOneToOne: false
+            referencedRelation: "payment_methods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tab_payments_tab_id_fkey"
+            columns: ["tab_id"]
+            isOneToOne: false
+            referencedRelation: "tabs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tabs: {
+        Row: {
+          appointment_id: string | null
+          client_id: string | null
+          client_name: string
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          created_by: string | null
+          discount_amount: number | null
+          discount_type: string | null
+          establishment_id: string
+          id: string
+          notes: string | null
+          opened_at: string
+          professional_id: string | null
+          status: string
+          subtotal: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          client_id?: string | null
+          client_name: string
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          discount_amount?: number | null
+          discount_type?: string | null
+          establishment_id: string
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          professional_id?: string | null
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          client_id?: string | null
+          client_name?: string
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          discount_amount?: number | null
+          discount_type?: string | null
+          establishment_id?: string
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          professional_id?: string | null
+          status?: string
+          subtotal?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tabs_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tabs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tabs_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tabs_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
