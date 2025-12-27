@@ -14,7 +14,7 @@ import {
   Loader2, Store, Scissors, Star, Gift, LogOut, Filter,
   ChevronLeft, ChevronRight, AlertCircle, FileText
 } from "lucide-react";
-import { format, addDays, setHours, setMinutes, startOfDay, isBefore, addMinutes, isAfter, parseISO } from "date-fns";
+import { format, addDays, setHours, setMinutes, startOfDay, isBefore, addMinutes, isAfter, parseISO, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -451,82 +451,72 @@ const ClientPortal = () => {
     return professionals.filter(p => profIds.includes(p.id));
   };
 
-  // Check if a time slot is available
-  const isTimeSlotAvailable = (date: Date, time: string, professionalId: string | null, durationMinutes: number) => {
+  // Check if a professional is available at a specific time slot considering service duration
+  const isProfessionalAvailable = (date: Date, time: string, professionalId: string, durationMinutes: number) => {
     const [hours, minutes] = time.split(":").map(Number);
     const slotStart = setMinutes(setHours(date, hours), minutes);
     const slotEnd = addMinutes(slotStart, durationMinutes);
 
     return !allAppointments.some(apt => {
       if (apt.status === "cancelled") return false;
-      if (professionalId && apt.professional_id !== professionalId) return false;
+      if (apt.professional_id !== professionalId) return false;
       
       const aptStart = parseISO(apt.scheduled_at);
       const aptEnd = addMinutes(aptStart, apt.duration_minutes);
       
-      // Check for overlap
+      // Check for overlap - professional must be completely free
       return (isBefore(slotStart, aptEnd) && isAfter(slotEnd, aptStart));
     });
   };
 
-  // Generate available time slots for a date and optional professional
-  const generateAvailableSlots = (date: Date, professionalId: string | null, durationMinutes: number) => {
-    const slots: { time: string; available: boolean }[] = [];
-    const now = new Date();
-    
-    for (let hour = 8; hour < 20; hour++) {
-      for (const minute of [0, 30]) {
-        const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-        const slotTime = setMinutes(setHours(date, hour), minute);
-        
-        // Skip past times for today
-        if (isBefore(slotTime, now)) {
-          continue;
-        }
-        
-        const available = isTimeSlotAvailable(date, time, professionalId, durationMinutes);
-        slots.push({ time, available });
-      }
+  // Check if a time slot is available (for any professional or specific one)
+  const isTimeSlotAvailable = (date: Date, time: string, professionalId: string | null, durationMinutes: number) => {
+    if (professionalId) {
+      return isProfessionalAvailable(date, time, professionalId, durationMinutes);
     }
-    return slots;
+    
+    // If no specific professional, check if at least one is available
+    const availableProfs = getProfessionalsForService(selectedService?.id || "");
+    return availableProfs.some(p => isProfessionalAvailable(date, time, p.id, durationMinutes));
   };
 
-  // Find alternative suggestions when a slot is not available
-  const findAlternatives = (date: Date, time: string, serviceId: string, preferredProfessionalId: string | null) => {
-    const service = services.find(s => s.id === serviceId);
-    if (!service) return { sameProf: [], otherProfs: [] };
+  // Get count of appointments for a professional on a given day
+  const getProfessionalDayLoad = (professionalId: string, date: Date) => {
+    return allAppointments.filter(apt => {
+      if (apt.status === "cancelled") return false;
+      if (apt.professional_id !== professionalId) return false;
+      const aptDate = parseISO(apt.scheduled_at);
+      return isSameDay(aptDate, date);
+    }).length;
+  };
 
+  // Auto-assign professional with load balancing
+  const autoAssignProfessional = (date: Date, time: string, serviceId: string, durationMinutes: number): Professional | null => {
     const availableProfs = getProfessionalsForService(serviceId);
-    const [hours, minutes] = time.split(":").map(Number);
     
-    // Same professional, different times on same day
-    const sameProfAlternatives: { time: string; professional: Professional }[] = [];
-    if (preferredProfessionalId) {
-      const prof = professionals.find(p => p.id === preferredProfessionalId);
-      if (prof) {
-        // Check 2 hours before and after
-        for (let h = Math.max(8, hours - 2); h <= Math.min(19, hours + 2); h++) {
-          for (const m of [0, 30]) {
-            const altTime = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
-            if (altTime !== time && isTimeSlotAvailable(date, altTime, preferredProfessionalId, service.duration_minutes)) {
-              sameProfAlternatives.push({ time: altTime, professional: prof });
-            }
-          }
-        }
-      }
-    }
+    // Filter only available professionals for this time slot
+    const freeProfs = availableProfs.filter(p => 
+      isProfessionalAvailable(date, time, p.id, durationMinutes)
+    );
+    
+    if (freeProfs.length === 0) return null;
+    
+    // Sort by day load (ascending) to balance appointments
+    freeProfs.sort((a, b) => {
+      const loadA = getProfessionalDayLoad(a.id, date);
+      const loadB = getProfessionalDayLoad(b.id, date);
+      return loadA - loadB;
+    });
+    
+    return freeProfs[0];
+  };
 
-    // Other professionals at the same time
-    const otherProfAlternatives: { time: string; professional: Professional }[] = [];
-    for (const prof of availableProfs) {
-      if (prof.id !== preferredProfessionalId) {
-        if (isTimeSlotAvailable(date, time, prof.id, service.duration_minutes)) {
-          otherProfAlternatives.push({ time, professional: prof });
-        }
-      }
-    }
-
-    return { sameProf: sameProfAlternatives.slice(0, 3), otherProfs: otherProfAlternatives.slice(0, 3) };
+  // Get max capacity for a time slot (how many professionals can handle the service)
+  const getSlotCapacity = (date: Date, time: string, serviceId: string, durationMinutes: number) => {
+    const availableProfs = getProfessionalsForService(serviceId);
+    return availableProfs.filter(p => 
+      isProfessionalAvailable(date, time, p.id, durationMinutes)
+    ).length;
   };
 
   const handleBookingSubmit = async () => {
@@ -540,17 +530,27 @@ const ClientPortal = () => {
       return;
     }
 
-    // Find a professional if not selected
+    // Find a professional - either selected or auto-assigned with load balancing
     let professionalId = selectedProfessional?.id;
+    let assignedProfessional = selectedProfessional;
+    
     if (!professionalId) {
-      const availableProfs = getProfessionalsForService(selectedService.id);
-      const firstAvailable = availableProfs.find(p => 
-        isTimeSlotAvailable(selectedDate, selectedTime, p.id, selectedService.duration_minutes)
+      assignedProfessional = autoAssignProfessional(
+        selectedDate, 
+        selectedTime, 
+        selectedService.id, 
+        selectedService.duration_minutes
       );
-      if (firstAvailable) {
-        professionalId = firstAvailable.id;
-      } else {
-        toast.error("Nenhum profissional disponível para este horário");
+      
+      if (!assignedProfessional) {
+        toast.error("Não há profissionais disponíveis para este horário. Por favor, escolha outro horário.");
+        return;
+      }
+      professionalId = assignedProfessional.id;
+    } else {
+      // Verify selected professional is still available
+      if (!isProfessionalAvailable(selectedDate, selectedTime, professionalId, selectedService.duration_minutes)) {
+        toast.error("Este profissional não está mais disponível neste horário. Por favor, escolha outro horário ou profissional.");
         return;
       }
     }
@@ -602,6 +602,68 @@ const ClientPortal = () => {
       dates.push(addDays(today, i));
     }
     return dates;
+  };
+
+  // Generate available time slots for a date and optional professional
+  const generateAvailableSlots = (date: Date, professionalId: string | null, durationMinutes: number) => {
+    const slots: { time: string; available: boolean; capacity: number }[] = [];
+    const now = new Date();
+    const serviceId = selectedService?.id || "";
+    
+    for (let hour = 8; hour < 20; hour++) {
+      for (const minute of [0, 30]) {
+        const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+        const slotTime = setMinutes(setHours(date, hour), minute);
+        
+        // Skip past times for today
+        if (isBefore(slotTime, now)) {
+          continue;
+        }
+        
+        const available = isTimeSlotAvailable(date, time, professionalId, durationMinutes);
+        const capacity = getSlotCapacity(date, time, serviceId, durationMinutes);
+        slots.push({ time, available, capacity });
+      }
+    }
+    return slots;
+  };
+
+  // Find alternative suggestions when a slot is not available
+  const findAlternatives = (date: Date, time: string, serviceId: string, preferredProfessionalId: string | null) => {
+    const service = services.find(s => s.id === serviceId);
+    if (!service) return { sameProf: [], otherProfs: [] };
+
+    const availableProfs = getProfessionalsForService(serviceId);
+    const [hours, minutes] = time.split(":").map(Number);
+    
+    // Same professional, different times on same day
+    const sameProfAlternatives: { time: string; professional: Professional }[] = [];
+    if (preferredProfessionalId) {
+      const prof = professionals.find(p => p.id === preferredProfessionalId);
+      if (prof) {
+        // Check 2 hours before and after
+        for (let h = Math.max(8, hours - 2); h <= Math.min(19, hours + 2); h++) {
+          for (const m of [0, 30]) {
+            const altTime = `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}`;
+            if (altTime !== time && isProfessionalAvailable(date, altTime, preferredProfessionalId, service.duration_minutes)) {
+              sameProfAlternatives.push({ time: altTime, professional: prof });
+            }
+          }
+        }
+      }
+    }
+
+    // Other professionals at the same time
+    const otherProfAlternatives: { time: string; professional: Professional }[] = [];
+    for (const prof of availableProfs) {
+      if (prof.id !== preferredProfessionalId) {
+        if (isProfessionalAvailable(date, time, prof.id, service.duration_minutes)) {
+          otherProfAlternatives.push({ time, professional: prof });
+        }
+      }
+    }
+
+    return { sameProf: sameProfAlternatives.slice(0, 3), otherProfs: otherProfAlternatives.slice(0, 3) };
   };
 
   if (loading) {
