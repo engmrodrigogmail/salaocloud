@@ -15,6 +15,7 @@ import {
   CreditCard,
   FolderKanban,
   Calendar,
+  DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -70,6 +71,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
     { href: `/portal/${slug}/categorias`, label: "Categorias", icon: FolderKanban },
     { href: `/portal/${slug}/fidelidade`, label: "Fidelidade", icon: Star },
     { href: `/portal/${slug}/promocoes`, label: "Promoções", icon: Gift },
+    { href: `/portal/${slug}/comissoes`, label: "Comissões", icon: DollarSign },
     { href: `/portal/${slug}/cupons`, label: "Cupons", icon: CreditCard },
     { href: `/portal/${slug}/configuracoes`, label: "Configurações", icon: Settings },
   ];

@@ -32,7 +32,7 @@ import PortalClients from "./pages/portal/Clients";
 import PortalLoyalty from "./pages/portal/Loyalty";
 import PortalPromotions from "./pages/portal/Promotions";
 import PortalSettings from "./pages/portal/Settings";
-
+import PortalCommissions from "./pages/portal/Commissions";
 // Interno Pages (Establishment Internal - operations)
 import InternoDashboard from "./pages/interno/Dashboard";
 import InternoAgenda from "./pages/interno/Agenda";
@@ -134,6 +134,7 @@ const App = () => (
               <Route path="/portal/:slug/fidelidade" element={<PortalLoyalty />} />
               <Route path="/portal/:slug/promocoes" element={<PortalPromotions />} />
               <Route path="/portal/:slug/configuracoes" element={<PortalSettings />} />
+              <Route path="/portal/:slug/comissoes" element={<PortalCommissions />} />
 
               {/* Interno routes - Establishment Internal Operations */}
               <Route path="/interno/:slug" element={<InternoDashboard />} />
