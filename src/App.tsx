@@ -36,6 +36,7 @@ import PortalSettings from "./pages/portal/Settings";
 // Interno Pages (Establishment Internal - operations)
 import InternoDashboard from "./pages/interno/Dashboard";
 import InternoAgenda from "./pages/interno/Agenda";
+import InternoComandas from "./pages/interno/Comandas";
 
 // Portal Agenda
 import PortalAgenda from "./pages/portal/Agenda";
@@ -137,6 +138,7 @@ const App = () => (
               {/* Interno routes - Establishment Internal Operations */}
               <Route path="/interno/:slug" element={<InternoDashboard />} />
               <Route path="/interno/:slug/agenda" element={<InternoAgenda />} />
+              <Route path="/interno/:slug/comandas" element={<InternoComandas />} />
 
               {/* Public client portal - /{slug} opens client booking page */}
               <Route path="/:slug" element={<ClientPortal />} />

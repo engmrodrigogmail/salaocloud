@@ -8,9 +8,6 @@ import {
   X,
   ChevronDown,
   Receipt,
-  ShoppingCart,
-  CreditCard,
-  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -59,10 +56,7 @@ export function InternoLayout({ children }: InternoLayoutProps) {
   const navItems = [
     { href: `/interno/${slug}`, label: "Painel", icon: LayoutDashboard },
     { href: `/interno/${slug}/agenda`, label: "Agenda", icon: Calendar },
-    { href: `/interno/${slug}/comanda`, label: "Comanda", icon: Receipt },
-    { href: `/interno/${slug}/consumos`, label: "Consumos", icon: ShoppingCart },
-    { href: `/interno/${slug}/cobranca`, label: "Cobrança", icon: CreditCard },
-    { href: `/interno/${slug}/clientes`, label: "Clientes", icon: Users },
+    { href: `/interno/${slug}/comandas`, label: "Comandas", icon: Receipt },
   ];
 
   const handleSignOut = async () => {
