@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
+import Install from "./pages/Install";
 import ClientPortal from "./pages/client/ClientPortal";
 
 // Admin Pages (SaaS Super Admin)
@@ -53,6 +54,7 @@ const App = () => (
               {/* Public routes */}
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/instalar" element={<Install />} />
 
               {/* Onboarding */}
               <Route

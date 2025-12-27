@@ -28,7 +28,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { supabase } from "@/integrations/supabase/client";
-import logo from "@/assets/logo.webp";
+import logo from "@/assets/logo-salaocloud.png";
 
 interface PortalLayoutProps {
   children: React.ReactNode;
