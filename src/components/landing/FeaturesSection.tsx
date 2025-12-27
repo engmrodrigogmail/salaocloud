@@ -32,8 +32,8 @@ const features = [
   },
   {
     icon: Clock,
-    title: "Lembretes Automáticos",
-    description: "Reduza faltas com lembretes automáticos por WhatsApp. Menos dor de cabeça, mais receita!",
+    title: "Histórico de Atendimentos",
+    description: "Acompanhe todo o histórico de cada cliente. Preferências, serviços realizados e muito mais!",
   },
   {
     icon: BarChart3,
