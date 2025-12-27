@@ -103,7 +103,7 @@ export default function InternoComandas() {
     if (item && selectedTab) {
       await recalculateTotal(selectedTab.id);
       const { data } = await supabase.from("tabs").select("*").eq("id", selectedTab.id).single();
-      if (data) setSelectedTab({ ...selectedTab, ...data });
+      if (data) setSelectedTab({ ...selectedTab, ...data, status: data.status as TabWithDetails['status'] });
     }
   };
 
@@ -112,7 +112,7 @@ export default function InternoComandas() {
     if (selectedTab) {
       await recalculateTotal(selectedTab.id);
       const { data } = await supabase.from("tabs").select("*").eq("id", selectedTab.id).single();
-      if (data) setSelectedTab({ ...selectedTab, ...data });
+      if (data) setSelectedTab({ ...selectedTab, ...data, status: data.status as TabWithDetails['status'] });
     }
   };
 
@@ -123,7 +123,7 @@ export default function InternoComandas() {
     if (selectedTab) {
       await recalculateTotal(selectedTab.id);
       const { data } = await supabase.from("tabs").select("*").eq("id", selectedTab.id).single();
-      if (data) setSelectedTab({ ...selectedTab, ...data });
+      if (data) setSelectedTab({ ...selectedTab, ...data, status: data.status as TabWithDetails['status'] });
     }
   };
 
