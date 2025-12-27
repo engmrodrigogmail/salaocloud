@@ -64,11 +64,41 @@ interface SubscriptionPlan {
 const DEFAULT_LIMITS = {
   max_professionals: 2,
   max_services: 20,
+  max_clients: -1,
   whatsapp_reminders: false,
-  reports: false,
+  email_reminders: true,
+  reports_basic: true,
+  reports_advanced: false,
   commissions: false,
+  loyalty_program: false,
+  discount_coupons: false,
+  portfolio_catalog: false,
+  internal_tabs: false,
   api_access: false,
   multi_units: false,
+  priority_support: false,
+  dedicated_manager: false,
+  custom_branding: false,
+};
+
+const LIMIT_LABELS: Record<string, { label: string; description: string; type: 'number' | 'boolean' }> = {
+  max_professionals: { label: 'Máx. Profissionais', description: '-1 = ilimitado', type: 'number' },
+  max_services: { label: 'Máx. Serviços', description: '-1 = ilimitado', type: 'number' },
+  max_clients: { label: 'Máx. Clientes', description: '-1 = ilimitado', type: 'number' },
+  whatsapp_reminders: { label: 'Lembretes WhatsApp', description: 'Notificações via WhatsApp', type: 'boolean' },
+  email_reminders: { label: 'Lembretes por Email', description: 'Notificações via email', type: 'boolean' },
+  reports_basic: { label: 'Relatórios Básicos', description: 'Relatórios de agendamentos e clientes', type: 'boolean' },
+  reports_advanced: { label: 'Relatórios Avançados', description: 'Análises detalhadas e métricas', type: 'boolean' },
+  commissions: { label: 'Controle de Comissões', description: 'Gestão de comissões por profissional', type: 'boolean' },
+  loyalty_program: { label: 'Programa de Fidelidade', description: 'Sistema de pontos e recompensas', type: 'boolean' },
+  discount_coupons: { label: 'Cupons de Desconto', description: 'Criar e gerenciar cupons', type: 'boolean' },
+  portfolio_catalog: { label: 'Portfólio/Catálogo', description: 'Exibir serviços na página de agendamento', type: 'boolean' },
+  internal_tabs: { label: 'Sistema de Comandas', description: 'Controle interno de consumo', type: 'boolean' },
+  api_access: { label: 'Acesso à API', description: 'Integrações personalizadas', type: 'boolean' },
+  multi_units: { label: 'Multi-unidades', description: 'Gerenciar várias filiais', type: 'boolean' },
+  priority_support: { label: 'Suporte Prioritário', description: 'Atendimento preferencial', type: 'boolean' },
+  dedicated_manager: { label: 'Gerente Dedicado', description: 'Gerente de conta exclusivo', type: 'boolean' },
+  custom_branding: { label: 'Marca Personalizada', description: 'Logo e cores próprias', type: 'boolean' },
 };
 
 // Sortable Row Component
@@ -692,72 +722,47 @@ export default function AdminPlans() {
               </div>
 
               {/* Limits */}
-              <div className="space-y-3">
-                <Label>Limites do Plano</Label>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">
-                      Máx. Profissionais (-1 = ilimitado)
-                    </Label>
-                    <Input
-                      type="number"
-                      value={planForm.limits.max_professionals as number}
-                      onChange={(e) =>
-                        updateLimit("max_professionals", parseInt(e.target.value) || 0)
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm text-muted-foreground">
-                      Máx. Serviços (-1 = ilimitado)
-                    </Label>
-                    <Input
-                      type="number"
-                      value={planForm.limits.max_services as number}
-                      onChange={(e) =>
-                        updateLimit("max_services", parseInt(e.target.value) || 0)
-                      }
-                    />
-                  </div>
+              <div className="space-y-4">
+                <Label className="text-base font-semibold">Limites e Recursos do Plano</Label>
+                
+                {/* Numeric Limits */}
+                <div className="grid grid-cols-3 gap-4">
+                  {Object.entries(LIMIT_LABELS)
+                    .filter(([_, config]) => config.type === 'number')
+                    .map(([key, config]) => (
+                      <div key={key} className="space-y-2">
+                        <Label className="text-sm text-muted-foreground">
+                          {config.label}
+                        </Label>
+                        <Input
+                          type="number"
+                          value={(planForm.limits as Record<string, number | boolean>)[key] as number ?? 0}
+                          onChange={(e) =>
+                            updateLimit(key, parseInt(e.target.value) || 0)
+                          }
+                          placeholder={config.description}
+                        />
+                        <span className="text-xs text-muted-foreground">{config.description}</span>
+                      </div>
+                    ))}
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <Label className="text-sm">Lembretes WhatsApp</Label>
-                    <Switch
-                      checked={planForm.limits.whatsapp_reminders as boolean}
-                      onCheckedChange={(checked) =>
-                        updateLimit("whatsapp_reminders", checked)
-                      }
-                    />
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <Label className="text-sm">Relatórios</Label>
-                    <Switch
-                      checked={planForm.limits.reports as boolean}
-                      onCheckedChange={(checked) => updateLimit("reports", checked)}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <Label className="text-sm">Controle Comissões</Label>
-                    <Switch
-                      checked={planForm.limits.commissions as boolean}
-                      onCheckedChange={(checked) => updateLimit("commissions", checked)}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg">
-                    <Label className="text-sm">Acesso API</Label>
-                    <Switch
-                      checked={planForm.limits.api_access as boolean}
-                      onCheckedChange={(checked) => updateLimit("api_access", checked)}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between p-3 border rounded-lg col-span-2">
-                    <Label className="text-sm">Multi-unidades</Label>
-                    <Switch
-                      checked={planForm.limits.multi_units as boolean}
-                      onCheckedChange={(checked) => updateLimit("multi_units", checked)}
-                    />
-                  </div>
+
+                {/* Boolean Limits */}
+                <div className="grid grid-cols-2 gap-3">
+                  {Object.entries(LIMIT_LABELS)
+                    .filter(([_, config]) => config.type === 'boolean')
+                    .map(([key, config]) => (
+                      <div key={key} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors">
+                        <div className="space-y-0.5">
+                          <Label className="text-sm font-medium">{config.label}</Label>
+                          <p className="text-xs text-muted-foreground">{config.description}</p>
+                        </div>
+                        <Switch
+                          checked={(planForm.limits as Record<string, number | boolean>)[key] as boolean ?? false}
+                          onCheckedChange={(checked) => updateLimit(key, checked)}
+                        />
+                      </div>
+                    ))}
                 </div>
               </div>
 

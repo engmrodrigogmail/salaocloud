@@ -82,29 +82,43 @@ export function PricingSection() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [isYearly, setIsYearly] = useState(false);
+  const [trialDays, setTrialDays] = useState(14);
 
   useEffect(() => {
-    const fetchPlans = async () => {
-      const { data, error } = await supabase
+    const fetchData = async () => {
+      // Fetch plans
+      const { data: plansData, error: plansError } = await supabase
         .from("subscription_plans")
         .select("id, slug, name, description, price_monthly, price_yearly, features, is_highlighted, badge, display_order")
         .eq("is_active", true)
         .order("display_order", { ascending: true });
 
-      if (error || !data || data.length === 0) {
+      if (plansError || !plansData || plansData.length === 0) {
         console.log("Using fallback plans");
         setPlans(fallbackPlans);
       } else {
-        const parsedPlans = data.map((plan: any) => ({
+        const parsedPlans = plansData.map((plan: any) => ({
           ...plan,
           features: Array.isArray(plan.features) ? plan.features : [],
         }));
         setPlans(parsedPlans);
       }
+
+      // Fetch trial days setting
+      const { data: settingsData } = await supabase
+        .from("platform_settings")
+        .select("value")
+        .eq("key", "trial_days")
+        .single();
+
+      if (settingsData?.value) {
+        setTrialDays(parseInt(settingsData.value) || 14);
+      }
+
       setLoading(false);
     };
 
-    fetchPlans();
+    fetchData();
   }, []);
 
   const calculateSavings = (monthly: number, yearly: number | null) => {
@@ -134,7 +148,7 @@ export function PricingSection() {
             <span className="text-gradient-gold">seu momento</span>
           </h2>
           <p className="text-lg text-muted-foreground">
-            Comece grátis por 14 dias. Sem cartão de crédito. Cancele quando quiser.
+            Comece grátis por {trialDays} dias. Sem cartão de crédito. Cancele quando quiser.
           </p>
         </div>
 

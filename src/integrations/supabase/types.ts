@@ -989,6 +989,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_highlighted: boolean
+          limits: Json | null
           name: string
           price_monthly: number
           price_yearly: number | null
@@ -1007,6 +1008,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_highlighted?: boolean
+          limits?: Json | null
           name: string
           price_monthly?: number
           price_yearly?: number | null
@@ -1025,6 +1027,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_highlighted?: boolean
+          limits?: Json | null
           name?: string
           price_monthly?: number
           price_yearly?: number | null
