@@ -189,6 +189,71 @@ export type Database = {
           },
         ]
       }
+      commission_rules: {
+        Row: {
+          applicable_product_ids: string[] | null
+          applicable_service_ids: string[] | null
+          applies_to: string
+          challenge_end_date: string | null
+          challenge_start_date: string | null
+          challenge_target: number | null
+          commission_type: string
+          commission_value: number
+          created_at: string
+          description: string | null
+          establishment_id: string
+          id: string
+          is_active: boolean
+          is_challenge: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          applicable_product_ids?: string[] | null
+          applicable_service_ids?: string[] | null
+          applies_to?: string
+          challenge_end_date?: string | null
+          challenge_start_date?: string | null
+          challenge_target?: number | null
+          commission_type?: string
+          commission_value?: number
+          created_at?: string
+          description?: string | null
+          establishment_id: string
+          id?: string
+          is_active?: boolean
+          is_challenge?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          applicable_product_ids?: string[] | null
+          applicable_service_ids?: string[] | null
+          applies_to?: string
+          challenge_end_date?: string | null
+          challenge_start_date?: string | null
+          challenge_target?: number | null
+          commission_type?: string
+          commission_value?: number
+          created_at?: string
+          description?: string | null
+          establishment_id?: string
+          id?: string
+          is_active?: boolean
+          is_challenge?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_rules_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       coupon_usage: {
         Row: {
           appointment_id: string | null
@@ -717,6 +782,92 @@ export type Database = {
             columns: ["professional_id"]
             isOneToOne: false
             referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      professional_commissions: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          commission_amount: number
+          commission_rule_id: string | null
+          created_at: string
+          description: string | null
+          establishment_id: string
+          id: string
+          paid_at: string | null
+          period_end: string | null
+          period_start: string | null
+          professional_id: string
+          reference_value: number
+          status: string
+          tab_item_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          commission_amount?: number
+          commission_rule_id?: string | null
+          created_at?: string
+          description?: string | null
+          establishment_id: string
+          id?: string
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          professional_id: string
+          reference_value?: number
+          status?: string
+          tab_item_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          commission_amount?: number
+          commission_rule_id?: string | null
+          created_at?: string
+          description?: string | null
+          establishment_id?: string
+          id?: string
+          paid_at?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          professional_id?: string
+          reference_value?: number
+          status?: string
+          tab_item_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professional_commissions_commission_rule_id_fkey"
+            columns: ["commission_rule_id"]
+            isOneToOne: false
+            referencedRelation: "commission_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professional_commissions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professional_commissions_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professional_commissions_tab_item_id_fkey"
+            columns: ["tab_item_id"]
+            isOneToOne: false
+            referencedRelation: "tab_items"
             referencedColumns: ["id"]
           },
         ]
