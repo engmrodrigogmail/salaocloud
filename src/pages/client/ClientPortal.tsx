@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { 
   Calendar, Clock, User, Phone, CreditCard, ArrowLeft, 
@@ -234,6 +235,11 @@ const ClientPortal = () => {
     }
   };
 
+  // State for phone confirmation dialog
+  const [showPhoneConfirm, setShowPhoneConfirm] = useState(false);
+  const [pendingClient, setPendingClient] = useState<Client | null>(null);
+  const [newPhone, setNewPhone] = useState("");
+
   const handleLogin = async () => {
     if (!establishment) return;
     
@@ -253,21 +259,32 @@ const ClientPortal = () => {
     setAuthenticating(true);
 
     try {
+      // Only check by CPF, not by phone
       const { data: clientData, error } = await supabase
         .from("clients")
         .select("*")
         .eq("establishment_id", establishment.id)
         .eq("cpf", cpfClean)
-        .eq("phone", phoneClean)
         .maybeSingle();
 
       if (error) throw error;
 
       if (!clientData) {
-        toast.error("Telefone não confere com o cadastro. Verifique seus dados.");
+        toast.error("Cadastro não encontrado. Verifique o CPF.");
         return;
       }
 
+      // Check if phone is different from registered
+      if (clientData.phone !== phoneClean) {
+        // Show confirmation dialog for phone update
+        setPendingClient(clientData);
+        setNewPhone(phoneClean);
+        setShowPhoneConfirm(true);
+        setAuthenticating(false);
+        return;
+      }
+
+      // Phone matches, proceed with login
       setClient(clientData);
       setIsAuthenticated(true);
       await fetchClientData(clientData.id);
@@ -279,6 +296,44 @@ const ClientPortal = () => {
     } finally {
       setAuthenticating(false);
     }
+  };
+
+  const handleConfirmPhoneUpdate = async () => {
+    if (!pendingClient) return;
+
+    setAuthenticating(true);
+    try {
+      // Update phone number
+      const { error } = await supabase
+        .from("clients")
+        .update({ phone: newPhone })
+        .eq("id", pendingClient.id);
+
+      if (error) throw error;
+
+      const updatedClient = { ...pendingClient, phone: newPhone };
+      setClient(updatedClient);
+      setIsAuthenticated(true);
+      setShowPhoneConfirm(false);
+      setPendingClient(null);
+      setNewPhone("");
+      await fetchClientData(updatedClient.id);
+      await fetchAllAppointments();
+      toast.success(`Bem-vindo(a), ${updatedClient.name}! Telefone atualizado.`);
+    } catch (error) {
+      console.error("Error updating phone:", error);
+      toast.error("Erro ao atualizar telefone");
+    } finally {
+      setAuthenticating(false);
+    }
+  };
+
+  const handleCancelPhoneUpdate = () => {
+    setShowPhoneConfirm(false);
+    setPendingClient(null);
+    setNewPhone("");
+    setPhone("");
+    toast.info("Informe o telefone cadastrado para continuar.");
   };
 
   const handleRegister = async () => {
@@ -689,10 +744,35 @@ const ClientPortal = () => {
     );
   }
 
+  // Phone confirmation dialog
+  const PhoneConfirmDialog = () => (
+    <Dialog open={showPhoneConfirm} onOpenChange={setShowPhoneConfirm}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Confirmar Atualização de Telefone</DialogTitle>
+          <DialogDescription>
+            O telefone informado ({formatPhone(newPhone)}) é diferente do cadastrado ({pendingClient?.phone ? formatPhone(pendingClient.phone) : ""}).
+            Deseja atualizar seu telefone de contato?
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="flex gap-2 sm:justify-end">
+          <Button variant="outline" onClick={handleCancelPhoneUpdate}>
+            Não, usar o cadastrado
+          </Button>
+          <Button onClick={handleConfirmPhoneUpdate} disabled={authenticating}>
+            {authenticating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+            Sim, atualizar telefone
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
   // Login/Register screen
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background py-8 px-4">
+        <PhoneConfirmDialog />
         <div className="max-w-md mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
