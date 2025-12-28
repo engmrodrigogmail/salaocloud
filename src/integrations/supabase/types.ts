@@ -97,6 +97,71 @@ export type Database = {
           },
         ]
       }
+      chat_conversations: {
+        Row: {
+          closed_at: string | null
+          created_at: string
+          id: string
+          status: string
+          updated_at: string
+          visitor_email: string | null
+          visitor_id: string
+          visitor_name: string | null
+        }
+        Insert: {
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          visitor_email?: string | null
+          visitor_id: string
+          visitor_name?: string | null
+        }
+        Update: {
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          status?: string
+          updated_at?: string
+          visitor_email?: string | null
+          visitor_id?: string
+          visitor_name?: string | null
+        }
+        Relationships: []
+      }
+      chat_messages: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          id: string
+          is_from_user: boolean
+          message: string
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          id?: string
+          is_from_user?: boolean
+          message: string
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          is_from_user?: boolean
+          message?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_loyalty_points: {
         Row: {
           client_id: string
