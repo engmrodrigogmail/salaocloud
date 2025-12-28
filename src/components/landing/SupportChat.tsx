@@ -78,8 +78,41 @@ const saveChatCache = (cache: ChatCache) => {
   localStorage.setItem(CHAT_CACHE_KEY, JSON.stringify(cache));
 };
 
+const isSupportChatDebugEnabled = () => {
+  try {
+    return import.meta.env.DEV || localStorage.getItem("salaocloud_support_debug") === "1";
+  } catch {
+    return import.meta.env.DEV;
+  }
+};
+
+const scGroup = (label: string, fn: () => void) => {
+  if (!isSupportChatDebugEnabled()) return;
+  console.groupCollapsed(label);
+  try {
+    fn();
+  } finally {
+    console.groupEnd();
+  }
+};
+
 const invokeSupportChat = async <T,>(body: Record<string, unknown>): Promise<T> => {
+  const action = typeof body.action === "string" ? body.action : "unknown";
+  const requestId = `sc_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const startedAt = performance.now();
+
+  scGroup(`[SupportChat] support-chat:${action} (${requestId})`, () => {
+    console.log("payload", body);
+  });
+
   const { data, error } = await supabase.functions.invoke("support-chat", { body });
+  const ms = Math.round(performance.now() - startedAt);
+
+  scGroup(`[SupportChat] support-chat:${action} (${requestId}) response (${ms}ms)`, () => {
+    console.log("data", data);
+    console.log("error", error);
+  });
+
   if (error) throw error;
   return data as T;
 };
@@ -114,7 +147,13 @@ export function SupportChat() {
     try {
       const visitorId = getVisitorId();
 
+      scGroup("[SupportChat] loadConversationHistory:start", () => {
+        console.log("visitorInfo", visitorInfo);
+        console.log("visitorId(local)", visitorId);
+      });
+
       type SupportChatHistory = {
+        visitorId?: string | null;
         conversations: {
           id: string;
           created_at: string;
@@ -126,7 +165,16 @@ export function SupportChat() {
       const result = await invokeSupportChat<SupportChatHistory>({
         action: "get_history",
         visitorId,
+        visitorEmail: visitorInfo?.email ?? null,
       });
+
+      if (result.visitorId && result.visitorId !== visitorId) {
+        localStorage.setItem("salaocloud_visitor_id", result.visitorId);
+        scGroup("[SupportChat] visitorId:reconciled", () => {
+          console.log("from", visitorId);
+          console.log("to", result.visitorId);
+        });
+      }
 
       const conversations = result.conversations ?? [];
 
@@ -172,7 +220,7 @@ export function SupportChat() {
 
       setConversationHistory(history);
     } catch (error) {
-      console.error("Error loading conversation history:", error);
+      console.error("[SupportChat] Error loading conversation history:", error);
     } finally {
       setLoadingHistory(false);
       setHistoryReady(true);
