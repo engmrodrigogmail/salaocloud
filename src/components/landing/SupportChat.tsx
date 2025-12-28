@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, User, Mail, Sparkles } from "lucide-react";
+import { MessageCircle, X, Send, User, Mail, Sparkles, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,12 @@ interface Message {
 interface VisitorInfo {
   name: string;
   email: string;
+}
+
+interface ConversationHistory {
+  id: string;
+  created_at: string;
+  messages: { text: string; isUser: boolean; timestamp: string }[];
 }
 
 const getVisitorId = (): string => {
@@ -58,21 +64,81 @@ export function SupportChat() {
   const [isTyping, setIsTyping] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isEscalated, setIsEscalated] = useState(false);
+  const [conversationHistory, setConversationHistory] = useState<ConversationHistory[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Load conversation history for returning visitors
+  useEffect(() => {
+    if (visitorInfo) {
+      loadConversationHistory();
+    }
+  }, [visitorInfo]);
+
+  const loadConversationHistory = async () => {
+    setLoadingHistory(true);
+    try {
+      const visitorId = getVisitorId();
+      
+      // Fetch previous conversations for this visitor
+      const { data: conversations, error: convError } = await supabase
+        .from("chat_conversations")
+        .select("id, created_at, status")
+        .eq("visitor_id", visitorId)
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+      if (convError) throw convError;
+
+      if (conversations && conversations.length > 0) {
+        // Fetch messages for each conversation
+        const historyPromises = conversations.map(async (conv) => {
+          const { data: msgs } = await supabase
+            .from("chat_messages")
+            .select("message, is_from_user, created_at")
+            .eq("conversation_id", conv.id)
+            .order("created_at", { ascending: true });
+
+          return {
+            id: conv.id,
+            created_at: conv.created_at,
+            messages: (msgs || []).map(m => ({
+              text: m.message,
+              isUser: m.is_from_user,
+              timestamp: m.created_at
+            }))
+          };
+        });
+
+        const history = await Promise.all(historyPromises);
+        setConversationHistory(history.filter(h => h.messages.length > 0));
+      }
+    } catch (error) {
+      console.error("Error loading conversation history:", error);
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
 
   // Set welcome message when visitor info is available
   useEffect(() => {
     if (visitorInfo && messages.length === 0) {
+      const hasHistory = conversationHistory.length > 0;
+      const welcomeText = hasHistory
+        ? `Olá novamente, ${visitorInfo.name}! 👋 Que bom ver você de volta! Sou a Silvia, lembra? Como posso ajudar hoje?`
+        : `Olá, ${visitorInfo.name}! 👋 Sou a Silvia, sua consultora aqui no SalãoCloud. Como posso ajudar você hoje?`;
+      
       setMessages([{
         id: "welcome",
-        text: `Olá, ${visitorInfo.name}! 👋 Sou a Silvia, sua consultora aqui no SalãoCloud. Como posso ajudar você hoje?`,
+        text: welcomeText,
         isUser: false,
         timestamp: new Date(),
         isAI: true,
       }]);
     }
-  }, [visitorInfo, messages.length]);
+  }, [visitorInfo, messages.length, conversationHistory.length]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -187,12 +253,33 @@ export function SupportChat() {
     }
   };
 
+  const buildHistorySummary = (): string => {
+    if (conversationHistory.length === 0) return "";
+    
+    let summary = "\n\n[HISTÓRICO DE CONVERSAS ANTERIORES DO CLIENTE]\n";
+    
+    conversationHistory.slice(0, 3).forEach((conv, idx) => {
+      const date = new Date(conv.created_at).toLocaleDateString("pt-BR");
+      summary += `\n--- Conversa ${idx + 1} (${date}) ---\n`;
+      conv.messages.slice(-6).forEach(msg => {
+        summary += `${msg.isUser ? "Cliente" : "Atendente"}: ${msg.text}\n`;
+      });
+    });
+    
+    summary += "\n[FIM DO HISTÓRICO - Use este contexto para personalizar o atendimento]\n";
+    return summary;
+  };
+
   const getAIResponse = async (allMessages: Message[]): Promise<{ response: string; escalate: boolean }> => {
     try {
+      const historySummary = buildHistorySummary();
+      
       const { data, error } = await supabase.functions.invoke('chat-ai-agent', {
         body: { 
           messages: allMessages.map(m => ({ text: m.text, isUser: m.isUser })),
-          visitorName: visitorInfo?.name
+          visitorName: visitorInfo?.name,
+          conversationHistory: historySummary,
+          isReturningVisitor: conversationHistory.length > 0
         }
       });
 
@@ -281,6 +368,11 @@ export function SupportChat() {
     }
   };
 
+  const formatHistoryDate = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+  };
+
   return (
     <>
       {/* Chat Button */}
@@ -311,7 +403,7 @@ export function SupportChat() {
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-foreground/20">
               <Sparkles className="h-5 w-5" />
             </div>
-            <div>
+            <div className="flex-1">
               <h3 className="font-semibold flex items-center gap-2">
                 Silvia Valentim
                 <span className="text-xs bg-primary-foreground/20 px-2 py-0.5 rounded-full">
@@ -320,6 +412,17 @@ export function SupportChat() {
               </h3>
               <p className="text-sm opacity-90">Consultora SalãoCloud</p>
             </div>
+            {visitorInfo && conversationHistory.length > 0 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20"
+                onClick={() => setShowHistory(!showHistory)}
+                title="Ver histórico"
+              >
+                <History className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         </div>
 
@@ -362,8 +465,62 @@ export function SupportChat() {
               Iniciar conversa
             </Button>
           </form>
+        ) : showHistory ? (
+          /* History View */
+          <div className="h-[380px] flex flex-col">
+            <div className="px-4 py-3 border-b flex items-center justify-between">
+              <span className="text-sm font-medium">Conversas anteriores</span>
+              <Button variant="ghost" size="sm" onClick={() => setShowHistory(false)}>
+                Voltar
+              </Button>
+            </div>
+            <ScrollArea className="flex-1 p-4">
+              {loadingHistory ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full" />
+                </div>
+              ) : conversationHistory.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">
+                  Nenhuma conversa anterior
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {conversationHistory.map((conv) => (
+                    <div key={conv.id} className="p-3 rounded-lg bg-muted/50 border">
+                      <div className="text-xs text-muted-foreground mb-2">
+                        {formatHistoryDate(conv.created_at)}
+                      </div>
+                      <div className="space-y-1.5">
+                        {conv.messages.slice(-3).map((msg, idx) => (
+                          <div key={idx} className="text-sm">
+                            <span className={cn(
+                              "font-medium",
+                              msg.isUser ? "text-primary" : "text-muted-foreground"
+                            )}>
+                              {msg.isUser ? "Você" : "Silvia"}:
+                            </span>{" "}
+                            <span className="text-foreground/80">
+                              {msg.text.length > 60 ? msg.text.substring(0, 60) + "..." : msg.text}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </ScrollArea>
+          </div>
         ) : (
           <>
+            {/* Returning Visitor Notice */}
+            {conversationHistory.length > 0 && (
+              <div className="bg-primary/5 px-4 py-2 text-sm text-primary border-b border-primary/10 flex items-center gap-2">
+                <History className="h-3.5 w-3.5" />
+                <span>Bem-vindo de volta! Temos {conversationHistory.length} conversa(s) anterior(es)</span>
+              </div>
+            )}
+
             {/* Escalation Notice */}
             {isEscalated && (
               <div className="bg-amber-50 dark:bg-amber-950/30 px-4 py-2 text-sm text-amber-700 dark:text-amber-400 border-b border-amber-200 dark:border-amber-800">
