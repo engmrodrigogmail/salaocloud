@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send } from "lucide-react";
+import { MessageCircle, X, Send, User, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +12,11 @@ interface Message {
   text: string;
   isUser: boolean;
   timestamp: Date;
+}
+
+interface VisitorInfo {
+  name: string;
+  email: string;
 }
 
 const AUTO_RESPONSES: Record<string, string> = {
@@ -49,8 +55,27 @@ const getVisitorId = (): string => {
   return visitorId;
 };
 
+const getStoredVisitorInfo = (): VisitorInfo | null => {
+  const stored = localStorage.getItem("salaocloud_visitor_info");
+  if (stored) {
+    try {
+      return JSON.parse(stored);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+};
+
+const storeVisitorInfo = (info: VisitorInfo) => {
+  localStorage.setItem("salaocloud_visitor_info", JSON.stringify(info));
+};
+
 export function SupportChat() {
   const [isOpen, setIsOpen] = useState(false);
+  const [visitorInfo, setVisitorInfo] = useState<VisitorInfo | null>(getStoredVisitorInfo());
+  const [visitorName, setVisitorName] = useState("");
+  const [visitorEmail, setVisitorEmail] = useState("");
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "welcome",
@@ -72,10 +97,19 @@ export function SupportChat() {
   }, [messages]);
 
   useEffect(() => {
-    if (isOpen && inputRef.current) {
+    if (isOpen && inputRef.current && visitorInfo) {
       inputRef.current.focus();
     }
-  }, [isOpen]);
+  }, [isOpen, visitorInfo]);
+
+  const handleStartChat = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!visitorName.trim() || !visitorEmail.trim()) return;
+    
+    const info = { name: visitorName.trim(), email: visitorEmail.trim() };
+    setVisitorInfo(info);
+    storeVisitorInfo(info);
+  };
 
   const createConversation = async (): Promise<string | null> => {
     try {
@@ -85,6 +119,8 @@ export function SupportChat() {
         .from("chat_conversations")
         .insert({
           visitor_id: visitorId,
+          visitor_name: visitorInfo?.name || null,
+          visitor_email: visitorInfo?.email || null,
           status: "open",
         })
         .select("id")
@@ -205,70 +241,113 @@ export function SupportChat() {
           </div>
         </div>
 
-        {/* Messages */}
-        <ScrollArea className="h-[320px] p-4" ref={scrollRef}>
-          <div className="flex flex-col gap-3">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={cn(
-                  "flex max-w-[85%] flex-col gap-1",
-                  message.isUser ? "ml-auto items-end" : "items-start"
-                )}
-              >
-                <div
-                  className={cn(
-                    "rounded-2xl px-4 py-2.5 text-sm",
-                    message.isUser
-                      ? "bg-primary text-primary-foreground rounded-br-md"
-                      : "bg-muted text-foreground rounded-bl-md"
-                  )}
-                >
-                  {message.text}
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  {message.timestamp.toLocaleTimeString("pt-BR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </span>
+        {/* Visitor Info Form */}
+        {!visitorInfo ? (
+          <form onSubmit={handleStartChat} className="p-6 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Por favor, informe seus dados para iniciar o atendimento:
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="visitor-name">Nome</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="visitor-name"
+                  value={visitorName}
+                  onChange={(e) => setVisitorName(e.target.value)}
+                  placeholder="Seu nome"
+                  className="pl-10"
+                  required
+                />
               </div>
-            ))}
-            {isTyping && (
-              <div className="flex max-w-[85%] flex-col gap-1 items-start">
-                <div className="rounded-2xl rounded-bl-md bg-muted px-4 py-2.5 text-sm">
-                  <div className="flex gap-1">
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/50" style={{ animationDelay: "0ms" }} />
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/50" style={{ animationDelay: "150ms" }} />
-                    <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/50" style={{ animationDelay: "300ms" }} />
-                  </div>
-                </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="visitor-email">E-mail</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="visitor-email"
+                  type="email"
+                  value={visitorEmail}
+                  onChange={(e) => setVisitorEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  className="pl-10"
+                  required
+                />
               </div>
-            )}
-          </div>
-        </ScrollArea>
-
-        {/* Input */}
-        <div className="border-t p-4">
-          <div className="flex gap-2">
-            <Input
-              ref={inputRef}
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Digite sua mensagem..."
-              className="flex-1"
-            />
-            <Button
-              onClick={handleSendMessage}
-              size="icon"
-              disabled={!inputValue.trim()}
-              className="shrink-0"
-            >
-              <Send className="h-4 w-4" />
+            </div>
+            <Button type="submit" className="w-full">
+              Iniciar conversa
             </Button>
-          </div>
-        </div>
+          </form>
+        ) : (
+          <>
+            {/* Messages */}
+            <ScrollArea className="h-[320px] p-4" ref={scrollRef}>
+              <div className="flex flex-col gap-3">
+                {messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={cn(
+                      "flex max-w-[85%] flex-col gap-1",
+                      message.isUser ? "ml-auto items-end" : "items-start"
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        "rounded-2xl px-4 py-2.5 text-sm",
+                        message.isUser
+                          ? "bg-primary text-primary-foreground rounded-br-md"
+                          : "bg-muted text-foreground rounded-bl-md"
+                      )}
+                    >
+                      {message.text}
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {message.timestamp.toLocaleTimeString("pt-BR", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                ))}
+                {isTyping && (
+                  <div className="flex max-w-[85%] flex-col gap-1 items-start">
+                    <div className="rounded-2xl rounded-bl-md bg-muted px-4 py-2.5 text-sm">
+                      <div className="flex gap-1">
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/50" style={{ animationDelay: "0ms" }} />
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/50" style={{ animationDelay: "150ms" }} />
+                        <span className="h-2 w-2 animate-bounce rounded-full bg-muted-foreground/50" style={{ animationDelay: "300ms" }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+
+            {/* Input */}
+            <div className="border-t p-4">
+              <div className="flex gap-2">
+                <Input
+                  ref={inputRef}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  placeholder="Digite sua mensagem..."
+                  className="flex-1"
+                />
+                <Button
+                  onClick={handleSendMessage}
+                  size="icon"
+                  disabled={!inputValue.trim()}
+                  className="shrink-0"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
       </div>
     </>
   );

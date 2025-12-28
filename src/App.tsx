@@ -25,6 +25,7 @@ import AdminCoupons from "./pages/admin/Coupons";
 import AdminPlans from "./pages/admin/Plans";
 import AdminStripe from "./pages/admin/Stripe";
 import AdminSettings from "./pages/admin/Settings";
+import AdminConversations from "./pages/admin/Conversations";
 
 // Portal Pages (Establishment Admin - configuration & settings)
 import PortalDashboard from "./pages/portal/Dashboard";
@@ -126,6 +127,14 @@ const App = () => (
                 element={
                   <ProtectedRoute allowedRoles={["super_admin"]}>
                     <AdminSettings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/conversations"
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin"]}>
+                    <AdminConversations />
                   </ProtectedRoute>
                 }
               />
