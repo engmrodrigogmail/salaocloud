@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, User } from "lucide-react";
+import { MessageCircle, X, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   id: string;
@@ -36,6 +37,18 @@ const getAutoResponse = (message: string): string => {
   return "Obrigado pela mensagem! Nossa equipe entrará em contato em breve. Para atendimento imediato, chame no WhatsApp (11) 94755-1416.";
 };
 
+const getVisitorId = (): string => {
+  const storageKey = "salaocloud_visitor_id";
+  let visitorId = localStorage.getItem(storageKey);
+  
+  if (!visitorId) {
+    visitorId = `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem(storageKey, visitorId);
+  }
+  
+  return visitorId;
+};
+
 export function SupportChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -48,6 +61,7 @@ export function SupportChat() {
   ]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -63,7 +77,44 @@ export function SupportChat() {
     }
   }, [isOpen]);
 
-  const handleSendMessage = () => {
+  const createConversation = async (): Promise<string | null> => {
+    try {
+      const visitorId = getVisitorId();
+      
+      const { data, error } = await supabase
+        .from("chat_conversations")
+        .insert({
+          visitor_id: visitorId,
+          status: "open",
+        })
+        .select("id")
+        .single();
+
+      if (error) {
+        console.error("Error creating conversation:", error);
+        return null;
+      }
+
+      return data.id;
+    } catch (err) {
+      console.error("Error creating conversation:", err);
+      return null;
+    }
+  };
+
+  const saveMessage = async (convId: string, message: string, isFromUser: boolean) => {
+    try {
+      await supabase.from("chat_messages").insert({
+        conversation_id: convId,
+        message,
+        is_from_user: isFromUser,
+      });
+    } catch (err) {
+      console.error("Error saving message:", err);
+    }
+  };
+
+  const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
     const userMessage: Message = {
@@ -74,19 +125,39 @@ export function SupportChat() {
     };
 
     setMessages((prev) => [...prev, userMessage]);
+    const messageText = inputValue;
     setInputValue("");
     setIsTyping(true);
 
+    // Create conversation if it doesn't exist
+    let convId = conversationId;
+    if (!convId) {
+      convId = await createConversation();
+      setConversationId(convId);
+    }
+
+    // Save user message to database
+    if (convId) {
+      await saveMessage(convId, messageText, true);
+    }
+
     // Simulate bot response
-    setTimeout(() => {
+    setTimeout(async () => {
+      const responseText = getAutoResponse(messageText);
+      
       const botResponse: Message = {
         id: `bot-${Date.now()}`,
-        text: getAutoResponse(inputValue),
+        text: responseText,
         isUser: false,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botResponse]);
       setIsTyping(false);
+
+      // Save bot response to database
+      if (convId) {
+        await saveMessage(convId, responseText, false);
+      }
     }, 1000);
   };
 
