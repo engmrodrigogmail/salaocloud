@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, User, Mail, Sparkles, History } from "lucide-react";
+import { X, Send, User, Mail, Sparkles, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
-
+import silviaAvatar from "@/assets/silvia-avatar.png";
 interface Message {
   id: string;
   text: string;
@@ -414,18 +414,39 @@ export function SupportChat() {
 
   return (
     <>
-      {/* Chat Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className={cn(
-          "fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full shadow-lg transition-all duration-300 hover:scale-110",
-          "bg-primary text-primary-foreground",
-          isOpen && "rotate-90"
+      {/* Chat Button - WhatsApp style */}
+      <div className="fixed bottom-6 right-6 z-50">
+        {/* Label */}
+        {!isOpen && (
+          <div className="absolute -top-10 right-0 bg-white dark:bg-gray-800 text-foreground text-sm px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap animate-bounce">
+            <span className="font-medium">Fale com a Silvia!</span>
+            <div className="absolute -bottom-1 right-6 w-2 h-2 bg-white dark:bg-gray-800 transform rotate-45" />
+          </div>
         )}
-        aria-label={isOpen ? "Fechar chat" : "Abrir chat de suporte"}
-      >
-        {isOpen ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
-      </button>
+        
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={cn(
+            "relative flex items-center justify-center rounded-full shadow-lg transition-all duration-300 hover:scale-110",
+            isOpen ? "h-14 w-14 bg-[#25D366]" : "h-16 w-16"
+          )}
+          aria-label={isOpen ? "Fechar chat" : "Abrir chat de suporte"}
+        >
+          {isOpen ? (
+            <X className="h-6 w-6 text-white" />
+          ) : (
+            <>
+              <img 
+                src={silviaAvatar} 
+                alt="Silvia - Suporte" 
+                className="h-full w-full rounded-full object-cover border-4 border-[#25D366]"
+              />
+              {/* Online indicator */}
+              <span className="absolute bottom-0 right-0 h-4 w-4 bg-[#25D366] rounded-full border-2 border-white" />
+            </>
+          )}
+        </button>
+      </div>
 
       {/* Chat Window */}
       <div
@@ -436,26 +457,31 @@ export function SupportChat() {
             : "pointer-events-none translate-y-4 opacity-0"
         )}
       >
-        {/* Header */}
-        <div className="bg-primary p-4 text-primary-foreground">
+        {/* Header - WhatsApp green */}
+        <div className="bg-[#075E54] p-4 text-white">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-foreground/20">
-              <Sparkles className="h-5 w-5" />
+            <div className="relative">
+              <img 
+                src={silviaAvatar} 
+                alt="Silvia Valentim" 
+                className="h-12 w-12 rounded-full object-cover border-2 border-white/30"
+              />
+              <span className="absolute bottom-0 right-0 h-3 w-3 bg-[#25D366] rounded-full border-2 border-[#075E54]" />
             </div>
             <div className="flex-1">
               <h3 className="font-semibold flex items-center gap-2">
                 Silvia Valentim
-                <span className="text-xs bg-primary-foreground/20 px-2 py-0.5 rounded-full">
+                <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">
                   IA
                 </span>
               </h3>
-              <p className="text-sm opacity-90">Consultora SalãoCloud</p>
+              <p className="text-sm text-white/80">Online • Consultora SalãoCloud</p>
             </div>
             {visitorInfo && conversationHistory.length > 0 && (
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 text-primary-foreground hover:bg-primary-foreground/20"
+                className="h-8 w-8 text-white hover:bg-white/20"
                 onClick={() => setShowHistory(!showHistory)}
                 title="Ver histórico"
               >
