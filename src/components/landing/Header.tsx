@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logo from "@/assets/logo-salaocloud.png";
+import logoMobile from "@/assets/logo-mobile.png";
 
 const navLinks = [
   { href: "#funcionalidades", label: "Funcionalidades" },
@@ -32,10 +33,17 @@ export function Header() {
     >
       <div className="container mx-auto px-4 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-3">
+          {/* Mobile logo */}
+          <img 
+            src={logoMobile} 
+            alt="Salão Cloud" 
+            className="h-10 w-auto md:hidden" 
+          />
+          {/* Desktop logo */}
           <img 
             src={logo} 
             alt="Salão Cloud" 
-            className="h-12 md:h-14 w-auto drop-shadow-md" 
+            className="hidden md:block h-14 w-auto drop-shadow-md" 
             style={{ mixBlendMode: 'multiply' }}
           />
         </Link>
