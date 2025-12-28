@@ -19,6 +19,7 @@ import {
   Check, X, Loader2, Search, Edit, Trash2, Filter, Ban
 } from "lucide-react";
 import { BlockScheduleDialog } from "@/components/schedule/BlockScheduleDialog";
+import { BlockedTimesList } from "@/components/schedule/BlockedTimesList";
 import { 
   format, addDays, addMonths, addYears, startOfWeek, endOfWeek, 
   eachDayOfInterval, isSameDay, parseISO, startOfDay, startOfMonth, 
@@ -422,6 +423,13 @@ export default function PortalAgenda() {
           onSuccess={() => {
             toast.success("Bloqueios salvos com sucesso!");
           }}
+        />
+
+        {/* Blocked Times List */}
+        <BlockedTimesList
+          establishmentId={establishment?.id || ""}
+          professionals={professionals}
+          onRefresh={() => {}}
         />
 
         {/* Filters */}
