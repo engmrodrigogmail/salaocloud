@@ -16,8 +16,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
   Calendar, Clock, ChevronLeft, ChevronRight, 
-  Check, X, Loader2, Search, Edit, Trash2, Filter
+  Check, X, Loader2, Search, Edit, Trash2, Filter, Ban
 } from "lucide-react";
+import { BlockScheduleDialog } from "@/components/schedule/BlockScheduleDialog";
 import { 
   format, addDays, addMonths, addYears, startOfWeek, endOfWeek, 
   eachDayOfInterval, isSameDay, parseISO, startOfDay, startOfMonth, 
@@ -58,6 +59,7 @@ export default function PortalAgenda() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   
   // Edit form state
   const [editDate, setEditDate] = useState("");
@@ -390,6 +392,10 @@ export default function PortalAgenda() {
             <p className="text-muted-foreground">Visualize e gerencie todos os agendamentos</p>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setBlockDialogOpen(true)}>
+              <Ban className="h-4 w-4 mr-2" />
+              Bloquear Agenda
+            </Button>
             <Select value={viewMode} onValueChange={(v: "day" | "week" | "month" | "year") => setViewMode(v)}>
               <SelectTrigger className="w-32">
                 <SelectValue />
@@ -406,6 +412,17 @@ export default function PortalAgenda() {
             </Button>
           </div>
         </div>
+
+        {/* Block Schedule Dialog */}
+        <BlockScheduleDialog
+          open={blockDialogOpen}
+          onOpenChange={setBlockDialogOpen}
+          establishmentId={establishment?.id || ""}
+          professionals={professionals}
+          onSuccess={() => {
+            toast.success("Bloqueios salvos com sucesso!");
+          }}
+        />
 
         {/* Filters */}
         <Card>

@@ -356,6 +356,53 @@ export type Database = {
           },
         ]
       }
+      establishment_closures: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_date: string
+          end_time: string | null
+          establishment_id: string
+          id: string
+          is_recurring: boolean | null
+          reason: string | null
+          start_date: string
+          start_time: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_date: string
+          end_time?: string | null
+          establishment_id: string
+          id?: string
+          is_recurring?: boolean | null
+          reason?: string | null
+          start_date: string
+          start_time?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_date?: string
+          end_time?: string | null
+          establishment_id?: string
+          id?: string
+          is_recurring?: boolean | null
+          reason?: string | null
+          start_date?: string
+          start_time?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_closures_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       establishments: {
         Row: {
           address: string | null
