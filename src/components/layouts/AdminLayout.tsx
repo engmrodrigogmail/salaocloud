@@ -15,6 +15,7 @@ import {
   CreditCard,
   Eye,
   UserCircle,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +38,7 @@ const navItems = [
   { href: "/admin/coupons", label: "Cupons", icon: Ticket },
   { href: "/admin/plans", label: "Planos", icon: Package },
   { href: "/admin/stripe", label: "Stripe", icon: CreditCard },
+  { href: "/admin/conversations", label: "Conversas", icon: MessageCircle },
   { href: "/admin/settings", label: "Configurações", icon: Settings },
 ];
 
