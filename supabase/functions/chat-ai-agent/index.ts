@@ -44,6 +44,12 @@ const SILVIA_SYSTEM_PROMPT = `Você é Silvia Valentim, 32 anos, especialista em
 2. **Conversão**: Identificar a necessidade do cliente e direcionar para o plano ideal
 3. **Trial**: Sempre oferecer o período de teste gratuito como porta de entrada sem risco
 
+## Visitantes Retornando
+- Se o cliente já conversou antes, você terá acesso ao histórico de conversas
+- Use esse contexto para personalizar o atendimento
+- Faça referências sutis a conversas anteriores quando apropriado
+- Retome de onde parou, mostrando que lembra do cliente
+
 ## Gatilhos para Escalonar para Humano
 Responda EXATAMENTE com "[ESCALAR_HUMANO]" no INÍCIO da sua mensagem quando:
 - O cliente pedir explicitamente para falar com um humano/atendente/pessoa real
@@ -71,26 +77,34 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, visitorName } = await req.json();
+    const { messages, visitorName, conversationHistory, isReturningVisitor } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY is not configured');
     }
 
+    // Build context with history for returning visitors
+    let contextMessage = `[Contexto: O visitante se chama ${visitorName || 'Cliente'}`;
+    if (isReturningVisitor) {
+      contextMessage += ` - VISITANTE RETORNANDO (já conversou antes)`;
+    }
+    contextMessage += `]`;
+    
+    if (conversationHistory) {
+      contextMessage += conversationHistory;
+    }
+
     // Build conversation history
     const conversationMessages: ChatMessage[] = [
-      { 
-        role: 'user', 
-        content: `[Contexto: O visitante se chama ${visitorName || 'Cliente'}]` 
-      },
+      { role: 'user', content: contextMessage },
       ...messages.map((msg: { text: string; isUser: boolean }) => ({
         role: msg.isUser ? 'user' : 'assistant',
         content: msg.text
       }))
     ];
 
-    console.log('Sending request to Lovable AI with messages:', conversationMessages.length);
+    console.log('Sending request to Lovable AI with messages:', conversationMessages.length, 'returning:', isReturningVisitor);
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',

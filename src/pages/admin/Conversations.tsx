@@ -16,9 +16,14 @@ import {
   Clock, 
   CheckCircle2, 
   XCircle,
-  RefreshCw
+  RefreshCw,
+  Sparkles,
+  TrendingUp,
+  Users,
+  AlertTriangle,
+  Timer
 } from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
+import { format, formatDistanceToNow, differenceInMinutes } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +45,16 @@ interface ChatMessage {
   created_at: string;
 }
 
+interface ChatMetrics {
+  totalConversations: number;
+  openConversations: number;
+  escalatedConversations: number;
+  closedConversations: number;
+  avgResponseTime: number | null;
+  todayConversations: number;
+  returningVisitors: number;
+}
+
 export default function AdminConversations() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
@@ -48,10 +63,13 @@ export default function AdminConversations() {
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
+  const [metrics, setMetrics] = useState<ChatMetrics | null>(null);
+  const [loadingMetrics, setLoadingMetrics] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchConversations();
+    fetchMetrics();
     
     // Subscribe to new conversations
     const conversationsChannel = supabase
@@ -65,6 +83,7 @@ export default function AdminConversations() {
         },
         () => {
           fetchConversations();
+          fetchMetrics();
         }
       )
       .subscribe();
@@ -118,6 +137,85 @@ export default function AdminConversations() {
       toast.error("Erro ao carregar conversas");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchMetrics = async () => {
+    setLoadingMetrics(true);
+    try {
+      const { data: allConversations, error } = await supabase
+        .from("chat_conversations")
+        .select("*");
+
+      if (error) throw error;
+
+      const conversations = allConversations || [];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // Count by status
+      const totalConversations = conversations.length;
+      const openConversations = conversations.filter(c => c.status === 'open').length;
+      const escalatedConversations = conversations.filter(c => c.status === 'escalated').length;
+      const closedConversations = conversations.filter(c => c.status === 'closed').length;
+      
+      // Today's conversations
+      const todayConversations = conversations.filter(c => 
+        new Date(c.created_at) >= today
+      ).length;
+
+      // Returning visitors (visitors with more than 1 conversation)
+      const visitorCounts = conversations.reduce((acc, c) => {
+        acc[c.visitor_id] = (acc[c.visitor_id] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+      const returningVisitors = Object.values(visitorCounts).filter(count => count > 1).length;
+
+      // Calculate average response time
+      let totalResponseTime = 0;
+      let responseCount = 0;
+
+      for (const conv of conversations) {
+        const { data: msgs } = await supabase
+          .from("chat_messages")
+          .select("*")
+          .eq("conversation_id", conv.id)
+          .order("created_at", { ascending: true })
+          .limit(10);
+
+        if (msgs && msgs.length >= 2) {
+          // Find first user message and first bot/admin response
+          const firstUserMsg = msgs.find(m => m.is_from_user);
+          const firstResponse = msgs.find(m => !m.is_from_user && m.created_at > (firstUserMsg?.created_at || ''));
+          
+          if (firstUserMsg && firstResponse) {
+            const responseTime = differenceInMinutes(
+              new Date(firstResponse.created_at),
+              new Date(firstUserMsg.created_at)
+            );
+            if (responseTime >= 0) {
+              totalResponseTime += responseTime;
+              responseCount++;
+            }
+          }
+        }
+      }
+
+      const avgResponseTime = responseCount > 0 ? Math.round(totalResponseTime / responseCount) : null;
+
+      setMetrics({
+        totalConversations,
+        openConversations,
+        escalatedConversations,
+        closedConversations,
+        avgResponseTime,
+        todayConversations,
+        returningVisitors
+      });
+    } catch (error) {
+      console.error("Error fetching metrics:", error);
+    } finally {
+      setLoadingMetrics(false);
     }
   };
 
@@ -191,6 +289,7 @@ export default function AdminConversations() {
       setSelectedConversation({ ...selectedConversation, status: "closed" });
       toast.success("Conversa encerrada");
       fetchConversations();
+      fetchMetrics();
     } catch (error) {
       console.error("Error closing conversation:", error);
       toast.error("Erro ao encerrar conversa");
@@ -214,6 +313,7 @@ export default function AdminConversations() {
       setSelectedConversation({ ...selectedConversation, status: "open" });
       toast.success("Conversa reaberta");
       fetchConversations();
+      fetchMetrics();
     } catch (error) {
       console.error("Error reopening conversation:", error);
       toast.error("Erro ao reabrir conversa");
@@ -224,6 +324,8 @@ export default function AdminConversations() {
     switch (status) {
       case "open":
         return <Badge className="bg-green-500/10 text-green-600 border-green-500/20">Aberta</Badge>;
+      case "escalated":
+        return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/20">Escalada</Badge>;
       case "closed":
         return <Badge variant="secondary">Encerrada</Badge>;
       default:
@@ -236,9 +338,12 @@ export default function AdminConversations() {
       <AdminLayout>
         <div className="space-y-6">
           <Skeleton className="h-10 w-64" />
+          <div className="grid grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-24" />)}
+          </div>
           <div className="grid grid-cols-3 gap-6">
-            <Skeleton className="h-[600px]" />
-            <Skeleton className="h-[600px] col-span-2" />
+            <Skeleton className="h-[500px]" />
+            <Skeleton className="h-[500px] col-span-2" />
           </div>
         </div>
       </AdminLayout>
@@ -253,13 +358,128 @@ export default function AdminConversations() {
             <h1 className="font-display text-3xl font-bold">Conversas de Suporte</h1>
             <p className="text-muted-foreground">Gerencie as conversas do chat de suporte</p>
           </div>
-          <Button variant="outline" onClick={fetchConversations}>
+          <Button variant="outline" onClick={() => { fetchConversations(); fetchMetrics(); }}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Atualizar
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-220px)]">
+        {/* Metrics Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <MessageCircle className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {loadingMetrics ? "-" : metrics?.totalConversations || 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Total</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-green-500/10">
+                  <CheckCircle2 className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {loadingMetrics ? "-" : metrics?.openConversations || 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Abertas</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-500/10">
+                  <AlertTriangle className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {loadingMetrics ? "-" : metrics?.escalatedConversations || 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Escaladas</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-muted">
+                  <XCircle className="h-5 w-5 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {loadingMetrics ? "-" : metrics?.closedConversations || 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Encerradas</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-blue-500/10">
+                  <TrendingUp className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {loadingMetrics ? "-" : metrics?.todayConversations || 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Hoje</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-purple-500/10">
+                  <Users className="h-5 w-5 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {loadingMetrics ? "-" : metrics?.returningVisitors || 0}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Retornando</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-cyan-500/10">
+                  <Timer className="h-5 w-5 text-cyan-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {loadingMetrics ? "-" : (metrics?.avgResponseTime !== null ? `${metrics.avgResponseTime}m` : "N/A")}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Tempo médio</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-340px)]">
           {/* Conversations List */}
           <Card className="flex flex-col">
             <CardHeader className="pb-3">
@@ -338,7 +558,7 @@ export default function AdminConversations() {
                     </div>
                     <div className="flex items-center gap-2">
                       {getStatusBadge(selectedConversation.status)}
-                      {selectedConversation.status === "open" ? (
+                      {selectedConversation.status !== "closed" ? (
                         <Button variant="outline" size="sm" onClick={handleCloseConversation}>
                           <XCircle className="h-4 w-4 mr-1" />
                           Encerrar
@@ -380,7 +600,10 @@ export default function AdminConversations() {
                             >
                               {msg.message}
                             </div>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-muted-foreground flex items-center gap-1">
+                              {!msg.is_from_user && (
+                                <Sparkles className="h-3 w-3" />
+                              )}
                               {format(new Date(msg.created_at), "HH:mm", { locale: ptBR })}
                             </span>
                           </div>
@@ -390,7 +613,7 @@ export default function AdminConversations() {
                     )}
                   </ScrollArea>
                   
-                  {selectedConversation.status === "open" && (
+                  {selectedConversation.status !== "closed" && (
                     <div className="border-t p-4">
                       <div className="flex gap-2">
                         <Input
