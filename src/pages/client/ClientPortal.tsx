@@ -9,15 +9,17 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
 import { 
   Calendar, Clock, User, Phone, CreditCard, ArrowLeft, 
   Loader2, Store, Scissors, Star, Gift, LogOut, Filter,
-  ChevronLeft, ChevronRight, AlertCircle, FileText
+  ChevronLeft, ChevronRight, AlertCircle, FileText, Info
 } from "lucide-react";
 import { format, addDays, setHours, setMinutes, startOfDay, isBefore, addMinutes, isAfter, parseISO, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
+import { useAvailability } from "@/hooks/useAvailability";
 
 type Establishment = Tables<"establishments"> & { cancellation_policy?: string | null };
 type Service = Tables<"services">;
@@ -89,6 +91,22 @@ const ClientPortal = () => {
   const [filterDate, setFilterDate] = useState<Date>(startOfDay(new Date()));
   const [filterService, setFilterService] = useState<string>("all");
   const [filterProfessional, setFilterProfessional] = useState<string>("all");
+  
+  // Closed establishment message state
+  const [showClosedMessage, setShowClosedMessage] = useState(false);
+  const [nextAvailableSlot, setNextAvailableSlot] = useState<{
+    date: Date;
+    time: string;
+    professional: Professional | null;
+  } | null>(null);
+
+  // Use availability hook
+  const availability = useAvailability({
+    establishmentId: establishment?.id || null,
+    establishment,
+    professionals,
+    appointments: allAppointments,
+  });
 
   useEffect(() => {
     if (slug) {
@@ -506,33 +524,15 @@ const ClientPortal = () => {
     return professionals.filter(p => profIds.includes(p.id));
   };
 
-  // Check if a professional is available at a specific time slot considering service duration
+  // Check if a professional is available at a specific time slot - now uses availability hook
   const isProfessionalAvailable = (date: Date, time: string, professionalId: string, durationMinutes: number) => {
-    const [hours, minutes] = time.split(":").map(Number);
-    const slotStart = setMinutes(setHours(date, hours), minutes);
-    const slotEnd = addMinutes(slotStart, durationMinutes);
-
-    return !allAppointments.some(apt => {
-      if (apt.status === "cancelled") return false;
-      if (apt.professional_id !== professionalId) return false;
-      
-      const aptStart = parseISO(apt.scheduled_at);
-      const aptEnd = addMinutes(aptStart, apt.duration_minutes);
-      
-      // Check for overlap - professional must be completely free
-      return (isBefore(slotStart, aptEnd) && isAfter(slotEnd, aptStart));
-    });
+    return availability.isProfessionalAvailable(date, time, professionalId, durationMinutes);
   };
 
   // Check if a time slot is available (for any professional or specific one)
   const isTimeSlotAvailable = (date: Date, time: string, professionalId: string | null, durationMinutes: number) => {
-    if (professionalId) {
-      return isProfessionalAvailable(date, time, professionalId, durationMinutes);
-    }
-    
-    // If no specific professional, check if at least one is available
     const availableProfs = getProfessionalsForService(selectedService?.id || "");
-    return availableProfs.some(p => isProfessionalAvailable(date, time, p.id, durationMinutes));
+    return availability.isTimeSlotAvailable(date, time, professionalId, durationMinutes, selectedService?.id || "", availableProfs);
   };
 
   // Get count of appointments for a professional on a given day
@@ -649,38 +649,75 @@ const ClientPortal = () => {
     }
   };
 
-  // Generate dates for date picker
+  // Generate dates for date picker - only show days establishment is open
   const generateDates = () => {
     const dates: Date[] = [];
     const today = startOfDay(new Date());
     for (let i = 0; i < 14; i++) {
-      dates.push(addDays(today, i));
+      const date = addDays(today, i);
+      // Include all dates but mark closed ones visually
+      dates.push(date);
     }
     return dates;
   };
 
-  // Generate available time slots for a date and optional professional
+  // Check if a date is open for booking
+  const isDateOpen = (date: Date) => {
+    return availability.isEstablishmentOpen(date);
+  };
+
+  // Generate available time slots for a date and optional professional - using availability hook
   const generateAvailableSlots = (date: Date, professionalId: string | null, durationMinutes: number) => {
-    const slots: { time: string; available: boolean; capacity: number }[] = [];
-    const now = new Date();
     const serviceId = selectedService?.id || "";
+    const availableProfs = getProfessionalsForService(serviceId);
     
-    for (let hour = 8; hour < 20; hour++) {
-      for (const minute of [0, 30]) {
-        const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
-        const slotTime = setMinutes(setHours(date, hour), minute);
-        
-        // Skip past times for today
-        if (isBefore(slotTime, now)) {
-          continue;
-        }
-        
-        const available = isTimeSlotAvailable(date, time, professionalId, durationMinutes);
-        const capacity = getSlotCapacity(date, time, serviceId, durationMinutes);
-        slots.push({ time, available, capacity });
-      }
+    // Use the availability hook to generate slots considering working hours and blocked times
+    return availability.generateAvailableSlotsForDay(
+      date, 
+      professionalId, 
+      durationMinutes, 
+      serviceId, 
+      availableProfs
+    );
+  };
+
+  // Handle date selection - check if closed and show message
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date);
+    setSelectedTime(null);
+    
+    if (!availability.isEstablishmentOpen(date)) {
+      // Find next available slot
+      const serviceId = selectedService?.id || "";
+      const availableProfs = getProfessionalsForService(serviceId);
+      const durationMinutes = selectedService?.duration_minutes || 30;
+      
+      const nextSlot = availability.findNextAvailableSlot(
+        date,
+        serviceId,
+        durationMinutes,
+        selectedProfessional?.id || null,
+        availableProfs
+      );
+      
+      setNextAvailableSlot(nextSlot);
+      setShowClosedMessage(true);
+    } else {
+      setShowClosedMessage(false);
+      setNextAvailableSlot(null);
     }
-    return slots;
+  };
+
+  // Accept suggested slot
+  const handleAcceptSuggestedSlot = () => {
+    if (nextAvailableSlot) {
+      setSelectedDate(nextAvailableSlot.date);
+      setSelectedTime(nextAvailableSlot.time);
+      if (nextAvailableSlot.professional) {
+        setSelectedProfessional(nextAvailableSlot.professional);
+      }
+      setShowClosedMessage(false);
+    }
   };
 
   // Find alternative suggestions when a slot is not available
@@ -1047,47 +1084,92 @@ const ClientPortal = () => {
                 <div>
                   <Label className="text-base font-semibold mb-3 block">Data</Label>
                   <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                    {generateDates().map((date) => (
-                      <button
-                        key={date.toISOString()}
-                        onClick={() => { setSelectedDate(date); setSelectedTime(null); }}
-                        className={`p-2 rounded-lg border text-center transition-all hover:border-primary/50 ${
-                          selectedDate?.toDateString() === date.toDateString()
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border"
-                        }`}
-                      >
-                        <p className="text-xs uppercase">
-                          {format(date, "EEE", { locale: ptBR })}
-                        </p>
-                        <p className="text-lg font-bold">{format(date, "dd")}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Time Selection */}
-                {selectedDate && (
-                  <div>
-                    <Label className="text-base font-semibold mb-3 block">Horário</Label>
-                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                      {availableSlots.map(({ time, available }) => (
+                    {generateDates().map((date) => {
+                      const isOpen = isDateOpen(date);
+                      return (
                         <button
-                          key={time}
-                          onClick={() => available && setSelectedTime(time)}
-                          disabled={!available}
+                          key={date.toISOString()}
+                          onClick={() => handleDateSelect(date)}
                           className={`p-2 rounded-lg border text-center transition-all ${
-                            !available 
-                              ? "border-muted bg-muted text-muted-foreground cursor-not-allowed"
-                              : selectedTime === time
+                            !isOpen 
+                              ? "border-muted bg-muted/50 text-muted-foreground"
+                              : selectedDate?.toDateString() === date.toDateString()
                                 ? "border-primary bg-primary text-primary-foreground"
                                 : "border-border hover:border-primary/50"
                           }`}
                         >
-                          {available ? time : "Ocupado"}
+                          <p className="text-xs uppercase">
+                            {format(date, "EEE", { locale: ptBR })}
+                          </p>
+                          <p className="text-lg font-bold">{format(date, "dd")}</p>
+                          {!isOpen && <p className="text-[10px]">Fechado</p>}
                         </button>
-                      ))}
-                    </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Closed Establishment Message */}
+                {showClosedMessage && selectedDate && (
+                  <Alert className="bg-amber-500/10 border-amber-500/30">
+                    <Info className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-sm">
+                      <p className="font-medium text-foreground mb-2">
+                        Nosso horário de funcionamento é {availability.getEstablishmentWorkingHoursMessage()}.
+                      </p>
+                      {nextAvailableSlot ? (
+                        <div className="space-y-2">
+                          <p>
+                            Mas não se preocupe! {selectedProfessional ? (
+                              <>O profissional que você selecionou terá agenda disponível dia <strong>{format(nextAvailableSlot.date, "dd/MM", { locale: ptBR })}</strong>, às <strong>{nextAvailableSlot.time}</strong>.</>
+                            ) : (
+                              <>Temos agenda disponível dia <strong>{format(nextAvailableSlot.date, "dd/MM", { locale: ptBR })}</strong>, às <strong>{nextAvailableSlot.time}</strong> com o profissional <strong>{nextAvailableSlot.professional?.name}</strong>.</>
+                            )}
+                          </p>
+                          <div className="flex gap-2 mt-3">
+                            <Button size="sm" onClick={handleAcceptSuggestedSlot}>
+                              Agendar neste horário
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => setShowClosedMessage(false)}>
+                              Ver outros horários
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p>Infelizmente não encontramos horários disponíveis nos próximos dias.</p>
+                      )}
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {/* Time Selection - only show if date is open */}
+                {selectedDate && !showClosedMessage && (
+                  <div>
+                    <Label className="text-base font-semibold mb-3 block">Horário</Label>
+                    {availableSlots.length === 0 ? (
+                      <p className="text-muted-foreground text-center py-4">
+                        Nenhum horário disponível para esta data
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                        {availableSlots.map(({ time, available }) => (
+                          <button
+                            key={time}
+                            onClick={() => available && setSelectedTime(time)}
+                            disabled={!available}
+                            className={`p-2 rounded-lg border text-center transition-all ${
+                              !available 
+                                ? "border-muted bg-muted text-muted-foreground cursor-not-allowed"
+                                : selectedTime === time
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : "border-border hover:border-primary/50"
+                            }`}
+                          >
+                            {available ? time : "Ocupado"}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
 
