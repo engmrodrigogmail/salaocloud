@@ -363,6 +363,13 @@ export function SupportChat() {
     return minDelay + Math.random() * (maxDelay - minDelay);
   };
 
+  // Split response into message blocks if it contains [CONTINUA]
+  const splitResponseIntoBlocks = (text: string): string[] => {
+    // Split by [CONTINUA] marker
+    const blocks = text.split(/\s*\[CONTINUA\]\s*/i).filter(block => block.trim());
+    return blocks.length > 0 ? blocks : [text];
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
@@ -405,32 +412,47 @@ export function SupportChat() {
     // Get the AI response
     const { response: aiResponseText, escalate } = await aiResponsePromise;
 
-    // Calculate humanized delay based on response length
-    const typingDelay = calculateTypingDelay(aiResponseText);
+    // Split response into blocks
+    const messageBlocks = splitResponseIntoBlocks(aiResponseText);
     
-    // Wait for the calculated typing delay
-    await new Promise(resolve => setTimeout(resolve, typingDelay));
+    // Send each block as a separate message with typing delays
+    for (let i = 0; i < messageBlocks.length; i++) {
+      const blockText = messageBlocks[i].trim();
+      
+      // Calculate humanized delay based on this block's length
+      const typingDelay = calculateTypingDelay(blockText);
+      
+      // Wait for the calculated typing delay
+      await new Promise(resolve => setTimeout(resolve, typingDelay));
+      
+      const botResponse: Message = {
+        id: `bot-${Date.now()}-${i}`,
+        text: blockText,
+        isUser: false,
+        timestamp: new Date(),
+        isAI: !escalate,
+      };
+      
+      setMessages((prev) => [...prev, botResponse]);
+      
+      // Save this block to database
+      if (convId) {
+        await saveMessage(convId, blockText, false);
+      }
+      
+      // If there are more blocks, show typing again
+      if (i < messageBlocks.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Keep typing indicator on for next message
+      }
+    }
     
-    const botResponse: Message = {
-      id: `bot-${Date.now()}`,
-      text: aiResponseText,
-      isUser: false,
-      timestamp: new Date(),
-      isAI: !escalate,
-    };
-    
-    setMessages((prev) => [...prev, botResponse]);
     setIsTyping(false);
 
-    // Save bot response to database
-    if (convId) {
-      await saveMessage(convId, aiResponseText, false);
-      
-      // If escalated, update conversation status
-      if (escalate) {
-        setIsEscalated(true);
-        await updateConversationStatus(convId, 'escalated');
-      }
+    // If escalated, update conversation status
+    if (convId && escalate) {
+      setIsEscalated(true);
+      await updateConversationStatus(convId, 'escalated');
     }
   };
 
