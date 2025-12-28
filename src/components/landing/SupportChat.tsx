@@ -70,7 +70,7 @@ export function SupportChat() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Load conversation history for returning visitors
+  // Load conversation history and restore current session for returning visitors
   useEffect(() => {
     if (visitorInfo) {
       loadConversationHistory();
@@ -93,8 +93,42 @@ export function SupportChat() {
       if (convError) throw convError;
 
       if (conversations && conversations.length > 0) {
-        // Fetch messages for each conversation
-        const historyPromises = conversations.map(async (conv) => {
+        // Check if there's a recent open conversation (within last 24 hours)
+        const recentConv = conversations.find(conv => {
+          const convDate = new Date(conv.created_at);
+          const now = new Date();
+          const diffHours = (now.getTime() - convDate.getTime()) / (1000 * 60 * 60);
+          return (conv.status === 'open' || conv.status === 'escalated') && diffHours < 24;
+        });
+
+        // If there's a recent conversation, restore it
+        if (recentConv) {
+          const { data: msgs } = await supabase
+            .from("chat_messages")
+            .select("id, message, is_from_user, created_at")
+            .eq("conversation_id", recentConv.id)
+            .order("created_at", { ascending: true });
+
+          if (msgs && msgs.length > 0) {
+            setConversationId(recentConv.id);
+            setIsEscalated(recentConv.status === 'escalated');
+            
+            // Restore messages to current chat
+            const restoredMessages: Message[] = msgs.map(m => ({
+              id: m.id,
+              text: m.message,
+              isUser: m.is_from_user,
+              timestamp: new Date(m.created_at),
+              isAI: !m.is_from_user
+            }));
+            
+            setMessages(restoredMessages);
+          }
+        }
+
+        // Fetch messages for history (excluding current conversation)
+        const historyConversations = conversations.filter(c => c.id !== recentConv?.id);
+        const historyPromises = historyConversations.map(async (conv) => {
           const { data: msgs } = await supabase
             .from("chat_messages")
             .select("message, is_from_user, created_at")
@@ -122,9 +156,9 @@ export function SupportChat() {
     }
   };
 
-  // Set welcome message when visitor info is available
+  // Set welcome message when visitor info is available (only if no messages were restored)
   useEffect(() => {
-    if (visitorInfo && messages.length === 0) {
+    if (visitorInfo && messages.length === 0 && !loadingHistory) {
       const hasHistory = conversationHistory.length > 0;
       const welcomeText = hasHistory
         ? `Olá novamente, ${visitorInfo.name}! 👋 Que bom ver você de volta! Sou a Silvia, lembra? Como posso ajudar hoje?`
@@ -138,7 +172,7 @@ export function SupportChat() {
         isAI: true,
       }]);
     }
-  }, [visitorInfo, messages.length, conversationHistory.length]);
+  }, [visitorInfo, messages.length, conversationHistory.length, loadingHistory]);
 
   useEffect(() => {
     if (scrollRef.current) {
