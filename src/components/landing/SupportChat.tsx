@@ -301,6 +301,34 @@ export function SupportChat() {
     }
   };
 
+  // Calculate humanized typing delay based on response length
+  const calculateTypingDelay = (text: string): number => {
+    const wordCount = text.split(/\s+/).length;
+    const charCount = text.length;
+    
+    // Base delay calculation
+    // Short responses (< 30 chars or < 8 words): 2-3 seconds
+    // Medium responses (30-100 chars or 8-25 words): 3-4.5 seconds
+    // Long responses (> 100 chars or > 25 words): 4.5-6 seconds
+    
+    let minDelay: number;
+    let maxDelay: number;
+    
+    if (charCount < 30 || wordCount < 8) {
+      minDelay = 2000;
+      maxDelay = 3000;
+    } else if (charCount < 100 || wordCount < 25) {
+      minDelay = 3000;
+      maxDelay = 4500;
+    } else {
+      minDelay = 4500;
+      maxDelay = 6000;
+    }
+    
+    // Add some randomness within the range
+    return minDelay + Math.random() * (maxDelay - minDelay);
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
@@ -315,7 +343,6 @@ export function SupportChat() {
     setMessages(updatedMessages);
     const messageText = inputValue;
     setInputValue("");
-    setIsTyping(true);
 
     // Create conversation if it doesn't exist
     let convId = conversationId;
@@ -331,12 +358,24 @@ export function SupportChat() {
 
     // If already escalated, don't call AI
     if (isEscalated) {
-      setIsTyping(false);
       return;
     }
 
-    // Get AI response
-    const { response: aiResponseText, escalate } = await getAIResponse(updatedMessages);
+    // Get AI response first (in background)
+    const aiResponsePromise = getAIResponse(updatedMessages);
+
+    // Wait 1 second before showing "typing" indicator
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    setIsTyping(true);
+
+    // Get the AI response
+    const { response: aiResponseText, escalate } = await aiResponsePromise;
+
+    // Calculate humanized delay based on response length
+    const typingDelay = calculateTypingDelay(aiResponseText);
+    
+    // Wait for the calculated typing delay
+    await new Promise(resolve => setTimeout(resolve, typingDelay));
     
     const botResponse: Message = {
       id: `bot-${Date.now()}`,
