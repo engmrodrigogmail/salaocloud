@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { useTrialDays } from "@/hooks/useTrialDays";
 
 export function CTASection() {
+  const { trialDays } = useTrialDays();
+
   return (
     <section className="py-24">
       <div className="container mx-auto px-4">
@@ -18,7 +21,7 @@ export function CTASection() {
               Bora transformar seu salão?
             </h2>
             <p className="text-lg text-white/80 mb-10 max-w-2xl mx-auto">
-              Comece agora mesmo com 14 dias grátis. Sem cartão, sem compromisso. 
+              Comece agora mesmo com {trialDays} dias grátis. Sem cartão, sem compromisso. 
               Só você e um sistema que vai facilitar sua vida.
             </p>
             <Button
