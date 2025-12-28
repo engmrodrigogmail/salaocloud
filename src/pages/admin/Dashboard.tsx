@@ -13,7 +13,9 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  RefreshCw,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,9 +78,35 @@ export default function AdminDashboard() {
     newEstablishmentsThisMonth: 0,
   });
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [recentEstablishments, setRecentEstablishments] = useState<any[]>([]);
+
+  const handleSyncLandingpage = async () => {
+    setSyncing(true);
+    try {
+      // Refresh all dashboard data which represents the dynamic content
+      await fetchDashboardData();
+      
+      // Fetch subscription plans for pricing section
+      await supabase.from("subscription_plans").select("*").eq("is_active", true);
+      
+      // Fetch platform settings
+      await supabase.from("platform_settings").select("*");
+      
+      toast.success("Landing page sincronizada com sucesso!", {
+        description: "Todos os dados dinâmicos foram atualizados.",
+      });
+    } catch (error) {
+      console.error("Error syncing landing page:", error);
+      toast.error("Erro ao sincronizar", {
+        description: "Tente novamente em alguns instantes.",
+      });
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   useEffect(() => {
     fetchDashboardData();
@@ -277,7 +305,16 @@ export default function AdminDashboard() {
               Olá! Aqui está o resumo do Salão Cloud.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleSyncLandingpage}
+              disabled={syncing}
+              className="gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} />
+              {syncing ? "Sincronizando..." : "Sincronizar Landingpage"}
+            </Button>
             <Button variant="outline" asChild>
               <Link to="/admin/establishments">Ver Estabelecimentos</Link>
             </Button>

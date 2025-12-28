@@ -27,6 +27,16 @@ export function HeroSection() {
             <span className="text-foreground">Mais clientes.</span>
           </h1>
 
+          {/* Announcement */}
+          <div className="mb-8 animate-fade-in-up" style={{ animationDelay: "0.25s" }}>
+            <h2 className="font-display text-2xl sm:text-3xl md:text-4xl font-bold text-gradient-gold mb-2">
+              Agora somos Salão Cloud!
+            </h2>
+            <p className="text-base sm:text-lg text-muted-foreground max-w-xl mx-auto">
+              Tudo que você já gostava, mas agora com uma gestão que entende de seu negócio!
+            </p>
+          </div>
+
           {/* Subheadline */}
           <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 animate-fade-in-up" style={{ animationDelay: "0.3s" }}>
             Gerencie seu salão ou barbearia de forma simples e inteligente. 
