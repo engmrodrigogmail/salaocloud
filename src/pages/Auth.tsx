@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useTrialDays } from "@/hooks/useTrialDays";
 import logo from "@/assets/logo.webp";
 
 const loginSchema = z.object({
@@ -44,6 +45,7 @@ export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signIn, signUp, user, role, loading } = useAuth();
+  const { trialDays } = useTrialDays();
 
   const debugEnabled = import.meta.env.DEV;
   const debug = (...args: unknown[]) => {
@@ -166,7 +168,7 @@ export default function Auth() {
             </h1>
             <p className="text-muted-foreground">
               {isSignup
-                ? "Comece agora seu teste grátis de 14 dias"
+                ? `Comece agora seu teste grátis de ${trialDays} dias`
                 : "Entre para acessar seu painel"}
             </p>
           </div>
@@ -442,7 +444,7 @@ export default function Auth() {
           </p>
           <div className="mt-12 grid grid-cols-2 gap-6 text-left">
             <div className="bg-white/10 rounded-xl p-4">
-              <div className="text-3xl font-bold">14</div>
+              <div className="text-3xl font-bold">{trialDays}</div>
               <div className="text-sm text-white/70">dias grátis</div>
             </div>
             <div className="bg-white/10 rounded-xl p-4">

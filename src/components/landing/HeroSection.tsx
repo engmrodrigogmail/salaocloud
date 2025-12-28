@@ -1,8 +1,11 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Calendar, Sparkles } from "lucide-react";
+import { useTrialDays } from "@/hooks/useTrialDays";
 
 export function HeroSection() {
+  const { trialDays } = useTrialDays();
+
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden hero-pattern">
       {/* Background decorations */}
@@ -17,7 +20,7 @@ export function HeroSection() {
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 text-accent border border-accent/20 mb-8 animate-fade-in">
             <Sparkles size={16} />
-            <span className="text-sm font-medium">14 dias grátis para testar</span>
+            <span className="text-sm font-medium">{trialDays} dias grátis para testar</span>
           </div>
 
           {/* Main Headline */}
