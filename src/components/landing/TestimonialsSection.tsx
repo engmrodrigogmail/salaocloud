@@ -18,8 +18,8 @@ const testimonials: Testimonial[] = [
     role: "Cliente há 2 anos",
     type: "client",
     rating: 5,
-    content: "Gente, que maravilha! Agendo meus horários pelo celular em segundos, recebo lembrete no WhatsApp e nunca mais esqueci um compromisso. O salão que frequento virou outro depois que começou a usar!",
-    highlight: "Agendamento rápido e lembretes automáticos"
+    content: "Gente, que maravilha! Agendo meus horários pelo celular em segundos e nunca mais perdi um compromisso. O salão que frequento virou outro depois que começou a usar!",
+    highlight: "Agendamento rápido e prático"
   },
   {
     name: "Ricardo Santos",
@@ -59,8 +59,8 @@ const testimonials: Testimonial[] = [
     role: "Dono - Studio Hair Design",
     type: "business",
     rating: 5,
-    content: "Reduzi 70% das faltas com os lembretes automáticos! As comandas ficaram muito mais organizadas e consigo acompanhar o faturamento em tempo real. Investimento que se paga no primeiro mês!",
-    highlight: "Redução de faltas e controle financeiro"
+    content: "As comandas ficaram muito mais organizadas e consigo acompanhar o faturamento em tempo real. Investimento que se paga no primeiro mês!",
+    highlight: "Controle financeiro em tempo real"
   }
 ];
 
@@ -165,26 +165,6 @@ export const TestimonialsSection = () => {
             {businessTestimonials.map((testimonial, index) => (
               <TestimonialCard key={index} testimonial={testimonial} />
             ))}
-          </div>
-        </div>
-
-        {/* Stats */}
-        <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          <div>
-            <div className="text-3xl md:text-4xl font-bold text-primary mb-2">4.9</div>
-            <div className="text-sm text-muted-foreground">Nota média</div>
-          </div>
-          <div>
-            <div className="text-3xl md:text-4xl font-bold text-primary mb-2">+5.000</div>
-            <div className="text-sm text-muted-foreground">Avaliações</div>
-          </div>
-          <div>
-            <div className="text-3xl md:text-4xl font-bold text-primary mb-2">98%</div>
-            <div className="text-sm text-muted-foreground">Satisfação</div>
-          </div>
-          <div>
-            <div className="text-3xl md:text-4xl font-bold text-primary mb-2">+1.200</div>
-            <div className="text-sm text-muted-foreground">Estabelecimentos</div>
           </div>
         </div>
       </div>

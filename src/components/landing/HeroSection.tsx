@@ -84,7 +84,7 @@ export function HeroSection() {
               ))}
             </div>
             <p className="text-sm text-muted-foreground">
-              <span className="font-semibold text-foreground">+500</span> salões já confiam no Salão Cloud
+              <span className="font-semibold text-foreground">+200</span> salões já confiam no Salão Cloud
             </p>
           </div>
         </div>

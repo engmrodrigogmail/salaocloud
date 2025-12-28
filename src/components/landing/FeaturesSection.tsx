@@ -43,12 +43,17 @@ const features = [
   {
     icon: CreditCard,
     title: "Controle Financeiro",
-    description: "Saiba quanto entra e sai. Comissões calculadas automaticamente para cada profissional.",
+    description: "Comissões calculadas automaticamente para cada profissional.",
   },
   {
     icon: Bell,
     title: "Notificações",
     description: "Fique por dentro de novos agendamentos, cancelamentos e tudo que importa pro seu negócio.",
+  },
+  {
+    icon: Smartphone,
+    title: "Versão Mobile",
+    description: "Seus profissionais com a informação na mão na hora que precisarem. Agenda, lançamento e acompanhamento de comandas. Tudo fácil, claro, evitando confusões e poupando tempo.",
   },
 ];
 
@@ -71,10 +76,10 @@ export function FeaturesSection() {
         </div>
 
         {/* Features grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
             <div
-              key={feature.title}
+              key={feature.title + index}
               className="group p-6 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 animate-fade-in-up"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
