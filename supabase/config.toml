@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.stripe-webhook]
 verify_jwt = false
+
+[functions.chat-ai-agent]
+verify_jwt = false

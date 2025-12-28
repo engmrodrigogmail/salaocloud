@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { MessageCircle, X, Send, User, Mail } from "lucide-react";
+import { MessageCircle, X, Send, User, Mail, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,36 +12,13 @@ interface Message {
   text: string;
   isUser: boolean;
   timestamp: Date;
+  isAI?: boolean;
 }
 
 interface VisitorInfo {
   name: string;
   email: string;
 }
-
-const AUTO_RESPONSES: Record<string, string> = {
-  "preço": "Nossos planos começam em R$49/mês. Você pode ver todos os detalhes na seção de preços acima!",
-  "plano": "Temos 3 planos: Básico, Profissional e Premium. Cada um com funcionalidades específicas para o seu negócio.",
-  "teste": "Sim! Oferecemos 7 dias grátis para você testar todas as funcionalidades.",
-  "trial": "Sim! Oferecemos 7 dias grátis para você testar todas as funcionalidades.",
-  "grátis": "Oferecemos 7 dias de teste grátis! Sem compromisso.",
-  "funciona": "O SalãoCloud é um sistema completo de gestão para salões. Você pode agendar clientes, gerenciar profissionais, controlar comandas e muito mais!",
-  "ajuda": "Estou aqui para ajudar! Me conte qual é sua dúvida sobre o SalãoCloud.",
-  "contato": "Você pode nos contatar pelo WhatsApp (11) 94755-1416 ou por este chat. Como posso ajudar?",
-  "whatsapp": "Nosso WhatsApp é (11) 94755-1416. Estamos disponíveis de segunda a sexta, das 9h às 18h.",
-};
-
-const getAutoResponse = (message: string): string => {
-  const lowerMessage = message.toLowerCase();
-  
-  for (const [keyword, response] of Object.entries(AUTO_RESPONSES)) {
-    if (lowerMessage.includes(keyword)) {
-      return response;
-    }
-  }
-  
-  return "Obrigado pela mensagem! Nossa equipe entrará em contato em breve. Para atendimento imediato, chame no WhatsApp (11) 94755-1416.";
-};
 
 const getVisitorId = (): string => {
   const storageKey = "salaocloud_visitor_id";
@@ -76,19 +53,26 @@ export function SupportChat() {
   const [visitorInfo, setVisitorInfo] = useState<VisitorInfo | null>(getStoredVisitorInfo());
   const [visitorName, setVisitorName] = useState("");
   const [visitorEmail, setVisitorEmail] = useState("");
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      text: "Olá! 👋 Bem-vindo ao SalãoCloud. Como posso ajudar você hoje?",
-      isUser: false,
-      timestamp: new Date(),
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [isEscalated, setIsEscalated] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Set welcome message when visitor info is available
+  useEffect(() => {
+    if (visitorInfo && messages.length === 0) {
+      setMessages([{
+        id: "welcome",
+        text: `Olá, ${visitorInfo.name}! 👋 Sou a Silvia, sua consultora aqui no SalãoCloud. Como posso ajudar você hoje?`,
+        isUser: false,
+        timestamp: new Date(),
+        isAI: true,
+      }]);
+    }
+  }, [visitorInfo, messages.length]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -101,6 +85,48 @@ export function SupportChat() {
       inputRef.current.focus();
     }
   }, [isOpen, visitorInfo]);
+
+  // Subscribe to realtime messages from admin
+  useEffect(() => {
+    if (!conversationId) return;
+
+    const channel = supabase
+      .channel(`chat-${conversationId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const newMessage = payload.new as { id: string; message: string; is_from_user: boolean; created_at: string };
+          
+          // Only add messages from admin (not from user, as those are already added locally)
+          if (!newMessage.is_from_user) {
+            setMessages((prev) => {
+              // Check if message already exists
+              if (prev.some(m => m.id === newMessage.id)) {
+                return prev;
+              }
+              return [...prev, {
+                id: newMessage.id,
+                text: newMessage.message,
+                isUser: false,
+                timestamp: new Date(newMessage.created_at),
+                isAI: false,
+              }];
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId]);
 
   const handleStartChat = (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,6 +176,44 @@ export function SupportChat() {
     }
   };
 
+  const updateConversationStatus = async (convId: string, status: string) => {
+    try {
+      await supabase
+        .from("chat_conversations")
+        .update({ status })
+        .eq("id", convId);
+    } catch (err) {
+      console.error("Error updating conversation status:", err);
+    }
+  };
+
+  const getAIResponse = async (allMessages: Message[]): Promise<{ response: string; escalate: boolean }> => {
+    try {
+      const { data, error } = await supabase.functions.invoke('chat-ai-agent', {
+        body: { 
+          messages: allMessages.map(m => ({ text: m.text, isUser: m.isUser })),
+          visitorName: visitorInfo?.name
+        }
+      });
+
+      if (error) {
+        console.error('Error calling AI agent:', error);
+        throw error;
+      }
+
+      return {
+        response: data.response,
+        escalate: data.escalate || false
+      };
+    } catch (err) {
+      console.error('Error getting AI response:', err);
+      return {
+        response: "Desculpe, estou com uma pequena dificuldade. Nossa equipe entrará em contato em breve! Para atendimento imediato, chame no WhatsApp (11) 94755-1416. 📱",
+        escalate: true
+      };
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
@@ -160,7 +224,8 @@ export function SupportChat() {
       timestamp: new Date(),
     };
 
-    setMessages((prev) => [...prev, userMessage]);
+    const updatedMessages = [...messages, userMessage];
+    setMessages(updatedMessages);
     const messageText = inputValue;
     setInputValue("");
     setIsTyping(true);
@@ -177,24 +242,36 @@ export function SupportChat() {
       await saveMessage(convId, messageText, true);
     }
 
-    // Simulate bot response
-    setTimeout(async () => {
-      const responseText = getAutoResponse(messageText);
-      
-      const botResponse: Message = {
-        id: `bot-${Date.now()}`,
-        text: responseText,
-        isUser: false,
-        timestamp: new Date(),
-      };
-      setMessages((prev) => [...prev, botResponse]);
+    // If already escalated, don't call AI
+    if (isEscalated) {
       setIsTyping(false);
+      return;
+    }
 
-      // Save bot response to database
-      if (convId) {
-        await saveMessage(convId, responseText, false);
+    // Get AI response
+    const { response: aiResponseText, escalate } = await getAIResponse(updatedMessages);
+    
+    const botResponse: Message = {
+      id: `bot-${Date.now()}`,
+      text: aiResponseText,
+      isUser: false,
+      timestamp: new Date(),
+      isAI: !escalate,
+    };
+    
+    setMessages((prev) => [...prev, botResponse]);
+    setIsTyping(false);
+
+    // Save bot response to database
+    if (convId) {
+      await saveMessage(convId, aiResponseText, false);
+      
+      // If escalated, update conversation status
+      if (escalate) {
+        setIsEscalated(true);
+        await updateConversationStatus(convId, 'escalated');
       }
-    }, 1000);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -232,11 +309,16 @@ export function SupportChat() {
         <div className="bg-primary p-4 text-primary-foreground">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-foreground/20">
-              <MessageCircle className="h-5 w-5" />
+              <Sparkles className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-semibold">Suporte SalãoCloud</h3>
-              <p className="text-sm opacity-90">Normalmente respondemos em minutos</p>
+              <h3 className="font-semibold flex items-center gap-2">
+                Silvia Valentim
+                <span className="text-xs bg-primary-foreground/20 px-2 py-0.5 rounded-full">
+                  IA
+                </span>
+              </h3>
+              <p className="text-sm opacity-90">Consultora SalãoCloud</p>
             </div>
           </div>
         </div>
@@ -282,6 +364,13 @@ export function SupportChat() {
           </form>
         ) : (
           <>
+            {/* Escalation Notice */}
+            {isEscalated && (
+              <div className="bg-amber-50 dark:bg-amber-950/30 px-4 py-2 text-sm text-amber-700 dark:text-amber-400 border-b border-amber-200 dark:border-amber-800">
+                Conversa transferida para atendimento humano
+              </div>
+            )}
+
             {/* Messages */}
             <ScrollArea className="h-[320px] p-4" ref={scrollRef}>
               <div className="flex flex-col gap-3">
@@ -303,7 +392,10 @@ export function SupportChat() {
                     >
                       {message.text}
                     </div>
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      {!message.isUser && message.isAI && (
+                        <Sparkles className="h-3 w-3" />
+                      )}
                       {message.timestamp.toLocaleTimeString("pt-BR", {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -339,7 +431,7 @@ export function SupportChat() {
                 <Button
                   onClick={handleSendMessage}
                   size="icon"
-                  disabled={!inputValue.trim()}
+                  disabled={!inputValue.trim() || isTyping}
                   className="shrink-0"
                 >
                   <Send className="h-4 w-4" />
