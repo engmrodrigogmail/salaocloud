@@ -32,11 +32,7 @@ export function FAQSection() {
     },
     {
       question: "E se eu tiver dúvidas ou problemas?",
-      answer: "Nossa equipe de suporte tá aqui pra ajudar! Dependendo do seu plano, você tem atendimento por email, chat ou até um gerente de conta dedicado.",
-    },
-    {
-      question: "Vocês integram com WhatsApp?",
-      answer: "Sim! Nos planos Profissional e Premium, você pode enviar lembretes automáticos de agendamento pelo WhatsApp. Menos faltas, mais receita!",
+      answer: "Nossa equipe de suporte está aqui pra ajudar! Dependendo do seu plano, você tem atendimento por email, chat e até um gerente de conta dedicado.",
     },
     {
       question: "Posso migrar meus dados de outro sistema?",

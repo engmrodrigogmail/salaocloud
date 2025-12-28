@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Instagram, Facebook, Linkedin, Mail, Phone, MapPin } from "lucide-react";
+import { Instagram, Facebook, Linkedin, Mail, MapPin, MessageCircle } from "lucide-react";
 import logo from "@/assets/logo.webp";
 
 const footerLinks = {
@@ -7,11 +7,6 @@ const footerLinks = {
     { label: "Funcionalidades", href: "#funcionalidades" },
     { label: "Planos e Preços", href: "#planos" },
     { label: "FAQ", href: "#faq" },
-  ],
-  empresa: [
-    { label: "Sobre Nós", href: "/sobre" },
-    { label: "Blog", href: "/blog" },
-    { label: "Contato", href: "/contato" },
   ],
   legal: [
     { label: "Termos de Uso", href: "/termos" },
@@ -29,7 +24,7 @@ export function Footer() {
   return (
     <footer className="bg-foreground text-background py-16">
       <div className="container mx-auto px-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           {/* Brand column */}
           <div className="lg:col-span-2">
             <img src={logo} alt="Salão Cloud" className="h-14 w-auto mb-4 brightness-0 invert" />
@@ -41,10 +36,15 @@ export function Footer() {
                 <Mail size={16} />
                 <span>contato@salaocloud.com.br</span>
               </div>
-              <div className="flex items-center gap-3">
-                <Phone size={16} />
-                <span>(11) 99999-9999</span>
-              </div>
+              <a 
+                href="https://wa.me/5511947551416" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 hover:text-background transition-colors"
+              >
+                <MessageCircle size={16} />
+                <span>11 94755-1416</span>
+              </a>
               <div className="flex items-center gap-3">
                 <MapPin size={16} />
                 <span>São Paulo, SP - Brasil</span>
@@ -64,23 +64,6 @@ export function Footer() {
                   >
                     {link.label}
                   </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Company links */}
-          <div>
-            <h4 className="font-display font-semibold mb-4">Empresa</h4>
-            <ul className="space-y-3">
-              {footerLinks.empresa.map((link) => (
-                <li key={link.label}>
-                  <Link
-                    to={link.href}
-                    className="text-sm text-background/70 hover:text-background transition-colors"
-                  >
-                    {link.label}
-                  </Link>
                 </li>
               ))}
             </ul>

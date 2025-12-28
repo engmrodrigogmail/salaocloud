@@ -14,6 +14,8 @@ import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import Install from "./pages/Install";
 import ClientPortal from "./pages/client/ClientPortal";
+import Termos from "./pages/Termos";
+import Privacidade from "./pages/Privacidade";
 
 // Admin Pages (SaaS Super Admin)
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -55,6 +57,9 @@ const App = () => (
               {/* Public routes */}
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/instalar" element={<Install />} />
+              <Route path="/termos" element={<Termos />} />
+              <Route path="/privacidade" element={<Privacidade />} />
               <Route path="/instalar" element={<Install />} />
 
               {/* Onboarding */}
