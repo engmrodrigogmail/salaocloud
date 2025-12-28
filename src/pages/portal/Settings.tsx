@@ -11,8 +11,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Clock, Save, Loader2 } from "lucide-react";
+import { Clock, Save, Loader2, Users } from "lucide-react";
 import type { Tables, Json } from "@/integrations/supabase/types";
+import { ProfessionalWorkingHoursCard } from "@/components/settings/ProfessionalWorkingHoursCard";
 
 type Establishment = Tables<"establishments">;
 
@@ -145,6 +146,10 @@ export default function PortalSettings() {
               <Clock className="h-4 w-4" />
               Horário de Funcionamento
             </TabsTrigger>
+            <TabsTrigger value="professional-hours" className="flex items-center gap-2">
+              <Users className="h-4 w-4" />
+              Jornada dos Profissionais
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="working-hours">
@@ -220,6 +225,12 @@ export default function PortalSettings() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="professional-hours">
+            {establishment && (
+              <ProfessionalWorkingHoursCard establishmentId={establishment.id} />
+            )}
           </TabsContent>
         </Tabs>
       </div>
