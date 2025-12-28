@@ -78,6 +78,12 @@ const saveChatCache = (cache: ChatCache) => {
   localStorage.setItem(CHAT_CACHE_KEY, JSON.stringify(cache));
 };
 
+const invokeSupportChat = async <T,>(body: Record<string, unknown>): Promise<T> => {
+  const { data, error } = await supabase.functions.invoke("support-chat", { body });
+  if (error) throw error;
+  return data as T;
+};
+
 export function SupportChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [visitorInfo, setVisitorInfo] = useState<VisitorInfo | null>(getStoredVisitorInfo());
@@ -108,22 +114,27 @@ export function SupportChat() {
     try {
       const visitorId = getVisitorId();
 
-      // Fetch previous conversations for this visitor
-      const { data: conversations, error: convError } = await supabase
-        .from("chat_conversations")
-        .select("id, created_at, status")
-        .eq("visitor_id", visitorId)
-        .order("created_at", { ascending: false })
-        .limit(5);
+      type SupportChatHistory = {
+        conversations: {
+          id: string;
+          created_at: string;
+          status: string;
+          messages: { id: string; message: string; is_from_user: boolean; created_at: string }[];
+        }[];
+      };
 
-      if (convError) throw convError;
+      const result = await invokeSupportChat<SupportChatHistory>({
+        action: "get_history",
+        visitorId,
+      });
 
-      if (!conversations || conversations.length === 0) {
+      const conversations = result.conversations ?? [];
+
+      if (conversations.length === 0) {
         setConversationHistory([]);
         return;
       }
 
-      // Check if there's a recent open conversation (within last 24 hours)
       const recentConv = conversations.find((conv) => {
         const convDate = new Date(conv.created_at);
         const now = new Date();
@@ -131,57 +142,35 @@ export function SupportChat() {
         return (conv.status === "open" || conv.status === "escalated") && diffHours < 24;
       });
 
-      // If there's a recent conversation, restore it
-      if (recentConv) {
-        const { data: msgs, error: msgsError } = await supabase
-          .from("chat_messages")
-          .select("id, message, is_from_user, created_at")
-          .eq("conversation_id", recentConv.id)
-          .order("created_at", { ascending: true });
+      if (recentConv && recentConv.messages.length > 0) {
+        setConversationId(recentConv.id);
+        setIsEscalated(recentConv.status === "escalated");
 
-        if (msgsError) throw msgsError;
+        const restoredMessages: Message[] = recentConv.messages.map((m) => ({
+          id: m.id,
+          text: m.message,
+          isUser: m.is_from_user,
+          timestamp: new Date(m.created_at),
+          isAI: !m.is_from_user,
+        }));
 
-        if (msgs && msgs.length > 0) {
-          setConversationId(recentConv.id);
-          setIsEscalated(recentConv.status === "escalated");
-
-          // Restore messages to current chat
-          const restoredMessages: Message[] = msgs.map((m) => ({
-            id: m.id,
-            text: m.message,
-            isUser: m.is_from_user,
-            timestamp: new Date(m.created_at),
-            isAI: !m.is_from_user,
-          }));
-
-          setMessages(restoredMessages);
-        }
+        setMessages(restoredMessages);
       }
 
-      // Fetch messages for history (excluding current conversation)
-      const historyConversations = conversations.filter((c) => c.id !== recentConv?.id);
-      const historyPromises = historyConversations.map(async (conv) => {
-        const { data: msgs, error: historyMsgsError } = await supabase
-          .from("chat_messages")
-          .select("message, is_from_user, created_at")
-          .eq("conversation_id", conv.id)
-          .order("created_at", { ascending: true });
-
-        if (historyMsgsError) throw historyMsgsError;
-
-        return {
+      const history = conversations
+        .filter((c) => c.id !== recentConv?.id)
+        .map((conv) => ({
           id: conv.id,
           created_at: conv.created_at,
-          messages: (msgs || []).map((m) => ({
+          messages: conv.messages.map((m) => ({
             text: m.message,
             isUser: m.is_from_user,
             timestamp: m.created_at,
           })),
-        };
-      });
+        }))
+        .filter((h) => h.messages.length > 0);
 
-      const history = await Promise.all(historyPromises);
-      setConversationHistory(history.filter((h) => h.messages.length > 0));
+      setConversationHistory(history);
     } catch (error) {
       console.error("Error loading conversation history:", error);
     } finally {
@@ -279,24 +268,16 @@ export function SupportChat() {
   const createConversation = async (): Promise<string | null> => {
     try {
       const visitorId = getVisitorId();
-      
-      const { data, error } = await supabase
-        .from("chat_conversations")
-        .insert({
-          visitor_id: visitorId,
-          visitor_name: visitorInfo?.name || null,
-          visitor_email: visitorInfo?.email || null,
-          status: "open",
-        })
-        .select("id")
-        .single();
 
-      if (error) {
-        console.error("Error creating conversation:", error);
-        return null;
-      }
+      type CreateConversationResult = { id: string };
+      const result = await invokeSupportChat<CreateConversationResult>({
+        action: "create_conversation",
+        visitorId,
+        visitorName: visitorInfo?.name || null,
+        visitorEmail: visitorInfo?.email || null,
+      });
 
-      return data.id;
+      return result.id;
     } catch (err) {
       console.error("Error creating conversation:", err);
       return null;
@@ -305,10 +286,11 @@ export function SupportChat() {
 
   const saveMessage = async (convId: string, message: string, isFromUser: boolean) => {
     try {
-      await supabase.from("chat_messages").insert({
-        conversation_id: convId,
+      await invokeSupportChat<{ ok: boolean }>({
+        action: "save_message",
+        conversationId: convId,
         message,
-        is_from_user: isFromUser,
+        isFromUser,
       });
     } catch (err) {
       console.error("Error saving message:", err);
@@ -317,10 +299,11 @@ export function SupportChat() {
 
   const updateConversationStatus = async (convId: string, status: string) => {
     try {
-      await supabase
-        .from("chat_conversations")
-        .update({ status })
-        .eq("id", convId);
+      await invokeSupportChat<{ ok: boolean }>({
+        action: "update_status",
+        conversationId: convId,
+        status,
+      });
     } catch (err) {
       console.error("Error updating conversation status:", err);
     }
