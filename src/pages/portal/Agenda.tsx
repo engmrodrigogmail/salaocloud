@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import { BlockScheduleDialog } from "@/components/schedule/BlockScheduleDialog";
 import { BlockedTimesList } from "@/components/schedule/BlockedTimesList";
+import { ConfirmedIndicator } from "@/components/schedule/ConfirmedIndicator";
+import { CancelledHistoryDialog } from "@/components/schedule/CancelledHistoryDialog";
 import { 
   format, addDays, addMonths, addYears, startOfWeek, endOfWeek, 
   eachDayOfInterval, isSameDay, parseISO, startOfDay, startOfMonth, 
@@ -35,6 +37,8 @@ type Appointment = Tables<"appointments"> & {
   services?: { name: string } | null;
   professionals?: { name: string } | null;
   clients?: { cpf: string | null } | null;
+  confirmed_at?: string | null;
+  cancelled_via_whatsapp?: boolean | null;
 };
 
 interface Establishment {
@@ -393,6 +397,7 @@ export default function PortalAgenda() {
             <p className="text-muted-foreground">Visualize e gerencie todos os agendamentos</p>
           </div>
           <div className="flex items-center gap-2">
+            {establishment?.id && <CancelledHistoryDialog establishmentId={establishment.id} />}
             <Button variant="outline" onClick={() => setBlockDialogOpen(true)}>
               <Ban className="h-4 w-4 mr-2" />
               Bloquear Agenda
@@ -570,7 +575,7 @@ export default function PortalAgenda() {
                             <div
                               key={apt.id}
                               onClick={() => openViewDialog(apt)}
-                              className={`p-2 rounded text-xs cursor-pointer transition-colors ${
+                              className={`p-2 rounded text-xs cursor-pointer transition-colors relative ${
                                 apt.status === "cancelled" 
                                   ? "bg-red-100 text-red-800 line-through" 
                                   : apt.status === "completed"
@@ -580,7 +585,10 @@ export default function PortalAgenda() {
                                       : "bg-amber-100 text-amber-800"
                               }`}
                             >
-                              <div className="font-medium truncate">{format(parseISO(apt.scheduled_at), "HH:mm")}</div>
+                              <div className="flex items-center gap-1 font-medium truncate">
+                                <ConfirmedIndicator isConfirmed={!!apt.confirmed_at} />
+                                {format(parseISO(apt.scheduled_at), "HH:mm")}
+                              </div>
                               <div className="truncate">{apt.client_name}</div>
                             </div>
                           ))
