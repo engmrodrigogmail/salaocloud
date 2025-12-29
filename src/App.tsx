@@ -27,6 +27,7 @@ import AdminStripe from "./pages/admin/Stripe";
 import AdminSettings from "./pages/admin/Settings";
 import AdminConversations from "./pages/admin/Conversations";
 import AdminPortalStructure from "./pages/admin/PortalStructure";
+import AdminIntegrationGuides from "./pages/admin/IntegrationGuides";
 
 // Portal Pages (Establishment Admin - configuration & settings)
 import PortalDashboard from "./pages/portal/Dashboard";
@@ -145,6 +146,14 @@ const App = () => (
                 element={
                   <ProtectedRoute allowedRoles={["super_admin"]}>
                     <AdminPortalStructure />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/integration-guides"
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin"]}>
+                    <AdminIntegrationGuides />
                   </ProtectedRoute>
                 }
               />
