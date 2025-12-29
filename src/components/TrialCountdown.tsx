@@ -44,7 +44,15 @@ export function TrialCountdown({ trialEndsAt, subscriptionPlan }: TrialCountdown
   if (!timeLeft) return null;
 
   const handleSubscribe = () => {
-    navigate("/#planos?from=trial");
+    // Get slug from current path if in portal
+    const pathParts = window.location.pathname.split('/');
+    const isInPortal = pathParts[1] === 'portal' || pathParts[1] === 'interno';
+    
+    if (isInPortal && pathParts[2]) {
+      navigate(`/portal/${pathParts[2]}/assinatura`);
+    } else {
+      navigate("/#planos?from=trial");
+    }
   };
 
   return (

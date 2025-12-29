@@ -16,6 +16,7 @@ import {
   FolderKanban,
   Calendar,
   DollarSign,
+  Crown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -73,6 +74,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
     { href: `/portal/${slug}/promocoes`, label: "Promoções", icon: Gift },
     { href: `/portal/${slug}/comissoes`, label: "Comissões", icon: DollarSign },
     { href: `/portal/${slug}/cupons`, label: "Cupons", icon: CreditCard },
+    { href: `/portal/${slug}/assinatura`, label: "Assinatura", icon: Crown },
     { href: `/portal/${slug}/configuracoes`, label: "Configurações", icon: Settings },
   ];
 
