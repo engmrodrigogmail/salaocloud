@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Clock, MessageCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 
 interface TrialCountdownProps {
   trialEndsAt: string | null;
@@ -8,6 +10,7 @@ interface TrialCountdownProps {
 }
 
 export function TrialCountdown({ trialEndsAt, subscriptionPlan }: TrialCountdownProps) {
+  const navigate = useNavigate();
   const [timeLeft, setTimeLeft] = useState<{ days: number; hours: number } | null>(null);
 
   useEffect(() => {
@@ -40,17 +43,29 @@ export function TrialCountdown({ trialEndsAt, subscriptionPlan }: TrialCountdown
 
   if (!timeLeft) return null;
 
+  const handleSubscribe = () => {
+    navigate("/#planos");
+  };
+
   return (
     <Alert className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 border-amber-500/30">
       <Clock className="h-5 w-5 text-amber-500" />
-      <AlertDescription className="flex flex-col sm:flex-row sm:items-center gap-2 text-foreground">
-        <span className="font-semibold text-amber-600 dark:text-amber-400">
-          Faltam {timeLeft.days} dias e {timeLeft.hours} horas para o término de seu período gratuito.
-        </span>
-        <span className="text-muted-foreground">
-          Para melhorar sua experiência, não hesite em nos consultar em possíveis dúvidas!
-        </span>
-        <MessageCircle className="h-4 w-4 text-amber-500 hidden sm:block" />
+      <AlertDescription className="flex flex-col lg:flex-row lg:items-center gap-3 text-foreground w-full">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1">
+          <span className="font-semibold text-amber-600 dark:text-amber-400">
+            Faltam {timeLeft.days} dias e {timeLeft.hours} horas para o término de seu período gratuito.
+          </span>
+          <span className="text-muted-foreground">
+            Para melhorar sua experiência, não hesite em nos consultar em possíveis dúvidas!
+          </span>
+          <MessageCircle className="h-4 w-4 text-amber-500 hidden sm:block" />
+        </div>
+        <Button 
+          onClick={handleSubscribe}
+          className="bg-amber-500 hover:bg-amber-600 text-white shrink-0"
+        >
+          Efetivar assinatura agora
+        </Button>
       </AlertDescription>
     </Alert>
   );
