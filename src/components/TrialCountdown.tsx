@@ -44,7 +44,7 @@ export function TrialCountdown({ trialEndsAt, subscriptionPlan }: TrialCountdown
   if (!timeLeft) return null;
 
   const handleSubscribe = () => {
-    navigate("/#planos");
+    navigate("/#planos?from=trial");
   };
 
   return (
