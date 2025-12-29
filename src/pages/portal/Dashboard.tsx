@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PortalLayout } from "@/components/layouts/PortalLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TrialCountdown } from "@/components/TrialCountdown";
 import { 
   Calendar, 
   Users, 
@@ -18,6 +19,8 @@ interface Establishment {
   id: string;
   name: string;
   owner_id: string;
+  trial_ends_at: string | null;
+  subscription_plan: string;
 }
 
 export default function PortalDashboard() {
@@ -50,7 +53,7 @@ export default function PortalDashboard() {
     try {
       const { data, error } = await supabase
         .from("establishments")
-        .select("id, name, owner_id")
+        .select("id, name, owner_id, trial_ends_at, subscription_plan")
         .eq("slug", slug)
         .single();
 
@@ -125,6 +128,11 @@ export default function PortalDashboard() {
   return (
     <PortalLayout>
       <div className="space-y-6">
+        <TrialCountdown 
+          trialEndsAt={establishment?.trial_ends_at || null} 
+          subscriptionPlan={establishment?.subscription_plan || ""} 
+        />
+        
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
