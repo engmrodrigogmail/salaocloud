@@ -8,6 +8,9 @@ const corsHeaders = {
 
 const Z_API_INSTANCE_ID = Deno.env.get('Z_API_INSTANCE_ID');
 const Z_API_TOKEN = Deno.env.get('Z_API_TOKEN');
+// Some Z-API accounts require an additional "client-token" header.
+// If not set, we fall back to Z_API_TOKEN for compatibility.
+const Z_API_CLIENT_TOKEN = Deno.env.get('Z_API_CLIENT_TOKEN') || Z_API_TOKEN;
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -39,111 +42,172 @@ function formatPhoneNumber(phone: string): string {
   return cleaned;
 }
 
+function redactSecret(value: string | null | undefined) {
+  if (!value) return 'MISSING';
+  if (value.length <= 8) return `len=${value.length}`;
+  return `${value.slice(0, 4)}...${value.slice(-4)} (len=${value.length})`;
+}
+
+function safeZApiUrl(url: string) {
+  if (!Z_API_TOKEN) return url;
+  return url.replace(`/token/${Z_API_TOKEN}`, '/token/***');
+}
+
+async function zapiFetchJson(
+  requestId: string,
+  label: string,
+  url: string,
+  init: RequestInit,
+) {
+  const startedAt = Date.now();
+
+  const headers = new Headers(init.headers);
+  // Z-API seems to expect this header key as "client-token" (some gateways are picky).
+  if (Z_API_CLIENT_TOKEN) {
+    headers.set('client-token', Z_API_CLIENT_TOKEN);
+  }
+  headers.set('Content-Type', 'application/json');
+
+  const method = (init.method || 'GET').toUpperCase();
+
+  console.log(
+    `[ZAPI] ${requestId} ${label} -> ${method} ${safeZApiUrl(url)} | client-token=${redactSecret(Z_API_CLIENT_TOKEN)}`,
+  );
+
+  try {
+    const res = await fetch(url, { ...init, headers });
+    const elapsedMs = Date.now() - startedAt;
+
+    const text = await res.text();
+    let data: unknown = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = { nonJsonBody: text?.slice(0, 500) };
+    }
+
+    console.log(
+      `[ZAPI] ${requestId} ${label} <- ${res.status} (${elapsedMs}ms) body=${text?.slice(0, 500)}`,
+    );
+
+    return { res, data };
+  } catch (err) {
+    const elapsedMs = Date.now() - startedAt;
+    console.error(`[ZAPI] ${requestId} ${label} !! fetch error (${elapsedMs}ms):`, err);
+    throw err;
+  }
+}
+
 // Send message via Z-API
-async function sendZApiMessage(phone: string, message: string): Promise<{ success: boolean; messageId?: string; error?: string }> {
+async function sendZApiMessage(
+  phone: string,
+  message: string,
+  requestId = 'noid',
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
   if (!Z_API_INSTANCE_ID || !Z_API_TOKEN) {
+    console.error(`[ZAPI] ${requestId} send-text missing credentials instance=${!!Z_API_INSTANCE_ID} token=${!!Z_API_TOKEN}`);
     return { success: false, error: 'Z-API credentials not configured' };
   }
 
   const formattedPhone = formatPhoneNumber(phone);
-  console.log(`[ZAPI] Sending message to ${formattedPhone}`);
-  
+  console.log(`[ZAPI] ${requestId} Preparing send-text to phone=***${formattedPhone.slice(-4)} messageLen=${message?.length ?? 0}`);
+
+  const url = `https://api.z-api.io/instances/${Z_API_INSTANCE_ID}/token/${Z_API_TOKEN}/send-text`;
+
   try {
-    const response = await fetch(`https://api.z-api.io/instances/${Z_API_INSTANCE_ID}/token/${Z_API_TOKEN}/send-text`, {
+    const { res, data } = await zapiFetchJson(requestId, 'send-text', url, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Client-Token': Z_API_TOKEN
-      },
       body: JSON.stringify({ phone: formattedPhone, message }),
     });
 
-    const data = await response.json();
-    console.log(`[ZAPI] Response:`, JSON.stringify(data));
-    
-    if (response.ok && data.zapiMessageId) {
-      return { success: true, messageId: data.zapiMessageId };
-    } else {
-      return { success: false, error: data.message || data.error || 'Unknown error from Z-API' };
+    // deno-lint-ignore no-explicit-any
+    const d: any = data;
+
+    if (res.ok && (d?.zapiMessageId || d?.messageId)) {
+      return { success: true, messageId: d.zapiMessageId || d.messageId };
     }
+
+    return { success: false, error: d?.message || d?.error || 'Unknown error from Z-API' };
   } catch (error: unknown) {
-    console.error(`[ZAPI] Error sending message:`, error);
+    console.error(`[ZAPI] ${requestId} Error sending message:`, error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
 // Send interactive message with buttons via Z-API
 async function sendInteractiveMessage(
-  phone: string, 
-  message: string, 
+  phone: string,
+  message: string,
   buttons: { id: string; title: string }[],
-  footer?: string
+  footer?: string,
+  requestId = 'noid',
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   if (!Z_API_INSTANCE_ID || !Z_API_TOKEN) {
+    console.error(`[ZAPI] ${requestId} send-button-list missing credentials instance=${!!Z_API_INSTANCE_ID} token=${!!Z_API_TOKEN}`);
     return { success: false, error: 'Z-API credentials not configured' };
   }
 
   const formattedPhone = formatPhoneNumber(phone);
-  console.log(`[ZAPI] Sending interactive message to ${formattedPhone}`);
-  
+  console.log(
+    `[ZAPI] ${requestId} Preparing send-button-list to phone=***${formattedPhone.slice(-4)} buttons=${buttons?.length ?? 0} messageLen=${message?.length ?? 0}`,
+  );
+
+  const url = `https://api.z-api.io/instances/${Z_API_INSTANCE_ID}/token/${Z_API_TOKEN}/send-button-list`;
+
   try {
-    const response = await fetch(`https://api.z-api.io/instances/${Z_API_INSTANCE_ID}/token/${Z_API_TOKEN}/send-button-list`, {
+    const { res, data } = await zapiFetchJson(requestId, 'send-button-list', url, {
       method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Client-Token': Z_API_TOKEN
-      },
       body: JSON.stringify({
         phone: formattedPhone,
-        message: message,
+        message,
         buttonList: {
-          buttons: buttons.map(btn => ({
-            id: btn.id,
-            label: btn.title
-          }))
+          buttons: buttons.map((btn) => ({ id: btn.id, label: btn.title })),
         },
-        footer: footer || ''
+        footer: footer || '',
       }),
     });
 
-    const data = await response.json();
-    console.log(`[ZAPI] Interactive response:`, JSON.stringify(data));
-    
-    if (response.ok && (data.zapiMessageId || data.messageId)) {
-      return { success: true, messageId: data.zapiMessageId || data.messageId };
-    } else {
-      return { success: false, error: data.message || data.error || 'Unknown error from Z-API' };
+    // deno-lint-ignore no-explicit-any
+    const d: any = data;
+
+    if (res.ok && (d?.zapiMessageId || d?.messageId)) {
+      return { success: true, messageId: d.zapiMessageId || d.messageId };
     }
+
+    return { success: false, error: d?.message || d?.error || 'Unknown error from Z-API' };
   } catch (error: unknown) {
-    console.error(`[ZAPI] Error sending interactive message:`, error);
+    console.error(`[ZAPI] ${requestId} Error sending interactive message:`, error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
 // Check Z-API connection status
-async function checkZApiStatus(): Promise<{ connected: boolean; status?: string; error?: string }> {
+async function checkZApiStatus(
+  requestId = 'noid',
+): Promise<{ connected: boolean; status?: string; error?: string }> {
   if (!Z_API_INSTANCE_ID || !Z_API_TOKEN) {
+    console.error(`[ZAPI] ${requestId} status missing credentials instance=${!!Z_API_INSTANCE_ID} token=${!!Z_API_TOKEN}`);
     return { connected: false, error: 'Z-API credentials not configured' };
   }
 
-  try {
-    const response = await fetch(`https://api.z-api.io/instances/${Z_API_INSTANCE_ID}/token/${Z_API_TOKEN}/status`, {
-      method: 'GET',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Client-Token': Z_API_TOKEN
-      },
-    });
+  const url = `https://api.z-api.io/instances/${Z_API_INSTANCE_ID}/token/${Z_API_TOKEN}/status`;
 
-    const data = await response.json();
-    console.log(`[ZAPI] Status response:`, JSON.stringify(data));
-    
-    return { 
-      connected: data.connected === true, 
-      status: data.status || data.state || 'Unknown'
+  try {
+    const { res, data } = await zapiFetchJson(requestId, 'status', url, { method: 'GET' });
+
+    // deno-lint-ignore no-explicit-any
+    const d: any = data;
+
+    if (!res.ok) {
+      return { connected: false, error: d?.message || d?.error || `HTTP ${res.status}` };
+    }
+
+    return {
+      connected: d?.connected === true,
+      status: d?.status || d?.state || 'Unknown',
     };
   } catch (error: unknown) {
-    console.error(`[ZAPI] Error checking status:`, error);
+    console.error(`[ZAPI] ${requestId} Error checking status:`, error);
     return { connected: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
@@ -263,7 +327,7 @@ async function processReminders(supabase: any): Promise<{ sent24h: number; sent1
       { id: `cancel_${apt.id}`, title: 'Não conseguirei ir' }
     ];
 
-    const result = await sendInteractiveMessage(apt.client_phone, message, buttons, 'Salão Cloud');
+    const result = await sendInteractiveMessage(apt.client_phone, message, buttons, 'Salão Cloud', 'cron');
 
     // Record the reminder
     await supabase.from('appointment_reminders').insert({
@@ -312,7 +376,7 @@ async function processReminders(supabase: any): Promise<{ sent24h: number; sent1
       { id: `cancel_${apt.id}`, title: 'Não conseguirei ir' }
     ];
 
-    const result = await sendInteractiveMessage(apt.client_phone, message, buttons, 'Salão Cloud');
+    const result = await sendInteractiveMessage(apt.client_phone, message, buttons, 'Salão Cloud', 'cron');
 
     await supabase.from('appointment_reminders').insert({
       appointment_id: apt.id,
@@ -351,7 +415,7 @@ serve(async (req) => {
     switch (body.action) {
       case 'test_connection':
       case 'get_status': {
-        const status = await checkZApiStatus();
+        const status = await checkZApiStatus(requestId);
         return new Response(JSON.stringify(status), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -365,7 +429,7 @@ serve(async (req) => {
           });
         }
 
-        const result = await sendZApiMessage(body.phone, body.message);
+        const result = await sendZApiMessage(body.phone, body.message, requestId);
         return new Response(JSON.stringify(result), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -412,7 +476,7 @@ serve(async (req) => {
           { id: `cancel_${apt.id}`, title: 'Não conseguirei ir' }
         ];
 
-        const result = await sendInteractiveMessage(apt.client_phone, message, buttons, 'Salão Cloud');
+        const result = await sendInteractiveMessage(apt.client_phone, message, buttons, 'Salão Cloud', requestId);
         return new Response(JSON.stringify(result), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -454,7 +518,7 @@ serve(async (req) => {
           '24h'
         );
 
-        const result = await sendZApiMessage(apt.client_phone, message);
+        const result = await sendZApiMessage(apt.client_phone, message, requestId);
         return new Response(JSON.stringify(result), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
