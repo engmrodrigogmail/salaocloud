@@ -14,12 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointment_reminders: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          delivered_at: string | null
+          error_message: string | null
+          id: string
+          message_id: string | null
+          reminder_type: string
+          responded_at: string | null
+          response: string | null
+          sent_at: string | null
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          reminder_type: string
+          responded_at?: string | null
+          response?: string | null
+          sent_at?: string | null
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          delivered_at?: string | null
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          reminder_type?: string
+          responded_at?: string | null
+          response?: string | null
+          sent_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_reminders_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
+          cancelled_reason: string | null
+          cancelled_via_whatsapp: boolean | null
           client_email: string | null
           client_id: string | null
           client_name: string
           client_phone: string
+          confirmed_at: string | null
           created_at: string
           duration_minutes: number
           establishment_id: string
@@ -33,10 +83,13 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cancelled_reason?: string | null
+          cancelled_via_whatsapp?: boolean | null
           client_email?: string | null
           client_id?: string | null
           client_name: string
           client_phone: string
+          confirmed_at?: string | null
           created_at?: string
           duration_minutes: number
           establishment_id: string
@@ -50,10 +103,13 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cancelled_reason?: string | null
+          cancelled_via_whatsapp?: boolean | null
           client_email?: string | null
           client_id?: string | null
           client_name?: string
           client_phone?: string
+          confirmed_at?: string | null
           created_at?: string
           duration_minutes?: number
           establishment_id?: string

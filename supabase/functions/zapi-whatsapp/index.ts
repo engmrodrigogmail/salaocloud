@@ -12,22 +12,30 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 interface SendMessageRequest {
-  action: 'send_message' | 'send_reminder' | 'test_connection' | 'get_status';
+  action: 'send_message' | 'send_reminder' | 'send_interactive_reminder' | 'test_connection' | 'get_status' | 'process_reminders';
   phone?: string;
   message?: string;
   appointmentId?: string;
+  reminderType?: '24h' | '1h';
+}
+
+interface Appointment {
+  id: string;
+  client_name: string;
+  client_phone: string;
+  scheduled_at: string;
+  status: string;
+  services: { name: string } | null;
+  professionals: { name: string } | null;
+  establishments: { name: string; id: string } | null;
 }
 
 // Format phone number to Brazilian format for Z-API
 function formatPhoneNumber(phone: string): string {
-  // Remove all non-numeric characters
   let cleaned = phone.replace(/\D/g, '');
-  
-  // If doesn't start with 55 (Brazil code), add it
   if (!cleaned.startsWith('55')) {
     cleaned = '55' + cleaned;
   }
-  
   return cleaned;
 }
 
@@ -38,23 +46,16 @@ async function sendZApiMessage(phone: string, message: string): Promise<{ succes
   }
 
   const formattedPhone = formatPhoneNumber(phone);
-  
   console.log(`[ZAPI] Sending message to ${formattedPhone}`);
   
   try {
     const response = await fetch(`https://api.z-api.io/instances/${Z_API_INSTANCE_ID}/token/${Z_API_TOKEN}/send-text`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        phone: formattedPhone,
-        message: message,
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone: formattedPhone, message }),
     });
 
     const data = await response.json();
-    
     console.log(`[ZAPI] Response:`, JSON.stringify(data));
     
     if (response.ok && data.zapiMessageId) {
@@ -64,8 +65,52 @@ async function sendZApiMessage(phone: string, message: string): Promise<{ succes
     }
   } catch (error: unknown) {
     console.error(`[ZAPI] Error sending message:`, error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return { success: false, error: errorMessage };
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
+// Send interactive message with buttons via Z-API
+async function sendInteractiveMessage(
+  phone: string, 
+  message: string, 
+  buttons: { id: string; title: string }[],
+  footer?: string
+): Promise<{ success: boolean; messageId?: string; error?: string }> {
+  if (!Z_API_INSTANCE_ID || !Z_API_TOKEN) {
+    return { success: false, error: 'Z-API credentials not configured' };
+  }
+
+  const formattedPhone = formatPhoneNumber(phone);
+  console.log(`[ZAPI] Sending interactive message to ${formattedPhone}`);
+  
+  try {
+    const response = await fetch(`https://api.z-api.io/instances/${Z_API_INSTANCE_ID}/token/${Z_API_TOKEN}/send-button-list`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        phone: formattedPhone,
+        message: message,
+        buttonList: {
+          buttons: buttons.map(btn => ({
+            id: btn.id,
+            label: btn.title
+          }))
+        },
+        footer: footer || ''
+      }),
+    });
+
+    const data = await response.json();
+    console.log(`[ZAPI] Interactive response:`, JSON.stringify(data));
+    
+    if (response.ok && (data.zapiMessageId || data.messageId)) {
+      return { success: true, messageId: data.zapiMessageId || data.messageId };
+    } else {
+      return { success: false, error: data.message || data.error || 'Unknown error from Z-API' };
+    }
+  } catch (error: unknown) {
+    console.error(`[ZAPI] Error sending interactive message:`, error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
@@ -78,13 +123,10 @@ async function checkZApiStatus(): Promise<{ connected: boolean; status?: string;
   try {
     const response = await fetch(`https://api.z-api.io/instances/${Z_API_INSTANCE_ID}/token/${Z_API_TOKEN}/status`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
 
     const data = await response.json();
-    
     console.log(`[ZAPI] Status response:`, JSON.stringify(data));
     
     return { 
@@ -93,13 +135,19 @@ async function checkZApiStatus(): Promise<{ connected: boolean; status?: string;
     };
   } catch (error: unknown) {
     console.error(`[ZAPI] Error checking status:`, error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return { connected: false, error: errorMessage };
+    return { connected: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 }
 
-// Generate appointment reminder message
-function generateReminderMessage(clientName: string, serviceName: string, professionalName: string, scheduledAt: string, establishmentName: string): string {
+// Generate interactive reminder message
+function generateInteractiveReminderMessage(
+  clientName: string, 
+  serviceName: string, 
+  professionalName: string, 
+  scheduledAt: string, 
+  establishmentName: string,
+  reminderType: '24h' | '1h'
+): string {
   const date = new Date(scheduledAt);
   const formattedDate = date.toLocaleDateString('pt-BR', { 
     weekday: 'long', 
@@ -111,9 +159,13 @@ function generateReminderMessage(clientName: string, serviceName: string, profes
     minute: '2-digit' 
   });
 
-  return `Olá, ${clientName}! 👋
+  const timeLabel = reminderType === '24h' ? 'amanhã' : 'em breve';
 
-Passando para lembrar do seu agendamento:
+  return `*Agenda Inteligente Salão Cloud - Lembrete automático*
+
+Olá, ${clientName}! 👋
+
+Seu agendamento está chegando ${timeLabel}:
 
 📅 *${formattedDate}*
 🕐 *${formattedTime}*
@@ -121,15 +173,162 @@ Passando para lembrar do seu agendamento:
 👤 *${professionalName}*
 📍 *${establishmentName}*
 
-Aguardamos você! Caso precise reagendar, entre em contato.
+Por favor, confirme sua presença:`;
+}
 
-_Enviado automaticamente por Salão Cloud_`;
+// Process pending reminders (called by cron)
+// deno-lint-ignore no-explicit-any
+async function processReminders(supabase: any): Promise<{ sent24h: number; sent1h: number; errors: number }> {
+  const now = new Date();
+  const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const in1h = new Date(now.getTime() + 60 * 60 * 1000);
+  
+  // Window for 24h reminders (23h30min to 24h30min before)
+  const window24hStart = new Date(in24h.getTime() - 30 * 60 * 1000);
+  const window24hEnd = new Date(in24h.getTime() + 30 * 60 * 1000);
+  
+  // Window for 1h reminders (30min to 1h30min before)
+  const window1hStart = new Date(in1h.getTime() - 30 * 60 * 1000);
+  const window1hEnd = new Date(in1h.getTime() + 30 * 60 * 1000);
+
+  let sent24h = 0;
+  let sent1h = 0;
+  let errors = 0;
+
+  console.log(`[REMINDERS] Processing reminders at ${now.toISOString()}`);
+
+  // Fetch appointments that need 24h reminders
+  const { data: appointments24h } = await supabase
+    .from('appointments')
+    .select(`
+      id, client_name, client_phone, scheduled_at, status,
+      services:service_id (name),
+      professionals:professional_id (name),
+      establishments:establishment_id (name, id)
+    `)
+    .gte('scheduled_at', window24hStart.toISOString())
+    .lte('scheduled_at', window24hEnd.toISOString())
+    .in('status', ['pending', 'confirmed']);
+
+  // Fetch appointments that need 1h reminders
+  const { data: appointments1h } = await supabase
+    .from('appointments')
+    .select(`
+      id, client_name, client_phone, scheduled_at, status,
+      services:service_id (name),
+      professionals:professional_id (name),
+      establishments:establishment_id (name, id)
+    `)
+    .gte('scheduled_at', window1hStart.toISOString())
+    .lte('scheduled_at', window1hEnd.toISOString())
+    .in('status', ['pending', 'confirmed']);
+
+  // Process 24h reminders
+  const apts24h = (appointments24h || []) as unknown as Appointment[];
+  for (const apt of apts24h) {
+    // Check if reminder already sent
+    const { data: existingReminder } = await supabase
+      .from('appointment_reminders')
+      .select('id')
+      .eq('appointment_id', apt.id)
+      .eq('reminder_type', '24h')
+      .maybeSingle();
+
+    if (existingReminder) {
+      console.log(`[REMINDERS] 24h reminder already sent for appointment ${apt.id}`);
+      continue;
+    }
+
+    // Send the reminder
+    const message = generateInteractiveReminderMessage(
+      apt.client_name,
+      apt.services?.name || 'Serviço',
+      apt.professionals?.name || 'Profissional',
+      apt.scheduled_at,
+      apt.establishments?.name || 'Estabelecimento',
+      '24h'
+    );
+
+    const buttons = [
+      { id: `confirm_${apt.id}`, title: 'Com certeza estarei aí' },
+      { id: `cancel_${apt.id}`, title: 'Não conseguirei ir' }
+    ];
+
+    const result = await sendInteractiveMessage(apt.client_phone, message, buttons, 'Salão Cloud');
+
+    // Record the reminder
+    await supabase.from('appointment_reminders').insert({
+      appointment_id: apt.id,
+      reminder_type: '24h',
+      sent_at: result.success ? new Date().toISOString() : null,
+      message_id: result.messageId || null,
+      error_message: result.error || null
+    });
+
+    if (result.success) {
+      sent24h++;
+      console.log(`[REMINDERS] 24h reminder sent for appointment ${apt.id}`);
+    } else {
+      errors++;
+      console.error(`[REMINDERS] Failed to send 24h reminder for ${apt.id}:`, result.error);
+    }
+  }
+
+  // Process 1h reminders
+  const apts1h = (appointments1h || []) as unknown as Appointment[];
+  for (const apt of apts1h) {
+    const { data: existingReminder } = await supabase
+      .from('appointment_reminders')
+      .select('id')
+      .eq('appointment_id', apt.id)
+      .eq('reminder_type', '1h')
+      .maybeSingle();
+
+    if (existingReminder) {
+      console.log(`[REMINDERS] 1h reminder already sent for appointment ${apt.id}`);
+      continue;
+    }
+
+    const message = generateInteractiveReminderMessage(
+      apt.client_name,
+      apt.services?.name || 'Serviço',
+      apt.professionals?.name || 'Profissional',
+      apt.scheduled_at,
+      apt.establishments?.name || 'Estabelecimento',
+      '1h'
+    );
+
+    const buttons = [
+      { id: `confirm_${apt.id}`, title: 'Com certeza estarei aí' },
+      { id: `cancel_${apt.id}`, title: 'Não conseguirei ir' }
+    ];
+
+    const result = await sendInteractiveMessage(apt.client_phone, message, buttons, 'Salão Cloud');
+
+    await supabase.from('appointment_reminders').insert({
+      appointment_id: apt.id,
+      reminder_type: '1h',
+      sent_at: result.success ? new Date().toISOString() : null,
+      message_id: result.messageId || null,
+      error_message: result.error || null
+    });
+
+    if (result.success) {
+      sent1h++;
+      console.log(`[REMINDERS] 1h reminder sent for appointment ${apt.id}`);
+    } else {
+      errors++;
+      console.error(`[REMINDERS] Failed to send 1h reminder for ${apt.id}:`, result.error);
+    }
+  }
+
+  console.log(`[REMINDERS] Completed: sent24h=${sent24h}, sent1h=${sent1h}, errors=${errors}`);
+  return { sent24h, sent1h, errors };
 }
 
 serve(async (req) => {
   const requestId = crypto.randomUUID().slice(0, 8);
   
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -141,13 +340,7 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     switch (body.action) {
-      case 'test_connection': {
-        const status = await checkZApiStatus();
-        return new Response(JSON.stringify(status), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
+      case 'test_connection':
       case 'get_status': {
         const status = await checkZApiStatus();
         return new Response(JSON.stringify(status), {
@@ -169,7 +362,7 @@ serve(async (req) => {
         });
       }
 
-      case 'send_reminder': {
+      case 'send_interactive_reminder': {
         if (!body.appointmentId) {
           return new Response(JSON.stringify({ success: false, error: 'Appointment ID is required' }), {
             status: 400,
@@ -177,7 +370,6 @@ serve(async (req) => {
           });
         }
 
-        // Fetch appointment details with related data
         const { data: appointment, error: appointmentError } = await supabase
           .from('appointments')
           .select(`
@@ -190,29 +382,78 @@ serve(async (req) => {
           .single();
 
         if (appointmentError || !appointment) {
-          console.error(`[ZAPI] ${requestId} Error fetching appointment:`, appointmentError);
           return new Response(JSON.stringify({ success: false, error: 'Appointment not found' }), {
             status: 404,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
 
-        const message = generateReminderMessage(
-          appointment.client_name,
-          appointment.services?.name || 'Serviço',
-          appointment.professionals?.name || 'Profissional',
-          appointment.scheduled_at,
-          appointment.establishments?.name || 'Estabelecimento'
+        const apt = appointment as unknown as Appointment;
+        const message = generateInteractiveReminderMessage(
+          apt.client_name,
+          apt.services?.name || 'Serviço',
+          apt.professionals?.name || 'Profissional',
+          apt.scheduled_at,
+          apt.establishments?.name || 'Estabelecimento',
+          body.reminderType || '24h'
         );
 
-        const result = await sendZApiMessage(appointment.client_phone, message);
-        
-        console.log(`[ZAPI] ${requestId} Reminder sent:`, JSON.stringify({ 
-          appointmentId: body.appointmentId, 
-          success: result.success 
-        }));
+        const buttons = [
+          { id: `confirm_${apt.id}`, title: 'Com certeza estarei aí' },
+          { id: `cancel_${apt.id}`, title: 'Não conseguirei ir' }
+        ];
 
+        const result = await sendInteractiveMessage(apt.client_phone, message, buttons, 'Salão Cloud');
         return new Response(JSON.stringify(result), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      case 'send_reminder': {
+        if (!body.appointmentId) {
+          return new Response(JSON.stringify({ success: false, error: 'Appointment ID is required' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const { data: appointment, error: appointmentError } = await supabase
+          .from('appointments')
+          .select(`
+            *,
+            services:service_id (name),
+            professionals:professional_id (name),
+            establishments:establishment_id (name)
+          `)
+          .eq('id', body.appointmentId)
+          .single();
+
+        if (appointmentError || !appointment) {
+          return new Response(JSON.stringify({ success: false, error: 'Appointment not found' }), {
+            status: 404,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const apt = appointment as unknown as Appointment;
+        const message = generateInteractiveReminderMessage(
+          apt.client_name,
+          apt.services?.name || 'Serviço',
+          apt.professionals?.name || 'Profissional',
+          apt.scheduled_at,
+          apt.establishments?.name || 'Estabelecimento',
+          '24h'
+        );
+
+        const result = await sendZApiMessage(apt.client_phone, message);
+        return new Response(JSON.stringify(result), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      case 'process_reminders': {
+        const result = await processReminders(supabase);
+        return new Response(JSON.stringify({ success: true, ...result }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -225,8 +466,7 @@ serve(async (req) => {
     }
   } catch (error: unknown) {
     console.error(`[ZAPI] ${requestId} Error:`, error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
