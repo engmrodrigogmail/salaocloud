@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Activity } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -44,6 +45,7 @@ const navItems = [
   { href: "/admin/conversations", label: "Conversas", icon: MessageCircle },
   { href: "/admin/portal-structure", label: "Estrutura do Portal", icon: Layout },
   { href: "/admin/integration-guides", label: "Guias de Integração", icon: BookOpen },
+  { href: "/admin/zapi-status", label: "Status Z-API", icon: Activity },
   { href: "/admin/whatsapp-test", label: "Teste WhatsApp", icon: WhatsAppIcon },
   { href: "/admin/settings", label: "Configurações", icon: Settings },
 ];
