@@ -1,11 +1,10 @@
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-
 interface Plan {
   id: string;
   slug: string;
@@ -79,10 +78,15 @@ const fallbackPlans: Plan[] = [
 ];
 
 export function PricingSection() {
+  const location = useLocation();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [isYearly, setIsYearly] = useState(false);
   const [trialDays, setTrialDays] = useState(14);
+  
+  // Check if user is coming from trial countdown
+  const isFromTrial = location.hash.includes("from=trial") || 
+                      new URLSearchParams(location.search).get("from") === "trial";
 
   useEffect(() => {
     const fetchData = async () => {
@@ -141,14 +145,26 @@ export function PricingSection() {
         {/* Section header */}
         <div className="text-center max-w-3xl mx-auto mb-12">
           <span className="text-sm font-semibold text-primary uppercase tracking-wider">
-            Planos
+            {isFromTrial ? "Efetive sua Assinatura" : "Planos"}
           </span>
           <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mt-4 mb-6">
-            Escolha o plano ideal pro{" "}
-            <span className="text-gradient-gold">seu momento</span>
+            {isFromTrial ? (
+              <>
+                Continue aproveitando o{" "}
+                <span className="text-gradient-gold">SalãoCloud</span>
+              </>
+            ) : (
+              <>
+                Escolha o plano ideal pro{" "}
+                <span className="text-gradient-gold">seu momento</span>
+              </>
+            )}
           </h2>
           <p className="text-lg text-muted-foreground">
-            Comece grátis por {trialDays} dias. Sem cartão de crédito. Cancele quando quiser.
+            {isFromTrial 
+              ? "Selecione o plano que melhor atende às necessidades do seu negócio e continue sem interrupções."
+              : `Comece grátis por ${trialDays} dias. Sem cartão de crédito. Cancele quando quiser.`
+            }
           </p>
         </div>
 
@@ -279,8 +295,11 @@ export function PricingSection() {
                       }`}
                       asChild
                     >
-                      <Link to="/auth?mode=signup">
-                        {plan.slug === "premium" ? "Falar com Vendas" : "Começar Grátis"}
+                      <Link to={isFromTrial ? `/auth?mode=signup&plan=${plan.slug}&checkout=true` : "/auth?mode=signup"}>
+                        {isFromTrial 
+                          ? (plan.slug === "premium" ? "Falar com Vendas" : "Assinar Agora")
+                          : (plan.slug === "premium" ? "Falar com Vendas" : "Começar Grátis")
+                        }
                       </Link>
                     </Button>
                   </div>
