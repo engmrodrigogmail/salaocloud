@@ -659,33 +659,88 @@ export default function IntegrationGuides() {
                     <AccordionTrigger>
                       <div className="flex items-center gap-3">
                         <span className="flex items-center justify-center w-8 h-8 rounded-full bg-[#25D366] text-white text-sm font-bold">6</span>
-                        <span>Configurar Webhooks (opcional)</span>
+                        <span>Configurar Webhook para Lembretes Automáticos</span>
+                        <Badge className="ml-2 bg-red-500">IMPORTANTE</Badge>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="space-y-4 pl-11">
                       <div className="space-y-3">
+                        <Alert variant="default" className="bg-amber-50 border-amber-200">
+                          <AlertTriangle className="h-4 w-4 text-amber-600" />
+                          <AlertDescription className="text-amber-800">
+                            <strong>Esta etapa é obrigatória</strong> para que os clientes possam confirmar ou cancelar 
+                            agendamentos via WhatsApp. Sem ela, os botões de resposta não funcionarão.
+                          </AlertDescription>
+                        </Alert>
+                        
                         <p className="text-sm text-muted-foreground">
-                          Configure webhooks para receber notificações de mensagens recebidas:
+                          Configure o webhook para receber as respostas dos clientes quando clicarem nos botões de confirmação:
                         </p>
-                        <ol className="list-decimal list-inside space-y-2 text-sm">
-                          <li>Na instância, vá em <strong>"Webhooks"</strong></li>
-                          <li>Adicione a URL do seu webhook:
-                            <div className="bg-muted p-2 rounded mt-2 flex items-center gap-2">
-                              <code className="text-xs flex-1">https://seu-projeto.supabase.co/functions/v1/zapi-webhook</code>
-                              <Button variant="outline" size="sm" onClick={() => copyToClipboard("https://seu-projeto.supabase.co/functions/v1/zapi-webhook")}>
-                                <Copy className="h-3 w-3" />
-                              </Button>
+                        
+                        <ol className="list-decimal list-inside space-y-3 text-sm">
+                          <li>No painel da Z-API, acesse sua instância</li>
+                          <li>Vá em <strong>"Webhooks"</strong> ou <strong>"Configurações" → "Webhooks"</strong></li>
+                          <li>
+                            <strong>Configure a URL do webhook:</strong>
+                            <div className="bg-muted p-3 rounded mt-2 space-y-2">
+                              <label className="text-xs font-medium text-muted-foreground">URL do Webhook (copie exatamente):</label>
+                              <div className="flex items-center gap-2">
+                                <code className="text-xs bg-background px-3 py-2 rounded flex-1 break-all">
+                                  https://gdjlajktmjskhpugzinh.supabase.co/functions/v1/zapi-webhook
+                                </code>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  onClick={() => copyToClipboard("https://gdjlajktmjskhpugzinh.supabase.co/functions/v1/zapi-webhook")}
+                                >
+                                  <Copy className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
                           </li>
-                          <li>Selecione os eventos:
-                            <ul className="list-disc list-inside ml-4 mt-2 space-y-1 text-muted-foreground">
-                              <li>on-message-received (mensagem recebida)</li>
-                              <li>on-message-send (mensagem enviada)</li>
-                              <li>on-connection-update (status da conexão)</li>
+                          <li>
+                            <strong>Selecione os eventos a receber:</strong>
+                            <ul className="list-disc list-inside ml-4 mt-2 space-y-1">
+                              <li className="text-muted-foreground">✅ <code>on-button-response-message</code> - Resposta de botões (OBRIGATÓRIO)</li>
+                              <li className="text-muted-foreground">✅ <code>on-message-received</code> - Mensagens recebidas</li>
+                              <li className="text-muted-foreground">⚡ <code>on-connection-update</code> - Status da conexão (opcional)</li>
                             </ul>
                           </li>
-                          <li>Salve as configurações</li>
+                          <li>Clique em <strong>"Salvar"</strong> ou <strong>"Atualizar"</strong></li>
+                          <li>
+                            <strong>Teste a configuração:</strong>
+                            <p className="text-muted-foreground mt-1">
+                              Envie uma mensagem de teste com botões pelo painel de Status Z-API e verifique se a resposta é processada.
+                            </p>
+                          </li>
                         </ol>
+
+                        <div className="bg-green-50 border border-green-200 p-4 rounded-lg mt-4">
+                          <div className="flex items-start gap-2">
+                            <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                            <div>
+                              <p className="font-medium text-green-800">Como funciona o sistema de lembretes:</p>
+                              <ul className="text-sm text-green-700 mt-2 space-y-1">
+                                <li>• <strong>24h antes:</strong> Cliente recebe lembrete com botões de confirmação</li>
+                                <li>• <strong>1h antes:</strong> Segundo lembrete para quem não respondeu</li>
+                                <li>• <strong>"Com certeza estarei aí":</strong> Agendamento marcado como confirmado (luz verde)</li>
+                                <li>• <strong>"Não conseguirei ir":</strong> Agendamento cancelado automaticamente, horário liberado</li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="bg-muted p-4 rounded-lg">
+                          <p className="text-sm font-medium mb-2">Exemplo de payload recebido:</p>
+                          <pre className="text-xs bg-background p-3 rounded overflow-x-auto">
+{`{
+  "phone": "5511999999999",
+  "buttonPayload": "confirm_abc123-def456",
+  "buttonText": "Com certeza estarei aí",
+  "messageId": "3EB0C767..."
+}`}
+                          </pre>
+                        </div>
                       </div>
                     </AccordionContent>
                   </AccordionItem>
