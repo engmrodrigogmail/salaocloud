@@ -238,21 +238,25 @@ export default function AdminStripe() {
   }, []);
 
   const fetchSyncStatus = useCallback(async () => {
+    const requestId = crypto.randomUUID?.() ?? `req_${Date.now()}_${Math.random().toString(16).slice(2)}`;
     try {
+      console.debug("[ADMIN-STRIPE] check_sync_status:start", { requestId });
       const { data, error } = await supabase.functions.invoke("stripe-sync", {
-        body: { action: "check_sync_status" },
+        body: { action: "check_sync_status", client_request_id: requestId },
       });
       if (error) throw error;
+
+      console.debug("[ADMIN-STRIPE] check_sync_status:response", { requestId, data });
       setSyncStatus(data);
       setLastSyncCheck(new Date());
-      
+
       // Generate alerts based on sync status
       const alerts = checkDesyncAlerts(data, new Date());
       setDesyncAlerts(alerts);
-      
+
       return data;
     } catch (error) {
-      console.error("Error fetching sync status:", error);
+      console.error("[ADMIN-STRIPE] check_sync_status:error", { requestId, error });
       return null;
     }
   }, [checkDesyncAlerts]);
@@ -286,13 +290,13 @@ export default function AdminStripe() {
   // Auto-sync: check sync status every 5 minutes when enabled
   useEffect(() => {
     refreshAll();
-    
+
     if (autoSyncEnabled) {
       const interval = setInterval(() => {
         fetchSyncStatus();
         setLastUpdate(new Date());
       }, 5 * 60 * 1000);
-      
+
       return () => clearInterval(interval);
     }
   }, [refreshAll, autoSyncEnabled, fetchSyncStatus]);
@@ -303,13 +307,27 @@ export default function AdminStripe() {
       return;
     }
 
+    const requestId = crypto.randomUUID?.() ?? `req_${Date.now()}_${Math.random().toString(16).slice(2)}`;
     setSyncing(true);
     try {
       const plansToExport = portalPlans.filter((p) => selectedPortalPlans.includes(p.id));
+      console.debug("[ADMIN-STRIPE] export_to_stripe:start", {
+        requestId,
+        plans: plansToExport.map((p) => ({
+          id: p.id,
+          name: p.name,
+          price_monthly: p.price_monthly,
+          stripe_product_id: p.stripe_product_id,
+          stripe_price_id_monthly: p.stripe_price_id_monthly,
+        })),
+      });
+
       const { data, error } = await supabase.functions.invoke("stripe-sync", {
-        body: { action: "export_to_stripe", plans: plansToExport },
+        body: { action: "export_to_stripe", client_request_id: requestId, plans: plansToExport },
       });
       if (error) throw error;
+
+      console.debug("[ADMIN-STRIPE] export_to_stripe:response", { requestId, data });
 
       const successCount = data.results.filter((r: { success: boolean }) => r.success).length;
       toast.success(`${successCount} plano(s) exportado(s) com sucesso`);
@@ -317,7 +335,7 @@ export default function AdminStripe() {
       setSelectedPortalPlans([]);
       refreshAll();
     } catch (error) {
-      console.error("Error exporting to Stripe:", error);
+      console.error("[ADMIN-STRIPE] export_to_stripe:error", { requestId, error });
       toast.error("Erro ao exportar planos para o Stripe");
     } finally {
       setSyncing(false);
