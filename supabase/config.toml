@@ -24,3 +24,6 @@ verify_jwt = false
 [functions.support-chat]
 verify_jwt = false
 
+[functions.zapi-whatsapp]
+verify_jwt = false
+

@@ -28,6 +28,7 @@ import AdminSettings from "./pages/admin/Settings";
 import AdminConversations from "./pages/admin/Conversations";
 import AdminPortalStructure from "./pages/admin/PortalStructure";
 import AdminIntegrationGuides from "./pages/admin/IntegrationGuides";
+import AdminWhatsAppTest from "./pages/admin/WhatsAppTest";
 
 // Portal Pages (Establishment Admin - configuration & settings)
 import PortalDashboard from "./pages/portal/Dashboard";
@@ -154,6 +155,14 @@ const App = () => (
                 element={
                   <ProtectedRoute allowedRoles={["super_admin"]}>
                     <AdminIntegrationGuides />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/whatsapp-test"
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin"]}>
+                    <AdminWhatsAppTest />
                   </ProtectedRoute>
                 }
               />
