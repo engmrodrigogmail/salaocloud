@@ -97,9 +97,13 @@ export default function PortalSubscription() {
     return Math.round((savings / annualFromMonthly) * 100);
   };
 
+  const formatPrice = (value: number) => {
+    return value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
   const getDisplayPrice = (plan: Plan) => {
     if (isYearly && plan.price_yearly) {
-      return Math.round(plan.price_yearly / 12);
+      return plan.price_yearly / 12;
     }
     return plan.price_monthly;
   };
@@ -113,7 +117,7 @@ export default function PortalSubscription() {
         price = Math.max(0, price - appliedCoupon.discount_value);
       }
     }
-    return Math.round(price);
+    return price;
   };
 
   const getTrialStatus = () => {
@@ -376,11 +380,11 @@ export default function PortalSubscription() {
                     <div className="flex items-baseline gap-1">
                       {hasDiscount && (
                         <span className="text-lg line-through opacity-60">
-                          R${displayPrice}
+                          R${formatPrice(displayPrice)}
                         </span>
                       )}
                       <span className="text-4xl font-bold">
-                        R${finalPrice}
+                        R${formatPrice(finalPrice)}
                       </span>
                       <span className={cn(
                         "text-sm",
@@ -394,7 +398,7 @@ export default function PortalSubscription() {
                         "mt-1 text-sm",
                         plan.is_highlighted ? "text-white/80" : "text-muted-foreground"
                       )}>
-                        <span className="line-through opacity-60">R${plan.price_monthly}/mês</span>
+                        <span className="line-through opacity-60">R${formatPrice(plan.price_monthly)}/mês</span>
                         <span className={cn(
                           "ml-2 font-semibold",
                           plan.is_highlighted ? "text-white" : "text-green-600"
@@ -408,7 +412,7 @@ export default function PortalSubscription() {
                         "text-xs mt-1",
                         plan.is_highlighted ? "text-white/60" : "text-muted-foreground"
                       )}>
-                        Cobrado R${plan.price_yearly}/ano
+                        Cobrado R${formatPrice(plan.price_yearly)}/ano
                       </p>
                     )}
                   </div>
