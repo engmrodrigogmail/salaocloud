@@ -18,6 +18,7 @@ import {
   MessageCircle,
   Layout,
   BookOpen,
+  MessageSquare as WhatsAppIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -43,6 +44,7 @@ const navItems = [
   { href: "/admin/conversations", label: "Conversas", icon: MessageCircle },
   { href: "/admin/portal-structure", label: "Estrutura do Portal", icon: Layout },
   { href: "/admin/integration-guides", label: "Guias de Integração", icon: BookOpen },
+  { href: "/admin/whatsapp-test", label: "Teste WhatsApp", icon: WhatsAppIcon },
   { href: "/admin/settings", label: "Configurações", icon: Settings },
 ];
 
