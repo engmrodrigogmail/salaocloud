@@ -66,12 +66,51 @@ serve(async (req) => {
               logStep("Created new product", { id: product.id });
             }
 
-            // Handle monthly price
+            // Handle monthly price - check if price needs to be updated
             let monthlyPriceId = plan.stripe_price_id_monthly;
-            if (!monthlyPriceId && plan.price_monthly > 0) {
+            const expectedMonthlyAmount = Math.round(plan.price_monthly * 100);
+            
+            if (monthlyPriceId && plan.price_monthly > 0) {
+              // Check if existing price matches the expected amount
+              try {
+                const existingPrice = await stripe.prices.retrieve(monthlyPriceId);
+                if (existingPrice.unit_amount !== expectedMonthlyAmount) {
+                  logStep("Price mismatch detected, creating new price", { 
+                    existing: existingPrice.unit_amount, 
+                    expected: expectedMonthlyAmount 
+                  });
+                  // Archive the old price
+                  await stripe.prices.update(monthlyPriceId, { active: false });
+                  logStep("Archived old monthly price", { id: monthlyPriceId });
+                  // Create new price with correct amount
+                  const newMonthlyPrice = await stripe.prices.create({
+                    product: product.id,
+                    unit_amount: expectedMonthlyAmount,
+                    currency: "brl",
+                    recurring: { interval: "month" },
+                    metadata: { type: "monthly" },
+                  });
+                  monthlyPriceId = newMonthlyPrice.id;
+                  logStep("Created new monthly price", { id: monthlyPriceId, amount: expectedMonthlyAmount });
+                }
+              } catch (priceError) {
+                logStep("Error checking existing price, creating new one", { error: priceError instanceof Error ? priceError.message : String(priceError) });
+                // Price doesn't exist or error, create new one
+                const newMonthlyPrice = await stripe.prices.create({
+                  product: product.id,
+                  unit_amount: expectedMonthlyAmount,
+                  currency: "brl",
+                  recurring: { interval: "month" },
+                  metadata: { type: "monthly" },
+                });
+                monthlyPriceId = newMonthlyPrice.id;
+                logStep("Created monthly price after error", { id: monthlyPriceId });
+              }
+            } else if (!monthlyPriceId && plan.price_monthly > 0) {
+              // No existing price, create new one
               const monthlyPrice = await stripe.prices.create({
                 product: product.id,
-                unit_amount: Math.round(plan.price_monthly * 100),
+                unit_amount: expectedMonthlyAmount,
                 currency: "brl",
                 recurring: { interval: "month" },
                 metadata: { type: "monthly" },
@@ -80,18 +119,57 @@ serve(async (req) => {
               logStep("Created monthly price", { id: monthlyPriceId });
             }
 
-            // Handle yearly price
+            // Handle yearly price - check if price needs to be updated
             let yearlyPriceId = plan.stripe_price_id_yearly;
-            if (!yearlyPriceId && plan.price_yearly && plan.price_yearly > 0) {
-              const yearlyPrice = await stripe.prices.create({
-                product: product.id,
-                unit_amount: Math.round(plan.price_yearly * 100),
-                currency: "brl",
-                recurring: { interval: "year" },
-                metadata: { type: "yearly" },
-              });
-              yearlyPriceId = yearlyPrice.id;
-              logStep("Created yearly price", { id: yearlyPriceId });
+            if (plan.price_yearly && plan.price_yearly > 0) {
+              const expectedYearlyAmount = Math.round(plan.price_yearly * 100);
+              
+              if (yearlyPriceId) {
+                try {
+                  const existingYearlyPrice = await stripe.prices.retrieve(yearlyPriceId);
+                  if (existingYearlyPrice.unit_amount !== expectedYearlyAmount) {
+                    logStep("Yearly price mismatch detected, creating new price", { 
+                      existing: existingYearlyPrice.unit_amount, 
+                      expected: expectedYearlyAmount 
+                    });
+                    // Archive the old price
+                    await stripe.prices.update(yearlyPriceId, { active: false });
+                    logStep("Archived old yearly price", { id: yearlyPriceId });
+                    // Create new price
+                    const newYearlyPrice = await stripe.prices.create({
+                      product: product.id,
+                      unit_amount: expectedYearlyAmount,
+                      currency: "brl",
+                      recurring: { interval: "year" },
+                      metadata: { type: "yearly" },
+                    });
+                    yearlyPriceId = newYearlyPrice.id;
+                    logStep("Created new yearly price", { id: yearlyPriceId, amount: expectedYearlyAmount });
+                  }
+                } catch (priceError) {
+                  // Create new yearly price
+                  const newYearlyPrice = await stripe.prices.create({
+                    product: product.id,
+                    unit_amount: expectedYearlyAmount,
+                    currency: "brl",
+                    recurring: { interval: "year" },
+                    metadata: { type: "yearly" },
+                  });
+                  yearlyPriceId = newYearlyPrice.id;
+                  logStep("Created yearly price after error", { id: yearlyPriceId });
+                }
+              } else {
+                // No existing yearly price, create new one
+                const yearlyPrice = await stripe.prices.create({
+                  product: product.id,
+                  unit_amount: expectedYearlyAmount,
+                  currency: "brl",
+                  recurring: { interval: "year" },
+                  metadata: { type: "yearly" },
+                });
+                yearlyPriceId = yearlyPrice.id;
+                logStep("Created yearly price", { id: yearlyPriceId });
+              }
             }
 
             // Update portal database with Stripe IDs
