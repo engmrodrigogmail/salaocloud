@@ -16,6 +16,7 @@ import {
   Eye,
   UserCircle,
   MessageCircle,
+  Layout,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +40,7 @@ const navItems = [
   { href: "/admin/plans", label: "Planos", icon: Package },
   { href: "/admin/stripe", label: "Stripe", icon: CreditCard },
   { href: "/admin/conversations", label: "Conversas", icon: MessageCircle },
+  { href: "/admin/portal-structure", label: "Estrutura do Portal", icon: Layout },
   { href: "/admin/settings", label: "Configurações", icon: Settings },
 ];
 
