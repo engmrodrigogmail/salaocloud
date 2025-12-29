@@ -62,9 +62,9 @@ async function zapiFetchJson(
   const startedAt = Date.now();
 
   const headers = new Headers(init.headers);
-  // Z-API seems to expect this header key as "client-token" (some gateways are picky).
+  // Z-API docs specify the header name as "Client-Token".
   if (Z_API_CLIENT_TOKEN) {
-    headers.set('client-token', Z_API_CLIENT_TOKEN);
+    headers.set('Client-Token', Z_API_CLIENT_TOKEN);
   }
   headers.set('Content-Type', 'application/json');
 
