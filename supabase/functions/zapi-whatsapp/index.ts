@@ -51,7 +51,10 @@ async function sendZApiMessage(phone: string, message: string): Promise<{ succes
   try {
     const response = await fetch(`https://api.z-api.io/instances/${Z_API_INSTANCE_ID}/token/${Z_API_TOKEN}/send-text`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Client-Token': Z_API_TOKEN
+      },
       body: JSON.stringify({ phone: formattedPhone, message }),
     });
 
@@ -86,7 +89,10 @@ async function sendInteractiveMessage(
   try {
     const response = await fetch(`https://api.z-api.io/instances/${Z_API_INSTANCE_ID}/token/${Z_API_TOKEN}/send-button-list`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Client-Token': Z_API_TOKEN
+      },
       body: JSON.stringify({
         phone: formattedPhone,
         message: message,
@@ -123,7 +129,10 @@ async function checkZApiStatus(): Promise<{ connected: boolean; status?: string;
   try {
     const response = await fetch(`https://api.z-api.io/instances/${Z_API_INSTANCE_ID}/token/${Z_API_TOKEN}/status`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'Client-Token': Z_API_TOKEN
+      },
     });
 
     const data = await response.json();
