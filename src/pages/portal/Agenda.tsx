@@ -22,6 +22,7 @@ import { BlockScheduleDialog } from "@/components/schedule/BlockScheduleDialog";
 import { BlockedTimesList } from "@/components/schedule/BlockedTimesList";
 import { ConfirmedIndicator } from "@/components/schedule/ConfirmedIndicator";
 import { CancelledHistoryDialog } from "@/components/schedule/CancelledHistoryDialog";
+import { AgendaTimeSlots } from "@/components/schedule/AgendaTimeSlots";
 import { 
   format, addDays, addMonths, addYears, startOfWeek, endOfWeek, 
   eachDayOfInterval, isSameDay, parseISO, startOfDay, startOfMonth, 
@@ -41,10 +42,21 @@ type Appointment = Tables<"appointments"> & {
   cancelled_via_whatsapp?: boolean | null;
 };
 
+interface WorkingHours {
+  [key: string]: {
+    open: string;
+    close: string;
+    enabled: boolean;
+  };
+}
+
 interface Establishment {
   id: string;
   name: string;
   owner_id: string;
+  working_hours: WorkingHours | null;
+  agenda_slot_interval: number | null;
+  agenda_expand_hours: number | null;
 }
 
 export default function PortalAgenda() {
@@ -101,7 +113,7 @@ export default function PortalAgenda() {
     try {
       const { data, error } = await supabase
         .from("establishments")
-        .select("id, name, owner_id")
+        .select("id, name, owner_id, working_hours, agenda_slot_interval, agenda_expand_hours")
         .eq("slug", slug)
         .single();
 
@@ -115,7 +127,10 @@ export default function PortalAgenda() {
         return;
       }
 
-      setEstablishment(data);
+      setEstablishment({
+        ...data,
+        working_hours: data.working_hours as unknown as WorkingHours | null,
+      });
     } catch (error) {
       console.error("Error fetching establishment:", error);
       navigate("/");
@@ -517,43 +532,16 @@ export default function PortalAgenda() {
         ) : viewMode === "day" ? (
           <Card>
             <CardContent className="p-4">
-              <ScrollArea className="h-[600px]">
-                <div className="space-y-1">
-                  {timeSlots30min.map((time) => {
-                    const status = getSlotStatus(currentDate, time);
-                    const appointment = getAppointmentAtSlot(currentDate, time);
-                    return (
-                      <div
-                        key={time}
-                        className={`flex items-center gap-4 p-3 rounded-lg border cursor-pointer transition-colors ${
-                          status === "occupied" 
-                            ? "bg-red-500/10 border-red-500/30 hover:bg-red-500/20" 
-                            : "bg-green-500/10 border-green-500/30 hover:bg-green-500/20"
-                        }`}
-                        onClick={() => appointment && openViewDialog(appointment)}
-                      >
-                        <div className="w-16 font-mono text-sm font-medium">{time}</div>
-                        {appointment ? (
-                          <div className="flex-1 flex items-center justify-between">
-                            <div>
-                              <div className="font-medium">{appointment.client_name}</div>
-                              <div className="text-sm text-muted-foreground">
-                                {appointment.services?.name} • {appointment.professionals?.name}
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm">{appointment.client_phone}</span>
-                              {getStatusBadge(appointment.status)}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex-1 text-sm text-muted-foreground">Disponível</div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
+              <AgendaTimeSlots
+                date={currentDate}
+                appointments={filteredAppointments}
+                professionals={professionals}
+                workingHours={establishment?.working_hours || null}
+                slotInterval={establishment?.agenda_slot_interval || 30}
+                expandHours={establishment?.agenda_expand_hours || 1}
+                onAppointmentClick={openViewDialog}
+                viewMode="day"
+              />
             </CardContent>
           </Card>
         ) : viewMode === "week" ? (
@@ -561,7 +549,6 @@ export default function PortalAgenda() {
             <CardContent className="p-4 overflow-x-auto">
               <div className="grid grid-cols-7 gap-2 min-w-[700px]">
                 {getWeekDays().map((day) => {
-                  const dayAppointments = getAppointmentsForDay(day);
                   const isToday = isSameDay(day, new Date());
                   return (
                     <div key={day.toISOString()} className="space-y-2">
@@ -569,40 +556,16 @@ export default function PortalAgenda() {
                         <div className="text-xs">{format(day, "EEE", { locale: ptBR })}</div>
                         <div className="text-lg font-bold">{format(day, "dd")}</div>
                       </div>
-                      <div className="space-y-1">
-                        {dayAppointments.length > 0 ? (
-                          dayAppointments.slice(0, 5).map((apt) => (
-                            <div
-                              key={apt.id}
-                              onClick={() => openViewDialog(apt)}
-                              className={`p-2 rounded text-xs cursor-pointer transition-colors relative ${
-                                apt.status === "cancelled" 
-                                  ? "bg-red-100 text-red-800 line-through" 
-                                  : apt.status === "completed"
-                                    ? "bg-green-100 text-green-800"
-                                    : apt.status === "confirmed"
-                                      ? "bg-blue-100 text-blue-800"
-                                      : "bg-amber-100 text-amber-800"
-                              }`}
-                            >
-                              <div className="flex items-center gap-1 font-medium truncate">
-                                <ConfirmedIndicator isConfirmed={!!apt.confirmed_at} />
-                                {format(parseISO(apt.scheduled_at), "HH:mm")}
-                              </div>
-                              <div className="truncate">{apt.client_name}</div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="p-2 text-xs text-center text-muted-foreground bg-green-500/10 rounded border border-green-500/30">
-                            Livre
-                          </div>
-                        )}
-                        {dayAppointments.length > 5 && (
-                          <div className="text-xs text-center text-muted-foreground">
-                            +{dayAppointments.length - 5} mais
-                          </div>
-                        )}
-                      </div>
+                      <AgendaTimeSlots
+                        date={day}
+                        appointments={filteredAppointments}
+                        professionals={professionals}
+                        workingHours={establishment?.working_hours || null}
+                        slotInterval={establishment?.agenda_slot_interval || 30}
+                        expandHours={establishment?.agenda_expand_hours || 1}
+                        onAppointmentClick={openViewDialog}
+                        viewMode="week"
+                      />
                     </div>
                   );
                 })}

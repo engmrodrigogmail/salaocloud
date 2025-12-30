@@ -846,6 +846,8 @@ export type Database = {
       establishments: {
         Row: {
           address: string | null
+          agenda_expand_hours: number | null
+          agenda_slot_interval: number | null
           cancellation_policy: string | null
           city: string | null
           created_at: string
@@ -870,6 +872,8 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          agenda_expand_hours?: number | null
+          agenda_slot_interval?: number | null
           cancellation_policy?: string | null
           city?: string | null
           created_at?: string
@@ -894,6 +898,8 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          agenda_expand_hours?: number | null
+          agenda_slot_interval?: number | null
           cancellation_policy?: string | null
           city?: string | null
           created_at?: string
