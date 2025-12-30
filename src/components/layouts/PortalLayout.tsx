@@ -17,6 +17,7 @@ import {
   Calendar,
   DollarSign,
   Crown,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,10 +27,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { supabase } from "@/integrations/supabase/client";
+import { usePortalTour } from "@/hooks/usePortalTour";
 import logo from "@/assets/logo-salaocloud.png";
 
 interface PortalLayoutProps {
@@ -44,6 +52,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
   const { slug } = useParams<{ slug: string }>();
   const { user, signOut } = useAuth();
   const { isImpersonating } = useImpersonation();
+  const { startTour } = usePortalTour({ autoStart: true });
 
   useEffect(() => {
     if (slug) {
@@ -108,10 +117,30 @@ export function PortalLayout({ children }: PortalLayoutProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={startTour}
+                  className="h-9 w-9"
+                  id="tour-help-button"
+                >
+                  <HelpCircle className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Tour guiado</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           <Button 
             variant="outline" 
             size="sm"
             onClick={() => navigate(`/interno/${slug}`)}
+            id="internal-area-button"
           >
             Área Interna
           </Button>
