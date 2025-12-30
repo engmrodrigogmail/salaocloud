@@ -50,23 +50,34 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
   }, [establishmentId]);
 
   const fetchFeaturesStatus = async () => {
+    console.log("[FeaturesCheck] Starting fetch for establishment:", establishmentId, "plan:", subscriptionPlan);
     setLoading(true);
     try {
       // Fetch plan limits (trial plan doesn't exist in subscription_plans table)
       let limits: PlanLimits | null = null;
       
       if (subscriptionPlan && subscriptionPlan !== "trial") {
-        const { data: planData } = await supabase
+        console.log("[FeaturesCheck] Fetching plan limits for:", subscriptionPlan);
+        const { data: planData, error: planError } = await supabase
           .from("subscription_plans")
           .select("limits")
           .eq("slug", subscriptionPlan)
           .maybeSingle();
 
-        limits = (planData?.limits as unknown as PlanLimits) || null;
+        if (planError) {
+          console.error("[FeaturesCheck] Error fetching plan:", planError);
+        } else {
+          console.log("[FeaturesCheck] Plan data:", planData);
+          limits = (planData?.limits as unknown as PlanLimits) || null;
+        }
+      } else {
+        console.log("[FeaturesCheck] Skipping plan fetch - trial period or no plan");
       }
       
       setPlanLimits(limits);
 
+      console.log("[FeaturesCheck] Fetching establishment data...");
+      
       // Fetch all data in parallel
       const [
         professionalsRes,
@@ -80,7 +91,6 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
         commissionsRes,
         paymentMethodsRes,
         categoriesRes,
-        professionalServicesRes,
         productsRes,
       ] = await Promise.all([
         supabase.from("professionals").select("id, working_hours").eq("establishment_id", establishmentId),
@@ -94,9 +104,32 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
         supabase.from("professional_commissions").select("id").eq("establishment_id", establishmentId),
         supabase.from("payment_methods").select("id, is_active").eq("establishment_id", establishmentId),
         supabase.from("service_categories").select("id").eq("establishment_id", establishmentId),
-        supabase.from("professional_services").select("professional_id, service_id"),
         supabase.from("products").select("id, is_active").eq("establishment_id", establishmentId),
       ]);
+
+      console.log("[FeaturesCheck] Data fetch complete, checking for errors...");
+
+      // Log any errors from the queries
+      const queries = [
+        { name: "professionals", res: professionalsRes },
+        { name: "services", res: servicesRes },
+        { name: "clients", res: clientsRes },
+        { name: "appointments", res: appointmentsRes },
+        { name: "loyalty", res: loyaltyRes },
+        { name: "coupons", res: couponsRes },
+        { name: "tabs", res: tabsRes },
+        { name: "commissionRules", res: commissionRulesRes },
+        { name: "commissions", res: commissionsRes },
+        { name: "paymentMethods", res: paymentMethodsRes },
+        { name: "categories", res: categoriesRes },
+        { name: "products", res: productsRes },
+      ];
+
+      queries.forEach(({ name, res }) => {
+        if (res.error) {
+          console.error(`[FeaturesCheck] Error in ${name}:`, res.error);
+        }
+      });
 
       const professionals = professionalsRes.data || [];
       const services = servicesRes.data || [];
@@ -109,9 +142,37 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
       const commissions = commissionsRes.data || [];
       const paymentMethods = paymentMethodsRes.data || [];
       const categories = categoriesRes.data || [];
-      const professionalServices = professionalServicesRes.data || [];
       const products = productsRes.data || [];
 
+      console.log("[FeaturesCheck] Data counts:", {
+        professionals: professionals.length,
+        services: services.length,
+        clients: clients.length,
+        appointments: appointments.length,
+        loyaltyPrograms: loyaltyPrograms.length,
+        coupons: coupons.length,
+        tabs: tabs.length,
+        commissionRules: commissionRules.length,
+        commissions: commissions.length,
+        paymentMethods: paymentMethods.length,
+        categories: categories.length,
+        products: products.length,
+      });
+
+      // Fetch professional_services separately to avoid RLS issues
+      console.log("[FeaturesCheck] Fetching professional_services...");
+      const { data: professionalServicesData, error: psError } = await supabase
+        .from("professional_services")
+        .select("professional_id, service_id");
+      
+      if (psError) {
+        console.error("[FeaturesCheck] Error fetching professional_services:", psError);
+      }
+      
+      const professionalServices = professionalServicesData || [];
+
+      console.log("[FeaturesCheck] Processing professional services...");
+      
       // Check if professionals have services linked
       const professionalIds = professionals.map(p => p.id);
       const professionalsWithServices = new Set(
@@ -123,6 +184,8 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
         const hours = p.working_hours as Record<string, unknown> | null;
         return hours && Object.keys(hours).length > 0;
       });
+
+      console.log("[FeaturesCheck] Building features list...");
 
       // Build features list
       const featuresList: FeatureCheck[] = [
@@ -290,11 +353,14 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
         },
       ];
 
+      console.log("[FeaturesCheck] Features list built with", featuresList.length, "items");
       setFeatures(featuresList);
+      console.log("[FeaturesCheck] Fetch complete!");
     } catch (error) {
-      console.error("Error fetching features status:", error);
+      console.error("[FeaturesCheck] Error fetching features status:", error);
     } finally {
       setLoading(false);
+      console.log("[FeaturesCheck] Loading set to false");
     }
   };
 
