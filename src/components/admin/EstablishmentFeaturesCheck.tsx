@@ -113,7 +113,7 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 overflow-y-auto max-h-[70vh]">
       <div className="flex flex-col gap-3 rounded-lg border bg-muted/20 p-4">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
