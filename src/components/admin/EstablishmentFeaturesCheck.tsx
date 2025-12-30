@@ -52,14 +52,19 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
   const fetchFeaturesStatus = async () => {
     setLoading(true);
     try {
-      // Fetch plan limits
-      const { data: planData } = await supabase
-        .from("subscription_plans")
-        .select("limits")
-        .eq("slug", subscriptionPlan)
-        .single();
+      // Fetch plan limits (trial plan doesn't exist in subscription_plans table)
+      let limits: PlanLimits | null = null;
+      
+      if (subscriptionPlan && subscriptionPlan !== "trial") {
+        const { data: planData } = await supabase
+          .from("subscription_plans")
+          .select("limits")
+          .eq("slug", subscriptionPlan)
+          .maybeSingle();
 
-      const limits = (planData?.limits as unknown as PlanLimits) || null;
+        limits = (planData?.limits as unknown as PlanLimits) || null;
+      }
+      
       setPlanLimits(limits);
 
       // Fetch all data in parallel
