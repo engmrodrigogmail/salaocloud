@@ -13,6 +13,13 @@ interface CommissionRule {
   is_challenge: boolean;
 }
 
+interface ProfessionalServiceCommission {
+  professional_id: string;
+  service_id: string;
+  commission_type: "fixed" | "percentage";
+  commission_value: number;
+}
+
 interface CalculatedCommission {
   professional_id: string;
   commission_rule_id: string | null;
@@ -40,6 +47,29 @@ export function useCommissionCalculator(establishmentId: string | null) {
     }
 
     return (data || []) as CommissionRule[];
+  };
+
+  const fetchProfessionalServiceCommissions = async (
+    professionalIds: string[]
+  ): Promise<ProfessionalServiceCommission[]> => {
+    if (professionalIds.length === 0) return [];
+
+    const { data, error } = await supabase
+      .from("professional_services")
+      .select("professional_id, service_id, commission_type, commission_value")
+      .in("professional_id", professionalIds);
+
+    if (error) {
+      console.error("Error fetching professional service commissions:", error);
+      return [];
+    }
+
+    return (data || []).map(ps => ({
+      professional_id: ps.professional_id,
+      service_id: ps.service_id,
+      commission_type: ps.commission_type as "fixed" | "percentage",
+      commission_value: ps.commission_value,
+    }));
   };
 
   const findApplicableRule = (
@@ -91,13 +121,14 @@ export function useCommissionCalculator(establishmentId: string | null) {
   };
 
   const calculateCommission = (
-    rule: CommissionRule,
+    type: "fixed" | "percentage",
+    value: number,
     referenceValue: number
   ): number => {
-    if (rule.commission_type === "fixed") {
-      return rule.commission_value;
+    if (type === "fixed") {
+      return value;
     } else {
-      return (referenceValue * rule.commission_value) / 100;
+      return (referenceValue * value) / 100;
     }
   };
 
@@ -105,8 +136,17 @@ export function useCommissionCalculator(establishmentId: string | null) {
     tabId: string,
     items: TabItem[]
   ): Promise<CalculatedCommission[]> => {
-    const rules = await fetchActiveRules();
-    if (rules.length === 0) return [];
+    // Get unique professional IDs from items
+    const professionalIds = [...new Set(items
+      .filter(item => item.professional_id)
+      .map(item => item.professional_id!)
+    )];
+
+    // Fetch both commission rules and professional-specific commissions in parallel
+    const [rules, psCommissions] = await Promise.all([
+      fetchActiveRules(),
+      fetchProfessionalServiceCommissions(professionalIds),
+    ]);
 
     const commissions: CalculatedCommission[] = [];
 
@@ -114,20 +154,49 @@ export function useCommissionCalculator(establishmentId: string | null) {
       // Only calculate for items with a professional
       if (!item.professional_id) continue;
 
-      const rule = findApplicableRule(item, rules, item.professional_id);
-      if (!rule) continue;
-
       const referenceValue = item.total_price;
-      const commissionAmount = calculateCommission(rule, referenceValue);
+      let commissionAmount = 0;
+      let description = "";
+      let ruleId: string | null = null;
+
+      // PRIORITY 1: Check for professional-specific service commission (from matrix)
+      if (item.service_id) {
+        const psCommission = psCommissions.find(
+          ps => ps.professional_id === item.professional_id && ps.service_id === item.service_id
+        );
+
+        if (psCommission && psCommission.commission_value > 0) {
+          commissionAmount = calculateCommission(
+            psCommission.commission_type,
+            psCommission.commission_value,
+            referenceValue
+          );
+          description = `${item.name} (comissão específica)`;
+        }
+      }
+
+      // PRIORITY 2: If no specific commission, fall back to commission rules
+      if (commissionAmount === 0 && rules.length > 0) {
+        const rule = findApplicableRule(item, rules, item.professional_id);
+        if (rule) {
+          commissionAmount = calculateCommission(
+            rule.commission_type,
+            rule.commission_value,
+            referenceValue
+          );
+          description = `${item.name} (${rule.name})`;
+          ruleId = rule.id;
+        }
+      }
 
       if (commissionAmount > 0) {
         commissions.push({
           professional_id: item.professional_id,
-          commission_rule_id: rule.id,
+          commission_rule_id: ruleId,
           tab_item_id: item.id,
           reference_value: referenceValue,
           commission_amount: commissionAmount,
-          description: `${item.name} (${rule.name})`,
+          description,
         });
       }
     }
