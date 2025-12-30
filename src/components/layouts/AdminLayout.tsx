@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Activity } from "lucide-react";
+import { Activity, Bot } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -42,6 +42,7 @@ const navItems = [
   { href: "/admin/coupons", label: "Cupons", icon: Ticket },
   { href: "/admin/plans", label: "Planos", icon: Package },
   { href: "/admin/stripe", label: "Stripe", icon: CreditCard },
+  { href: "/admin/ai-addon", label: "Assistente IA", icon: Bot },
   { href: "/admin/conversations", label: "Conversas", icon: MessageCircle },
   { href: "/admin/portal-structure", label: "Estrutura do Portal", icon: Layout },
   { href: "/admin/integration-guides", label: "Guias de Integração", icon: BookOpen },

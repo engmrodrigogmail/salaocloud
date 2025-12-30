@@ -11,6 +11,7 @@ import { Calendar, Clock, User, Phone, Mail, ArrowLeft, ArrowRight, Check, Loade
 import { format, addDays, setHours, setMinutes, isBefore, isAfter, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
+import { EstablishmentAIChat } from "@/components/ai-assistant/EstablishmentAIChat";
 
 type Service = Tables<"services">;
 type Professional = Tables<"professionals">;
@@ -576,6 +577,14 @@ const BookingPage = () => {
           </Card>
         )}
       </div>
+
+      {/* AI Assistant Chat Widget */}
+      {establishment && (
+        <EstablishmentAIChat 
+          establishmentId={establishment.id} 
+          establishmentName={establishment.name}
+        />
+      )}
     </div>
   );
 };
