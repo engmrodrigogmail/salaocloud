@@ -70,13 +70,15 @@ export default function PortalCommissions() {
         </div>
 
         <Tabs defaultValue="matrix" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 max-w-3xl">
-            <TabsTrigger value="matrix">Matriz</TabsTrigger>
-            <TabsTrigger value="tracking">Acompanhamento</TabsTrigger>
-            <TabsTrigger value="rules">Regras</TabsTrigger>
-            <TabsTrigger value="challenges">Desafios</TabsTrigger>
-            <TabsTrigger value="report">Relatório</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-5 sm:max-w-3xl gap-1">
+              <TabsTrigger value="matrix" className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4">Matriz</TabsTrigger>
+              <TabsTrigger value="tracking" className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4">Acompanhamento</TabsTrigger>
+              <TabsTrigger value="rules" className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4">Regras</TabsTrigger>
+              <TabsTrigger value="challenges" className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4">Desafios</TabsTrigger>
+              <TabsTrigger value="report" className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4">Relatório</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="matrix">
             <CommissionMatrixTab establishmentId={establishmentId} />
