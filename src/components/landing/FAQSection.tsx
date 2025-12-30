@@ -23,8 +23,20 @@ export function FAQSection() {
       answer: "Com certeza! Você ganha uma página de agendamento exclusiva que pode compartilhar nas redes sociais, WhatsApp, onde quiser. Seus clientes agendam 24h por dia, sem você precisar atender telefone.",
     },
     {
+      question: "Como funciona o sistema de comandas?",
+      answer: "As comandas digitais permitem adicionar serviços e produtos durante o atendimento, aplicar descontos, dividir pagamentos em diferentes métodos e calcular comissões automaticamente. Tudo em tempo real!",
+    },
+    {
+      question: "Posso controlar as comissões da minha equipe?",
+      answer: "Sim! Você pode definir comissões por porcentagem ou valor fixo, criar regras específicas por serviço ou produto, e acompanhar os ganhos de cada profissional em relatórios detalhados.",
+    },
+    {
+      question: "Como funciona o programa de fidelidade?",
+      answer: "Você cria regras de pontos (ex: R$1 = 1 ponto) e define recompensas que os clientes podem resgatar. Tudo automático! O sistema acompanha os pontos de cada cliente.",
+    },
+    {
       question: "Funciona no celular?",
-      answer: "100%! O Salão Cloud foi feito pensando em quem vive no celular. Tanto você quanto seus clientes podem usar pelo smartphone sem problema nenhum.",
+      answer: "100%! O Salão Cloud foi feito pensando em quem vive no celular. A área interna é otimizada para seus profissionais usarem no dia a dia, direto do smartphone.",
     },
     {
       question: "Preciso instalar alguma coisa?",
@@ -32,7 +44,7 @@ export function FAQSection() {
     },
     {
       question: "E se eu tiver dúvidas ou problemas?",
-      answer: "Nossa equipe de suporte está aqui pra ajudar! Dependendo do seu plano, você tem atendimento por email, chat e até um gerente de conta dedicado.",
+      answer: "Nossa equipe de suporte está aqui pra ajudar! Você pode entrar em contato pelo chat de suporte ou WhatsApp. Além disso, o sistema tem tours guiados que ensinam a usar cada funcionalidade.",
     },
     {
       question: "Posso migrar meus dados de outro sistema?",
