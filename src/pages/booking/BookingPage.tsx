@@ -247,6 +247,15 @@ const BookingPage = () => {
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
+          {establishment.logo_url && (
+            <div className="flex justify-center mb-4">
+              <img 
+                src={establishment.logo_url} 
+                alt={`Logo ${establishment.name}`}
+                className="h-20 w-auto object-contain rounded-lg"
+              />
+            </div>
+          )}
           <h1 className="text-3xl font-display font-bold text-foreground mb-2">
             {establishment.name}
           </h1>
