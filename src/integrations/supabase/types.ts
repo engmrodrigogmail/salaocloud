@@ -14,6 +14,222 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_assistant_conversations: {
+        Row: {
+          channel: string
+          client_id: string | null
+          client_name: string | null
+          client_phone: string | null
+          created_at: string
+          escalated_at: string | null
+          establishment_id: string
+          id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          channel?: string
+          client_id?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          escalated_at?: string | null
+          establishment_id: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          client_id?: string | null
+          client_name?: string | null
+          client_phone?: string | null
+          created_at?: string
+          escalated_at?: string | null
+          establishment_id?: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_assistant_conversations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_assistant_conversations_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_assistant_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          message_type: string
+          metadata: Json | null
+          sender_type: string
+          voice_transcription: string | null
+          voice_url: string | null
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          message_type?: string
+          metadata?: Json | null
+          sender_type: string
+          voice_transcription?: string | null
+          voice_url?: string | null
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          message_type?: string
+          metadata?: Json | null
+          sender_type?: string
+          voice_transcription?: string | null
+          voice_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_assistant_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_assistant_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_assistant_usage: {
+        Row: {
+          created_at: string
+          establishment_id: string
+          id: string
+          message_count: number
+          month_year: string
+          updated_at: string
+          voice_messages_count: number
+        }
+        Insert: {
+          created_at?: string
+          establishment_id: string
+          id?: string
+          message_count?: number
+          month_year: string
+          updated_at?: string
+          voice_messages_count?: number
+        }
+        Update: {
+          created_at?: string
+          establishment_id?: string
+          id?: string
+          message_count?: number
+          month_year?: string
+          updated_at?: string
+          voice_messages_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_assistant_usage_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_assistant_waitlist: {
+        Row: {
+          client_id: string | null
+          client_name: string
+          client_phone: string
+          created_at: string
+          establishment_id: string
+          id: string
+          notified_at: string | null
+          preferred_date: string
+          preferred_time_end: string | null
+          preferred_time_start: string | null
+          professional_id: string | null
+          service_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          client_name: string
+          client_phone: string
+          created_at?: string
+          establishment_id: string
+          id?: string
+          notified_at?: string | null
+          preferred_date: string
+          preferred_time_end?: string | null
+          preferred_time_start?: string | null
+          professional_id?: string | null
+          service_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          client_name?: string
+          client_phone?: string
+          created_at?: string
+          establishment_id?: string
+          id?: string
+          notified_at?: string | null
+          preferred_date?: string
+          preferred_time_end?: string | null
+          preferred_time_start?: string | null
+          professional_id?: string | null
+          service_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_assistant_waitlist_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_assistant_waitlist_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_assistant_waitlist_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_assistant_waitlist_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointment_reminders: {
         Row: {
           appointment_id: string
@@ -477,6 +693,109 @@ export type Database = {
           },
         ]
       }
+      establishment_ai_assistant: {
+        Row: {
+          assistant_name: string
+          availability_mode: string
+          created_at: string
+          custom_instructions: string | null
+          escalation_whatsapp: string | null
+          establishment_id: string
+          id: string
+          is_enabled: boolean
+          language_style: string
+          offline_message: string | null
+          updated_at: string
+          welcome_message: string | null
+          working_hours: Json | null
+        }
+        Insert: {
+          assistant_name?: string
+          availability_mode?: string
+          created_at?: string
+          custom_instructions?: string | null
+          escalation_whatsapp?: string | null
+          establishment_id: string
+          id?: string
+          is_enabled?: boolean
+          language_style?: string
+          offline_message?: string | null
+          updated_at?: string
+          welcome_message?: string | null
+          working_hours?: Json | null
+        }
+        Update: {
+          assistant_name?: string
+          availability_mode?: string
+          created_at?: string
+          custom_instructions?: string | null
+          escalation_whatsapp?: string | null
+          establishment_id?: string
+          id?: string
+          is_enabled?: boolean
+          language_style?: string
+          offline_message?: string | null
+          updated_at?: string
+          welcome_message?: string | null
+          working_hours?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_ai_assistant_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      establishment_ai_subscriptions: {
+        Row: {
+          cancelled_at: string | null
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          establishment_id: string
+          id: string
+          status: string
+          stripe_subscription_id: string | null
+          trial_messages_used: number
+          updated_at: string
+        }
+        Insert: {
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          establishment_id: string
+          id?: string
+          status?: string
+          stripe_subscription_id?: string | null
+          trial_messages_used?: number
+          updated_at?: string
+        }
+        Update: {
+          cancelled_at?: string | null
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          establishment_id?: string
+          id?: string
+          status?: string
+          stripe_subscription_id?: string | null
+          trial_messages_used?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_ai_subscriptions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       establishment_closures: {
         Row: {
           created_at: string
@@ -736,6 +1055,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      platform_ai_addon: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          price_monthly: number
+          stripe_price_id: string | null
+          stripe_product_id: string | null
+          trial_message_limit: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_monthly?: number
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          trial_message_limit?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_monthly?: number
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          trial_message_limit?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       platform_coupon_redemptions: {
         Row: {
