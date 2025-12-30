@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CheckCircle2, XCircle, AlertCircle, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -45,17 +45,78 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
   const [planLimits, setPlanLimits] = useState<PlanLimits | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<string[]>(["cadastro", "financeiro", "marketing", "operacional"]);
 
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<string[]>([]);
+  const diagnosticsRef = useRef<string[]>([]);
+  const fetchSeqRef = useRef(0);
+
+  const safeStringify = (value: unknown) => {
+    try {
+      return JSON.stringify(value);
+    } catch {
+      return String(value);
+    }
+  };
+
+  const appendDiagnostics = (prefix: string, args: unknown[]) => {
+    const msg = args
+      .map((a) => (typeof a === "string" ? a : safeStringify(a)))
+      .join(" ")
+      .trim();
+
+    diagnosticsRef.current = [...diagnosticsRef.current, `${new Date().toISOString()} ${prefix}${msg}`].slice(-300);
+  };
+
+  const startConsoleCapture = () => {
+    const original = {
+      log: console.log,
+      warn: console.warn,
+      error: console.error,
+    };
+
+    console.log = (...args: unknown[]) => {
+      original.log(...args);
+      appendDiagnostics("", args);
+    };
+
+    console.warn = (...args: unknown[]) => {
+      original.warn(...args);
+      appendDiagnostics("WARN ", args);
+    };
+
+    console.error = (...args: unknown[]) => {
+      original.error(...args);
+      appendDiagnostics("ERROR ", args);
+    };
+
+    return () => {
+      console.log = original.log;
+      console.warn = original.warn;
+      console.error = original.error;
+      setDiagnostics([...diagnosticsRef.current]);
+    };
+  };
+
   useEffect(() => {
     fetchFeaturesStatus();
   }, [establishmentId]);
 
   const fetchFeaturesStatus = async () => {
+    const fetchSeq = ++fetchSeqRef.current;
+
+    // reinicia diagnóstico a cada abertura da aba
+    diagnosticsRef.current = [];
+    setDiagnostics([]);
+
+    const stopCapture = startConsoleCapture();
+
     console.log("[FeaturesCheck] Starting fetch for establishment:", establishmentId, "plan:", subscriptionPlan);
     setLoading(true);
+
     try {
       // Fetch plan limits (trial plan doesn't exist in subscription_plans table)
       let limits: PlanLimits | null = null;
-      
+
       if (subscriptionPlan && subscriptionPlan !== "trial") {
         console.log("[FeaturesCheck] Fetching plan limits for:", subscriptionPlan);
         const { data: planData, error: planError } = await supabase
@@ -73,11 +134,12 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
       } else {
         console.log("[FeaturesCheck] Skipping plan fetch - trial period or no plan");
       }
-      
+
+      if (fetchSeq !== fetchSeqRef.current) return;
       setPlanLimits(limits);
 
       console.log("[FeaturesCheck] Fetching establishment data...");
-      
+
       // Fetch all data in parallel
       const [
         professionalsRes,
@@ -106,6 +168,8 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
         supabase.from("service_categories").select("id").eq("establishment_id", establishmentId),
         supabase.from("products").select("id, is_active").eq("establishment_id", establishmentId),
       ]);
+
+      if (fetchSeq !== fetchSeqRef.current) return;
 
       console.log("[FeaturesCheck] Data fetch complete, checking for errors...");
 
@@ -159,28 +223,44 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
         products: products.length,
       });
 
-      // Fetch professional_services separately to avoid RLS issues
+      // Importante: NUNCA buscar professional_services sem filtro (pode puxar a tabela inteira e congelar a UI)
       console.log("[FeaturesCheck] Fetching professional_services...");
-      const { data: professionalServicesData, error: psError } = await supabase
-        .from("professional_services")
-        .select("professional_id, service_id");
-      
-      if (psError) {
-        console.error("[FeaturesCheck] Error fetching professional_services:", psError);
+      const professionalIds = professionals.map((p) => p.id);
+
+      let professionalServices: { professional_id: string; service_id: string }[] = [];
+
+      if (professionalIds.length > 0) {
+        const idsForQuery = professionalIds.slice(0, 1000);
+        if (idsForQuery.length !== professionalIds.length) {
+          console.warn("[FeaturesCheck] professionalIds truncated to 1000 for IN() query:", {
+            original: professionalIds.length,
+            used: idsForQuery.length,
+          });
+        }
+
+        const { data: professionalServicesData, error: psError } = await supabase
+          .from("professional_services")
+          .select("professional_id, service_id")
+          .in("professional_id", idsForQuery);
+
+        if (psError) {
+          console.error("[FeaturesCheck] Error fetching professional_services:", psError);
+        }
+
+        professionalServices = professionalServicesData || [];
+      } else {
+        console.log("[FeaturesCheck] No professionals found - skipping professional_services");
       }
-      
-      const professionalServices = professionalServicesData || [];
+
+      if (fetchSeq !== fetchSeqRef.current) return;
 
       console.log("[FeaturesCheck] Processing professional services...");
-      
+
       // Check if professionals have services linked
-      const professionalIds = professionals.map(p => p.id);
-      const professionalsWithServices = new Set(
-        professionalServices.filter(ps => professionalIds.includes(ps.professional_id)).map(ps => ps.professional_id)
-      );
+      const professionalsWithServices = new Set(professionalServices.map((ps) => ps.professional_id));
 
       // Check if professionals have working hours configured
-      const professionalsWithHours = professionals.filter(p => {
+      const professionalsWithHours = professionals.filter((p) => {
         const hours = p.working_hours as Record<string, unknown> | null;
         return hours && Object.keys(hours).length > 0;
       });
