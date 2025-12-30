@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AdminLayout } from "@/components/layouts/AdminLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -22,10 +21,9 @@ import {
   TrendingUp,
   Users,
   AlertTriangle,
-  Timer,
-  BellRing
+  Timer
 } from "lucide-react";
-import { format, formatDistanceToNow, differenceInMinutes } from "date-fns";
+import { format, formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
@@ -309,29 +307,9 @@ export default function AdminConversations() {
     );
   }
 
-  const escalatedCount = metrics?.escalatedConversations || 0;
-
-  const escalatedConversationsList = useMemo(
-    () => conversations.filter((c) => c.status === "escalated"),
-    [conversations]
-  );
-
   return (
     <AdminLayout>
-      <div className="space-y-6 overflow-y-auto">
-        {/* Escalation Alert Banner */}
-        {escalatedCount > 0 && (
-          <Alert variant="destructive" className="border-2 border-destructive bg-destructive/10">
-            <BellRing className="h-5 w-5 animate-pulse" />
-            <AlertTitle className="text-lg font-bold flex items-center gap-2">
-              Atenção: {escalatedCount} conversa{escalatedCount > 1 ? "s" : ""} aguardando atendimento humano!
-            </AlertTitle>
-            <AlertDescription className="mt-1 text-sm">
-              A Silvia escalou {escalatedCount === 1 ? "uma conversa" : `${escalatedCount} conversas`} para você.
-              Clique em uma conversa "Escalada" na lista abaixo para responder.
-            </AlertDescription>
-          </Alert>
-        )}
+      <div className="space-y-6">
 
         <div className="flex items-center justify-between">
           <div>
