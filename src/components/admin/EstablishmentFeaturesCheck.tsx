@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { CheckCircle2, XCircle, AlertCircle, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -439,6 +440,7 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
     } catch (error) {
       console.error("[FeaturesCheck] Error fetching features status:", error);
     } finally {
+      stopCapture();
       setLoading(false);
       console.log("[FeaturesCheck] Loading set to false");
     }
@@ -520,6 +522,65 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
           </>
         )}
       </div>
+
+      <Card>
+        <CardHeader className="py-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <CardTitle className="text-sm">Diagnóstico</CardTitle>
+              <CardDescription className="text-xs">
+                Logs desta aba (útil para investigar travamentos e permissões).
+              </CardDescription>
+            </div>
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setDiagnostics([...diagnosticsRef.current]);
+                  toast("Diagnóstico atualizado.");
+                }}
+              >
+                Atualizar
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  const text = (diagnosticsRef.current.length ? diagnosticsRef.current : diagnostics).join("\n");
+                  try {
+                    await navigator.clipboard.writeText(text);
+                    toast("Logs copiados.");
+                  } catch {
+                    toast("Não foi possível copiar os logs.");
+                  }
+                }}
+              >
+                Copiar
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setShowDiagnostics((v) => !v)}
+              >
+                {showDiagnostics ? "Ocultar" : "Mostrar"}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        {showDiagnostics && (
+          <CardContent className="pt-0">
+            <div className="rounded-md border bg-muted/30 p-3">
+              <pre className="max-h-64 overflow-auto whitespace-pre-wrap text-xs text-muted-foreground">
+                {(diagnostics.length ? diagnostics : ["(Sem logs capturados ainda)"]).join("\n")}
+              </pre>
+            </div>
+          </CardContent>
+        )}
+      </Card>
 
       {/* Warnings Section */}
       {warnings.length > 0 && (
