@@ -252,7 +252,7 @@ const BookingPage = () => {
               <img 
                 src={establishment.logo_url} 
                 alt={`Logo ${establishment.name}`}
-                className="h-20 w-auto object-contain rounded-lg"
+                className="max-h-16 sm:max-h-20 max-w-[200px] sm:max-w-[280px] w-auto h-auto object-contain"
               />
             </div>
           )}
