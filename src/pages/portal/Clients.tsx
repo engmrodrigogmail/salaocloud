@@ -17,6 +17,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ImportContactsDialog } from "@/components/clients/ImportContactsDialog";
 
 interface Client {
   id: string;
@@ -185,11 +186,19 @@ export default function PortalClients() {
   return (
     <PortalLayout>
       <div className="space-y-6">
-        <div>
-          <h1 className="font-display text-3xl font-bold">Clientes</h1>
-          <p className="text-muted-foreground mt-1">
-            Todos os clientes que já agendaram com você
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="font-display text-3xl font-bold">Clientes</h1>
+            <p className="text-muted-foreground mt-1">
+              Todos os clientes que já agendaram com você
+            </p>
+          </div>
+          {establishmentId && (
+            <ImportContactsDialog
+              establishmentId={establishmentId}
+              onImportComplete={fetchClients}
+            />
+          )}
         </div>
 
         <div className="relative max-w-md">
