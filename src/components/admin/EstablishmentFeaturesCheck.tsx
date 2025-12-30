@@ -96,7 +96,6 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
       let limits: PlanLimits | null = null;
 
       if (subscriptionPlan && subscriptionPlan !== "trial") {
-        console.log("[FeaturesCheck] Fetching plan limits for:", subscriptionPlan);
         const { data: planData, error: planError } = await supabase
           .from("subscription_plans")
           .select("limits")
@@ -104,57 +103,108 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
           .maybeSingle();
 
         if (planError) {
-          console.error("[FeaturesCheck] Error fetching plan:", planError);
+          pushDiag("WARN", "Falha ao buscar limites do plano", {
+            code: (planError as any)?.code,
+            message: (planError as any)?.message,
+          });
         } else {
-          console.log("[FeaturesCheck] Plan data:", planData);
           limits = (planData?.limits as unknown as PlanLimits) || null;
         }
-      } else {
-        console.log("[FeaturesCheck] Skipping plan fetch - trial period or no plan");
       }
 
       if (fetchSeq !== fetchSeqRef.current) return;
       setPlanLimits(limits);
 
-      pushDiag("INFO", "Buscando dados do estabelecimento (consultas paralelas)…");
+      pushDiag("INFO", "Buscando dados do estabelecimento (consultas otimizadas)…");
 
       const t0 = performance.now();
 
-      // Dados "pequenos" (precisamos da lista para checagens)
+      // PROFISSIONAIS
+      // - Trazemos 1 linha por profissional + contagem agregada de vínculos em professional_services.
+      // - Evita buscar a tabela professional_services inteira (causa comum de congelamento).
       const professionalsQuery = supabase
         .from("professionals")
-        .select("id, working_hours")
+        .select("id, professional_services(count)")
         .eq("establishment_id", establishmentId);
 
-      const servicesQuery = supabase
+      // Horários: contar apenas quem tem working_hours != null (evita carregar JSON de todos)
+      const professionalsWithHoursCountQuery = supabase
+        .from("professionals")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId)
+        .not("working_hours", "is", null);
+
+      // SERVIÇOS (somente contagens)
+      const servicesCountQuery = supabase
         .from("services")
-        .select("id, is_active, price")
+        .select("id", { count: "exact", head: true })
         .eq("establishment_id", establishmentId);
 
-      const loyaltyQuery = supabase
-        .from("loyalty_programs")
-        .select("id, is_active")
-        .eq("establishment_id", establishmentId);
+      const servicesActiveCountQuery = supabase
+        .from("services")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId)
+        .eq("is_active", true);
 
-      const commissionRulesQuery = supabase
-        .from("commission_rules")
-        .select("id, is_active")
-        .eq("establishment_id", establishmentId);
+      const servicesZeroPriceCountQuery = supabase
+        .from("services")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId)
+        .eq("price", 0);
 
-      const paymentMethodsQuery = supabase
-        .from("payment_methods")
-        .select("id, is_active")
-        .eq("establishment_id", establishmentId);
-
-      const categoriesQuery = supabase
+      // Categorias
+      const categoriesCountQuery = supabase
         .from("service_categories")
-        .select("id")
+        .select("id", { count: "exact", head: true })
         .eq("establishment_id", establishmentId);
 
-      const productsQuery = supabase
+      // Produtos
+      const productsCountQuery = supabase
         .from("products")
-        .select("id, is_active")
+        .select("id", { count: "exact", head: true })
         .eq("establishment_id", establishmentId);
+
+      const productsActiveCountQuery = supabase
+        .from("products")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId)
+        .eq("is_active", true);
+
+      // Programas de fidelidade
+      const loyaltyCountQuery = supabase
+        .from("loyalty_programs")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId);
+
+      const loyaltyActiveCountQuery = supabase
+        .from("loyalty_programs")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId)
+        .eq("is_active", true);
+
+      // Regras de comissão
+      const commissionRulesCountQuery = supabase
+        .from("commission_rules")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId);
+
+      const commissionRulesActiveCountQuery = supabase
+        .from("commission_rules")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId)
+        .eq("is_active", true);
+
+      // Formas de pagamento
+      const paymentMethodsCountQuery = supabase
+        .from("payment_methods")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId);
+
+      const paymentMethodsActiveCountQuery = supabase
+        .from("payment_methods")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId)
+        .eq("is_active", true);
 
       // Dados potencialmente grandes (usar count/head pra não travar a UI)
       const clientsCountQuery = supabase
@@ -202,12 +252,19 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
 
       const [
         professionalsRes,
-        servicesRes,
-        loyaltyRes,
-        commissionRulesRes,
-        paymentMethodsRes,
-        categoriesRes,
-        productsRes,
+        professionalsWithHoursCountRes,
+        servicesCountRes,
+        servicesActiveCountRes,
+        servicesZeroPriceCountRes,
+        categoriesCountRes,
+        productsCountRes,
+        productsActiveCountRes,
+        loyaltyCountRes,
+        loyaltyActiveCountRes,
+        commissionRulesCountRes,
+        commissionRulesActiveCountRes,
+        paymentMethodsCountRes,
+        paymentMethodsActiveCountRes,
         clientsCountRes,
         appointmentsCountRes,
         appointmentsCompletedCountRes,
@@ -218,12 +275,19 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
         couponsUsedCountRes,
       ] = await Promise.all([
         professionalsQuery,
-        servicesQuery,
-        loyaltyQuery,
-        commissionRulesQuery,
-        paymentMethodsQuery,
-        categoriesQuery,
-        productsQuery,
+        professionalsWithHoursCountQuery,
+        servicesCountQuery,
+        servicesActiveCountQuery,
+        servicesZeroPriceCountQuery,
+        categoriesCountQuery,
+        productsCountQuery,
+        productsActiveCountQuery,
+        loyaltyCountQuery,
+        loyaltyActiveCountQuery,
+        commissionRulesCountQuery,
+        commissionRulesActiveCountQuery,
+        paymentMethodsCountQuery,
+        paymentMethodsActiveCountQuery,
         clientsCountQuery,
         appointmentsCountQuery,
         appointmentsCompletedCountQuery,
@@ -240,13 +304,20 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
       pushDiag("INFO", "Consultas concluídas", { ms: dt });
 
       const errors = [
-        { name: "professionals", error: professionalsRes.error },
-        { name: "services", error: servicesRes.error },
-        { name: "loyalty_programs", error: loyaltyRes.error },
-        { name: "commission_rules", error: commissionRulesRes.error },
-        { name: "payment_methods", error: paymentMethodsRes.error },
-        { name: "service_categories", error: categoriesRes.error },
-        { name: "products", error: productsRes.error },
+        { name: "professionals(+agg)", error: professionalsRes.error },
+        { name: "professionals_hours(count)", error: professionalsWithHoursCountRes.error },
+        { name: "services(count)", error: servicesCountRes.error },
+        { name: "services_active(count)", error: servicesActiveCountRes.error },
+        { name: "services_zero_price(count)", error: servicesZeroPriceCountRes.error },
+        { name: "service_categories(count)", error: categoriesCountRes.error },
+        { name: "products(count)", error: productsCountRes.error },
+        { name: "products_active(count)", error: productsActiveCountRes.error },
+        { name: "loyalty_programs(count)", error: loyaltyCountRes.error },
+        { name: "loyalty_programs_active(count)", error: loyaltyActiveCountRes.error },
+        { name: "commission_rules(count)", error: commissionRulesCountRes.error },
+        { name: "commission_rules_active(count)", error: commissionRulesActiveCountRes.error },
+        { name: "payment_methods(count)", error: paymentMethodsCountRes.error },
+        { name: "payment_methods_active(count)", error: paymentMethodsActiveCountRes.error },
         { name: "clients(count)", error: clientsCountRes.error },
         { name: "appointments(count)", error: appointmentsCountRes.error },
         { name: "appointments_completed(count)", error: appointmentsCompletedCountRes.error },
@@ -259,7 +330,7 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
 
       if (errors.length) {
         pushDiag("ERROR", "Erros retornados pelas consultas", { count: errors.length });
-        errors.slice(0, 5).forEach((e) => {
+        errors.slice(0, 6).forEach((e) => {
           pushDiag("ERROR", `Query ${e.name} falhou`, {
             code: (e.error as any)?.code,
             message: (e.error as any)?.message,
@@ -268,13 +339,36 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
         });
       }
 
-      const professionals = professionalsRes.data || [];
-      const services = servicesRes.data || [];
-      const loyaltyPrograms = loyaltyRes.data || [];
-      const commissionRules = commissionRulesRes.data || [];
-      const paymentMethods = paymentMethodsRes.data || [];
-      const categories = categoriesRes.data || [];
-      const products = productsRes.data || [];
+      const professionals = (professionalsRes.data || []) as Array<{
+        id: string;
+        professional_services?: Array<{ count: number }>;
+      }>;
+
+      const professionalsCount = professionals.length;
+      const professionalsWithServicesCount = professionals.reduce((acc, p) => {
+        const c = p.professional_services?.[0]?.count ?? 0;
+        return acc + (c > 0 ? 1 : 0);
+      }, 0);
+
+      const professionalsWithHoursCount = professionalsWithHoursCountRes.count || 0;
+
+      const servicesCount = servicesCountRes.count || 0;
+      const servicesActiveCount = servicesActiveCountRes.count || 0;
+      const servicesZeroPriceCount = servicesZeroPriceCountRes.count || 0;
+
+      const categoriesCount = categoriesCountRes.count || 0;
+
+      const productsCount = productsCountRes.count || 0;
+      const productsActiveCount = productsActiveCountRes.count || 0;
+
+      const loyaltyCount = loyaltyCountRes.count || 0;
+      const loyaltyActiveCount = loyaltyActiveCountRes.count || 0;
+
+      const commissionRulesCount = commissionRulesCountRes.count || 0;
+      const commissionRulesActiveCount = commissionRulesActiveCountRes.count || 0;
+
+      const paymentMethodsCount = paymentMethodsCountRes.count || 0;
+      const paymentMethodsActiveCount = paymentMethodsActiveCountRes.count || 0;
 
       const clientsCount = clientsCountRes.count || 0;
       const appointmentsCount = appointmentsCountRes.count || 0;
@@ -286,8 +380,12 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
       const couponsUsedCount = couponsUsedCountRes.count || 0;
 
       pushDiag("INFO", "Resumo de volumes", {
-        professionals: professionals.length,
-        services: services.length,
+        professionalsCount,
+        professionalsWithServicesCount,
+        professionalsWithHoursCount,
+        servicesCount,
+        servicesActiveCount,
+        servicesZeroPriceCount,
         clientsCount,
         appointmentsCount,
         appointmentsCompletedCount,
@@ -296,55 +394,17 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
         commissionsCount,
         couponsCount,
         couponsUsedCount,
-        categories: categories.length,
-        products: products.length,
+        categoriesCount,
+        productsCount,
+        productsActiveCount,
+        loyaltyCount,
+        loyaltyActiveCount,
+        paymentMethodsCount,
+        paymentMethodsActiveCount,
+        commissionRulesCount,
+        commissionRulesActiveCount,
       });
 
-      // Importante: NUNCA buscar professional_services sem filtro (pode puxar a tabela inteira e congelar a UI)
-      console.log("[FeaturesCheck] Fetching professional_services...");
-      const professionalIds = professionals.map((p) => p.id);
-
-      let professionalServices: { professional_id: string; service_id: string }[] = [];
-
-      if (professionalIds.length > 0) {
-        const idsForQuery = professionalIds.slice(0, 1000);
-        if (idsForQuery.length !== professionalIds.length) {
-          console.warn("[FeaturesCheck] professionalIds truncated to 1000 for IN() query:", {
-            original: professionalIds.length,
-            used: idsForQuery.length,
-          });
-        }
-
-        const { data: professionalServicesData, error: psError } = await supabase
-          .from("professional_services")
-          .select("professional_id, service_id")
-          .in("professional_id", idsForQuery);
-
-        if (psError) {
-          console.error("[FeaturesCheck] Error fetching professional_services:", psError);
-        }
-
-        professionalServices = professionalServicesData || [];
-      } else {
-        console.log("[FeaturesCheck] No professionals found - skipping professional_services");
-      }
-
-      if (fetchSeq !== fetchSeqRef.current) return;
-
-      console.log("[FeaturesCheck] Processing professional services...");
-
-      // Check if professionals have services linked
-      const professionalsWithServices = new Set(professionalServices.map((ps) => ps.professional_id));
-
-      // Check if professionals have working hours configured
-      const professionalsWithHours = professionals.filter((p) => {
-        const hours = p.working_hours as Record<string, unknown> | null;
-        return hours && Object.keys(hours).length > 0;
-      });
-
-      console.log("[FeaturesCheck] Building features list...");
-
-      // Build features list
       const featuresList: FeatureCheck[] = [
         // Cadastro
         {
@@ -353,11 +413,12 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
           description: "Profissionais que realizam os atendimentos",
           category: "cadastro",
           isAvailable: true,
-          isConfigured: professionals.length > 0,
-          hasActivity: professionals.length > 0,
-          warningMessage: professionals.length === 0 
-            ? "Nenhum profissional cadastrado. O estabelecimento precisa de pelo menos um profissional para receber agendamentos."
-            : undefined,
+          isConfigured: professionalsCount > 0,
+          hasActivity: professionalsCount > 0,
+          warningMessage:
+            professionalsCount === 0
+              ? "Nenhum profissional cadastrado. O estabelecimento precisa de pelo menos um profissional para receber agendamentos."
+              : undefined,
         },
         {
           id: "professional_services",
@@ -365,11 +426,12 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
           description: "Profissionais com serviços associados",
           category: "cadastro",
           isAvailable: true,
-          isConfigured: professionalsWithServices.size > 0,
-          hasActivity: professionalsWithServices.size === professionals.length && professionals.length > 0,
-          warningMessage: professionals.length > 0 && professionalsWithServices.size < professionals.length
-            ? `${professionals.length - professionalsWithServices.size} profissional(is) sem serviços vinculados. Eles não aparecerão na agenda.`
-            : undefined,
+          isConfigured: professionalsWithServicesCount > 0,
+          hasActivity: professionalsWithServicesCount === professionalsCount && professionalsCount > 0,
+          warningMessage:
+            professionalsCount > 0 && professionalsWithServicesCount < professionalsCount
+              ? `${professionalsCount - professionalsWithServicesCount} profissional(is) sem serviços vinculados. Eles não aparecerão na agenda.`
+              : undefined,
         },
         {
           id: "working_hours",
@@ -377,11 +439,12 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
           description: "Horários de disponibilidade dos profissionais",
           category: "cadastro",
           isAvailable: true,
-          isConfigured: professionalsWithHours.length > 0,
-          hasActivity: professionalsWithHours.length === professionals.length && professionals.length > 0,
-          warningMessage: professionals.length > 0 && professionalsWithHours.length < professionals.length
-            ? `${professionals.length - professionalsWithHours.length} profissional(is) sem horários configurados.`
-            : undefined,
+          isConfigured: professionalsWithHoursCount > 0,
+          hasActivity: professionalsWithHoursCount === professionalsCount && professionalsCount > 0,
+          warningMessage:
+            professionalsCount > 0 && professionalsWithHoursCount < professionalsCount
+              ? `${professionalsCount - professionalsWithHoursCount} profissional(is) sem horários configurados.`
+              : undefined,
         },
         {
           id: "services",
@@ -389,13 +452,14 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
           description: "Serviços oferecidos pelo estabelecimento",
           category: "cadastro",
           isAvailable: true,
-          isConfigured: services.length > 0,
-          hasActivity: services.filter(s => s.is_active).length > 0,
-          warningMessage: services.length === 0
-            ? "Nenhum serviço cadastrado. O estabelecimento precisa de pelo menos um serviço ativo."
-            : services.filter(s => s.price === 0).length > 0
-            ? `${services.filter(s => s.price === 0).length} serviço(s) com preço R$ 0,00.`
-            : undefined,
+          isConfigured: servicesCount > 0,
+          hasActivity: servicesActiveCount > 0,
+          warningMessage:
+            servicesCount === 0
+              ? "Nenhum serviço cadastrado. O estabelecimento precisa de pelo menos um serviço ativo."
+              : servicesZeroPriceCount > 0
+                ? `${servicesZeroPriceCount} serviço(s) com preço R$ 0,00.`
+                : undefined,
         },
         {
           id: "categories",
@@ -403,8 +467,8 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
           description: "Organização dos serviços em categorias",
           category: "cadastro",
           isAvailable: true,
-          isConfigured: categories.length > 0,
-          hasActivity: categories.length > 0,
+          isConfigured: categoriesCount > 0,
+          hasActivity: categoriesCount > 0,
         },
         {
           id: "clients",
@@ -450,8 +514,8 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
           description: "Produtos para venda nas comandas",
           category: "operacional",
           isAvailable: isTrialPeriod || limits?.internal_tabs === true,
-          isConfigured: products.length > 0,
-          hasActivity: products.filter(p => p.is_active).length > 0,
+          isConfigured: productsCount > 0,
+          hasActivity: productsActiveCount > 0,
         },
         {
           id: "payment_methods",
@@ -459,11 +523,12 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
           description: "Métodos de pagamento configurados",
           category: "operacional",
           isAvailable: true,
-          isConfigured: paymentMethods.length > 0,
-          hasActivity: paymentMethods.filter(pm => pm.is_active).length > 0,
-          warningMessage: paymentMethods.length === 0
-            ? "Nenhuma forma de pagamento configurada. Pode afetar o fechamento de comandas."
-            : undefined,
+          isConfigured: paymentMethodsCount > 0,
+          hasActivity: paymentMethodsActiveCount > 0,
+          warningMessage:
+            paymentMethodsCount === 0
+              ? "Nenhuma forma de pagamento configurada. Pode afetar o fechamento de comandas."
+              : undefined,
         },
 
         // Financeiro
@@ -473,11 +538,12 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
           description: "Configuração de comissões para profissionais",
           category: "financeiro",
           isAvailable: isTrialPeriod || limits?.commissions === true,
-          isConfigured: commissionRules.length > 0,
-          hasActivity: commissionRules.filter(c => c.is_active).length > 0,
-          warningMessage: (isTrialPeriod || limits?.commissions) && commissionRules.length === 0
-            ? "Comissões disponíveis mas não configuradas. Profissionais não receberão comissões."
-            : undefined,
+          isConfigured: commissionRulesCount > 0,
+          hasActivity: commissionRulesActiveCount > 0,
+          warningMessage:
+            (isTrialPeriod || limits?.commissions) && commissionRulesCount === 0
+              ? "Comissões disponíveis mas não configuradas. Profissionais não receberão comissões."
+              : undefined,
         },
         {
           id: "commissions_generated",
@@ -496,8 +562,8 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
           description: "Sistema de pontos e recompensas",
           category: "marketing",
           isAvailable: isTrialPeriod || limits?.loyalty_program === true,
-          isConfigured: loyaltyPrograms.length > 0,
-          hasActivity: loyaltyPrograms.filter(l => l.is_active).length > 0,
+          isConfigured: loyaltyCount > 0,
+          hasActivity: loyaltyActiveCount > 0,
         },
         {
           id: "discount_coupons",
