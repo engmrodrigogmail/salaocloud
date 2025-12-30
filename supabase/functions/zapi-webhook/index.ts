@@ -28,6 +28,20 @@ interface WebhookPayload {
   senderName?: string;
 }
 
+interface Service {
+  id: string;
+  name: string;
+  price: number;
+  duration_minutes: number;
+}
+
+interface Professional {
+  id: string;
+  name: string;
+  specialties: string[] | null;
+  working_hours: any;
+}
+
 // Format phone number to Brazilian format for Z-API
 function formatPhoneNumber(phone: string): string {
   let cleaned = phone.replace(/\D/g, '');
@@ -122,14 +136,381 @@ async function getOrCreateConversation(
   return newConv.id;
 }
 
-// Get AI assistant response
+// Parse date from various formats (dd/mm/yyyy, dd-mm-yyyy, yyyy-mm-dd, or natural language)
+function parseDate(dateStr: string): string | null {
+  const today = new Date();
+  const lowered = dateStr.toLowerCase().trim();
+  
+  // Natural language parsing
+  if (lowered === 'hoje') {
+    return today.toISOString().split('T')[0];
+  }
+  if (lowered === 'amanha' || lowered === 'amanhã') {
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  }
+  
+  // Check for weekday names
+  const weekdays: Record<string, number> = {
+    'domingo': 0, 'segunda': 1, 'terca': 2, 'terça': 2, 'quarta': 3,
+    'quinta': 4, 'sexta': 5, 'sabado': 6, 'sábado': 6
+  };
+  
+  for (const [day, num] of Object.entries(weekdays)) {
+    if (lowered.includes(day)) {
+      const currentDay = today.getDay();
+      let daysAhead = num - currentDay;
+      if (daysAhead <= 0) daysAhead += 7;
+      const targetDate = new Date(today);
+      targetDate.setDate(today.getDate() + daysAhead);
+      return targetDate.toISOString().split('T')[0];
+    }
+  }
+  
+  // DD/MM/YYYY or DD-MM-YYYY
+  const brMatch = dateStr.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (brMatch) {
+    const [, day, month, year] = brMatch;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+  
+  // DD/MM (current year)
+  const shortMatch = dateStr.match(/(\d{1,2})[\/\-](\d{1,2})/);
+  if (shortMatch) {
+    const [, day, month] = shortMatch;
+    return `${today.getFullYear()}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+  
+  // YYYY-MM-DD (ISO format)
+  const isoMatch = dateStr.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    return isoMatch[0];
+  }
+  
+  return null;
+}
+
+// Parse time from various formats
+function parseTime(timeStr: string): string | null {
+  const cleaned = timeStr.toLowerCase().replace(/\s+/g, '').replace('h', ':').replace('hrs', '').replace('hr', '');
+  
+  // HH:MM or HH
+  const match = cleaned.match(/(\d{1,2}):?(\d{2})?/);
+  if (match) {
+    const hours = match[1].padStart(2, '0');
+    const minutes = match[2] || '00';
+    return `${hours}:${minutes}`;
+  }
+  
+  return null;
+}
+
+// Check availability for a specific date/time
+async function checkAvailability(
+  supabase: any,
+  establishmentId: string,
+  professionalId: string | null,
+  date: string,
+  time: string,
+  durationMinutes: number,
+  requestId: string
+): Promise<{ available: boolean; conflictingAppointments?: any[]; availableProfessionals?: string[] }> {
+  const startDateTime = `${date}T${time}:00`;
+  const startTime = new Date(startDateTime);
+  const endTime = new Date(startTime.getTime() + durationMinutes * 60000);
+  
+  let query = supabase
+    .from('appointments')
+    .select('id, scheduled_at, duration_minutes, professional_id, professionals:professional_id (name)')
+    .eq('establishment_id', establishmentId)
+    .in('status', ['pending', 'confirmed'])
+    .gte('scheduled_at', `${date}T00:00:00`)
+    .lt('scheduled_at', `${date}T23:59:59`);
+  
+  if (professionalId) {
+    query = query.eq('professional_id', professionalId);
+  }
+  
+  const { data: existingAppointments } = await query;
+  
+  if (!existingAppointments || existingAppointments.length === 0) {
+    return { available: true };
+  }
+  
+  // Check for time conflicts
+  const conflicts = existingAppointments.filter((apt: any) => {
+    const aptStart = new Date(apt.scheduled_at);
+    const aptEnd = new Date(aptStart.getTime() + apt.duration_minutes * 60000);
+    return startTime < aptEnd && endTime > aptStart;
+  });
+  
+  if (conflicts.length === 0) {
+    return { available: true };
+  }
+  
+  // If specific professional was requested and is busy, find alternatives
+  if (professionalId) {
+    const { data: allProfessionals } = await supabase
+      .from('professionals')
+      .select('id, name')
+      .eq('establishment_id', establishmentId)
+      .eq('is_active', true);
+    
+    const busyProfessionalIds = conflicts.map((c: any) => c.professional_id);
+    const available = (allProfessionals || [])
+      .filter((p: any) => !busyProfessionalIds.includes(p.id))
+      .map((p: any) => p.name);
+    
+    return {
+      available: false,
+      conflictingAppointments: conflicts,
+      availableProfessionals: available
+    };
+  }
+  
+  return { available: false, conflictingAppointments: conflicts };
+}
+
+// Create appointment
+async function createAppointment(
+  supabase: any,
+  establishmentId: string,
+  data: {
+    serviceId: string;
+    professionalId: string;
+    date: string;
+    time: string;
+    clientName: string;
+    clientPhone: string;
+    price: number;
+    durationMinutes: number;
+  },
+  requestId: string
+): Promise<{ success: boolean; appointmentId?: string; error?: string }> {
+  const scheduledAt = `${data.date}T${data.time}:00`;
+  
+  // First check if client exists
+  const { data: existingClient } = await supabase
+    .from('clients')
+    .select('id')
+    .eq('establishment_id', establishmentId)
+    .eq('phone', data.clientPhone)
+    .maybeSingle();
+  
+  let clientId = existingClient?.id;
+  
+  // Create client if doesn't exist
+  if (!clientId) {
+    const { data: newClient, error: clientError } = await supabase
+      .from('clients')
+      .insert({
+        establishment_id: establishmentId,
+        name: data.clientName,
+        phone: data.clientPhone,
+      })
+      .select('id')
+      .single();
+    
+    if (clientError) {
+      console.error(`[WEBHOOK] ${requestId} Error creating client:`, clientError);
+    } else {
+      clientId = newClient?.id;
+    }
+  }
+  
+  // Create appointment
+  const { data: appointment, error } = await supabase
+    .from('appointments')
+    .insert({
+      establishment_id: establishmentId,
+      service_id: data.serviceId,
+      professional_id: data.professionalId,
+      client_id: clientId,
+      client_name: data.clientName,
+      client_phone: data.clientPhone,
+      scheduled_at: scheduledAt,
+      price: data.price,
+      duration_minutes: data.durationMinutes,
+      status: 'pending',
+    })
+    .select('id')
+    .single();
+  
+  if (error) {
+    console.error(`[WEBHOOK] ${requestId} Error creating appointment:`, error);
+    return { success: false, error: error.message };
+  }
+  
+  console.log(`[WEBHOOK] ${requestId} Appointment created: ${appointment.id}`);
+  return { success: true, appointmentId: appointment.id };
+}
+
+// Add to waitlist
+async function addToWaitlist(
+  supabase: any,
+  establishmentId: string,
+  data: {
+    serviceId?: string;
+    professionalId?: string;
+    date: string;
+    timeStart?: string;
+    timeEnd?: string;
+    clientName: string;
+    clientPhone: string;
+  },
+  requestId: string
+): Promise<{ success: boolean; error?: string }> {
+  // Check if client exists
+  const { data: existingClient } = await supabase
+    .from('clients')
+    .select('id')
+    .eq('establishment_id', establishmentId)
+    .eq('phone', data.clientPhone)
+    .maybeSingle();
+  
+  const { error } = await supabase
+    .from('ai_assistant_waitlist')
+    .insert({
+      establishment_id: establishmentId,
+      client_id: existingClient?.id,
+      client_name: data.clientName,
+      client_phone: data.clientPhone,
+      service_id: data.serviceId,
+      professional_id: data.professionalId,
+      preferred_date: data.date,
+      preferred_time_start: data.timeStart,
+      preferred_time_end: data.timeEnd,
+      status: 'waiting',
+    });
+  
+  if (error) {
+    console.error(`[WEBHOOK] ${requestId} Error adding to waitlist:`, error);
+    return { success: false, error: error.message };
+  }
+  
+  console.log(`[WEBHOOK] ${requestId} Added to waitlist for ${data.date}`);
+  return { success: true };
+}
+
+// Find service by name (fuzzy match)
+function findServiceByName(services: Service[], name: string): Service | null {
+  const lowered = name.toLowerCase().trim();
+  
+  // Exact match first
+  const exact = services.find(s => s.name.toLowerCase() === lowered);
+  if (exact) return exact;
+  
+  // Partial match
+  const partial = services.find(s => 
+    s.name.toLowerCase().includes(lowered) || lowered.includes(s.name.toLowerCase())
+  );
+  if (partial) return partial;
+  
+  return null;
+}
+
+// Find professional by name (fuzzy match)
+function findProfessionalByName(professionals: Professional[], name: string): Professional | null {
+  const lowered = name.toLowerCase().trim();
+  
+  if (lowered === 'qualquer' || lowered === 'qualquer um' || lowered === 'qualquer uma' || lowered === 'tanto faz') {
+    return professionals[0] || null; // Return first available
+  }
+  
+  // Exact match first
+  const exact = professionals.find(p => p.name.toLowerCase() === lowered);
+  if (exact) return exact;
+  
+  // Partial match
+  const partial = professionals.find(p => 
+    p.name.toLowerCase().includes(lowered) || lowered.includes(p.name.toLowerCase())
+  );
+  if (partial) return partial;
+  
+  return null;
+}
+
+// Get available time slots for a date
+async function getAvailableSlots(
+  supabase: any,
+  establishmentId: string,
+  professionalId: string | null,
+  date: string,
+  durationMinutes: number,
+  requestId: string
+): Promise<string[]> {
+  // Get establishment working hours
+  const { data: establishment } = await supabase
+    .from('establishments')
+    .select('working_hours')
+    .eq('id', establishmentId)
+    .single();
+  
+  const workingHours = establishment?.working_hours;
+  const dayOfWeek = new Date(date).getDay();
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const dayConfig = workingHours?.[days[dayOfWeek]];
+  
+  if (!dayConfig?.enabled) {
+    return [];
+  }
+  
+  const startHour = parseInt(dayConfig.start.split(':')[0]);
+  const endHour = parseInt(dayConfig.end.split(':')[0]);
+  
+  // Get existing appointments
+  let query = supabase
+    .from('appointments')
+    .select('scheduled_at, duration_minutes')
+    .eq('establishment_id', establishmentId)
+    .in('status', ['pending', 'confirmed'])
+    .gte('scheduled_at', `${date}T00:00:00`)
+    .lt('scheduled_at', `${date}T23:59:59`);
+  
+  if (professionalId) {
+    query = query.eq('professional_id', professionalId);
+  }
+  
+  const { data: appointments } = await query;
+  
+  // Generate time slots
+  const slots: string[] = [];
+  for (let hour = startHour; hour < endHour; hour++) {
+    for (let minute = 0; minute < 60; minute += 30) {
+      const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      const slotStart = new Date(`${date}T${time}:00`);
+      const slotEnd = new Date(slotStart.getTime() + durationMinutes * 60000);
+      
+      // Check if slot is in the past
+      if (slotStart < new Date()) continue;
+      
+      // Check conflicts
+      const hasConflict = (appointments || []).some((apt: any) => {
+        const aptStart = new Date(apt.scheduled_at);
+        const aptEnd = new Date(aptStart.getTime() + apt.duration_minutes * 60000);
+        return slotStart < aptEnd && slotEnd > aptStart;
+      });
+      
+      if (!hasConflict) {
+        slots.push(time);
+      }
+    }
+  }
+  
+  return slots.slice(0, 6); // Return max 6 slots
+}
+
+// Get AI assistant response with scheduling capabilities
 async function getAIResponse(
   supabase: any,
   establishmentId: string,
   conversationId: string,
   userMessage: string,
+  clientPhone: string,
+  clientName: string | null,
   requestId: string
-): Promise<string | null> {
+): Promise<{ message: string; action?: any }> {
   // Get assistant config
   const { data: config } = await supabase
     .from('establishment_ai_assistant')
@@ -139,7 +520,7 @@ async function getAIResponse(
 
   if (!config || !config.is_enabled) {
     console.log(`[WEBHOOK] ${requestId} AI assistant not enabled for establishment`);
-    return null;
+    return { message: '' };
   }
 
   // Check usage limits
@@ -157,7 +538,7 @@ async function getAIResponse(
     const limit = addon?.trial_message_limit || 200;
     if (subscription.trial_messages_used >= limit) {
       console.log(`[WEBHOOK] ${requestId} Usage limit reached`);
-      return 'Desculpe, o limite de mensagens gratuitas foi atingido. Entre em contato diretamente com o estabelecimento.';
+      return { message: 'Desculpe, o limite de mensagens gratuitas foi atingido. Entre em contato diretamente com o estabelecimento.' };
     }
   }
 
@@ -170,7 +551,7 @@ async function getAIResponse(
 
   if (!establishment) {
     console.log(`[WEBHOOK] ${requestId} Establishment not found`);
-    return null;
+    return { message: '' };
   }
 
   // Get services, professionals, promotions
@@ -182,7 +563,7 @@ async function getAIResponse(
 
   const { data: professionals } = await supabase
     .from('professionals')
-    .select('id, name, specialties')
+    .select('id, name, specialties, working_hours')
     .eq('establishment_id', establishmentId)
     .eq('is_active', true);
 
@@ -209,17 +590,20 @@ async function getAIResponse(
     .order('created_at', { ascending: true })
     .limit(20);
 
-  // Build system prompt
+  // Build detailed system prompt with scheduling instructions
+  const today = new Date();
+  const todayStr = today.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  
   const styleGuide = config.language_style === 'formal'
     ? 'Use linguagem formal e profissional.'
     : 'Use linguagem amigável e casual, mas sempre profissional. Pode usar emojis moderadamente.';
 
-  const servicesInfo = (services || []).map((s: any) => 
-    `- ${s.name}: R$ ${s.price.toFixed(2)} (${s.duration_minutes} min)`
+  const servicesInfo = (services || []).map((s: Service) => 
+    `- ${s.name} (ID: ${s.id}): R$ ${s.price.toFixed(2)} (${s.duration_minutes} min)`
   ).join('\n');
 
-  const professionalsInfo = (professionals || []).map((p: any) =>
-    `- ${p.name}${p.specialties?.length ? ` (${p.specialties.join(', ')})` : ''}`
+  const professionalsInfo = (professionals || []).map((p: Professional) =>
+    `- ${p.name} (ID: ${p.id})${p.specialties?.length ? ` - especialidades: ${p.specialties.join(', ')}` : ''}`
   ).join('\n');
 
   const promotionsInfo = (promotions || []).length > 0
@@ -228,32 +612,82 @@ async function getAIResponse(
       ).join('\n')
     : 'Nenhuma promoção ativa.';
 
+  // Get working hours info
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const dayNames: Record<string, string> = {
+    sunday: 'Domingo', monday: 'Segunda', tuesday: 'Terça', 
+    wednesday: 'Quarta', thursday: 'Quinta', friday: 'Sexta', saturday: 'Sábado'
+  };
+  const workingHoursInfo = days.map(day => {
+    const cfg = establishment.working_hours?.[day];
+    if (cfg?.enabled) {
+      return `- ${dayNames[day]}: ${cfg.start} às ${cfg.end}`;
+    }
+    return `- ${dayNames[day]}: Fechado`;
+  }).join('\n');
+
   const systemPrompt = `Você é ${config.assistant_name}, assistente virtual do ${establishment.name} via WhatsApp.
+
+## Data Atual
+Hoje é ${todayStr}.
 
 ## Estilo
 ${styleGuide}
 
-## Capacidades
-- Ajudar com agendamentos e informações sobre serviços
-- Informar sobre promoções ativas
-- Responder dúvidas sobre horários e funcionamento
+## SUAS CAPACIDADES DE AGENDAMENTO
+Você pode realizar agendamentos automaticamente! Para agendar, você DEVE coletar:
+1. **Serviço** desejado (confirmar preço e duração)
+2. **Profissional** (ou "qualquer um" se não tiver preferência)
+3. **Data** (aceite formatos: dd/mm, dd/mm/aaaa, "hoje", "amanhã", ou dia da semana)
+4. **Horário** (ex: 14:00, 14h, 2 da tarde)
+5. **Nome** do cliente (se não souber, pergunte)
 
-## Serviços
+Telefone do cliente: ${clientPhone}
+Nome conhecido: ${clientName || 'Não informado'}
+
+## Serviços Disponíveis
 ${servicesInfo || 'Nenhum serviço cadastrado.'}
 
 ## Profissionais
 ${professionalsInfo || 'Nenhum profissional cadastrado.'}
 
+## Horários de Funcionamento
+${workingHoursInfo}
+
 ## Promoções
 ${promotionsInfo}
 
-${config.custom_instructions || ''}
+${config.custom_instructions ? `## Instruções Especiais\n${config.custom_instructions}` : ''}
 
-## Regras
-1. Respostas concisas (máximo 2 parágrafos) para WhatsApp
-2. Se não souber, ofereça encaminhar para atendimento humano
-3. Para escalar, inclua [ESCALAR] no final
-4. Nunca invente informações
+## COMANDOS DE AÇÃO
+Quando tiver TODOS os dados necessários, inclua o comando ao FINAL da sua mensagem:
+
+**Para agendar (quando tiver serviço, profissional, data, hora e nome):**
+[AGENDAR:serviceId:professionalId:YYYY-MM-DD:HH:MM:NomeCliente]
+
+**Para adicionar à fila de espera (quando horário desejado não estiver disponível):**
+[FILA_ESPERA:serviceId:professionalId:YYYY-MM-DD:HH:MM:NomeCliente]
+
+**Para escalar para atendimento humano:**
+[ESCALAR]
+
+## REGRAS IMPORTANTES
+1. Respostas CURTAS (máximo 3 parágrafos) - é WhatsApp!
+2. Se não souber algo, PERGUNTE - nunca invente
+3. Confirme os dados antes de usar o comando [AGENDAR]
+4. Se o horário estiver ocupado, sugira alternativas ou ofereça fila de espera
+5. Use os IDs corretos dos serviços e profissionais nos comandos
+6. Datas sempre no formato YYYY-MM-DD e horários no formato HH:MM nos comandos
+
+## EXEMPLO DE FLUXO
+Cliente: "Quero agendar um corte"
+→ Pergunte o profissional preferido e o dia/horário
+
+Cliente: "Com Maria, amanhã às 14h"
+→ Confirme: "Vou agendar Corte com Maria amanhã às 14h, valor R$ 50,00. Posso confirmar?"
+
+Cliente: "Sim!"
+→ Use [AGENDAR:uuid-servico:uuid-profissional:2025-01-02:14:00:NomeCliente]
 
 Telefone do estabelecimento: ${establishment.phone || 'Não informado'}`;
 
@@ -281,18 +715,90 @@ Telefone do estabelecimento: ${establishment.phone || 'Não informado'}`;
 
   if (!response.ok) {
     console.error(`[WEBHOOK] ${requestId} AI API error: ${response.status}`);
-    return null;
+    return { message: '' };
   }
 
   const aiResponse = await response.json();
   let assistantMessage = aiResponse.choices?.[0]?.message?.content || 
     'Desculpe, não consegui processar sua mensagem. Tente novamente.';
 
+  let action: any = null;
+
+  // Process scheduling commands
+  const scheduleMatch = assistantMessage.match(/\[AGENDAR:([^:]+):([^:]+):([^:]+):([^:]+):([^\]]+)\]/);
+  if (scheduleMatch) {
+    const [, serviceId, professionalId, date, time, name] = scheduleMatch;
+    assistantMessage = assistantMessage.replace(scheduleMatch[0], '').trim();
+    
+    // Validate and create appointment
+    const service = (services || []).find((s: Service) => s.id === serviceId);
+    const professional = (professionals || []).find((p: Professional) => p.id === professionalId);
+    
+    if (service && professional) {
+      // Check availability first
+      const availability = await checkAvailability(
+        supabase, establishmentId, professionalId, date, time, service.duration_minutes, requestId
+      );
+      
+      if (availability.available) {
+        const result = await createAppointment(supabase, establishmentId, {
+          serviceId,
+          professionalId,
+          date,
+          time,
+          clientName: name || clientName || 'Cliente',
+          clientPhone,
+          price: service.price,
+          durationMinutes: service.duration_minutes,
+        }, requestId);
+        
+        if (result.success) {
+          action = { type: 'appointment_created', appointmentId: result.appointmentId };
+          assistantMessage += `\n\n✅ *Agendamento confirmado!*\n📋 ${service.name}\n👤 ${professional.name}\n📅 ${date.split('-').reverse().join('/')}\n🕐 ${time}\n💰 R$ ${service.price.toFixed(2)}`;
+        } else {
+          assistantMessage += `\n\n⚠️ Houve um erro ao criar o agendamento. Por favor, tente novamente.`;
+        }
+      } else {
+        // Slot not available, suggest alternatives
+        const availableSlots = await getAvailableSlots(supabase, establishmentId, professionalId, date, service.duration_minutes, requestId);
+        if (availableSlots.length > 0) {
+          assistantMessage += `\n\n⚠️ Este horário não está disponível. Horários disponíveis para ${date.split('-').reverse().join('/')}:\n${availableSlots.map(s => `• ${s}`).join('\n')}\n\nDeseja agendar em um desses horários?`;
+        } else {
+          assistantMessage += `\n\n⚠️ Não há horários disponíveis nesta data. Gostaria de tentar outro dia ou entrar na fila de espera?`;
+        }
+      }
+    } else {
+      assistantMessage += `\n\n⚠️ Não encontrei o serviço ou profissional. Por favor, escolha das opções disponíveis.`;
+    }
+  }
+
+  // Process waitlist commands
+  const waitlistMatch = assistantMessage.match(/\[FILA_ESPERA:([^:]+):([^:]+):([^:]+):([^:]+):([^\]]+)\]/);
+  if (waitlistMatch) {
+    const [, serviceId, professionalId, date, time, name] = waitlistMatch;
+    assistantMessage = assistantMessage.replace(waitlistMatch[0], '').trim();
+    
+    const result = await addToWaitlist(supabase, establishmentId, {
+      serviceId: serviceId !== 'null' ? serviceId : undefined,
+      professionalId: professionalId !== 'null' ? professionalId : undefined,
+      date,
+      timeStart: time,
+      clientName: name || clientName || 'Cliente',
+      clientPhone,
+    }, requestId);
+    
+    if (result.success) {
+      action = { type: 'waitlist_added' };
+      assistantMessage += `\n\n📋 Adicionei você à fila de espera para ${date.split('-').reverse().join('/')} às ${time}. Avisaremos se surgir uma vaga!`;
+    }
+  }
+
   // Check for escalation
   let shouldEscalate = false;
   if (assistantMessage.includes('[ESCALAR]')) {
     shouldEscalate = true;
     assistantMessage = assistantMessage.replace('[ESCALAR]', '').trim();
+    action = { type: 'escalated' };
     
     await supabase
       .from('ai_assistant_conversations')
@@ -306,7 +812,7 @@ Telefone do estabelecimento: ${establishment.phone || 'Não informado'}`;
     sender_type: 'assistant',
     message_type: 'text',
     content: assistantMessage,
-    metadata: { shouldEscalate },
+    metadata: { action, shouldEscalate },
   });
 
   // Update usage
@@ -339,8 +845,8 @@ Telefone do estabelecimento: ${establishment.phone || 'Não informado'}`;
       .eq('establishment_id', establishmentId);
   }
 
-  console.log(`[WEBHOOK] ${requestId} AI response generated (${assistantMessage.length} chars)`);
-  return assistantMessage;
+  console.log(`[WEBHOOK] ${requestId} AI response generated (${assistantMessage.length} chars)${action ? `, action: ${action.type}` : ''}`);
+  return { message: assistantMessage, action };
 }
 
 // Find establishment by phone number
@@ -485,7 +991,6 @@ serve(async (req) => {
       
       if (!establishmentId) {
         console.log(`[WEBHOOK] ${requestId} No establishment found for phone ${payload.phone?.slice(-4)}`);
-        // Don't respond if we don't know the establishment
         return new Response(JSON.stringify({ received: true, noEstablishment: true }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -521,12 +1026,14 @@ serve(async (req) => {
         });
       }
 
-      // Get AI response
-      const aiResponse = await getAIResponse(
+      // Get AI response with scheduling
+      const { message: aiResponse, action } = await getAIResponse(
         supabase,
         establishmentId,
         conversationId,
         textMessage,
+        payload.phone,
+        payload.senderName || null,
         requestId
       );
 
@@ -535,7 +1042,12 @@ serve(async (req) => {
         await sendZApiMessage(payload.phone, aiResponse, requestId);
       }
 
-      return new Response(JSON.stringify({ received: true, processed: true, aiResponse: !!aiResponse }), {
+      return new Response(JSON.stringify({ 
+        received: true, 
+        processed: true, 
+        aiResponse: !!aiResponse,
+        action: action?.type 
+      }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
