@@ -20,7 +20,11 @@ import {
   Smartphone,
   DollarSign,
   Users,
-  Zap
+  Zap,
+  Bot,
+  Calendar,
+  Clock,
+  Sparkles
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -47,14 +51,18 @@ export default function IntegrationGuides() {
 
         {/* Tabs for different integrations */}
         <Tabs defaultValue="stripe" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
+          <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
             <TabsTrigger value="stripe" className="gap-2">
               <CreditCard className="h-4 w-4" />
               Stripe
             </TabsTrigger>
             <TabsTrigger value="zapi" className="gap-2">
               <MessageCircle className="h-4 w-4" />
-              Z-API (WhatsApp)
+              Z-API
+            </TabsTrigger>
+            <TabsTrigger value="ai-assistant" className="gap-2">
+              <Bot className="h-4 w-4" />
+              Assistente IA
             </TabsTrigger>
           </TabsList>
 
@@ -890,6 +898,436 @@ export default function IntegrationGuides() {
                           <p className="font-medium text-sm">Promoções</p>
                           <p className="text-xs text-muted-foreground">
                             Divulgue ofertas e novidades para clientes
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* AI ASSISTANT GUIDE */}
+          <TabsContent value="ai-assistant" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <Bot className="h-6 w-6 text-purple-600" />
+                      Assistente Virtual IA
+                    </CardTitle>
+                    <CardDescription>
+                      Atendimento automatizado 24h via WhatsApp com agendamento inteligente
+                    </CardDescription>
+                  </div>
+                  <Badge variant="outline" className="bg-purple-500/10 text-purple-600 border-purple-500/30">
+                    IA + WhatsApp
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Overview */}
+                <Alert>
+                  <Sparkles className="h-4 w-4" />
+                  <AlertTitle>O que é a Assistente Virtual?</AlertTitle>
+                  <AlertDescription>
+                    A Assistente Virtual é uma IA que atende seus clientes automaticamente via WhatsApp. 
+                    Ela pode agendar serviços, responder dúvidas sobre preços, horários e promoções, 
+                    e até gerenciar fila de espera quando não há horários disponíveis.
+                  </AlertDescription>
+                </Alert>
+
+                <Accordion type="single" collapsible className="w-full">
+                  {/* Step 1 */}
+                  <AccordionItem value="step1">
+                    <AccordionTrigger>
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-600 text-white text-sm font-bold">1</span>
+                        <span>Pré-requisitos</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-4 pl-11">
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                          Antes de configurar a assistente, certifique-se de que:
+                        </p>
+                        <div className="space-y-2">
+                          <div className="flex items-start gap-2 p-3 border rounded-lg">
+                            <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
+                            <div>
+                              <p className="font-medium text-sm">Z-API Configurada</p>
+                              <p className="text-xs text-muted-foreground">
+                                A integração com WhatsApp via Z-API deve estar funcionando (veja aba anterior)
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2 p-3 border rounded-lg">
+                            <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
+                            <div>
+                              <p className="font-medium text-sm">Serviços Cadastrados</p>
+                              <p className="text-xs text-muted-foreground">
+                                O estabelecimento deve ter serviços com preços e duração configurados
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2 p-3 border rounded-lg">
+                            <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
+                            <div>
+                              <p className="font-medium text-sm">Profissionais Cadastrados</p>
+                              <p className="text-xs text-muted-foreground">
+                                Pelo menos um profissional ativo para realizar os agendamentos
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-2 p-3 border rounded-lg">
+                            <CheckCircle2 className="h-5 w-5 text-green-500 mt-0.5" />
+                            <div>
+                              <p className="font-medium text-sm">Horário de Funcionamento</p>
+                              <p className="text-xs text-muted-foreground">
+                                Horários de funcionamento configurados em "Configurações"
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Step 2 */}
+                  <AccordionItem value="step2">
+                    <AccordionTrigger>
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-600 text-white text-sm font-bold">2</span>
+                        <span>Acessar configurações da Assistente</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-4 pl-11">
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                          Acesse o painel de configuração da assistente:
+                        </p>
+                        <ol className="list-decimal list-inside space-y-2 text-sm">
+                          <li>No menu lateral do Portal, clique em <strong>"Assistente IA"</strong></li>
+                          <li>Ou acesse diretamente: <code>/portal/seu-slug/assistente-ia</code></li>
+                        </ol>
+                        <div className="bg-muted p-4 rounded-lg">
+                          <p className="text-sm font-medium mb-2">Abas disponíveis:</p>
+                          <div className="grid gap-2 text-sm">
+                            <div className="flex items-center gap-2 p-2 bg-background rounded">
+                              <Settings className="h-4 w-4 text-purple-600" />
+                              <span><strong>Configuração</strong> - Personalizar nome, estilo e comportamento</span>
+                            </div>
+                            <div className="flex items-center gap-2 p-2 bg-background rounded">
+                              <Calendar className="h-4 w-4 text-purple-600" />
+                              <span><strong>Horários</strong> - Definir quando a assistente atende</span>
+                            </div>
+                            <div className="flex items-center gap-2 p-2 bg-background rounded">
+                              <MessageCircle className="h-4 w-4 text-purple-600" />
+                              <span><strong>WhatsApp</strong> - Configurar integração</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Step 3 */}
+                  <AccordionItem value="step3">
+                    <AccordionTrigger>
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-600 text-white text-sm font-bold">3</span>
+                        <span>Personalizar a Assistente</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-4 pl-11">
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                          Configure a personalidade da sua assistente:
+                        </p>
+                        <div className="space-y-4">
+                          <div className="p-3 border rounded-lg">
+                            <label className="text-sm font-medium">Nome da Assistente</label>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Dê um nome humanizado (ex: "Ana", "Lia", "Sofia"). A IA se apresentará com esse nome.
+                            </p>
+                          </div>
+                          <div className="p-3 border rounded-lg">
+                            <label className="text-sm font-medium">Estilo de Comunicação</label>
+                            <div className="grid gap-2 mt-2">
+                              <div className="flex items-center gap-2 text-sm">
+                                <Badge variant="outline">Casual</Badge>
+                                <span className="text-muted-foreground">Usa emojis, linguagem amigável</span>
+                              </div>
+                              <div className="flex items-center gap-2 text-sm">
+                                <Badge variant="outline">Formal</Badge>
+                                <span className="text-muted-foreground">Linguagem profissional, sem emojis</span>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="p-3 border rounded-lg">
+                            <label className="text-sm font-medium">Mensagem de Boas-Vindas</label>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Primeira mensagem que o cliente recebe ao iniciar conversa.
+                            </p>
+                            <div className="bg-muted p-2 rounded mt-2 text-sm">
+                              Exemplo: "Olá! Sou a Ana, assistente virtual do Salão Beleza. Como posso ajudar? 💇‍♀️"
+                            </div>
+                          </div>
+                          <div className="p-3 border rounded-lg">
+                            <label className="text-sm font-medium">Instruções Personalizadas</label>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Regras específicas do seu negócio que a IA deve seguir.
+                            </p>
+                            <div className="bg-muted p-2 rounded mt-2 text-sm">
+                              Exemplo: "Sempre mencione que temos estacionamento gratuito. Não aceite agendamentos com menos de 2h de antecedência."
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Step 4 */}
+                  <AccordionItem value="step4">
+                    <AccordionTrigger>
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-600 text-white text-sm font-bold">4</span>
+                        <span>Configurar Horários de Atendimento</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-4 pl-11">
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                          Defina quando a assistente deve atender:
+                        </p>
+                        <div className="space-y-4">
+                          <div className="p-3 border rounded-lg">
+                            <label className="text-sm font-medium flex items-center gap-2">
+                              <Clock className="h-4 w-4" />
+                              Modo de Disponibilidade
+                            </label>
+                            <div className="grid gap-2 mt-2">
+                              <div className="flex items-start gap-2 p-2 bg-muted rounded">
+                                <Badge className="bg-green-500">24h</Badge>
+                                <div>
+                                  <p className="text-sm font-medium">Atende 24 horas</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    A IA responde a qualquer hora, mas avisa quando está fora do expediente
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex items-start gap-2 p-2 bg-muted rounded">
+                                <Badge variant="outline">Horário Comercial</Badge>
+                                <div>
+                                  <p className="text-sm font-medium">Apenas no expediente</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Fora do horário, envia mensagem automática de "fora do ar"
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="p-3 border rounded-lg">
+                            <label className="text-sm font-medium">Mensagem Fora do Horário</label>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Mensagem enviada quando cliente tenta contato fora do expediente.
+                            </p>
+                            <div className="bg-muted p-2 rounded mt-2 text-sm">
+                              Exemplo: "Olá! Estamos fora do horário de atendimento. Retornaremos amanhã às 9h. 🌙"
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Step 5 */}
+                  <AccordionItem value="step5">
+                    <AccordionTrigger>
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-600 text-white text-sm font-bold">5</span>
+                        <span>Ativar a Assistente</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-4 pl-11">
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                          Para ativar o atendimento automático:
+                        </p>
+                        <ol className="list-decimal list-inside space-y-2 text-sm">
+                          <li>Na aba <strong>"Configuração"</strong>, ative o switch <strong>"Assistente Habilitada"</strong></li>
+                          <li>Salve as configurações</li>
+                          <li>A assistente começará a responder automaticamente no WhatsApp</li>
+                        </ol>
+                        <Alert variant="default" className="bg-amber-50 border-amber-200">
+                          <AlertTriangle className="h-4 w-4 text-amber-600" />
+                          <AlertDescription className="text-amber-800">
+                            <strong>Importante:</strong> O cliente deve ser reconhecido pelo sistema (ter agendamento anterior ou estar cadastrado) 
+                            para que a assistente saiba qual estabelecimento atender.
+                          </AlertDescription>
+                        </Alert>
+                        <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+                          <div className="flex items-start gap-2">
+                            <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
+                            <div>
+                              <p className="font-medium text-green-800">Pronto!</p>
+                              <p className="text-sm text-green-700">
+                                Sua assistente virtual está ativa e pronta para atender clientes 24h!
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+
+                  {/* Step 6 */}
+                  <AccordionItem value="step6">
+                    <AccordionTrigger>
+                      <div className="flex items-center gap-3">
+                        <span className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-600 text-white text-sm font-bold">6</span>
+                        <span>Monitorar Conversas</span>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-4 pl-11">
+                      <div className="space-y-3">
+                        <p className="text-sm text-muted-foreground">
+                          Acompanhe o desempenho da assistente:
+                        </p>
+                        <ol className="list-decimal list-inside space-y-2 text-sm">
+                          <li>Acesse <strong>"Conversas IA"</strong> no menu lateral</li>
+                          <li>Veja estatísticas de atendimento:
+                            <ul className="list-disc list-inside ml-4 mt-2 space-y-1 text-muted-foreground">
+                              <li>Total de conversas</li>
+                              <li>Conversas ativas</li>
+                              <li>Taxa de resolução</li>
+                              <li>Agendamentos feitos pela IA</li>
+                            </ul>
+                          </li>
+                          <li>Filtre por status: Ativas, Finalizadas, Escaladas</li>
+                          <li>Clique em uma conversa para ver o histórico completo</li>
+                        </ol>
+                        <div className="bg-muted p-4 rounded-lg">
+                          <p className="text-sm font-medium mb-2">Status das conversas:</p>
+                          <div className="grid gap-2 text-sm">
+                            <div className="flex items-center gap-2">
+                              <Badge className="bg-green-500">Ativa</Badge>
+                              <span className="text-muted-foreground">Conversa em andamento</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary">Fechada</Badge>
+                              <span className="text-muted-foreground">Conversa finalizada</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Badge className="bg-amber-500">Escalada</Badge>
+                              <span className="text-muted-foreground">Precisa de atendimento humano</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+
+                {/* Capabilities */}
+                <Card className="bg-muted/50">
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-purple-600" />
+                      O que a Assistente pode fazer
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <div className="flex items-start gap-3 p-3 border rounded-lg bg-background">
+                        <Calendar className="h-5 w-5 text-purple-600 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-sm">Agendar Serviços</p>
+                          <p className="text-xs text-muted-foreground">
+                            Coleta dados do cliente, verifica disponibilidade e cria agendamentos automaticamente
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 p-3 border rounded-lg bg-background">
+                        <Clock className="h-5 w-5 text-purple-600 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-sm">Gerenciar Fila de Espera</p>
+                          <p className="text-xs text-muted-foreground">
+                            Adiciona clientes à lista de espera quando não há horário disponível
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 p-3 border rounded-lg bg-background">
+                        <DollarSign className="h-5 w-5 text-purple-600 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-sm">Informar Preços</p>
+                          <p className="text-xs text-muted-foreground">
+                            Responde sobre valores, duração e descrição dos serviços
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 p-3 border rounded-lg bg-background">
+                        <Zap className="h-5 w-5 text-purple-600 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-sm">Divulgar Promoções</p>
+                          <p className="text-xs text-muted-foreground">
+                            Informa automaticamente sobre promoções ativas do estabelecimento
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 p-3 border rounded-lg bg-background">
+                        <Users className="h-5 w-5 text-purple-600 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-sm">Apresentar Profissionais</p>
+                          <p className="text-xs text-muted-foreground">
+                            Mostra os profissionais disponíveis e suas especialidades
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3 p-3 border rounded-lg bg-background">
+                        <MessageCircle className="h-5 w-5 text-purple-600 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-sm">Escalar para Humano</p>
+                          <p className="text-xs text-muted-foreground">
+                            Transfere para atendimento humano quando necessário
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Pricing */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <DollarSign className="h-5 w-5 text-primary" />
+                      Modelo de Cobrança
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <Alert>
+                        <Sparkles className="h-4 w-4" />
+                        <AlertDescription>
+                          A Assistente Virtual é um <strong>addon opcional</strong> com período de teste gratuito.
+                        </AlertDescription>
+                      </Alert>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div className="p-4 border rounded-lg">
+                          <Badge variant="outline" className="mb-2">Período de Teste</Badge>
+                          <p className="text-2xl font-bold">200 mensagens</p>
+                          <p className="text-sm text-muted-foreground">
+                            Teste gratuito para experimentar a funcionalidade
+                          </p>
+                        </div>
+                        <div className="p-4 border rounded-lg bg-purple-50">
+                          <Badge className="bg-purple-600 mb-2">Assinatura</Badge>
+                          <p className="text-2xl font-bold">R$ 49,90/mês</p>
+                          <p className="text-sm text-muted-foreground">
+                            Mensagens ilimitadas após o período de teste
                           </p>
                         </div>
                       </div>
