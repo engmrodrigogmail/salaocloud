@@ -8,8 +8,6 @@ import {
   MessageCircle, 
   X, 
   Send, 
-  Mic, 
-  MicOff, 
   Loader2,
   Bot,
   User,
@@ -22,7 +20,6 @@ interface Message {
   id: string;
   content: string;
   senderType: 'client' | 'assistant';
-  messageType: 'text' | 'voice';
   createdAt: Date;
 }
 
@@ -44,13 +41,10 @@ export function EstablishmentAIChat({
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [assistantName, setAssistantName] = useState("Assistente");
   const [error, setError] = useState<string | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
   const [limitReached, setLimitReached] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -97,7 +91,6 @@ export function EstablishmentAIChat({
           id: 'welcome',
           content: data.welcomeMessage,
           senderType: 'assistant',
-          messageType: 'text',
           createdAt: new Date(),
         }]);
       }
@@ -108,7 +101,6 @@ export function EstablishmentAIChat({
           id: 'offline',
           content: data.offlineNotice,
           senderType: 'assistant',
-          messageType: 'text',
           createdAt: new Date(),
         }]);
       }
@@ -126,14 +118,13 @@ export function EstablishmentAIChat({
     }
   }, [isOpen, conversationId, startConversation]);
 
-  const sendMessage = async (messageContent: string, messageType: 'text' | 'voice' = 'text') => {
+  const sendMessage = async (messageContent: string) => {
     if (!messageContent.trim() || !conversationId || isLoading || limitReached) return;
 
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       content: messageContent,
       senderType: 'client',
-      messageType,
       createdAt: new Date(),
     };
 
@@ -149,7 +140,7 @@ export function EstablishmentAIChat({
           establishmentId,
           conversationId,
           message: messageContent,
-          messageType,
+          messageType: 'text',
         },
       });
 
@@ -168,7 +159,6 @@ export function EstablishmentAIChat({
         id: `assistant-${Date.now()}`,
         content: data.message,
         senderType: 'assistant',
-        messageType: 'text',
         createdAt: new Date(),
       };
 
@@ -180,7 +170,6 @@ export function EstablishmentAIChat({
           id: `escalated-${Date.now()}`,
           content: '📞 Sua conversa foi encaminhada para atendimento humano. Em breve entrarão em contato!',
           senderType: 'assistant',
-          messageType: 'text',
           createdAt: new Date(),
         }]);
       }
@@ -195,40 +184,6 @@ export function EstablishmentAIChat({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     sendMessage(inputValue);
-  };
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        // For now, just notify that voice was recorded
-        // Real implementation would send to transcription service
-        sendMessage('[Mensagem de voz - transcrição em desenvolvimento]', 'voice');
-        stream.getTracks().forEach(track => track.stop());
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-    } catch (err) {
-      console.error('Error starting recording:', err);
-      setError('Não foi possível acessar o microfone.');
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
   };
 
   if (!isOpen) {
@@ -358,28 +313,18 @@ export function EstablishmentAIChat({
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-4 border-t flex gap-2">
-            <Button
-              type="button"
-              variant={isRecording ? "destructive" : "outline"}
-              size="icon"
-              onClick={isRecording ? stopRecording : startRecording}
-              disabled={isLoading}
-              className="shrink-0"
-            >
-              {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-            </Button>
             <Input
               ref={inputRef}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Digite sua mensagem..."
-              disabled={isLoading || isRecording}
+              disabled={isLoading}
               className="flex-1"
             />
             <Button 
               type="submit" 
               size="icon"
-              disabled={!inputValue.trim() || isLoading || isRecording}
+              disabled={!inputValue.trim() || isLoading}
               className="shrink-0"
             >
               {isLoading ? (
