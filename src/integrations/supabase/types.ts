@@ -1042,16 +1042,22 @@ export type Database = {
       }
       professional_services: {
         Row: {
+          commission_type: string
+          commission_value: number
           id: string
           professional_id: string
           service_id: string
         }
         Insert: {
+          commission_type?: string
+          commission_value?: number
           id?: string
           professional_id: string
           service_id: string
         }
         Update: {
+          commission_type?: string
+          commission_value?: number
           id?: string
           professional_id?: string
           service_id?: string

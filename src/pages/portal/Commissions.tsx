@@ -8,6 +8,7 @@ import { CommissionRulesTab } from "@/components/commissions/CommissionRulesTab"
 import { CommissionTrackingTab } from "@/components/commissions/CommissionTrackingTab";
 import { CommissionChallengesTab } from "@/components/commissions/CommissionChallengesTab";
 import { CommissionReportTab } from "@/components/commissions/CommissionReportTab";
+import { CommissionMatrixTab } from "@/components/commissions/CommissionMatrixTab";
 
 export default function PortalCommissions() {
   const { slug } = useParams<{ slug: string }>();
@@ -68,13 +69,18 @@ export default function PortalCommissions() {
           </p>
         </div>
 
-        <Tabs defaultValue="tracking" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+        <Tabs defaultValue="matrix" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5 max-w-3xl">
+            <TabsTrigger value="matrix">Matriz</TabsTrigger>
             <TabsTrigger value="tracking">Acompanhamento</TabsTrigger>
             <TabsTrigger value="rules">Regras</TabsTrigger>
             <TabsTrigger value="challenges">Desafios</TabsTrigger>
             <TabsTrigger value="report">Relatório</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="matrix">
+            <CommissionMatrixTab establishmentId={establishmentId} />
+          </TabsContent>
 
           <TabsContent value="tracking">
             <CommissionTrackingTab establishmentId={establishmentId} />
