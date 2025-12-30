@@ -13,6 +13,8 @@ import {
   TrendingUp,
   Clock,
   DollarSign,
+  Bot,
+  MessageSquare,
 } from "lucide-react";
 
 interface Establishment {
@@ -36,6 +38,8 @@ export default function PortalDashboard() {
     totalServices: 0,
     totalProfessionals: 0,
     monthRevenue: 0,
+    aiConversations: 0,
+    aiMessagesThisMonth: 0,
   });
 
   useEffect(() => {
@@ -81,6 +85,7 @@ export default function PortalDashboard() {
   const fetchStats = async (establishmentId: string) => {
     const today = new Date().toISOString().split("T")[0];
     const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+    const currentMonthYear = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
 
     const [
       appointmentsResult,
@@ -89,6 +94,8 @@ export default function PortalDashboard() {
       servicesResult,
       professionalsResult,
       revenueResult,
+      aiConversationsResult,
+      aiUsageResult,
     ] = await Promise.all([
       supabase.from("appointments").select("id", { count: "exact" }).eq("establishment_id", establishmentId),
       supabase.from("appointments").select("id", { count: "exact" }).eq("establishment_id", establishmentId).gte("scheduled_at", today).lt("scheduled_at", today + "T23:59:59"),
@@ -96,6 +103,8 @@ export default function PortalDashboard() {
       supabase.from("services").select("id", { count: "exact" }).eq("establishment_id", establishmentId).eq("is_active", true),
       supabase.from("professionals").select("id", { count: "exact" }).eq("establishment_id", establishmentId).eq("is_active", true),
       supabase.from("appointments").select("price").eq("establishment_id", establishmentId).eq("status", "completed").gte("scheduled_at", firstDayOfMonth),
+      supabase.from("ai_assistant_conversations").select("id", { count: "exact" }).eq("establishment_id", establishmentId),
+      supabase.from("ai_assistant_usage").select("message_count").eq("establishment_id", establishmentId).eq("month_year", currentMonthYear).single(),
     ]);
 
     const monthRevenue = revenueResult.data?.reduce((sum, app) => sum + (app.price || 0), 0) || 0;
@@ -107,6 +116,8 @@ export default function PortalDashboard() {
       totalServices: servicesResult.count || 0,
       totalProfessionals: professionalsResult.count || 0,
       monthRevenue,
+      aiConversations: aiConversationsResult.count || 0,
+      aiMessagesThisMonth: aiUsageResult.data?.message_count || 0,
     });
   };
 
@@ -208,6 +219,37 @@ export default function PortalDashboard() {
               <p className="text-xs text-muted-foreground">profissionais ativos</p>
             </CardContent>
           </Card>
+        </div>
+
+        {/* AI Assistant Metrics */}
+        <div>
+          <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            <Bot className="h-5 w-5 text-primary" />
+            Assistente IA
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Conversas com IA</CardTitle>
+                <MessageSquare className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.aiConversations}</div>
+                <p className="text-xs text-muted-foreground">conversas iniciadas</p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/20 bg-primary/5">
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">Mensagens este Mês</CardTitle>
+                <Bot className="h-4 w-4 text-primary" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.aiMessagesThisMonth}</div>
+                <p className="text-xs text-muted-foreground">mensagens processadas pela IA</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </PortalLayout>
