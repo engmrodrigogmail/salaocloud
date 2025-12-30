@@ -1,29 +1,10 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Calendar, Sparkles, Play, X } from "lucide-react";
+import { ArrowRight, Calendar, Sparkles } from "lucide-react";
 import { useTrialDays } from "@/hooks/useTrialDays";
-import { useState, useRef } from "react";
-import demoVideo from "@/assets/demo-video.mp4";
 
 export function HeroSection() {
   const { trialDays } = useTrialDays();
-  const [isVideoOpen, setIsVideoOpen] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  const handleOpenVideo = () => {
-    setIsVideoOpen(true);
-    setTimeout(() => {
-      videoRef.current?.play();
-    }, 100);
-  };
-
-  const handleCloseVideo = () => {
-    setIsVideoOpen(false);
-    videoRef.current?.pause();
-    if (videoRef.current) {
-      videoRef.current.currentTime = 0;
-    }
-  };
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden hero-pattern">
@@ -90,45 +71,8 @@ export function HeroSection() {
             </Button>
           </div>
 
-          <div className="mt-16 animate-fade-in-up" style={{ animationDelay: "0.5s" }}>
-            <div 
-              className="relative max-w-3xl mx-auto rounded-2xl overflow-hidden shadow-2xl border border-border/50 bg-card cursor-pointer group"
-              onClick={handleOpenVideo}
-            >
-              {/* Video Thumbnail Preview */}
-              <div className="aspect-video relative">
-                <video 
-                  className="w-full h-full object-cover"
-                  muted
-                  loop
-                  playsInline
-                  autoPlay
-                >
-                  <source src={demoVideo} type="video/mp4" />
-                </video>
-                
-                {/* Play Button Overlay */}
-                <div className="absolute inset-0 flex items-center justify-center bg-background/20 group-hover:bg-background/10 transition-colors">
-                  <div className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                    <Play className="text-primary-foreground ml-1" size={32} fill="currentColor" />
-                  </div>
-                </div>
-              </div>
-              
-              {/* Video Label */}
-              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
-                <span className="text-sm font-medium text-foreground bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full">
-                  Veja o Salão Cloud em ação
-                </span>
-                <span className="text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full">
-                  0:05
-                </span>
-              </div>
-            </div>
-          </div>
-
           {/* Social proof */}
-          <div className="mt-12 flex flex-col items-center gap-4 animate-fade-in-up" style={{ animationDelay: "0.6s" }}>
+          <div className="mt-12 flex flex-col items-center gap-4 animate-fade-in-up" style={{ animationDelay: "0.5s" }}>
             <div className="flex -space-x-3">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div
@@ -145,36 +89,6 @@ export function HeroSection() {
           </div>
         </div>
       </div>
-
-      {/* Video Modal */}
-      {isVideoOpen && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
-          onClick={handleCloseVideo}
-        >
-          <div 
-            className="relative w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl bg-card border border-border"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button 
-              onClick={handleCloseVideo}
-              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-background/80 flex items-center justify-center hover:bg-background transition-colors"
-            >
-              <X size={20} />
-            </button>
-            <div className="aspect-video bg-muted">
-              <video 
-                ref={videoRef}
-                className="w-full h-full object-cover"
-                controls
-                playsInline
-              >
-                <source src={demoVideo} type="video/mp4" />
-              </video>
-            </div>
-          </div>
-        </div>
-      )}
     </section>
   );
 }
