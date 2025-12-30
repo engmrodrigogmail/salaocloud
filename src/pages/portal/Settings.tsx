@@ -6,12 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Clock, Save, Loader2, Users, Settings, Upload, X, Image } from "lucide-react";
+import { Clock, Save, Loader2, Users, Settings, Upload, X, Image, CalendarDays } from "lucide-react";
 import type { Tables, Json } from "@/integrations/supabase/types";
 import { ProfessionalWorkingHoursCard } from "@/components/settings/ProfessionalWorkingHoursCard";
 
@@ -53,8 +54,11 @@ export default function PortalSettings() {
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingAgenda, setSavingAgenda] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [workingHours, setWorkingHours] = useState<WorkingHours>(DEFAULT_WORKING_HOURS);
+  const [agendaSlotInterval, setAgendaSlotInterval] = useState(30);
+  const [agendaExpandHours, setAgendaExpandHours] = useState(1);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -82,6 +86,10 @@ export default function PortalSettings() {
           setWorkingHours({ ...DEFAULT_WORKING_HOURS, ...(wh as WorkingHours) });
         }
       }
+      
+      // Set agenda settings
+      if (data.agenda_slot_interval) setAgendaSlotInterval(data.agenda_slot_interval);
+      if (data.agenda_expand_hours) setAgendaExpandHours(data.agenda_expand_hours);
     } catch (error) {
       console.error("Error fetching establishment:", error);
       toast.error("Erro ao carregar dados");
@@ -118,6 +126,30 @@ export default function PortalSettings() {
       toast.error("Erro ao salvar");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveAgendaSettings = async () => {
+    if (!establishment) return;
+    
+    setSavingAgenda(true);
+    try {
+      const { error } = await supabase
+        .from("establishments")
+        .update({ 
+          agenda_slot_interval: agendaSlotInterval,
+          agenda_expand_hours: agendaExpandHours 
+        })
+        .eq("id", establishment.id);
+
+      if (error) throw error;
+      
+      toast.success("Configurações da agenda atualizadas!");
+    } catch (error) {
+      console.error("Error saving agenda settings:", error);
+      toast.error("Erro ao salvar");
+    } finally {
+      setSavingAgenda(false);
     }
   };
 
@@ -232,6 +264,10 @@ export default function PortalSettings() {
             <TabsTrigger value="professional-hours" className="flex items-center gap-2">
               <Users className="h-4 w-4" />
               Jornada dos Profissionais
+            </TabsTrigger>
+            <TabsTrigger value="agenda-settings" className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" />
+              Visualização da Agenda
             </TabsTrigger>
           </TabsList>
 
@@ -391,6 +427,69 @@ export default function PortalSettings() {
             {establishment && (
               <ProfessionalWorkingHoursCard establishmentId={establishment.id} />
             )}
+          </TabsContent>
+
+          <TabsContent value="agenda-settings">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CalendarDays className="h-5 w-5 text-primary" />
+                  Visualização da Agenda
+                </CardTitle>
+                <CardDescription>
+                  Configure como os slots de tempo são exibidos na agenda
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid gap-6 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="slot-interval">Intervalo entre slots</Label>
+                    <Select value={agendaSlotInterval.toString()} onValueChange={(v) => setAgendaSlotInterval(parseInt(v))}>
+                      <SelectTrigger id="slot-interval">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="15">15 minutos</SelectItem>
+                        <SelectItem value="30">30 minutos</SelectItem>
+                        <SelectItem value="60">60 minutos</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Define o intervalo de tempo entre cada linha da agenda
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="expand-hours">Horas extras (expandir)</Label>
+                    <Select value={agendaExpandHours.toString()} onValueChange={(v) => setAgendaExpandHours(parseInt(v))}>
+                      <SelectTrigger id="expand-hours">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="0">Sem expansão</SelectItem>
+                        <SelectItem value="1">±1 hora</SelectItem>
+                        <SelectItem value="2">±2 horas</SelectItem>
+                        <SelectItem value="3">±3 horas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Horas antes/depois do expediente ao expandir a agenda
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-4">
+                  <Button onClick={handleSaveAgendaSettings} disabled={savingAgenda}>
+                    {savingAgenda ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-2" />
+                    )}
+                    Salvar Configurações
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>
