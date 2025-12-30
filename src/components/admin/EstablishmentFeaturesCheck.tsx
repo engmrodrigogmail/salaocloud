@@ -51,67 +51,44 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
   const diagnosticsRef = useRef<string[]>([]);
   const fetchSeqRef = useRef(0);
 
-  const safeStringify = (value: unknown) => {
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return String(value);
-    }
+  const pushDiag = (level: "INFO" | "WARN" | "ERROR", message: string, meta?: Record<string, unknown>) => {
+    const metaText = meta ? (() => {
+      try {
+        const s = JSON.stringify(meta);
+        return s.length > 800 ? `${s.slice(0, 800)}…` : s;
+      } catch {
+        return "[meta]";
+      }
+    })() : "";
+
+    const line = `${new Date().toISOString()} ${level} ${message}${metaText ? ` | ${metaText}` : ""}`;
+    diagnosticsRef.current = [...diagnosticsRef.current, line].slice(-300);
   };
 
-  const appendDiagnostics = (prefix: string, args: unknown[]) => {
-    const msg = args
-      .map((a) => (typeof a === "string" ? a : safeStringify(a)))
-      .join(" ")
-      .trim();
-
-    diagnosticsRef.current = [...diagnosticsRef.current, `${new Date().toISOString()} ${prefix}${msg}`].slice(-300);
-  };
-
-  const startConsoleCapture = () => {
-    const original = {
-      log: console.log,
-      warn: console.warn,
-      error: console.error,
-    };
-
-    console.log = (...args: unknown[]) => {
-      original.log(...args);
-      appendDiagnostics("", args);
-    };
-
-    console.warn = (...args: unknown[]) => {
-      original.warn(...args);
-      appendDiagnostics("WARN ", args);
-    };
-
-    console.error = (...args: unknown[]) => {
-      original.error(...args);
-      appendDiagnostics("ERROR ", args);
-    };
-
-    return () => {
-      console.log = original.log;
-      console.warn = original.warn;
-      console.error = original.error;
-      setDiagnostics([...diagnosticsRef.current]);
-    };
+  const flushDiagnostics = () => {
+    setDiagnostics([...diagnosticsRef.current]);
   };
 
   useEffect(() => {
     fetchFeaturesStatus();
+    return () => {
+      // invalida requests pendentes ao desmontar/trocar de estabelecimento
+      fetchSeqRef.current += 1;
+    };
   }, [establishmentId]);
 
   const fetchFeaturesStatus = async () => {
     const fetchSeq = ++fetchSeqRef.current;
 
-    // reinicia diagnóstico a cada abertura da aba
     diagnosticsRef.current = [];
     setDiagnostics([]);
 
-    const stopCapture = startConsoleCapture();
+    pushDiag("INFO", "Iniciando diagnóstico da aba Funcionalidades", {
+      establishmentId,
+      subscriptionPlan,
+      isTrialPeriod,
+    });
 
-    console.log("[FeaturesCheck] Starting fetch for establishment:", establishmentId, "plan:", subscriptionPlan);
     setLoading(true);
 
     try {
@@ -139,87 +116,186 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
       if (fetchSeq !== fetchSeqRef.current) return;
       setPlanLimits(limits);
 
-      console.log("[FeaturesCheck] Fetching establishment data...");
+      pushDiag("INFO", "Buscando dados do estabelecimento (consultas paralelas)…");
 
-      // Fetch all data in parallel
+      const t0 = performance.now();
+
+      // Dados "pequenos" (precisamos da lista para checagens)
+      const professionalsQuery = supabase
+        .from("professionals")
+        .select("id, working_hours")
+        .eq("establishment_id", establishmentId);
+
+      const servicesQuery = supabase
+        .from("services")
+        .select("id, is_active, price")
+        .eq("establishment_id", establishmentId);
+
+      const loyaltyQuery = supabase
+        .from("loyalty_programs")
+        .select("id, is_active")
+        .eq("establishment_id", establishmentId);
+
+      const commissionRulesQuery = supabase
+        .from("commission_rules")
+        .select("id, is_active")
+        .eq("establishment_id", establishmentId);
+
+      const paymentMethodsQuery = supabase
+        .from("payment_methods")
+        .select("id, is_active")
+        .eq("establishment_id", establishmentId);
+
+      const categoriesQuery = supabase
+        .from("service_categories")
+        .select("id")
+        .eq("establishment_id", establishmentId);
+
+      const productsQuery = supabase
+        .from("products")
+        .select("id, is_active")
+        .eq("establishment_id", establishmentId);
+
+      // Dados potencialmente grandes (usar count/head pra não travar a UI)
+      const clientsCountQuery = supabase
+        .from("clients")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId);
+
+      const appointmentsCountQuery = supabase
+        .from("appointments")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId);
+
+      const appointmentsCompletedCountQuery = supabase
+        .from("appointments")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId)
+        .eq("status", "completed");
+
+      const tabsCountQuery = supabase
+        .from("tabs")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId);
+
+      const tabsClosedCountQuery = supabase
+        .from("tabs")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId)
+        .eq("status", "closed");
+
+      const commissionsCountQuery = supabase
+        .from("professional_commissions")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId);
+
+      const couponsCountQuery = supabase
+        .from("discount_coupons")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId);
+
+      const couponsUsedCountQuery = supabase
+        .from("discount_coupons")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId)
+        .gt("current_uses", 0);
+
       const [
         professionalsRes,
         servicesRes,
-        clientsRes,
-        appointmentsRes,
         loyaltyRes,
-        couponsRes,
-        tabsRes,
         commissionRulesRes,
-        commissionsRes,
         paymentMethodsRes,
         categoriesRes,
         productsRes,
+        clientsCountRes,
+        appointmentsCountRes,
+        appointmentsCompletedCountRes,
+        tabsCountRes,
+        tabsClosedCountRes,
+        commissionsCountRes,
+        couponsCountRes,
+        couponsUsedCountRes,
       ] = await Promise.all([
-        supabase.from("professionals").select("id, working_hours").eq("establishment_id", establishmentId),
-        supabase.from("services").select("id, is_active, price").eq("establishment_id", establishmentId),
-        supabase.from("clients").select("id").eq("establishment_id", establishmentId),
-        supabase.from("appointments").select("id, status").eq("establishment_id", establishmentId),
-        supabase.from("loyalty_programs").select("id, is_active").eq("establishment_id", establishmentId),
-        supabase.from("discount_coupons").select("id, is_active, current_uses").eq("establishment_id", establishmentId),
-        supabase.from("tabs").select("id, status").eq("establishment_id", establishmentId),
-        supabase.from("commission_rules").select("id, is_active").eq("establishment_id", establishmentId),
-        supabase.from("professional_commissions").select("id").eq("establishment_id", establishmentId),
-        supabase.from("payment_methods").select("id, is_active").eq("establishment_id", establishmentId),
-        supabase.from("service_categories").select("id").eq("establishment_id", establishmentId),
-        supabase.from("products").select("id, is_active").eq("establishment_id", establishmentId),
+        professionalsQuery,
+        servicesQuery,
+        loyaltyQuery,
+        commissionRulesQuery,
+        paymentMethodsQuery,
+        categoriesQuery,
+        productsQuery,
+        clientsCountQuery,
+        appointmentsCountQuery,
+        appointmentsCompletedCountQuery,
+        tabsCountQuery,
+        tabsClosedCountQuery,
+        commissionsCountQuery,
+        couponsCountQuery,
+        couponsUsedCountQuery,
       ]);
 
       if (fetchSeq !== fetchSeqRef.current) return;
 
-      console.log("[FeaturesCheck] Data fetch complete, checking for errors...");
+      const dt = Math.round(performance.now() - t0);
+      pushDiag("INFO", "Consultas concluídas", { ms: dt });
 
-      // Log any errors from the queries
-      const queries = [
-        { name: "professionals", res: professionalsRes },
-        { name: "services", res: servicesRes },
-        { name: "clients", res: clientsRes },
-        { name: "appointments", res: appointmentsRes },
-        { name: "loyalty", res: loyaltyRes },
-        { name: "coupons", res: couponsRes },
-        { name: "tabs", res: tabsRes },
-        { name: "commissionRules", res: commissionRulesRes },
-        { name: "commissions", res: commissionsRes },
-        { name: "paymentMethods", res: paymentMethodsRes },
-        { name: "categories", res: categoriesRes },
-        { name: "products", res: productsRes },
-      ];
+      const errors = [
+        { name: "professionals", error: professionalsRes.error },
+        { name: "services", error: servicesRes.error },
+        { name: "loyalty_programs", error: loyaltyRes.error },
+        { name: "commission_rules", error: commissionRulesRes.error },
+        { name: "payment_methods", error: paymentMethodsRes.error },
+        { name: "service_categories", error: categoriesRes.error },
+        { name: "products", error: productsRes.error },
+        { name: "clients(count)", error: clientsCountRes.error },
+        { name: "appointments(count)", error: appointmentsCountRes.error },
+        { name: "appointments_completed(count)", error: appointmentsCompletedCountRes.error },
+        { name: "tabs(count)", error: tabsCountRes.error },
+        { name: "tabs_closed(count)", error: tabsClosedCountRes.error },
+        { name: "professional_commissions(count)", error: commissionsCountRes.error },
+        { name: "discount_coupons(count)", error: couponsCountRes.error },
+        { name: "discount_coupons_used(count)", error: couponsUsedCountRes.error },
+      ].filter((x) => !!x.error);
 
-      queries.forEach(({ name, res }) => {
-        if (res.error) {
-          console.error(`[FeaturesCheck] Error in ${name}:`, res.error);
-        }
-      });
+      if (errors.length) {
+        pushDiag("ERROR", "Erros retornados pelas consultas", { count: errors.length });
+        errors.slice(0, 5).forEach((e) => {
+          pushDiag("ERROR", `Query ${e.name} falhou`, {
+            code: (e.error as any)?.code,
+            message: (e.error as any)?.message,
+            details: (e.error as any)?.details,
+          });
+        });
+      }
 
       const professionals = professionalsRes.data || [];
       const services = servicesRes.data || [];
-      const clients = clientsRes.data || [];
-      const appointments = appointmentsRes.data || [];
       const loyaltyPrograms = loyaltyRes.data || [];
-      const coupons = couponsRes.data || [];
-      const tabs = tabsRes.data || [];
       const commissionRules = commissionRulesRes.data || [];
-      const commissions = commissionsRes.data || [];
       const paymentMethods = paymentMethodsRes.data || [];
       const categories = categoriesRes.data || [];
       const products = productsRes.data || [];
 
-      console.log("[FeaturesCheck] Data counts:", {
+      const clientsCount = clientsCountRes.count || 0;
+      const appointmentsCount = appointmentsCountRes.count || 0;
+      const appointmentsCompletedCount = appointmentsCompletedCountRes.count || 0;
+      const tabsCount = tabsCountRes.count || 0;
+      const tabsClosedCount = tabsClosedCountRes.count || 0;
+      const commissionsCount = commissionsCountRes.count || 0;
+      const couponsCount = couponsCountRes.count || 0;
+      const couponsUsedCount = couponsUsedCountRes.count || 0;
+
+      pushDiag("INFO", "Resumo de volumes", {
         professionals: professionals.length,
         services: services.length,
-        clients: clients.length,
-        appointments: appointments.length,
-        loyaltyPrograms: loyaltyPrograms.length,
-        coupons: coupons.length,
-        tabs: tabs.length,
-        commissionRules: commissionRules.length,
-        commissions: commissions.length,
-        paymentMethods: paymentMethods.length,
+        clientsCount,
+        appointmentsCount,
+        appointmentsCompletedCount,
+        tabsCount,
+        tabsClosedCount,
+        commissionsCount,
+        couponsCount,
+        couponsUsedCount,
         categories: categories.length,
         products: products.length,
       });
@@ -336,8 +412,8 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
           description: "Base de clientes do estabelecimento",
           category: "cadastro",
           isAvailable: true,
-          isConfigured: clients.length > 0,
-          hasActivity: clients.length > 0,
+          isConfigured: clientsCount > 0,
+          hasActivity: clientsCount > 0,
         },
 
         // Operacional
@@ -348,7 +424,7 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
           category: "operacional",
           isAvailable: true,
           isConfigured: true,
-          hasActivity: appointments.length > 0,
+          hasActivity: appointmentsCount > 0,
         },
         {
           id: "appointments_completed",
@@ -357,7 +433,7 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
           category: "operacional",
           isAvailable: true,
           isConfigured: true,
-          hasActivity: appointments.filter(a => a.status === "completed").length > 0,
+          hasActivity: appointmentsCompletedCount > 0,
         },
         {
           id: "internal_tabs",
@@ -365,8 +441,8 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
           description: "Controle de consumo e pagamentos",
           category: "operacional",
           isAvailable: isTrialPeriod || limits?.internal_tabs === true,
-          isConfigured: tabs.length > 0,
-          hasActivity: tabs.filter(t => t.status === "closed").length > 0,
+          isConfigured: tabsCount > 0,
+          hasActivity: tabsClosedCount > 0,
         },
         {
           id: "products",
@@ -410,7 +486,7 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
           category: "financeiro",
           isAvailable: isTrialPeriod || limits?.commissions === true,
           isConfigured: true,
-          hasActivity: commissions.length > 0,
+          hasActivity: commissionsCount > 0,
         },
 
         // Marketing
@@ -429,20 +505,21 @@ export function EstablishmentFeaturesCheck({ establishmentId, subscriptionPlan, 
           description: "Cupons promocionais para clientes",
           category: "marketing",
           isAvailable: isTrialPeriod || limits?.discount_coupons === true,
-          isConfigured: coupons.length > 0,
-          hasActivity: coupons.some(c => c.current_uses > 0),
+          isConfigured: couponsCount > 0,
+          hasActivity: couponsUsedCount > 0,
         },
       ];
 
-      console.log("[FeaturesCheck] Features list built with", featuresList.length, "items");
+      pushDiag("INFO", "Lista de funcionalidades montada", { items: featuresList.length });
       setFeatures(featuresList);
-      console.log("[FeaturesCheck] Fetch complete!");
+      pushDiag("INFO", "Concluído");
     } catch (error) {
-      console.error("[FeaturesCheck] Error fetching features status:", error);
+      pushDiag("ERROR", "Falha inesperada ao analisar funcionalidades", {
+        message: error instanceof Error ? error.message : String(error),
+      });
     } finally {
-      stopCapture();
       setLoading(false);
-      console.log("[FeaturesCheck] Loading set to false");
+      flushDiagnostics();
     }
   };
 
