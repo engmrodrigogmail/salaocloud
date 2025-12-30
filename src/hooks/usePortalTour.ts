@@ -4,7 +4,7 @@ import "driver.js/dist/driver.css";
 import { useParams } from "react-router-dom";
 
 const TOUR_COMPLETED_KEY = "portal_tour_completed";
-const TOUR_VERSION = "1.0"; // Increment to show tour again after updates
+const TOUR_VERSION = "1.1"; // Increment to show tour again after updates
 
 interface UsePortalTourOptions {
   autoStart?: boolean;
@@ -92,6 +92,24 @@ export function usePortalTour(options: UsePortalTourOptions = {}) {
         popover: {
           title: "⭐ Fidelidade",
           description: "Crie programas de fidelidade para recompensar seus clientes mais assíduos.",
+          side: "right",
+          align: "start",
+        },
+      },
+      {
+        element: 'nav a[href*="/assistente-ia"]',
+        popover: {
+          title: "🤖 Assistente Virtual IA",
+          description: "Configure sua assistente virtual para atender clientes automaticamente via WhatsApp. Ela pode agendar, responder dúvidas e gerenciar fila de espera 24h!",
+          side: "right",
+          align: "start",
+        },
+      },
+      {
+        element: 'nav a[href*="/conversas-ia"]',
+        popover: {
+          title: "💬 Conversas da IA",
+          description: "Monitore as conversas que sua assistente virtual está tendo com os clientes. Veja estatísticas e intervenha quando necessário.",
           side: "right",
           align: "start",
         },
