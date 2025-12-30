@@ -145,74 +145,31 @@ export default function AdminConversations() {
   const fetchMetrics = async () => {
     setLoadingMetrics(true);
     try {
-      const { data: allConversations, error } = await supabase
-        .from("chat_conversations")
-        .select("*");
+      // Fetch only counts by status - much more efficient
+      const [
+        { count: totalCount },
+        { count: openCount },
+        { count: escalatedCount },
+        { count: closedCount },
+        { count: todayCount }
+      ] = await Promise.all([
+        supabase.from("chat_conversations").select("*", { count: "exact", head: true }),
+        supabase.from("chat_conversations").select("*", { count: "exact", head: true }).eq("status", "open"),
+        supabase.from("chat_conversations").select("*", { count: "exact", head: true }).eq("status", "escalated"),
+        supabase.from("chat_conversations").select("*", { count: "exact", head: true }).eq("status", "closed"),
+        supabase.from("chat_conversations").select("*", { count: "exact", head: true }).gte("created_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
+      ]);
 
-      if (error) throw error;
-
-      const conversations = allConversations || [];
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      // Count by status
-      const totalConversations = conversations.length;
-      const openConversations = conversations.filter(c => c.status === 'open').length;
-      const escalatedConversations = conversations.filter(c => c.status === 'escalated').length;
-      const closedConversations = conversations.filter(c => c.status === 'closed').length;
-      
-      // Today's conversations
-      const todayConversations = conversations.filter(c => 
-        new Date(c.created_at) >= today
-      ).length;
-
-      // Returning visitors (visitors with more than 1 conversation)
-      const visitorCounts = conversations.reduce((acc, c) => {
-        acc[c.visitor_id] = (acc[c.visitor_id] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      const returningVisitors = Object.values(visitorCounts).filter(count => count > 1).length;
-
-      // Calculate average response time
-      let totalResponseTime = 0;
-      let responseCount = 0;
-
-      for (const conv of conversations) {
-        const { data: msgs } = await supabase
-          .from("chat_messages")
-          .select("*")
-          .eq("conversation_id", conv.id)
-          .order("created_at", { ascending: true })
-          .limit(10);
-
-        if (msgs && msgs.length >= 2) {
-          // Find first user message and first bot/admin response
-          const firstUserMsg = msgs.find(m => m.is_from_user);
-          const firstResponse = msgs.find(m => !m.is_from_user && m.created_at > (firstUserMsg?.created_at || ''));
-          
-          if (firstUserMsg && firstResponse) {
-            const responseTime = differenceInMinutes(
-              new Date(firstResponse.created_at),
-              new Date(firstUserMsg.created_at)
-            );
-            if (responseTime >= 0) {
-              totalResponseTime += responseTime;
-              responseCount++;
-            }
-          }
-        }
-      }
-
-      const avgResponseTime = responseCount > 0 ? Math.round(totalResponseTime / responseCount) : null;
-
+      // Skip expensive response time calculation - set as null for now
+      // Can be calculated on-demand if needed
       setMetrics({
-        totalConversations,
-        openConversations,
-        escalatedConversations,
-        closedConversations,
-        avgResponseTime,
-        todayConversations,
-        returningVisitors
+        totalConversations: totalCount || 0,
+        openConversations: openCount || 0,
+        escalatedConversations: escalatedCount || 0,
+        closedConversations: closedCount || 0,
+        avgResponseTime: null,
+        todayConversations: todayCount || 0,
+        returningVisitors: 0 // Skip expensive calculation
       });
     } catch (error) {
       console.error("Error fetching metrics:", error);
