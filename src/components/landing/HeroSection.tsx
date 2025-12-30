@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Calendar, Sparkles } from "lucide-react";
+import { ArrowRight, Calendar, Sparkles, Play } from "lucide-react";
 import { useTrialDays } from "@/hooks/useTrialDays";
+import { useState } from "react";
 
 export function HeroSection() {
   const { trialDays } = useTrialDays();
+  const [isVideoOpen, setIsVideoOpen] = useState(false);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden hero-pattern">
@@ -71,8 +73,85 @@ export function HeroSection() {
             </Button>
           </div>
 
+          {/* Video Demo Section */}
+          <div className="mt-16 animate-fade-in-up" style={{ animationDelay: "0.5s" }}>
+            <div 
+              className="relative max-w-3xl mx-auto rounded-2xl overflow-hidden shadow-2xl border border-border/50 bg-card cursor-pointer group"
+              onClick={() => setIsVideoOpen(true)}
+            >
+              {/* Video Thumbnail/Placeholder */}
+              <div className="aspect-video bg-gradient-to-br from-primary/20 via-accent/10 to-secondary/20 flex items-center justify-center relative">
+                {/* Mock Interface Preview */}
+                <div className="absolute inset-4 rounded-lg bg-background/90 backdrop-blur-sm border border-border/30 overflow-hidden">
+                  <div className="h-8 bg-muted/50 border-b border-border/30 flex items-center px-3 gap-2">
+                    <div className="w-3 h-3 rounded-full bg-destructive/50" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500/50" />
+                    <div className="w-3 h-3 rounded-full bg-green-500/50" />
+                    <span className="ml-2 text-xs text-muted-foreground">Salão Cloud - Agenda</span>
+                  </div>
+                  <div className="p-4 grid grid-cols-3 gap-3">
+                    <div className="col-span-1 space-y-2">
+                      <div className="h-6 bg-primary/20 rounded animate-pulse" />
+                      <div className="h-4 bg-muted/50 rounded w-3/4" />
+                      <div className="h-4 bg-muted/50 rounded w-1/2" />
+                      <div className="h-20 bg-accent/10 rounded mt-4" />
+                    </div>
+                    <div className="col-span-2 space-y-2">
+                      <div className="grid grid-cols-7 gap-1">
+                        {Array.from({ length: 7 }).map((_, i) => (
+                          <div key={i} className="h-4 bg-muted/30 rounded text-[8px] flex items-center justify-center text-muted-foreground">
+                            {["D", "S", "T", "Q", "Q", "S", "S"][i]}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-7 gap-1">
+                        {Array.from({ length: 14 }).map((_, i) => (
+                          <div 
+                            key={i} 
+                            className={`h-6 rounded text-[8px] flex items-center justify-center ${
+                              i === 5 ? "bg-primary text-primary-foreground" : "bg-muted/20"
+                            }`}
+                          >
+                            {i + 1}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="space-y-1 mt-2">
+                        <div className="h-8 bg-primary/20 rounded flex items-center px-2 gap-2">
+                          <div className="w-2 h-2 rounded-full bg-primary" />
+                          <div className="h-2 bg-muted/50 rounded w-20" />
+                        </div>
+                        <div className="h-8 bg-accent/20 rounded flex items-center px-2 gap-2">
+                          <div className="w-2 h-2 rounded-full bg-accent" />
+                          <div className="h-2 bg-muted/50 rounded w-24" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Play Button Overlay */}
+                <div className="absolute inset-0 flex items-center justify-center bg-background/20 group-hover:bg-background/10 transition-colors">
+                  <div className="w-20 h-20 rounded-full bg-primary/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                    <Play className="text-primary-foreground ml-1" size={32} fill="currentColor" />
+                  </div>
+                </div>
+              </div>
+              
+              {/* Video Label */}
+              <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between">
+                <span className="text-sm font-medium text-foreground bg-background/80 backdrop-blur-sm px-3 py-1 rounded-full">
+                  Veja o Salão Cloud em ação
+                </span>
+                <span className="text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded-full">
+                  2:30
+                </span>
+              </div>
+            </div>
+          </div>
+
           {/* Social proof */}
-          <div className="mt-16 flex flex-col items-center gap-4 animate-fade-in-up" style={{ animationDelay: "0.5s" }}>
+          <div className="mt-12 flex flex-col items-center gap-4 animate-fade-in-up" style={{ animationDelay: "0.6s" }}>
             <div className="flex -space-x-3">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div
@@ -89,6 +168,41 @@ export function HeroSection() {
           </div>
         </div>
       </div>
+
+      {/* Video Modal */}
+      {isVideoOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4"
+          onClick={() => setIsVideoOpen(false)}
+        >
+          <div 
+            className="relative w-full max-w-4xl rounded-2xl overflow-hidden shadow-2xl bg-card border border-border"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button 
+              onClick={() => setIsVideoOpen(false)}
+              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-background/80 flex items-center justify-center hover:bg-background transition-colors"
+            >
+              ✕
+            </button>
+            <div className="aspect-video bg-muted flex items-center justify-center">
+              <div className="text-center p-8">
+                <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mx-auto mb-4">
+                  <Play className="text-primary" size={32} />
+                </div>
+                <h3 className="text-xl font-semibold mb-2">Vídeo em breve!</h3>
+                <p className="text-muted-foreground max-w-md">
+                  Estamos preparando um vídeo demonstrativo completo do Salão Cloud. 
+                  Enquanto isso, experimente grátis e descubra na prática!
+                </p>
+                <Button className="mt-6" asChild>
+                  <Link to="/auth?mode=signup">Começar Agora</Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
