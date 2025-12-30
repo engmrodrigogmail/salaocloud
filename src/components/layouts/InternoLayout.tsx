@@ -8,6 +8,7 @@ import {
   X,
   ChevronDown,
   Receipt,
+  HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -17,8 +18,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useInternoTour } from "@/hooks/useInternoTour";
 import logo from "@/assets/logo-salaocloud.png";
 
 interface InternoLayoutProps {
@@ -33,6 +41,7 @@ export function InternoLayout({ children }: InternoLayoutProps) {
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
   const { user, role, signOut } = useAuth();
+  const { startTour } = useInternoTour();
 
   useEffect(() => {
     if (slug && user) {
@@ -86,9 +95,29 @@ export function InternoLayout({ children }: InternoLayoutProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  id="interno-tour-help-button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={startTour}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <HelpCircle size={20} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Tour guiado</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
           {/* Only show Portal Admin button to establishment owners and super_admin */}
           {(isOwner || role === "super_admin") && (
             <Button 
+              id="portal-admin-button"
               variant="outline" 
               size="sm"
               onClick={() => navigate(`/portal/${slug}`)}
