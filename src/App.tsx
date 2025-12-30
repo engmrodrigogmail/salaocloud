@@ -46,8 +46,12 @@ import InternoDashboard from "./pages/interno/Dashboard";
 import InternoAgenda from "./pages/interno/Agenda";
 import InternoComandas from "./pages/interno/Comandas";
 
-// Portal Agenda
+// Portal Agenda & AI
 import PortalAgenda from "./pages/portal/Agenda";
+import PortalAIAssistant from "./pages/portal/AIAssistant";
+
+// Admin AI
+import AdminAIAddon from "./pages/admin/AIAddon";
 
 const queryClient = new QueryClient();
 
@@ -175,6 +179,14 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/admin/ai-addon"
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin"]}>
+                    <AdminAIAddon />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Portal routes - Establishment Admin (configuration & settings) */}
               <Route path="/portal/:slug" element={<PortalDashboard />} />
@@ -187,6 +199,7 @@ const App = () => (
               <Route path="/portal/:slug/configuracoes" element={<PortalSettings />} />
               <Route path="/portal/:slug/comissoes" element={<PortalCommissions />} />
               <Route path="/portal/:slug/assinatura" element={<PortalSubscription />} />
+              <Route path="/portal/:slug/assistente-ia" element={<PortalAIAssistant />} />
 
               {/* Interno routes - Establishment Internal Operations */}
               <Route path="/interno/:slug" element={<InternoDashboard />} />
