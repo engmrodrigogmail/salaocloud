@@ -3,13 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowRight, ArrowLeft, Building2, Clock, Check, Loader2 } from "lucide-react";
+import { ArrowRight, ArrowLeft, Building2, Clock, Check, Loader2, Calendar, Users, Settings, Scissors, CreditCard, ExternalLink, Copy, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -18,6 +19,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent } from "@/components/ui/card";
 import logo from "@/assets/logo.webp";
 
 const onboardingSchema = z.object({
@@ -36,12 +38,22 @@ type OnboardingFormData = z.infer<typeof onboardingSchema>;
 const steps = [
   { id: 1, title: "Dados Básicos", description: "Nome e contato" },
   { id: 2, title: "Endereço", description: "Localização" },
-  { id: 3, title: "Finalizar", description: "Revisão" },
+  { id: 3, title: "Revisão", description: "Confirmar" },
 ];
+
+interface QuickLink {
+  title: string;
+  description: string;
+  href: string;
+  icon: React.ReactNode;
+  priority: "high" | "medium";
+}
 
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
+  const [createdSlug, setCreatedSlug] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -119,12 +131,8 @@ export default function Onboarding() {
         console.error("Role error:", roleError);
       }
 
-      toast({
-        title: "Tudo pronto! 🎉",
-        description: "Seu estabelecimento foi criado com sucesso.",
-      });
-
-      navigate("/dashboard");
+      setCreatedSlug(data.slug);
+      setIsComplete(true);
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -151,6 +159,227 @@ export default function Onboarding() {
       setCurrentStep(currentStep - 1);
     }
   };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Copiado!",
+      description: "Link copiado para a área de transferência.",
+    });
+  };
+
+  const quickLinks: QuickLink[] = [
+    {
+      title: "Cadastrar Serviços",
+      description: "Adicione os serviços que você oferece com preços e duração",
+      href: `/portal/${createdSlug}/servicos`,
+      icon: <Scissors className="h-5 w-5" />,
+      priority: "high",
+    },
+    {
+      title: "Cadastrar Profissionais",
+      description: "Registre sua equipe para gerenciar agendamentos",
+      href: `/portal/${createdSlug}/profissionais`,
+      icon: <Users className="h-5 w-5" />,
+      priority: "high",
+    },
+    {
+      title: "Configurar Horários",
+      description: "Defina os horários de funcionamento do seu espaço",
+      href: `/portal/${createdSlug}/configuracoes`,
+      icon: <Clock className="h-5 w-5" />,
+      priority: "high",
+    },
+    {
+      title: "Ver Agenda",
+      description: "Acompanhe e gerencie os agendamentos",
+      href: `/portal/${createdSlug}/agenda`,
+      icon: <Calendar className="h-5 w-5" />,
+      priority: "medium",
+    },
+    {
+      title: "Painel Interno",
+      description: "Acesse comandas e operações do dia a dia",
+      href: `/interno/${createdSlug}`,
+      icon: <CreditCard className="h-5 w-5" />,
+      priority: "medium",
+    },
+    {
+      title: "Configurações",
+      description: "Personalize seu estabelecimento e preferências",
+      href: `/portal/${createdSlug}/configuracoes`,
+      icon: <Settings className="h-5 w-5" />,
+      priority: "medium",
+    },
+  ];
+
+  // Welcome screen after successful creation
+  if (isComplete) {
+    const bookingUrl = `salaocloud.com.br/${createdSlug}`;
+    const fullBookingUrl = `https://salaocloud.com.br/${createdSlug}`;
+
+    return (
+      <div className="min-h-screen bg-muted/30 flex flex-col">
+        {/* Header */}
+        <header className="bg-background border-b border-border py-4 px-6">
+          <img src={logo} alt="Salão Cloud" className="h-10 w-auto" />
+        </header>
+
+        <div className="flex-1 container mx-auto px-4 py-8 max-w-4xl">
+          {/* Success Header */}
+          <div className="text-center mb-8">
+            <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-success/10 flex items-center justify-center animate-in zoom-in duration-300">
+              <Check className="h-10 w-10 text-success" />
+            </div>
+            <h1 className="font-display text-3xl font-bold mb-2">
+              Parabéns! Seu espaço está pronto! 🎉
+            </h1>
+            <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+              Seu estabelecimento <strong>{form.getValues("name")}</strong> foi criado com sucesso. 
+              Veja abaixo como começar a usar o sistema.
+            </p>
+          </div>
+
+          {/* Booking Link Card */}
+          <Card className="mb-8 border-primary/20 bg-primary/5">
+            <CardContent className="p-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-semibold text-lg mb-1 flex items-center gap-2">
+                    <ExternalLink className="h-5 w-5 text-primary" />
+                    Link de Agendamento para Clientes
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Compartilhe este link com seus clientes para que eles possam agendar online:
+                  </p>
+                  <div className="flex items-center gap-2 bg-background rounded-lg px-4 py-2 border">
+                    <span className="font-mono text-sm">{bookingUrl}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyToClipboard(fullBookingUrl)}
+                  >
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copiar
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => window.open(`/${createdSlug}`, "_blank")}
+                  >
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Visualizar
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Start Section */}
+          <div className="mb-8">
+            <h2 className="font-display text-xl font-semibold mb-4">
+              🚀 Primeiros Passos (Recomendado)
+            </h2>
+            <div className="grid gap-4 md:grid-cols-3">
+              {quickLinks
+                .filter((link) => link.priority === "high")
+                .map((link, index) => (
+                  <Card
+                    key={link.title}
+                    className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all group"
+                    onClick={() => navigate(link.href)}
+                  >
+                    <CardContent className="p-5">
+                      <div className="flex items-start gap-4">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                          {link.icon}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                              Passo {index + 1}
+                            </span>
+                          </div>
+                          <h3 className="font-medium mt-1">{link.title}</h3>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            {link.description}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          </div>
+
+          {/* Other Features Section */}
+          <div className="mb-8">
+            <h2 className="font-display text-xl font-semibold mb-4">
+              📋 Outras Funcionalidades
+            </h2>
+            <div className="grid gap-3 md:grid-cols-3">
+              {quickLinks
+                .filter((link) => link.priority === "medium")
+                .map((link) => (
+                  <Card
+                    key={link.title}
+                    className="cursor-pointer hover:border-primary/30 transition-all"
+                    onClick={() => navigate(link.href)}
+                  >
+                    <CardContent className="p-4 flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
+                        {link.icon}
+                      </div>
+                      <div>
+                        <h3 className="font-medium text-sm">{link.title}</h3>
+                        <p className="text-xs text-muted-foreground">
+                          {link.description}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+            </div>
+          </div>
+
+          {/* Info Box */}
+          <Card className="bg-muted/50 border-dashed">
+            <CardContent className="p-6">
+              <h3 className="font-semibold mb-2">💡 Dica</h3>
+              <p className="text-sm text-muted-foreground">
+                Para acessar seu painel a qualquer momento, vá para{" "}
+                <strong>salaocloud.com.br/portal/{createdSlug}</strong>. 
+                Você também pode acessar pelo menu principal após fazer login.
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* CTA Button */}
+          <div className="mt-8 text-center">
+            <Button
+              size="lg"
+              className="bg-gradient-primary"
+              onClick={() => navigate(`/portal/${createdSlug}/servicos`)}
+            >
+              Começar a Configurar
+              <ArrowRight className="h-5 w-5 ml-2" />
+            </Button>
+            <p className="text-sm text-muted-foreground mt-3">
+              ou{" "}
+              <button
+                className="underline hover:text-primary"
+                onClick={() => navigate("/dashboard")}
+              >
+                ir para o painel principal
+              </button>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-muted/30 flex flex-col">
@@ -238,12 +467,20 @@ export default function Onboarding() {
                         <FormLabel>URL de agendamento *</FormLabel>
                         <FormControl>
                           <div className="flex items-center">
-                            <span className="text-sm text-muted-foreground mr-2">
+                            <span className="text-sm text-muted-foreground mr-2 whitespace-nowrap">
                               salaocloud.com.br/
                             </span>
                             <Input placeholder="meu-salao" {...field} />
                           </div>
                         </FormControl>
+                        <FormDescription className="text-xs">
+                          Este será o link que seus clientes usarão para agendar online. 
+                          <br />
+                          <strong>Exemplo:</strong> Se você digitar <code className="bg-muted px-1 rounded">barbearia-style</code>, 
+                          o link ficará: <code className="bg-muted px-1 rounded">salaocloud.com.br/barbearia-style</code>
+                          <br />
+                          <span className="text-muted-foreground">Use apenas letras minúsculas, números e hífens (sem espaços ou acentos).</span>
+                        </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -288,7 +525,7 @@ export default function Onboarding() {
               {currentStep === 2 && (
                 <>
                   <div className="text-center mb-8">
-                    <Clock className="h-12 w-12 mx-auto mb-4 text-primary" />
+                    <MapPin className="h-12 w-12 mx-auto mb-4 text-primary" />
                     <h2 className="font-display text-2xl font-bold">
                       Onde fica seu espaço?
                     </h2>
