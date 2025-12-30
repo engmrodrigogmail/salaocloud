@@ -361,11 +361,11 @@ export default function AdminConversations() {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 overflow-y-auto">
         {/* Escalation Alert Banner */}
         {escalatedCount > 0 && (
-          <Alert variant="destructive" className="border-2 border-destructive bg-destructive/10 animate-pulse">
-            <BellRing className="h-5 w-5" />
+          <Alert variant="destructive" className="border-2 border-destructive bg-destructive/10">
+            <BellRing className="h-5 w-5 animate-pulse" />
             <AlertTitle className="text-lg font-bold flex items-center gap-2">
               Atenção: {escalatedCount} conversa{escalatedCount > 1 ? "s" : ""} aguardando atendimento humano!
             </AlertTitle>
@@ -502,7 +502,7 @@ export default function AdminConversations() {
           </Card>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-340px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[400px]">
           {/* Conversations List */}
           <Card className="flex flex-col">
             <CardHeader className="pb-3">
