@@ -17,6 +17,7 @@ import {
   Phone,
   MapPin,
   AlertTriangle,
+  ClipboardCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -66,6 +67,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { EstablishmentFeaturesCheck } from "@/components/admin/EstablishmentFeaturesCheck";
 
 interface Establishment {
   id: string;
@@ -479,9 +481,13 @@ export default function AdminEstablishments() {
           </DialogHeader>
           {selectedEstablishment && (
             <Tabs defaultValue="info" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
+              <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="info">Informações</TabsTrigger>
                 <TabsTrigger value="stats">Estatísticas</TabsTrigger>
+                <TabsTrigger value="features" className="flex items-center gap-1">
+                  <ClipboardCheck className="h-3 w-3" />
+                  Funcionalidades
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="info" className="space-y-4">
@@ -633,6 +639,19 @@ export default function AdminEstablishments() {
                     Carregando estatísticas...
                   </div>
                 )}
+              </TabsContent>
+
+              <TabsContent value="features" className="space-y-4">
+                <EstablishmentFeaturesCheck
+                  establishmentId={selectedEstablishment.id}
+                  subscriptionPlan={selectedEstablishment.subscription_plan}
+                  isTrialPeriod={
+                    selectedEstablishment.subscription_plan === "trial" ||
+                    (selectedEstablishment.trial_ends_at
+                      ? new Date(selectedEstablishment.trial_ends_at) > new Date()
+                      : false)
+                  }
+                />
               </TabsContent>
             </Tabs>
           )}
