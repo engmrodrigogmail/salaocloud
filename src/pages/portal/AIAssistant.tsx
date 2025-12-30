@@ -377,6 +377,33 @@ export default function AIAssistant() {
           </Card>
         </div>
 
+        {/* WhatsApp Integration Info */}
+        {config.is_enabled && (
+          <Card className="border-green-200 bg-green-50/50 dark:bg-green-950/20 dark:border-green-900">
+            <CardContent className="pt-6">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-green-100 dark:bg-green-900/50 rounded-lg">
+                  <Phone className="h-6 w-6 text-green-600 dark:text-green-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-semibold text-green-800 dark:text-green-300">Integração WhatsApp Ativa</h3>
+                  <p className="text-sm text-green-700 dark:text-green-400 mt-1">
+                    O assistente IA está configurado para responder automaticamente mensagens recebidas via WhatsApp.
+                    Os clientes que já agendaram ou estão cadastrados serão atendidos automaticamente.
+                  </p>
+                  <div className="mt-3 p-3 bg-green-100/50 dark:bg-green-900/30 rounded-lg">
+                    <p className="text-xs text-green-600 dark:text-green-500 font-medium">
+                      💡 Como funciona: Quando um cliente envia mensagem pelo WhatsApp, o sistema identifica 
+                      automaticamente a qual estabelecimento ele pertence (baseado em agendamentos anteriores) 
+                      e responde usando as configurações da sua assistente IA.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Configuration Tabs */}
         <Tabs defaultValue="general" className="space-y-4">
           <TabsList>
@@ -391,6 +418,10 @@ export default function AIAssistant() {
             <TabsTrigger value="schedule">
               <Clock className="h-4 w-4 mr-2" />
               Horários
+            </TabsTrigger>
+            <TabsTrigger value="whatsapp">
+              <Phone className="h-4 w-4 mr-2" />
+              WhatsApp
             </TabsTrigger>
           </TabsList>
 
@@ -572,6 +603,74 @@ export default function AIAssistant() {
                       </div>
                     </div>
                   ))}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="whatsapp">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Phone className="h-5 w-5 text-green-600" />
+                  Integração WhatsApp
+                </CardTitle>
+                <CardDescription>
+                  Responda automaticamente clientes que enviam mensagens via WhatsApp
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="rounded-lg border p-4 bg-muted/30">
+                  <h4 className="font-semibold mb-2">Como funciona a integração</h4>
+                  <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                    <li>Quando um cliente envia mensagem pelo WhatsApp conectado ao Z-API</li>
+                    <li>O sistema identifica automaticamente o estabelecimento pelo histórico do cliente</li>
+                    <li>A assistente IA responde usando as configurações definidas acima</li>
+                    <li>Todas as conversas ficam registradas no painel de Conversas IA</li>
+                  </ol>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-4">
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900">
+                    <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-amber-800 dark:text-amber-300">Requisitos</p>
+                      <ul className="text-sm text-amber-700 dark:text-amber-400 mt-1 space-y-1">
+                        <li>• A integração Z-API deve estar configurada pelo administrador</li>
+                        <li>• O cliente deve ter pelo menos um agendamento anterior ou estar cadastrado</li>
+                        <li>• A assistente IA deve estar ativada (botão no topo da página)</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900">
+                    <CheckCircle2 className="h-5 w-5 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-green-800 dark:text-green-300">Funcionalidades automáticas</p>
+                      <ul className="text-sm text-green-700 dark:text-green-400 mt-1 space-y-1">
+                        <li>• Resposta automática a perguntas sobre serviços e preços</li>
+                        <li>• Informações sobre promoções ativas</li>
+                        <li>• Escalonamento para atendimento humano quando necessário</li>
+                        <li>• Histórico completo de todas as conversas</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-2">
+                  <Label>WhatsApp para Escalação</Label>
+                  <Input
+                    value={config.escalation_whatsapp}
+                    onChange={(e) => setConfig(prev => ({ ...prev, escalation_whatsapp: e.target.value }))}
+                    placeholder="5511999999999"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Quando a IA não conseguir resolver, pode notificar este número para atendimento humano
+                  </p>
                 </div>
               </CardContent>
             </Card>
