@@ -100,19 +100,19 @@ export const DiagnosticBlock = forwardRef<DiagnosticBlockHandle, Props>(
           }}
         >
           <CardHeader className="py-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0 flex-1">
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <Icon className={cn("h-4 w-4", status === "running" && "animate-spin", status === "ok" && "text-success", status === "warn" && "text-warning", status === "error" && "text-destructive", status === "idle" && "text-muted-foreground")} />
-                  <span className="truncate">{title}</span>
+                  <Icon className={cn("h-4 w-4 shrink-0", status === "running" && "animate-spin", status === "ok" && "text-success", status === "warn" && "text-warning", status === "error" && "text-destructive", status === "idle" && "text-muted-foreground")} />
+                  <span className="break-words">{title}</span>
                 </CardTitle>
                 {description ? (
-                  <CardDescription className="text-xs">{description}</CardDescription>
+                  <CardDescription className="text-xs mt-1">{description}</CardDescription>
                 ) : null}
               </div>
 
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className={badge.cls}>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="outline" className={cn("shrink-0", badge.cls)}>
                   {badge.text}{ms != null && status !== "idle" ? ` • ${ms}ms` : ""}
                 </Badge>
                 <Button type="button" size="sm" variant="outline" disabled={status === "running"} onClick={doRun}>
