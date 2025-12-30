@@ -6,54 +6,73 @@ import {
   Clock, 
   Smartphone,
   CreditCard,
-  Bell
+  MessageSquare,
+  Gift,
+  Percent,
+  Receipt,
+  HelpCircle
 } from "lucide-react";
 
 const features = [
   {
     icon: Calendar,
     title: "Agenda Inteligente",
-    description: "Visualize e gerencie todos os agendamentos em um calendário visual e intuitivo. Nada de papel ou confusão!",
-  },
-  {
-    icon: Users,
-    title: "Gestão de Profissionais",
-    description: "Cadastre sua equipe, defina especialidades e horários de trabalho de cada um. Tudo organizado!",
-  },
-  {
-    icon: Scissors,
-    title: "Catálogo de Serviços",
-    description: "Monte seu cardápio de serviços com preços e duração. Seus clientes vão adorar a clareza!",
+    description: "Visualize e gerencie todos os agendamentos em um calendário visual e intuitivo. Bloqueie horários, confirme atendimentos e evite conflitos.",
   },
   {
     icon: Smartphone,
     title: "Agendamento Online",
-    description: "Seus clientes agendam pelo celular, 24 horas por dia. Você relaxa enquanto a agenda lota!",
+    description: "Seus clientes agendam pelo celular, 24 horas por dia. Compartilhe seu link exclusivo nas redes sociais e WhatsApp!",
   },
   {
-    icon: Clock,
-    title: "Histórico de Atendimentos",
-    description: "Acompanhe todo o histórico de cada cliente. Preferências, serviços realizados e muito mais!",
+    icon: Users,
+    title: "Gestão de Profissionais",
+    description: "Cadastre sua equipe, defina especialidades, horários de trabalho individuais e acompanhe a performance de cada um.",
   },
   {
-    icon: BarChart3,
-    title: "Relatórios Completos",
-    description: "Acompanhe faturamento, serviços mais procurados e performance da equipe em tempo real.",
+    icon: Scissors,
+    title: "Catálogo de Serviços",
+    description: "Monte seu cardápio de serviços com categorias, preços e duração. Organize por especialidade para facilitar a escolha.",
+  },
+  {
+    icon: Receipt,
+    title: "Comandas Digitais",
+    description: "Controle total das comandas! Adicione serviços, produtos, aplique descontos e finalize pagamentos de forma rápida e organizada.",
   },
   {
     icon: CreditCard,
-    title: "Controle Financeiro",
-    description: "Comissões calculadas automaticamente para cada profissional.",
+    title: "Comissões Automáticas",
+    description: "Comissões calculadas automaticamente por serviço ou produto. Configure regras personalizadas e acompanhe os ganhos da equipe.",
   },
   {
-    icon: Bell,
-    title: "Notificações",
-    description: "Fique por dentro de novos agendamentos, cancelamentos e tudo que importa pro seu negócio.",
+    icon: Gift,
+    title: "Programa de Fidelidade",
+    description: "Crie programas de pontos e recompensas para seus clientes. Aumente a retenção e transforme clientes em fãs!",
   },
   {
-    icon: Smartphone,
-    title: "Versão Mobile",
-    description: "Seus profissionais com a informação na mão na hora que precisarem. Agenda, lançamento e acompanhamento de comandas. Tudo fácil, claro, evitando confusões e poupando tempo.",
+    icon: Percent,
+    title: "Promoções e Cupons",
+    description: "Crie promoções por período e cupons de desconto. Atraia novos clientes e incentive retornos com ofertas especiais.",
+  },
+  {
+    icon: MessageSquare,
+    title: "Lembretes por WhatsApp",
+    description: "Envie lembretes automáticos de agendamento por WhatsApp. Reduza faltas e mantenha sua agenda sempre cheia!",
+  },
+  {
+    icon: Clock,
+    title: "Histórico Completo",
+    description: "Acompanhe todo o histórico de cada cliente: serviços realizados, preferências, gastos e frequência de visitas.",
+  },
+  {
+    icon: BarChart3,
+    title: "Relatórios e Métricas",
+    description: "Acompanhe faturamento, serviços mais procurados, performance da equipe e métricas importantes do seu negócio.",
+  },
+  {
+    icon: HelpCircle,
+    title: "Tour Guiado",
+    description: "Sistema intuitivo com tour interativo para novos usuários. Sua equipe aprende a usar em minutos, sem treinamento complicado.",
   },
 ];
 
