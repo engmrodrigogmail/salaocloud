@@ -81,7 +81,6 @@ const SUBSCRIPTION_PLANS = [
 ];
 
 const SAAS_FEATURES = [
-  { value: "whatsapp_reminders", label: "Lembretes WhatsApp" },
   { value: "reports", label: "Relatórios" },
   { value: "commissions", label: "Controle de Comissões" },
   { value: "api_access", label: "Acesso à API" },

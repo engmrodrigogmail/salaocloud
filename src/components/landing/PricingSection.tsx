@@ -47,7 +47,6 @@ const fallbackPlans: Plan[] = [
     features: [
       "Até 10 profissionais",
       "Agenda avançada",
-      "Notificações WhatsApp",
       "Relatórios avançados",
       "Programa de fidelidade",
       "Cupons de desconto",
