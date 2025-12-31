@@ -28,8 +28,6 @@ import AdminSettings from "./pages/admin/Settings";
 import AdminConversations from "./pages/admin/Conversations";
 import AdminPortalStructure from "./pages/admin/PortalStructure";
 import AdminIntegrationGuides from "./pages/admin/IntegrationGuides";
-import AdminWhatsAppTest from "./pages/admin/WhatsAppTest";
-import AdminZApiStatus from "./pages/admin/ZApiStatus";
 
 // Portal Pages (Establishment Admin - configuration & settings)
 import PortalDashboard from "./pages/portal/Dashboard";
@@ -51,7 +49,7 @@ import InternoComandas from "./pages/interno/Comandas";
 import PortalAgenda from "./pages/portal/Agenda";
 import PortalAIAssistant from "./pages/portal/AIAssistant";
 import PortalAIConversations from "./pages/portal/AIConversations";
-import PortalBroadcastList from "./pages/portal/BroadcastList";
+
 
 // Admin AI
 import AdminAIAddon from "./pages/admin/AIAddon";
@@ -167,22 +165,6 @@ const App = () => (
                 }
               />
               <Route
-                path="/admin/zapi-status"
-                element={
-                  <ProtectedRoute allowedRoles={["super_admin"]}>
-                    <AdminZApiStatus />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/whatsapp-test"
-                element={
-                  <ProtectedRoute allowedRoles={["super_admin"]}>
-                    <AdminWhatsAppTest />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
                 path="/admin/ai-addon"
                 element={
                   <ProtectedRoute allowedRoles={["super_admin"]}>
@@ -205,7 +187,7 @@ const App = () => (
               <Route path="/portal/:slug/assinatura" element={<PortalSubscription />} />
               <Route path="/portal/:slug/assistente-ia" element={<PortalAIAssistant />} />
               <Route path="/portal/:slug/conversas-ia" element={<PortalAIConversations />} />
-              <Route path="/portal/:slug/lista-distribuicao" element={<PortalBroadcastList />} />
+              
 
               {/* Interno routes - Establishment Internal Operations */}
               <Route path="/interno/:slug" element={<InternoDashboard />} />

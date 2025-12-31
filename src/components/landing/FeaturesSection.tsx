@@ -6,7 +6,6 @@ import {
   Clock, 
   Smartphone,
   CreditCard,
-  MessageSquare,
   Gift,
   Percent,
   Receipt,
@@ -53,11 +52,6 @@ const features = [
     icon: Percent,
     title: "Promoções e Cupons",
     description: "Crie promoções por período e cupons de desconto. Atraia novos clientes e incentive retornos com ofertas especiais.",
-  },
-  {
-    icon: MessageSquare,
-    title: "Lembretes por WhatsApp",
-    description: "Envie lembretes automáticos de agendamento por WhatsApp. Reduza faltas e mantenha sua agenda sempre cheia!",
   },
   {
     icon: Clock,
