@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.establishment-ai-assistant]
 verify_jwt = false
+
+[functions.broadcast-whatsapp]
+verify_jwt = false
