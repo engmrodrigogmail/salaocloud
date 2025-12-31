@@ -61,9 +61,79 @@ export function TabDetailsCard({
     return <Badge variant="outline" className="text-xs">{labels[type] || type}</Badge>;
   };
 
+  // Separate items by type
+  const productItems = items.filter(item => item.item_type === 'product');
+  const serviceItems = items.filter(item => item.item_type === 'service');
+  const customItems = items.filter(item => item.item_type === 'custom');
+
+  const productsSubtotal = productItems.reduce((acc, item) => acc + Number(item.total_price), 0);
+  const servicesSubtotal = serviceItems.reduce((acc, item) => acc + Number(item.total_price), 0);
+  const customSubtotal = customItems.reduce((acc, item) => acc + Number(item.total_price), 0);
+
   const subtotal = items.reduce((acc, item) => acc + Number(item.total_price), 0);
   const discount = Number(tab.discount_amount) || 0;
   const total = Math.max(0, subtotal - discount);
+
+  const renderItemGroup = (groupItems: TabItem[], title: string, icon: React.ReactNode) => {
+    if (groupItems.length === 0) return null;
+    return (
+      <div className="space-y-2">
+        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+          {icon}
+          <span>{title}</span>
+        </div>
+        {groupItems.map((item) => (
+          <div key={item.id} className="flex items-start justify-between p-3 bg-muted/30 rounded-lg ml-2">
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">{item.name}</span>
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">
+                {formatCurrency(item.unit_price)} x {item.quantity} = {formatCurrency(item.total_price)}
+              </div>
+              {item.description && (
+                <div className="text-xs text-muted-foreground italic mt-1">
+                  {item.description}
+                </div>
+              )}
+            </div>
+            {tab.status === "open" && (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="h-7 w-7"
+                    onClick={() => onUpdateQuantity(item.id, Math.max(1, item.quantity - 1))}
+                    disabled={item.quantity <= 1}
+                  >
+                    <Minus className="h-3 w-3" />
+                  </Button>
+                  <span className="w-8 text-center text-sm">{item.quantity}</span>
+                  <Button
+                    size="icon"
+                    variant="outline"
+                    className="h-7 w-7"
+                    onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 text-destructive hover:text-destructive"
+                  onClick={() => onRemoveItem(item.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-4">
@@ -131,58 +201,10 @@ export function TabDetailsCard({
             </div>
           ) : (
             <ScrollArea className="max-h-[40vh]">
-              <div className="space-y-3">
-                {items.map((item) => (
-                  <div key={item.id} className="flex items-start justify-between p-3 bg-muted/30 rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        {getItemIcon(item.item_type)}
-                        <span className="font-medium">{item.name}</span>
-                        {getItemTypeBadge(item.item_type)}
-                      </div>
-                      <div className="text-sm text-muted-foreground mt-1">
-                        {formatCurrency(item.unit_price)} x {item.quantity} = {formatCurrency(item.total_price)}
-                      </div>
-                      {item.description && (
-                        <div className="text-xs text-muted-foreground italic mt-1">
-                          {item.description}
-                        </div>
-                      )}
-                    </div>
-                    {tab.status === "open" && (
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-1">
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-7 w-7"
-                            onClick={() => onUpdateQuantity(item.id, Math.max(1, item.quantity - 1))}
-                            disabled={item.quantity <= 1}
-                          >
-                            <Minus className="h-3 w-3" />
-                          </Button>
-                          <span className="w-8 text-center text-sm">{item.quantity}</span>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-7 w-7"
-                            onClick={() => onUpdateQuantity(item.id, item.quantity + 1)}
-                          >
-                            <Plus className="h-3 w-3" />
-                          </Button>
-                        </div>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={() => onRemoveItem(item.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ))}
+              <div className="space-y-4">
+                {renderItemGroup(serviceItems, "Serviços", <Scissors className="h-4 w-4" />)}
+                {renderItemGroup(productItems, "Produtos", <Package className="h-4 w-4" />)}
+                {renderItemGroup(customItems, "Itens Avulsos", <PenLine className="h-4 w-4" />)}
               </div>
             </ScrollArea>
           )}
@@ -193,7 +215,35 @@ export function TabDetailsCard({
       <Card>
         <CardContent className="pt-4">
           <div className="space-y-2">
-            <div className="flex justify-between text-sm">
+            {servicesSubtotal > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="flex items-center gap-2">
+                  <Scissors className="h-3 w-3" />
+                  Serviços
+                </span>
+                <span>{formatCurrency(servicesSubtotal)}</span>
+              </div>
+            )}
+            {productsSubtotal > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="flex items-center gap-2">
+                  <Package className="h-3 w-3" />
+                  Produtos
+                </span>
+                <span>{formatCurrency(productsSubtotal)}</span>
+              </div>
+            )}
+            {customSubtotal > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="flex items-center gap-2">
+                  <PenLine className="h-3 w-3" />
+                  Avulsos
+                </span>
+                <span>{formatCurrency(customSubtotal)}</span>
+              </div>
+            )}
+            <Separator />
+            <div className="flex justify-between text-sm font-medium">
               <span>Subtotal</span>
               <span>{formatCurrency(subtotal)}</span>
             </div>
