@@ -14,25 +14,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { ProfessionalFormDialog } from "@/components/professionals/ProfessionalFormDialog";
 
 interface Professional {
   id: string;
@@ -55,14 +45,6 @@ export default function PortalProfessionals() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingProfessional, setEditingProfessional] = useState<Professional | null>(null);
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
-  
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    specialties: "",
-    is_active: true,
-  });
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -105,55 +87,6 @@ export default function PortalProfessionals() {
     }
   };
 
-  const handleSubmit = async () => {
-    if (!establishmentId) return;
-
-    const specialtiesArray = formData.specialties
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    try {
-      if (editingProfessional) {
-        const { error } = await supabase
-          .from("professionals")
-          .update({
-            name: formData.name,
-            email: formData.email || null,
-            phone: formData.phone || null,
-            specialties: specialtiesArray.length > 0 ? specialtiesArray : null,
-            is_active: formData.is_active,
-          })
-          .eq("id", editingProfessional.id);
-
-        if (error) throw error;
-        toast({ title: "Profissional atualizado!" });
-      } else {
-        const { error } = await supabase.from("professionals").insert({
-          establishment_id: establishmentId,
-          name: formData.name,
-          email: formData.email || null,
-          phone: formData.phone || null,
-          specialties: specialtiesArray.length > 0 ? specialtiesArray : null,
-          is_active: formData.is_active,
-        });
-
-        if (error) throw error;
-        toast({ title: "Profissional adicionado!" });
-      }
-
-      setIsDialogOpen(false);
-      resetForm();
-      fetchEstablishmentAndProfessionals();
-    } catch (error: any) {
-      toast({
-        variant: "destructive",
-        title: "Erro",
-        description: error.message,
-      });
-    }
-  };
-
   const handleDelete = async (id: string) => {
     try {
       const { error } = await supabase.from("professionals").delete().eq("id", id);
@@ -169,26 +102,8 @@ export default function PortalProfessionals() {
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      specialties: "",
-      is_active: true,
-    });
-    setEditingProfessional(null);
-  };
-
   const openEditDialog = (professional: Professional) => {
     setEditingProfessional(professional);
-    setFormData({
-      name: professional.name,
-      email: professional.email || "",
-      phone: professional.phone || "",
-      specialties: professional.specialties?.join(", ") || "",
-      is_active: professional.is_active,
-    });
     setIsDialogOpen(true);
   };
 
@@ -206,95 +121,30 @@ export default function PortalProfessionals() {
               Gerencie sua equipe
             </p>
           </div>
-          <Dialog open={isDialogOpen} onOpenChange={(open) => {
-            setIsDialogOpen(open);
-            if (!open) resetForm();
-          }}>
-            <DialogTrigger asChild>
-              <Button className="bg-gradient-primary hover:opacity-90">
-                <Plus className="h-4 w-4 mr-2" />
-                Novo Profissional
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>
-                  {editingProfessional ? "Editar Profissional" : "Novo Profissional"}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingProfessional
-                    ? "Atualize as informações do profissional"
-                    : "Adicione um novo membro à sua equipe"}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label>Nome *</Label>
-                  <Input
-                    placeholder="Nome completo"
-                    value={formData.name}
-                    onChange={(e) =>
-                      setFormData({ ...formData, name: e.target.value })
-                    }
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input
-                      type="email"
-                      placeholder="email@exemplo.com"
-                      value={formData.email}
-                      onChange={(e) =>
-                        setFormData({ ...formData, email: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Telefone</Label>
-                    <Input
-                      placeholder="(11) 99999-9999"
-                      value={formData.phone}
-                      onChange={(e) =>
-                        setFormData({ ...formData, phone: e.target.value })
-                      }
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Especialidades</Label>
-                  <Input
-                    placeholder="Corte, Coloração, Manicure..."
-                    value={formData.specialties}
-                    onChange={(e) =>
-                      setFormData({ ...formData, specialties: e.target.value })
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Separe por vírgulas
-                  </p>
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label>Profissional ativo</Label>
-                  <Switch
-                    checked={formData.is_active}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, is_active: checked })
-                    }
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleSubmit} className="bg-gradient-primary">
-                  {editingProfessional ? "Salvar" : "Adicionar"}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+          <Button 
+            className="bg-gradient-primary hover:opacity-90"
+            onClick={() => {
+              setEditingProfessional(null);
+              setIsDialogOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Novo Profissional
+          </Button>
         </div>
+
+        {establishmentId && (
+          <ProfessionalFormDialog
+            open={isDialogOpen}
+            onOpenChange={(open) => {
+              setIsDialogOpen(open);
+              if (!open) setEditingProfessional(null);
+            }}
+            establishmentId={establishmentId}
+            editingProfessional={editingProfessional}
+            onSuccess={fetchEstablishmentAndProfessionals}
+          />
+        )}
 
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

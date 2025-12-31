@@ -4,9 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Save, Grid3X3 } from "lucide-react";
+import { Save, Grid3X3, Settings2, X, Check } from "lucide-react";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface Service {
   id: string;
@@ -25,6 +36,9 @@ interface ProfessionalService {
   service_id: string;
   commission_type: "fixed" | "percentage";
   commission_value: number;
+  is_leasing: boolean;
+  leasing_type: "fixed_monthly" | "proportional_time" | "proportional_space" | "per_service" | null;
+  leasing_value: number;
 }
 
 interface CommissionMatrixTabProps {
@@ -38,6 +52,7 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const [editingCell, setEditingCell] = useState<{ professionalId: string; serviceId: string } | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -47,7 +62,6 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
     try {
       setLoading(true);
       
-      // Fetch services
       const { data: servicesData, error: servicesError } = await supabase
         .from("services")
         .select("id, name, price")
@@ -57,7 +71,6 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
 
       if (servicesError) throw servicesError;
 
-      // Fetch professionals
       const { data: professionalsData, error: professionalsError } = await supabase
         .from("professionals")
         .select("id, name")
@@ -67,19 +80,22 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
 
       if (professionalsError) throw professionalsError;
 
-      // Fetch existing professional_services
       const { data: psData, error: psError } = await supabase
         .from("professional_services")
-        .select("id, professional_id, service_id, commission_type, commission_value")
+        .select("id, professional_id, service_id, commission_type, commission_value, is_leasing, leasing_type, leasing_value")
         .in("professional_id", (professionalsData || []).map(p => p.id));
 
       if (psError) throw psError;
 
-      // Build matrix lookup
       const matrixMap: Record<string, ProfessionalService> = {};
-      (psData || []).forEach((ps: ProfessionalService) => {
+      (psData || []).forEach((ps: any) => {
         const key = `${ps.professional_id}-${ps.service_id}`;
-        matrixMap[key] = ps;
+        matrixMap[key] = {
+          ...ps,
+          is_leasing: ps.is_leasing || false,
+          leasing_type: ps.leasing_type || null,
+          leasing_value: ps.leasing_value || 0,
+        };
       });
 
       setServices(servicesData || []);
@@ -100,8 +116,7 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
   const updateCell = (
     professionalId: string, 
     serviceId: string, 
-    field: "commission_type" | "commission_value",
-    value: string | number
+    updates: Partial<ProfessionalService>
   ) => {
     const key = getMatrixKey(professionalId, serviceId);
     
@@ -113,19 +128,22 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
           ...prev,
           [key]: {
             ...existing,
-            [field]: field === "commission_value" ? Number(value) : value,
+            ...updates,
           },
         };
       } else {
-        // Create new entry if doesn't exist
         return {
           ...prev,
           [key]: {
-            id: "", // Will be generated on save
+            id: "",
             professional_id: professionalId,
             service_id: serviceId,
-            commission_type: field === "commission_type" ? (value as "fixed" | "percentage") : "percentage",
-            commission_value: field === "commission_value" ? Number(value) : 0,
+            commission_type: "percentage",
+            commission_value: 0,
+            is_leasing: false,
+            leasing_type: null,
+            leasing_value: 0,
+            ...updates,
           },
         };
       }
@@ -140,7 +158,6 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
 
     try {
       if (existing && existing.id) {
-        // Remove from professional_services
         const { error } = await supabase
           .from("professional_services")
           .delete()
@@ -156,7 +173,6 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
         
         toast.success("Serviço removido do profissional");
       } else {
-        // Add to professional_services
         const { data, error } = await supabase
           .from("professional_services")
           .insert({
@@ -164,6 +180,7 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
             service_id: serviceId,
             commission_type: "percentage",
             commission_value: 0,
+            is_leasing: false,
           })
           .select()
           .single();
@@ -178,6 +195,9 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
             service_id: data.service_id,
             commission_type: data.commission_type as "fixed" | "percentage",
             commission_value: data.commission_value,
+            is_leasing: data.is_leasing || false,
+            leasing_type: (data.leasing_type as ProfessionalService["leasing_type"]) || null,
+            leasing_value: data.leasing_value || 0,
           },
         }));
         
@@ -193,25 +213,17 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
     try {
       setSaving(true);
       
-      const updates: { id: string; commission_type: string; commission_value: number }[] = [];
-      
-      Object.values(matrix).forEach(ps => {
-        if (ps.id) {
-          updates.push({
-            id: ps.id,
-            commission_type: ps.commission_type,
-            commission_value: ps.commission_value,
-          });
-        }
-      });
+      const updates = Object.values(matrix).filter(ps => ps.id);
 
-      // Update all in parallel
       const promises = updates.map(update =>
         supabase
           .from("professional_services")
           .update({
             commission_type: update.commission_type,
             commission_value: update.commission_value,
+            is_leasing: update.is_leasing,
+            leasing_type: update.is_leasing ? update.leasing_type : null,
+            leasing_value: update.is_leasing ? update.leasing_value : 0,
           })
           .eq("id", update.id)
       );
@@ -226,6 +238,25 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
     } finally {
       setSaving(false);
     }
+  };
+
+  const getLeasingTypeLabel = (type: string | null) => {
+    switch (type) {
+      case "fixed_monthly": return "Mensal";
+      case "proportional_time": return "Tempo";
+      case "proportional_space": return "Espaço";
+      case "per_service": return "Serviço";
+      default: return "";
+    }
+  };
+
+  const getCellSummary = (cell: ProfessionalService) => {
+    if (cell.is_leasing) {
+      return `Arrend. R$ ${cell.leasing_value.toFixed(0)}`;
+    }
+    return cell.commission_type === "percentage" 
+      ? `${cell.commission_value}%` 
+      : `R$ ${cell.commission_value.toFixed(2)}`;
   };
 
   if (loading) {
@@ -247,7 +278,19 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
     );
   }
 
-  // Mobile card view for each service-professional combination
+  const currentEditingCell = editingCell 
+    ? matrix[getMatrixKey(editingCell.professionalId, editingCell.serviceId)]
+    : null;
+
+  const currentEditingService = editingCell 
+    ? services.find(s => s.id === editingCell.serviceId)
+    : null;
+
+  const currentEditingProfessional = editingCell
+    ? professionals.find(p => p.id === editingCell.professionalId)
+    : null;
+
+  // Mobile card view
   const renderMobileView = () => (
     <div className="space-y-4 md:hidden">
       {services.map(service => (
@@ -272,38 +315,21 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
                     <span className="text-sm font-medium">{professional.name}</span>
                     {isLinked ? (
                       <div className="flex items-center gap-2">
-                        <Select
-                          value={cell.commission_type}
-                          onValueChange={(value) => 
-                            updateCell(professional.id, service.id, "commission_type", value)
-                          }
+                        <Badge 
+                          variant={cell.is_leasing ? "outline" : "secondary"}
+                          className={`text-xs cursor-pointer ${cell.is_leasing ? "text-orange-600 border-orange-600" : ""}`}
+                          onClick={() => setEditingCell({ professionalId: professional.id, serviceId: service.id })}
                         >
-                          <SelectTrigger className="h-8 w-16 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="percentage">%</SelectItem>
-                            <SelectItem value="fixed">R$</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <Input
-                          type="number"
-                          min="0"
-                          step={cell.commission_type === "percentage" ? "1" : "0.01"}
-                          max={cell.commission_type === "percentage" ? "100" : undefined}
-                          value={cell.commission_value}
-                          onChange={(e) => 
-                            updateCell(professional.id, service.id, "commission_value", e.target.value)
-                          }
-                          className="h-8 w-20 text-xs text-center"
-                        />
+                          {getCellSummary(cell)}
+                          <Settings2 className="h-3 w-3 ml-1" />
+                        </Badge>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-destructive hover:text-destructive"
                           onClick={() => toggleServiceForProfessional(professional.id, service.id)}
                         >
-                          ×
+                          <X className="h-4 w-4" />
                         </Button>
                       </div>
                     ) : (
@@ -330,10 +356,12 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
   const renderDesktopView = () => (
     <Card className="hidden md:block">
       <CardHeader>
-        <CardTitle className="text-lg">Serviços × Profissionais</CardTitle>
+        <CardTitle className="text-lg">Matriz de Comissões</CardTitle>
         <CardDescription>
-          Clique em uma célula vazia para vincular o serviço ao profissional. 
-          Edite os valores para definir comissões específicas.
+          Clique em uma célula para editar detalhes. 
+          <Badge variant="outline" className="ml-2 text-xs text-orange-600 border-orange-600">
+            Laranja = Arrendamento
+          </Badge>
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -348,7 +376,7 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
                   {professionals.map(professional => (
                     <th 
                       key={professional.id} 
-                      className="text-center p-3 bg-muted font-medium min-w-[180px]"
+                      className="text-center p-3 bg-muted font-medium min-w-[140px]"
                     >
                       {professional.name}
                     </th>
@@ -375,45 +403,33 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
                         <td 
                           key={professional.id} 
                           className={`p-2 text-center border-l ${
-                            isLinked ? "bg-primary/5" : "bg-muted/30"
+                            isLinked 
+                              ? cell.is_leasing 
+                                ? "bg-orange-50 dark:bg-orange-950/20" 
+                                : "bg-primary/5" 
+                              : "bg-muted/30"
                           }`}
                         >
                           {isLinked ? (
-                            <div className="flex flex-col gap-2">
-                              <Select
-                                value={cell.commission_type}
-                                onValueChange={(value) => 
-                                  updateCell(professional.id, service.id, "commission_type", value)
-                                }
-                              >
-                                <SelectTrigger className="h-8 text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="percentage">%</SelectItem>
-                                  <SelectItem value="fixed">R$</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              <div className="flex items-center gap-1">
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  step={cell.commission_type === "percentage" ? "1" : "0.01"}
-                                  max={cell.commission_type === "percentage" ? "100" : undefined}
-                                  value={cell.commission_value}
-                                  onChange={(e) => 
-                                    updateCell(professional.id, service.id, "commission_value", e.target.value)
-                                  }
-                                  className="h-8 text-xs text-center"
-                                />
-                              </div>
+                            <div className="flex flex-col items-center gap-1">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 text-xs text-destructive hover:text-destructive"
+                                className={`h-auto py-1 px-2 text-xs font-medium ${
+                                  cell.is_leasing ? "text-orange-600" : ""
+                                }`}
+                                onClick={() => setEditingCell({ professionalId: professional.id, serviceId: service.id })}
+                              >
+                                {getCellSummary(cell)}
+                                <Settings2 className="h-3 w-3 ml-1 opacity-50" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-5 text-xs text-destructive hover:text-destructive px-2"
                                 onClick={() => toggleServiceForProfessional(professional.id, service.id)}
                               >
-                                Desvincular
+                                Remover
                               </Button>
                             </div>
                           ) : (
@@ -446,7 +462,7 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
         <div>
           <h2 className="text-lg sm:text-xl font-semibold">Matriz de Comissões</h2>
           <p className="text-xs sm:text-sm text-muted-foreground">
-            Configure a comissão de cada profissional por serviço
+            Configure comissões e arrendamentos por serviço/profissional
           </p>
         </div>
         <Button 
@@ -464,13 +480,133 @@ export function CommissionMatrixTab({ establishmentId }: CommissionMatrixTabProp
       <Card className="md:hidden">
         <CardContent className="py-3 px-4">
           <p className="text-xs text-muted-foreground">
-            Vincule serviços aos profissionais e defina comissões específicas para cada combinação.
+            Vincule serviços aos profissionais. 
+            <Badge variant="outline" className="ml-1 text-xs text-orange-600 border-orange-600">
+              Laranja = Arrendamento
+            </Badge>
           </p>
         </CardContent>
       </Card>
 
       {renderMobileView()}
       {renderDesktopView()}
+
+      {/* Edit Cell Dialog */}
+      <Dialog open={!!editingCell} onOpenChange={(open) => !open && setEditingCell(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Configurar Comissão</DialogTitle>
+            <DialogDescription>
+              {currentEditingProfessional?.name} - {currentEditingService?.name}
+            </DialogDescription>
+          </DialogHeader>
+
+          {currentEditingCell && editingCell && (
+            <div className="space-y-6 py-4">
+              {/* Leasing Toggle */}
+              <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
+                <div>
+                  <Label className="font-medium">Arrendamento</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Profissional paga ao salão
+                  </p>
+                </div>
+                <Switch
+                  checked={currentEditingCell.is_leasing}
+                  onCheckedChange={(checked) => 
+                    updateCell(editingCell.professionalId, editingCell.serviceId, { is_leasing: checked })
+                  }
+                />
+              </div>
+
+              {currentEditingCell.is_leasing ? (
+                /* Leasing Configuration */
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Tipo de Arrendamento</Label>
+                    <Select
+                      value={currentEditingCell.leasing_type || ""}
+                      onValueChange={(value) => 
+                        updateCell(editingCell.professionalId, editingCell.serviceId, { leasing_type: value as any })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="fixed_monthly">Fixo Mensal</SelectItem>
+                        <SelectItem value="proportional_time">Proporcional ao Tempo</SelectItem>
+                        <SelectItem value="proportional_space">Proporcional ao Espaço</SelectItem>
+                        <SelectItem value="per_service">Por Serviço Realizado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Valor do Arrendamento (R$)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={currentEditingCell.leasing_value}
+                      onChange={(e) => 
+                        updateCell(editingCell.professionalId, editingCell.serviceId, { 
+                          leasing_value: parseFloat(e.target.value) || 0 
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              ) : (
+                /* Commission Configuration */
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Tipo de Comissão</Label>
+                    <Select
+                      value={currentEditingCell.commission_type}
+                      onValueChange={(value) => 
+                        updateCell(editingCell.professionalId, editingCell.serviceId, { 
+                          commission_type: value as "fixed" | "percentage" 
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="percentage">Percentual (%)</SelectItem>
+                        <SelectItem value="fixed">Valor Fixo (R$)</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>
+                      Valor {currentEditingCell.commission_type === "percentage" ? "(%)" : "(R$)"}
+                    </Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max={currentEditingCell.commission_type === "percentage" ? 100 : undefined}
+                      step={currentEditingCell.commission_type === "percentage" ? 1 : 0.01}
+                      value={currentEditingCell.commission_value}
+                      onChange={(e) => 
+                        updateCell(editingCell.professionalId, editingCell.serviceId, { 
+                          commission_value: parseFloat(e.target.value) || 0 
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingCell(null)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
