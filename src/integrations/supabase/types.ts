@@ -1409,6 +1409,9 @@ export type Database = {
           commission_type: string
           commission_value: number
           id: string
+          is_leasing: boolean | null
+          leasing_type: string | null
+          leasing_value: number | null
           professional_id: string
           service_id: string
         }
@@ -1416,6 +1419,9 @@ export type Database = {
           commission_type?: string
           commission_value?: number
           id?: string
+          is_leasing?: boolean | null
+          leasing_type?: string | null
+          leasing_value?: number | null
           professional_id: string
           service_id: string
         }
@@ -1423,6 +1429,9 @@ export type Database = {
           commission_type?: string
           commission_value?: number
           id?: string
+          is_leasing?: boolean | null
+          leasing_type?: string | null
+          leasing_value?: number | null
           professional_id?: string
           service_id?: string
         }
