@@ -3,9 +3,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, Percent, DollarSign } from "lucide-react";
+import { Plus, Pencil, Trash2, Percent, DollarSign, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { CommissionRuleDialog } from "./CommissionRuleDialog";
+import { AdvancedRulesDialog } from "./AdvancedRulesDialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +40,8 @@ export function CommissionRulesTab({ establishmentId }: CommissionRulesTabProps)
   const [editingRule, setEditingRule] = useState<CommissionRule | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [ruleToDelete, setRuleToDelete] = useState<string | null>(null);
+  const [advancedDialogOpen, setAdvancedDialogOpen] = useState(false);
+  const [advancedRuleId, setAdvancedRuleId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRules();
