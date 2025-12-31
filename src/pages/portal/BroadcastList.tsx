@@ -93,7 +93,7 @@ export default function BroadcastList() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('establishments')
-        .select('id, name')
+        .select('id, name, subscription_plan, trial_ends_at')
         .eq('slug', slug)
         .single();
       if (error) throw error;
@@ -117,7 +117,11 @@ export default function BroadcastList() {
     enabled: !!establishment?.id
   });
 
-  const isSubscribed = subscription?.status === 'active';
+  // Allow free usage during trial period or with active subscription
+  const isInTrial = establishment?.subscription_plan === 'trial' && 
+    establishment?.trial_ends_at && 
+    new Date(establishment.trial_ends_at) > new Date();
+  const isSubscribed = subscription?.status === 'active' || isInTrial;
 
   // Fetch clients
   const { data: clients = [] } = useQuery({
