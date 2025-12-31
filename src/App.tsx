@@ -34,6 +34,7 @@ import AdminZApiStatus from "./pages/admin/ZApiStatus";
 // Portal Pages (Establishment Admin - configuration & settings)
 import PortalDashboard from "./pages/portal/Dashboard";
 import PortalServices from "./pages/portal/Services";
+import PortalProducts from "./pages/portal/Products";
 import PortalProfessionals from "./pages/portal/Professionals";
 import PortalClients from "./pages/portal/Clients";
 import PortalLoyalty from "./pages/portal/Loyalty";
@@ -194,6 +195,7 @@ const App = () => (
               <Route path="/portal/:slug/agenda" element={<PortalAgenda />} />
               <Route path="/portal/:slug/profissionais" element={<PortalProfessionals />} />
               <Route path="/portal/:slug/servicos" element={<PortalServices />} />
+              <Route path="/portal/:slug/produtos" element={<PortalProducts />} />
               <Route path="/portal/:slug/clientes" element={<PortalClients />} />
               <Route path="/portal/:slug/fidelidade" element={<PortalLoyalty />} />
               <Route path="/portal/:slug/promocoes" element={<PortalPromotions />} />

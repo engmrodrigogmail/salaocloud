@@ -1298,6 +1298,67 @@ export type Database = {
         }
         Relationships: []
       }
+      product_categories: {
+        Row: {
+          created_at: string
+          establishment_id: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          establishment_id: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          establishment_id?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_categories_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_units: {
+        Row: {
+          abbreviation: string
+          created_at: string
+          establishment_id: string
+          id: string
+          name: string
+        }
+        Insert: {
+          abbreviation: string
+          created_at?: string
+          establishment_id: string
+          id?: string
+          name: string
+        }
+        Update: {
+          abbreviation?: string
+          created_at?: string
+          establishment_id?: string
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_units_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       products: {
         Row: {
           category: string | null
@@ -1308,6 +1369,8 @@ export type Database = {
           is_active: boolean
           name: string
           price: number
+          stock_quantity: number | null
+          unit: string | null
           updated_at: string
         }
         Insert: {
@@ -1319,6 +1382,8 @@ export type Database = {
           is_active?: boolean
           name: string
           price?: number
+          stock_quantity?: number | null
+          unit?: string | null
           updated_at?: string
         }
         Update: {
@@ -1330,6 +1395,8 @@ export type Database = {
           is_active?: boolean
           name?: string
           price?: number
+          stock_quantity?: number | null
+          unit?: string | null
           updated_at?: string
         }
         Relationships: [

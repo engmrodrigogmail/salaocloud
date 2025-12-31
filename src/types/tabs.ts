@@ -71,6 +71,8 @@ export interface Product {
   description: string | null;
   price: number;
   category: string | null;
+  unit: string | null;
+  stock_quantity: number | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;

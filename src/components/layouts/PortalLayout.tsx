@@ -20,6 +20,7 @@ import {
   HelpCircle,
   Bot,
   MessageCircle,
+  Package,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -79,6 +80,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
     { href: `/portal/${slug}/agenda`, label: "Agenda", icon: Calendar },
     { href: `/portal/${slug}/profissionais`, label: "Profissionais", icon: Users },
     { href: `/portal/${slug}/servicos`, label: "Serviços", icon: Scissors },
+    { href: `/portal/${slug}/produtos`, label: "Produtos", icon: Package },
     { href: `/portal/${slug}/clientes`, label: "Clientes", icon: UserCircle },
     { href: `/portal/${slug}/categorias`, label: "Categorias", icon: FolderKanban },
     { href: `/portal/${slug}/fidelidade`, label: "Fidelidade", icon: Star },
