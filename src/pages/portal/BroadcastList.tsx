@@ -69,12 +69,15 @@ export default function BroadcastList() {
   const { slug } = useParams();
   const queryClient = useQueryClient();
   
+  const BATCH_LIMIT = 200;
+  
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [currentBatchStart, setCurrentBatchStart] = useState(0);
 
   // Fetch establishment
   const { data: establishment } = useQuery({
@@ -155,7 +158,7 @@ export default function BroadcastList() {
     }
   };
 
-  const handleSendBroadcast = async () => {
+  const handleSendBroadcast = async (startIndex: number = 0) => {
     if (!title.trim()) {
       toast.error("Informe um título para a campanha");
       return;
@@ -172,6 +175,13 @@ export default function BroadcastList() {
     setIsSending(true);
 
     try {
+      // Get selected clients data
+      const selectedClientsData = clients.filter(c => selectedClients.includes(c.id));
+      
+      // Get batch to send (max 200)
+      const batchClients = selectedClientsData.slice(startIndex, startIndex + BATCH_LIMIT);
+      const remainingCount = selectedClientsData.length - (startIndex + BATCH_LIMIT);
+      
       // Create campaign
       const { data: campaign, error: campaignError } = await supabase
         .from('broadcast_campaigns')
@@ -180,7 +190,7 @@ export default function BroadcastList() {
           title: title.trim(),
           message: message.trim(),
           image_url: imageUrl.trim() || null,
-          total_recipients: selectedClients.length,
+          total_recipients: batchClients.length,
           status: 'sending'
         })
         .select()
@@ -188,11 +198,8 @@ export default function BroadcastList() {
 
       if (campaignError) throw campaignError;
 
-      // Get selected clients data
-      const selectedClientsData = clients.filter(c => selectedClients.includes(c.id));
-
-      // Create logs for each recipient
-      const logs = selectedClientsData.map(client => ({
+      // Create logs for batch recipients
+      const logs = batchClients.map(client => ({
         campaign_id: campaign.id,
         client_id: client.id,
         client_phone: client.phone,
@@ -213,13 +220,18 @@ export default function BroadcastList() {
 
       if (sendError) throw sendError;
 
-      toast.success(`Campanha iniciada! Enviando para ${selectedClients.length} contatos...`);
-      
-      // Reset form
-      setTitle("");
-      setMessage("");
-      setImageUrl("");
-      setSelectedClients([]);
+      if (remainingCount > 0) {
+        setCurrentBatchStart(startIndex + BATCH_LIMIT);
+        toast.success(`Lote de ${batchClients.length} contatos iniciado! Restam ${remainingCount} contatos na fila.`);
+      } else {
+        toast.success(`Campanha iniciada! Enviando para ${batchClients.length} contatos...`);
+        // Reset form only when all batches are sent
+        setTitle("");
+        setMessage("");
+        setImageUrl("");
+        setSelectedClients([]);
+        setCurrentBatchStart(0);
+      }
       
       queryClient.invalidateQueries({ queryKey: ['broadcast-campaigns'] });
     } catch (error: any) {
@@ -228,6 +240,22 @@ export default function BroadcastList() {
     } finally {
       setIsSending(false);
     }
+  };
+
+  const handleSendNextBatch = () => {
+    handleSendBroadcast(currentBatchStart);
+  };
+
+  const getRemainingBatches = () => {
+    const selectedClientsData = clients.filter(c => selectedClients.includes(c.id));
+    const remaining = selectedClientsData.length - currentBatchStart;
+    return remaining > 0 ? Math.ceil(remaining / BATCH_LIMIT) : 0;
+  };
+
+  const getCurrentBatchSize = () => {
+    const selectedClientsData = clients.filter(c => selectedClients.includes(c.id));
+    const remaining = selectedClientsData.length - currentBatchStart;
+    return Math.min(remaining, BATCH_LIMIT);
   };
 
   const getStatusBadge = (status: string) => {
@@ -389,13 +417,67 @@ export default function BroadcastList() {
 
             <Separator />
 
+            {/* Batch info */}
+            {selectedClients.length > BATCH_LIMIT && (
+              <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                <div className="flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <div className="text-sm">
+                    <p className="font-medium text-amber-800 dark:text-amber-200">
+                      Limite de {BATCH_LIMIT} contatos por lote
+                    </p>
+                    <p className="text-amber-700 dark:text-amber-300">
+                      {selectedClients.length} selecionados = {Math.ceil(selectedClients.length / BATCH_LIMIT)} lotes de envio
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Current batch info when sending in parts */}
+            {currentBatchStart > 0 && getRemainingBatches() > 0 && (
+              <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <p className="font-medium text-blue-800 dark:text-blue-200">
+                      Próximo lote: {getCurrentBatchSize()} contatos
+                    </p>
+                    <p className="text-blue-700 dark:text-blue-300">
+                      {getRemainingBatches()} lote(s) restante(s)
+                    </p>
+                  </div>
+                  <Button 
+                    onClick={handleSendNextBatch}
+                    disabled={isSending}
+                    size="sm"
+                  >
+                    {isSending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 mr-2" />
+                        Enviar Próximos
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Users className="w-4 h-4" />
-                {selectedClients.length} de {clients.length} clientes selecionados
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Users className="w-4 h-4" />
+                  {selectedClients.length} de {clients.length} clientes selecionados
+                </div>
+                {selectedClients.length > BATCH_LIMIT && currentBatchStart === 0 && (
+                  <span className="text-xs text-muted-foreground">
+                    Primeiro lote: {Math.min(selectedClients.length, BATCH_LIMIT)} contatos
+                  </span>
+                )}
               </div>
               <Button 
-                onClick={handleSendBroadcast}
+                onClick={() => handleSendBroadcast(currentBatchStart)}
                 disabled={isSending || selectedClients.length === 0 || !message.trim()}
               >
                 {isSending ? (
@@ -406,7 +488,7 @@ export default function BroadcastList() {
                 ) : (
                   <>
                     <Send className="w-4 h-4 mr-2" />
-                    Enviar Mensagem
+                    {currentBatchStart > 0 ? 'Enviar Lote' : 'Enviar Mensagem'}
                   </>
                 )}
               </Button>
