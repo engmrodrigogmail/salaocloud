@@ -526,6 +526,47 @@ export type Database = {
           },
         ]
       }
+      commission_audit_log: {
+        Row: {
+          action: string
+          commission_id: string
+          created_at: string
+          id: string
+          justification: string | null
+          new_values: Json | null
+          old_values: Json | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          commission_id: string
+          created_at?: string
+          id?: string
+          justification?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          commission_id?: string
+          created_at?: string
+          id?: string
+          justification?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_audit_log_commission_id_fkey"
+            columns: ["commission_id"]
+            isOneToOne: false
+            referencedRelation: "professional_commissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commission_rules: {
         Row: {
           applicable_product_ids: string[] | null
@@ -534,15 +575,21 @@ export type Database = {
           challenge_end_date: string | null
           challenge_start_date: string | null
           challenge_target: number | null
+          client_ids: string[] | null
           commission_type: string
           commission_value: number
           created_at: string
+          days_of_week: number[] | null
           description: string | null
           establishment_id: string
           id: string
           is_active: boolean
           is_challenge: boolean
           name: string
+          priority: number | null
+          product_brand: string | null
+          time_end: string | null
+          time_start: string | null
           updated_at: string
         }
         Insert: {
@@ -552,15 +599,21 @@ export type Database = {
           challenge_end_date?: string | null
           challenge_start_date?: string | null
           challenge_target?: number | null
+          client_ids?: string[] | null
           commission_type?: string
           commission_value?: number
           created_at?: string
+          days_of_week?: number[] | null
           description?: string | null
           establishment_id: string
           id?: string
           is_active?: boolean
           is_challenge?: boolean
           name: string
+          priority?: number | null
+          product_brand?: string | null
+          time_end?: string | null
+          time_start?: string | null
           updated_at?: string
         }
         Update: {
@@ -570,15 +623,21 @@ export type Database = {
           challenge_end_date?: string | null
           challenge_start_date?: string | null
           challenge_target?: number | null
+          client_ids?: string[] | null
           commission_type?: string
           commission_value?: number
           created_at?: string
+          days_of_week?: number[] | null
           description?: string | null
           establishment_id?: string
           id?: string
           is_active?: boolean
           is_challenge?: boolean
           name?: string
+          priority?: number | null
+          product_brand?: string | null
+          time_end?: string | null
+          time_start?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1325,15 +1384,19 @@ export type Database = {
           commission_amount: number
           commission_rule_id: string | null
           created_at: string
+          created_by: string | null
           description: string | null
           establishment_id: string
           id: string
+          is_manual: boolean | null
+          justification: string | null
           paid_at: string | null
           period_end: string | null
           period_start: string | null
           professional_id: string
           reference_value: number
           status: string
+          tab_id: string | null
           tab_item_id: string | null
           updated_at: string
         }
@@ -1343,15 +1406,19 @@ export type Database = {
           commission_amount?: number
           commission_rule_id?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
           establishment_id: string
           id?: string
+          is_manual?: boolean | null
+          justification?: string | null
           paid_at?: string | null
           period_end?: string | null
           period_start?: string | null
           professional_id: string
           reference_value?: number
           status?: string
+          tab_id?: string | null
           tab_item_id?: string | null
           updated_at?: string
         }
@@ -1361,15 +1428,19 @@ export type Database = {
           commission_amount?: number
           commission_rule_id?: string | null
           created_at?: string
+          created_by?: string | null
           description?: string | null
           establishment_id?: string
           id?: string
+          is_manual?: boolean | null
+          justification?: string | null
           paid_at?: string | null
           period_end?: string | null
           period_start?: string | null
           professional_id?: string
           reference_value?: number
           status?: string
+          tab_id?: string | null
           tab_item_id?: string | null
           updated_at?: string
         }
@@ -1393,6 +1464,13 @@ export type Database = {
             columns: ["professional_id"]
             isOneToOne: false
             referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professional_commissions_tab_id_fkey"
+            columns: ["tab_id"]
+            isOneToOne: false
+            referencedRelation: "tabs"
             referencedColumns: ["id"]
           },
           {
@@ -1884,6 +1962,8 @@ export type Database = {
           notes: string | null
           opened_at: string
           professional_id: string | null
+          recognized_at: string | null
+          recognized_by: string | null
           status: string
           subtotal: number
           total: number
@@ -1904,6 +1984,8 @@ export type Database = {
           notes?: string | null
           opened_at?: string
           professional_id?: string | null
+          recognized_at?: string | null
+          recognized_by?: string | null
           status?: string
           subtotal?: number
           total?: number
@@ -1924,6 +2006,8 @@ export type Database = {
           notes?: string | null
           opened_at?: string
           professional_id?: string | null
+          recognized_at?: string | null
+          recognized_by?: string | null
           status?: string
           subtotal?: number
           total?: number

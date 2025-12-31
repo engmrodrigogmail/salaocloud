@@ -9,6 +9,7 @@ import { CommissionTrackingTab } from "@/components/commissions/CommissionTracki
 import { CommissionChallengesTab } from "@/components/commissions/CommissionChallengesTab";
 import { CommissionReportTab } from "@/components/commissions/CommissionReportTab";
 import { CommissionMatrixTab } from "@/components/commissions/CommissionMatrixTab";
+import { TabVerificationTab } from "@/components/commissions/TabVerificationTab";
 
 export default function PortalCommissions() {
   const { slug } = useParams<{ slug: string }>();
@@ -69,9 +70,10 @@ export default function PortalCommissions() {
           </p>
         </div>
 
-        <Tabs defaultValue="matrix" className="space-y-6">
+        <Tabs defaultValue="verification" className="space-y-6">
           <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
-            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-5 sm:max-w-3xl gap-1">
+            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-6 sm:max-w-4xl gap-1">
+              <TabsTrigger value="verification" className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4">Verificação</TabsTrigger>
               <TabsTrigger value="matrix" className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4">Matriz</TabsTrigger>
               <TabsTrigger value="tracking" className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4">Acompanhamento</TabsTrigger>
               <TabsTrigger value="rules" className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4">Regras</TabsTrigger>
@@ -79,6 +81,10 @@ export default function PortalCommissions() {
               <TabsTrigger value="report" className="flex-shrink-0 text-xs sm:text-sm px-3 sm:px-4">Relatório</TabsTrigger>
             </TabsList>
           </div>
+
+          <TabsContent value="verification">
+            <TabVerificationTab establishmentId={establishmentId} />
+          </TabsContent>
 
           <TabsContent value="matrix">
             <CommissionMatrixTab establishmentId={establishmentId} />
