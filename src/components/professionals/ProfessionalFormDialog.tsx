@@ -291,8 +291,8 @@ export function ProfessionalFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>
             {editingProfessional ? "Editar Profissional" : "Novo Profissional"}
           </DialogTitle>
@@ -303,7 +303,7 @@ export function ProfessionalFormDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <div className="flex-1 overflow-y-auto -mx-6 px-6">
           <div className="space-y-6 py-4">
             {/* Basic Info */}
             <div className="space-y-4">
@@ -494,9 +494,9 @@ export function ProfessionalFormDialog({
               )}
             </div>
           </div>
-        </ScrollArea>
+        </div>
 
-        <DialogFooter className="mt-4">
+        <DialogFooter className="flex-shrink-0 mt-4">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={loading}>
             Cancelar
           </Button>
