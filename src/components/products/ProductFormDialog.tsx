@@ -62,7 +62,6 @@ export function ProductFormDialog({
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [unit, setUnit] = useState("un");
-  const [stockQuantity, setStockQuantity] = useState("0");
   const [price, setPrice] = useState("");
   const [isActive, setIsActive] = useState(true);
 
@@ -87,7 +86,6 @@ export function ProductFormDialog({
       setDescription(editingProduct.description || "");
       setCategory(editingProduct.category || "");
       setUnit(editingProduct.unit || "un");
-      setStockQuantity(String(editingProduct.stock_quantity ?? 0));
       setPrice(String(editingProduct.price));
       setIsActive(editingProduct.is_active);
     } else {
@@ -122,7 +120,6 @@ export function ProductFormDialog({
     setDescription("");
     setCategory("");
     setUnit("un");
-    setStockQuantity("0");
     setPrice("");
     setIsActive(true);
     setNewCategory("");
@@ -183,7 +180,6 @@ export function ProductFormDialog({
         description: description || null,
         category: category || null,
         unit: unit || "un",
-        stock_quantity: parseFloat(stockQuantity) || 0,
         price: parseFloat(price),
         is_active: isActive,
       };
@@ -292,67 +288,53 @@ export function ProductFormDialog({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label>Unidade</Label>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowNewUnit(!showNewUnit)}
-                  className="h-6 px-2 text-xs"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                </Button>
-              </div>
-              {showNewUnit ? (
-                <div className="space-y-2">
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label>Unidade</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowNewUnit(!showNewUnit)}
+                className="h-6 px-2 text-xs"
+              >
+                <Plus className="h-3 w-3 mr-1" />
+              </Button>
+            </div>
+            {showNewUnit ? (
+              <div className="space-y-2">
+                <Input
+                  value={newUnitName}
+                  onChange={(e) => setNewUnitName(e.target.value)}
+                  placeholder="Nome (ex: Metro)"
+                  className="text-sm"
+                />
+                <div className="flex gap-2">
                   <Input
-                    value={newUnitName}
-                    onChange={(e) => setNewUnitName(e.target.value)}
-                    placeholder="Nome (ex: Metro)"
+                    value={newUnitAbbr}
+                    onChange={(e) => setNewUnitAbbr(e.target.value)}
+                    placeholder="Sigla (ex: m)"
                     className="text-sm"
                   />
-                  <div className="flex gap-2">
-                    <Input
-                      value={newUnitAbbr}
-                      onChange={(e) => setNewUnitAbbr(e.target.value)}
-                      placeholder="Sigla (ex: m)"
-                      className="text-sm"
-                    />
-                    <Button type="button" size="sm" onClick={handleAddUnit}>
-                      OK
-                    </Button>
-                  </div>
+                  <Button type="button" size="sm" onClick={handleAddUnit}>
+                    OK
+                  </Button>
                 </div>
-              ) : (
-                <Select value={unit} onValueChange={setUnit}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {units.map((u) => (
-                      <SelectItem key={u.abbr} value={u.abbr}>
-                        {u.name} ({u.abbr})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="stock">Quantidade em Estoque</Label>
-              <Input
-                id="stock"
-                type="number"
-                step="0.01"
-                min="0"
-                value={stockQuantity}
-                onChange={(e) => setStockQuantity(e.target.value)}
-              />
-            </div>
+              </div>
+            ) : (
+              <Select value={unit} onValueChange={setUnit}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {units.map((u) => (
+                    <SelectItem key={u.abbr} value={u.abbr}>
+                      {u.name} ({u.abbr})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="space-y-2">

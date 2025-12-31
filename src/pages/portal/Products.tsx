@@ -176,7 +176,6 @@ export default function PortalProducts() {
                 <TableHead>Produto</TableHead>
                 <TableHead>Categoria</TableHead>
                 <TableHead>Unidade</TableHead>
-                <TableHead>Estoque</TableHead>
                 <TableHead>Preço</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Ações</TableHead>
@@ -185,13 +184,13 @@ export default function PortalProducts() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12">
+                  <TableCell colSpan={6} className="text-center py-12">
                     Carregando...
                   </TableCell>
                 </TableRow>
               ) : filteredProducts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12">
+                  <TableCell colSpan={6} className="text-center py-12">
                     <Package className="h-12 w-12 mx-auto mb-4 opacity-30" />
                     <p className="text-muted-foreground">
                       Nenhum produto cadastrado
@@ -229,7 +228,6 @@ export default function PortalProducts() {
                       )}
                     </TableCell>
                     <TableCell>{product.unit || "un"}</TableCell>
-                    <TableCell>{product.stock_quantity ?? 0}</TableCell>
                     <TableCell>{formatCurrency(product.price)}</TableCell>
                     <TableCell>
                       {product.is_active ? (
