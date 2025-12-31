@@ -186,7 +186,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
           isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        <nav className="p-4 space-y-1">
+        <nav className="p-4 space-y-1 h-full overflow-y-auto">
           {navItems.map((item) => {
             const isActive = location.pathname === item.href;
             return (
