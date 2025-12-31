@@ -133,44 +133,53 @@ async function processBroadcast(campaignId: string) {
     return;
   }
 
-  console.log(`[Broadcast] Processando ${logs.length} mensagens`);
+  console.log(`[Broadcast] Processando ${logs.length} mensagens em blocos de 5`);
 
-  let sentCount = 0;
-  let failedCount = 0;
+  let sentCount = campaign.sent_count || 0;
+  let failedCount = campaign.failed_count || 0;
 
-  for (const log of logs) {
-    // Add delay between messages to avoid rate limiting
-    await new Promise(resolve => setTimeout(resolve, 1500));
+  // Process in batches of 5 with 3 second delay between batches
+  const BATCH_SIZE = 5;
+  const BATCH_DELAY_MS = 3000;
 
-    let result;
-    
-    if (campaign.image_url) {
-      result = await sendImageMessage(log.client_phone, campaign.image_url, campaign.message);
-    } else {
-      result = await sendTextMessage(log.client_phone, campaign.message);
+  for (let i = 0; i < logs.length; i += BATCH_SIZE) {
+    const batch = logs.slice(i, i + BATCH_SIZE);
+    console.log(`[Broadcast] Processando lote ${Math.floor(i / BATCH_SIZE) + 1} de ${Math.ceil(logs.length / BATCH_SIZE)}`);
+
+    // Process each message in the batch
+    for (const log of batch) {
+      let result;
+      
+      if (campaign.image_url) {
+        result = await sendImageMessage(log.client_phone, campaign.image_url, campaign.message);
+      } else {
+        result = await sendTextMessage(log.client_phone, campaign.message);
+      }
+
+      if (result.success) {
+        sentCount++;
+        await supabase
+          .from('broadcast_logs')
+          .update({ 
+            status: 'sent', 
+            sent_at: new Date().toISOString() 
+          })
+          .eq('id', log.id);
+      } else {
+        failedCount++;
+        await supabase
+          .from('broadcast_logs')
+          .update({ 
+            status: 'failed', 
+            error_message: result.error 
+          })
+          .eq('id', log.id);
+      }
+
+      console.log(`[Broadcast] Enviado para ${log.client_name}: ${result.success ? 'OK' : result.error}`);
     }
 
-    if (result.success) {
-      sentCount++;
-      await supabase
-        .from('broadcast_logs')
-        .update({ 
-          status: 'sent', 
-          sent_at: new Date().toISOString() 
-        })
-        .eq('id', log.id);
-    } else {
-      failedCount++;
-      await supabase
-        .from('broadcast_logs')
-        .update({ 
-          status: 'failed', 
-          error_message: result.error 
-        })
-        .eq('id', log.id);
-    }
-
-    // Update campaign counts
+    // Update campaign counts after each batch
     await supabase
       .from('broadcast_campaigns')
       .update({ 
@@ -179,7 +188,11 @@ async function processBroadcast(campaignId: string) {
       })
       .eq('id', campaignId);
 
-    console.log(`[Broadcast] Enviado para ${log.client_name}: ${result.success ? 'OK' : result.error}`);
+    // Wait 3 seconds before next batch (unless it's the last batch)
+    if (i + BATCH_SIZE < logs.length) {
+      console.log(`[Broadcast] Aguardando ${BATCH_DELAY_MS / 1000}s antes do próximo lote...`);
+      await new Promise(resolve => setTimeout(resolve, BATCH_DELAY_MS));
+    }
   }
 
   // Mark campaign as completed
