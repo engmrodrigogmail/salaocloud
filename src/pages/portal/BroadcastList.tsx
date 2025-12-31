@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { PortalLayout } from "@/components/layouts/PortalLayout";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import { 
   Send, 
   Image as ImageIcon, 
@@ -78,6 +79,13 @@ export default function BroadcastList() {
   const [showHistory, setShowHistory] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [currentBatchStart, setCurrentBatchStart] = useState(0);
+  const [activeCampaign, setActiveCampaign] = useState<{
+    id: string;
+    total_recipients: number;
+    sent_count: number;
+    failed_count: number;
+    status: string;
+  } | null>(null);
 
   // Fetch establishment
   const { data: establishment } = useQuery({
@@ -142,6 +150,45 @@ export default function BroadcastList() {
     enabled: !!establishment?.id && isSubscribed
   });
 
+  // Subscribe to realtime updates for active campaign
+  useEffect(() => {
+    if (!activeCampaign?.id) return;
+
+    const channel = supabase
+      .channel('broadcast-progress')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'broadcast_campaigns',
+          filter: `id=eq.${activeCampaign.id}`
+        },
+        (payload) => {
+          const updated = payload.new as any;
+          setActiveCampaign(prev => prev ? {
+            ...prev,
+            sent_count: updated.sent_count,
+            failed_count: updated.failed_count,
+            status: updated.status
+          } : null);
+
+          // Clear active campaign when completed
+          if (updated.status === 'completed') {
+            setTimeout(() => {
+              setActiveCampaign(null);
+              queryClient.invalidateQueries({ queryKey: ['broadcast-campaigns'] });
+            }, 3000);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeCampaign?.id, queryClient]);
+
   const toggleClient = (clientId: string) => {
     setSelectedClients(prev => 
       prev.includes(clientId) 
@@ -198,6 +245,15 @@ export default function BroadcastList() {
 
       if (campaignError) throw campaignError;
 
+      // Set active campaign for progress tracking
+      setActiveCampaign({
+        id: campaign.id,
+        total_recipients: batchClients.length,
+        sent_count: 0,
+        failed_count: 0,
+        status: 'sending'
+      });
+
       // Create logs for batch recipients
       const logs = batchClients.map(client => ({
         campaign_id: campaign.id,
@@ -232,8 +288,6 @@ export default function BroadcastList() {
         setSelectedClients([]);
         setCurrentBatchStart(0);
       }
-      
-      queryClient.invalidateQueries({ queryKey: ['broadcast-campaigns'] });
     } catch (error: any) {
       console.error('Erro ao enviar broadcast:', error);
       toast.error(error.message || "Erro ao enviar mensagens");
@@ -430,6 +484,41 @@ export default function BroadcastList() {
                       {selectedClients.length} selecionados = {Math.ceil(selectedClients.length / BATCH_LIMIT)} lotes de envio
                     </p>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Real-time progress indicator */}
+            {activeCampaign && (
+              <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    {activeCampaign.status === 'sending' ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                    ) : (
+                      <CheckCircle2 className="w-4 h-4 text-green-500" />
+                    )}
+                    <span className="font-medium text-sm">
+                      {activeCampaign.status === 'sending' ? 'Enviando...' : 'Concluído!'}
+                    </span>
+                  </div>
+                  <span className="text-sm text-muted-foreground">
+                    {activeCampaign.sent_count + activeCampaign.failed_count} / {activeCampaign.total_recipients}
+                  </span>
+                </div>
+                <Progress 
+                  value={(activeCampaign.sent_count + activeCampaign.failed_count) / activeCampaign.total_recipients * 100} 
+                  className="h-2"
+                />
+                <div className="flex items-center justify-between mt-2 text-xs text-muted-foreground">
+                  <span className="text-green-600">
+                    {activeCampaign.sent_count} enviados
+                  </span>
+                  {activeCampaign.failed_count > 0 && (
+                    <span className="text-red-600">
+                      {activeCampaign.failed_count} falhas
+                    </span>
+                  )}
                 </div>
               </div>
             )}
