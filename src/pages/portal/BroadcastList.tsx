@@ -74,7 +74,8 @@ export default function BroadcastList() {
   
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedClients, setSelectedClients] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -233,6 +234,30 @@ export default function BroadcastList() {
       const batchClients = selectedClientsData.slice(startIndex, startIndex + BATCH_LIMIT);
       const remainingCount = selectedClientsData.length - (startIndex + BATCH_LIMIT);
       
+      // Upload image if provided
+      let uploadedImageUrl: string | null = null;
+      if (imageFile) {
+        const fileExt = imageFile.name.split('.').pop();
+        const fileName = `${establishment!.id}/${Date.now()}.${fileExt}`;
+        
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('broadcast-images')
+          .upload(fileName, imageFile);
+        
+        if (uploadError) {
+          console.error('Erro ao fazer upload da imagem:', uploadError);
+          toast.error("Erro ao fazer upload da imagem");
+          setIsSending(false);
+          return;
+        }
+        
+        const { data: { publicUrl } } = supabase.storage
+          .from('broadcast-images')
+          .getPublicUrl(fileName);
+        
+        uploadedImageUrl = publicUrl;
+      }
+
       // Create campaign
       const { data: campaign, error: campaignError } = await supabase
         .from('broadcast_campaigns')
@@ -240,7 +265,7 @@ export default function BroadcastList() {
           establishment_id: establishment!.id,
           title: title.trim(),
           message: message.trim(),
-          image_url: imageUrl.trim() || null,
+          image_url: uploadedImageUrl,
           total_recipients: batchClients.length,
           status: 'sending'
         })
@@ -288,7 +313,11 @@ export default function BroadcastList() {
         // Reset form only when all batches are sent
         setTitle("");
         setMessage("");
-        setImageUrl("");
+        setImageFile(null);
+        setImagePreview(null);
+        // Reset file input
+        const input = document.getElementById('image') as HTMLInputElement;
+        if (input) input.value = '';
         setSelectedClients([]);
         setCurrentBatchStart(0);
       }
@@ -451,24 +480,54 @@ export default function BroadcastList() {
             <div className="space-y-2">
               <Label htmlFor="image" className="flex items-center gap-2">
                 <ImageIcon className="w-4 h-4" />
-                URL da Imagem (opcional)
+                Imagem (opcional)
               </Label>
               <Input
                 id="image"
-                placeholder="https://exemplo.com/imagem.jpg"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setImageFile(file);
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                      setImagePreview(e.target?.result as string);
+                    };
+                    reader.readAsDataURL(file);
+                  } else {
+                    setImageFile(null);
+                    setImagePreview(null);
+                  }
+                }}
+                className="cursor-pointer"
               />
-              {imageUrl && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" />
+                A imagem não será armazenada e será apagada após o envio da campanha
+              </p>
+              {imagePreview && (
                 <div className="relative w-full max-w-[200px]">
                   <img 
-                    src={imageUrl} 
+                    src={imagePreview} 
                     alt="Preview" 
                     className="rounded-lg border object-cover w-full h-auto"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
                   />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-6 w-6"
+                    onClick={() => {
+                      setImageFile(null);
+                      setImagePreview(null);
+                      // Reset file input
+                      const input = document.getElementById('image') as HTMLInputElement;
+                      if (input) input.value = '';
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
                 </div>
               )}
             </div>
