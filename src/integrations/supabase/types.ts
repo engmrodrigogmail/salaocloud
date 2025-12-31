@@ -1606,6 +1606,9 @@ export type Database = {
           establishment_id: string
           id: string
           is_active: boolean
+          leasing_base_date: string | null
+          leasing_type: string | null
+          leasing_value: number | null
           name: string
           phone: string | null
           specialties: string[] | null
@@ -1621,6 +1624,9 @@ export type Database = {
           establishment_id: string
           id?: string
           is_active?: boolean
+          leasing_base_date?: string | null
+          leasing_type?: string | null
+          leasing_value?: number | null
           name: string
           phone?: string | null
           specialties?: string[] | null
@@ -1636,6 +1642,9 @@ export type Database = {
           establishment_id?: string
           id?: string
           is_active?: boolean
+          leasing_base_date?: string | null
+          leasing_type?: string | null
+          leasing_value?: number | null
           name?: string
           phone?: string | null
           specialties?: string[] | null

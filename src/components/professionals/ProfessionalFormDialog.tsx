@@ -24,7 +24,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { toast } from "sonner";
-import { Briefcase, DollarSign } from "lucide-react";
+import { Briefcase, DollarSign, Building } from "lucide-react";
+import { format } from "date-fns";
 
 interface Service {
   id: string;
@@ -76,6 +77,9 @@ export function ProfessionalFormDialog({
     phone: "",
     specialties: "",
     is_active: true,
+    leasing_type: "none" as "none" | "fixed_monthly" | "proportional",
+    leasing_value: 0,
+    leasing_base_date: "",
   });
 
   useEffect(() => {
@@ -105,13 +109,25 @@ export function ProfessionalFormDialog({
   const loadProfessionalData = async () => {
     if (!editingProfessional) return;
 
-    setFormData({
-      name: editingProfessional.name,
-      email: editingProfessional.email || "",
-      phone: editingProfessional.phone || "",
-      specialties: editingProfessional.specialties?.join(", ") || "",
-      is_active: editingProfessional.is_active,
-    });
+    // Fetch full professional data including leasing fields
+    const { data: fullProfessional } = await supabase
+      .from("professionals")
+      .select("*")
+      .eq("id", editingProfessional.id)
+      .single();
+
+    if (fullProfessional) {
+      setFormData({
+        name: fullProfessional.name,
+        email: fullProfessional.email || "",
+        phone: fullProfessional.phone || "",
+        specialties: fullProfessional.specialties?.join(", ") || "",
+        is_active: fullProfessional.is_active,
+        leasing_type: (fullProfessional.leasing_type as "none" | "fixed_monthly" | "proportional") || "none",
+        leasing_value: fullProfessional.leasing_value || 0,
+        leasing_base_date: fullProfessional.leasing_base_date || "",
+      });
+    }
 
     // Fetch existing professional_services
     const { data: psData } = await supabase
@@ -147,6 +163,9 @@ export function ProfessionalFormDialog({
       phone: "",
       specialties: "",
       is_active: true,
+      leasing_type: "none",
+      leasing_value: 0,
+      leasing_base_date: "",
     });
     setSelectedServices(new Set());
     setServiceCommissions({});
@@ -216,6 +235,11 @@ export function ProfessionalFormDialog({
             phone: formData.phone || null,
             specialties: specialtiesArray.length > 0 ? specialtiesArray : null,
             is_active: formData.is_active,
+            leasing_type: formData.leasing_type,
+            leasing_value: formData.leasing_type !== "none" ? formData.leasing_value : 0,
+            leasing_base_date: formData.leasing_type === "fixed_monthly" && formData.leasing_base_date 
+              ? formData.leasing_base_date 
+              : null,
           })
           .eq("id", editingProfessional.id);
 
@@ -230,6 +254,11 @@ export function ProfessionalFormDialog({
             phone: formData.phone || null,
             specialties: specialtiesArray.length > 0 ? specialtiesArray : null,
             is_active: formData.is_active,
+            leasing_type: formData.leasing_type,
+            leasing_value: formData.leasing_type !== "none" ? formData.leasing_value : 0,
+            leasing_base_date: formData.leasing_type === "fixed_monthly" && formData.leasing_base_date 
+              ? formData.leasing_base_date 
+              : null,
           })
           .select()
           .single();
@@ -349,6 +378,86 @@ export function ProfessionalFormDialog({
                   checked={formData.is_active}
                   onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
                 />
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* Professional-Level Leasing */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Building className="h-5 w-5 text-muted-foreground" />
+                <Label className="text-base font-semibold">Arrendamento Geral</Label>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Configure o arrendamento do profissional independente dos serviços. O valor será descontado do total de comissões.
+              </p>
+
+              <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                <div className="space-y-2">
+                  <Label>Tipo de Arrendamento</Label>
+                  <Select
+                    value={formData.leasing_type}
+                    onValueChange={(value: "none" | "fixed_monthly" | "proportional") => 
+                      setFormData({ ...formData, leasing_type: value })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Sem Arrendamento</SelectItem>
+                      <SelectItem value="fixed_monthly">Valor Fixo Mensal</SelectItem>
+                      <SelectItem value="proportional">Proporcional aos Serviços (%)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.leasing_type !== "none" && (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>
+                        {formData.leasing_type === "fixed_monthly" 
+                          ? "Valor Mensal (R$)" 
+                          : "Percentual (%)"}
+                      </Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        max={formData.leasing_type === "proportional" ? 100 : undefined}
+                        step={formData.leasing_type === "proportional" ? 1 : 0.01}
+                        value={formData.leasing_value}
+                        onChange={(e) => setFormData({ 
+                          ...formData, 
+                          leasing_value: parseFloat(e.target.value) || 0 
+                        })}
+                        placeholder={formData.leasing_type === "fixed_monthly" ? "1500.00" : "30"}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        {formData.leasing_type === "fixed_monthly" 
+                          ? "Valor fixo que o profissional paga mensalmente" 
+                          : "Percentual sobre o valor total dos serviços realizados"}
+                      </p>
+                    </div>
+
+                    {formData.leasing_type === "fixed_monthly" && (
+                      <div className="space-y-2">
+                        <Label>Data Base do Fechamento</Label>
+                        <Input
+                          type="date"
+                          value={formData.leasing_base_date}
+                          onChange={(e) => setFormData({ 
+                            ...formData, 
+                            leasing_base_date: e.target.value 
+                          })}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Dia do mês para contabilizar o fechamento (ex: dia 01 ou dia 15)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
