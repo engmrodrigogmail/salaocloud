@@ -12,9 +12,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Clock, Save, Loader2, Users, Settings, Upload, X, Image, CalendarDays } from "lucide-react";
+import { Clock, Save, Loader2, Users, Settings, Upload, X, Image, CalendarDays, Palette } from "lucide-react";
 import type { Tables, Json } from "@/integrations/supabase/types";
 import { ProfessionalWorkingHoursCard } from "@/components/settings/ProfessionalWorkingHoursCard";
+import { BrandColorsCard } from "@/components/settings/BrandColorsCard";
 
 type Establishment = Tables<"establishments">;
 
@@ -59,6 +60,11 @@ export default function PortalSettings() {
   const [workingHours, setWorkingHours] = useState<WorkingHours>(DEFAULT_WORKING_HOURS);
   const [agendaSlotInterval, setAgendaSlotInterval] = useState(30);
   const [agendaExpandHours, setAgendaExpandHours] = useState(1);
+  const [brandColors, setBrandColors] = useState({
+    primary: null as string | null,
+    secondary: null as string | null,
+    accent: null as string | null
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -90,6 +96,18 @@ export default function PortalSettings() {
       // Set agenda settings
       if (data.agenda_slot_interval) setAgendaSlotInterval(data.agenda_slot_interval);
       if (data.agenda_expand_hours) setAgendaExpandHours(data.agenda_expand_hours);
+      
+      // Set brand colors - need to cast since types may not be updated yet
+      const estData = data as Establishment & {
+        brand_primary_color?: string | null;
+        brand_secondary_color?: string | null;
+        brand_accent_color?: string | null;
+      };
+      setBrandColors({
+        primary: estData.brand_primary_color || null,
+        secondary: estData.brand_secondary_color || null,
+        accent: estData.brand_accent_color || null
+      });
     } catch (error) {
       console.error("Error fetching establishment:", error);
       toast.error("Erro ao carregar dados");
@@ -346,6 +364,16 @@ export default function PortalSettings() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Brand Colors Card */}
+            {establishment && (
+              <BrandColorsCard
+                establishmentId={establishment.id}
+                logoUrl={establishment.logo_url}
+                savedColors={brandColors}
+                onColorsUpdate={(colors) => setBrandColors(colors)}
+              />
+            )}
           </TabsContent>
 
           <TabsContent value="working-hours">

@@ -1061,6 +1061,9 @@ export type Database = {
           address: string | null
           agenda_expand_hours: number | null
           agenda_slot_interval: number | null
+          brand_accent_color: string | null
+          brand_primary_color: string | null
+          brand_secondary_color: string | null
           cancellation_policy: string | null
           city: string | null
           created_at: string
@@ -1087,6 +1090,9 @@ export type Database = {
           address?: string | null
           agenda_expand_hours?: number | null
           agenda_slot_interval?: number | null
+          brand_accent_color?: string | null
+          brand_primary_color?: string | null
+          brand_secondary_color?: string | null
           cancellation_policy?: string | null
           city?: string | null
           created_at?: string
@@ -1113,6 +1119,9 @@ export type Database = {
           address?: string | null
           agenda_expand_hours?: number | null
           agenda_slot_interval?: number | null
+          brand_accent_color?: string | null
+          brand_primary_color?: string | null
+          brand_secondary_color?: string | null
           cancellation_policy?: string | null
           city?: string | null
           created_at?: string
