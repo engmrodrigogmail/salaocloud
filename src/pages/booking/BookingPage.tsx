@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,10 +12,15 @@ import { format, addDays, setHours, setMinutes, isBefore, isAfter, startOfDay } 
 import { ptBR } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
 import { EstablishmentAIChat } from "@/components/ai-assistant/EstablishmentAIChat";
+import { hexToHsl } from "@/hooks/useBrandColors";
 
 type Service = Tables<"services">;
 type Professional = Tables<"professionals">;
-type Establishment = Tables<"establishments">;
+type Establishment = Tables<"establishments"> & {
+  brand_primary_color?: string | null;
+  brand_secondary_color?: string | null;
+  brand_accent_color?: string | null;
+};
 
 const BookingPage = () => {
   const { slug } = useParams();
@@ -220,6 +225,28 @@ const BookingPage = () => {
     }
   };
 
+  // Generate CSS custom properties for brand colors
+  const brandStyle = useMemo(() => {
+    if (!establishment) return {};
+    
+    const primary = establishment.brand_primary_color;
+    const secondary = establishment.brand_secondary_color;
+    const accent = establishment.brand_accent_color;
+    
+    if (!primary && !secondary && !accent) return {};
+    
+    return {
+      '--brand-primary': primary ? hexToHsl(primary) : undefined,
+      '--brand-secondary': secondary ? hexToHsl(secondary) : undefined,
+      '--brand-accent': accent ? hexToHsl(accent) : undefined,
+      '--brand-primary-hex': primary || undefined,
+      '--brand-secondary-hex': secondary || undefined,
+      '--brand-accent-hex': accent || undefined,
+    } as React.CSSProperties;
+  }, [establishment]);
+
+  const hasBrandColors = establishment?.brand_primary_color || establishment?.brand_secondary_color || establishment?.brand_accent_color;
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center">
@@ -242,8 +269,21 @@ const BookingPage = () => {
     );
   }
 
+  // Dynamic styles based on brand colors
+  const primaryColor = establishment.brand_primary_color || 'hsl(var(--primary))';
+  const accentColor = establishment.brand_accent_color || 'hsl(var(--accent))';
+  const secondaryColor = establishment.brand_secondary_color || 'hsl(var(--secondary))';
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background py-8 px-4">
+    <div 
+      className="min-h-screen py-8 px-4"
+      style={{
+        ...brandStyle,
+        background: hasBrandColors 
+          ? `linear-gradient(135deg, ${secondaryColor}15, ${primaryColor}08, ${secondaryColor}10)`
+          : undefined
+      }}
+    >
       <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -267,13 +307,15 @@ const BookingPage = () => {
           {[1, 2, 3, 4].map((s) => (
             <div
               key={s}
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
-                s === step
-                  ? "bg-primary text-primary-foreground"
-                  : s < step
-                  ? "bg-accent text-accent-foreground"
-                  : "bg-muted text-muted-foreground"
-              }`}
+              className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all`}
+              style={{
+                backgroundColor: s === step 
+                  ? primaryColor 
+                  : s < step 
+                    ? accentColor 
+                    : undefined,
+                color: s === step || s < step ? 'white' : undefined
+              }}
             >
               {s < step ? <Check className="h-5 w-5" /> : s}
             </div>
@@ -282,10 +324,10 @@ const BookingPage = () => {
 
         {/* Step 1: Select Service */}
         {step === 1 && (
-          <Card className="border-primary/20">
+          <Card style={{ borderColor: `${primaryColor}33` }}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5 text-primary" />
+                <Calendar className="h-5 w-5" style={{ color: primaryColor }} />
                 Escolha o Serviço
               </CardTitle>
               <CardDescription>Selecione o serviço que deseja agendar</CardDescription>
@@ -300,11 +342,11 @@ const BookingPage = () => {
                   <div
                     key={service.id}
                     onClick={() => setSelectedService(service)}
-                    className={`p-4 rounded-lg border cursor-pointer transition-all hover:border-primary/50 ${
-                      selectedService?.id === service.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border"
-                    }`}
+                    className="p-4 rounded-lg border cursor-pointer transition-all"
+                    style={{
+                      borderColor: selectedService?.id === service.id ? primaryColor : undefined,
+                      backgroundColor: selectedService?.id === service.id ? `${primaryColor}0D` : undefined
+                    }}
                   >
                     <div className="flex justify-between items-start">
                       <div>
@@ -317,7 +359,7 @@ const BookingPage = () => {
                           {service.duration_minutes} min
                         </p>
                       </div>
-                      <p className="font-bold text-accent">
+                      <p className="font-bold" style={{ color: accentColor }}>
                         R$ {Number(service.price).toFixed(2)}
                       </p>
                     </div>
@@ -328,6 +370,8 @@ const BookingPage = () => {
                 <Button
                   onClick={() => setStep(2)}
                   disabled={!selectedService}
+                  style={{ backgroundColor: primaryColor }}
+                  className="text-white hover:opacity-90"
                 >
                   Próximo <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -338,10 +382,10 @@ const BookingPage = () => {
 
         {/* Step 2: Select Professional */}
         {step === 2 && (
-          <Card className="border-primary/20">
+          <Card style={{ borderColor: `${primaryColor}33` }}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" />
+                <User className="h-5 w-5" style={{ color: primaryColor }} />
                 Escolha o Profissional
               </CardTitle>
               <CardDescription>Selecione o profissional de sua preferência</CardDescription>
@@ -356,15 +400,18 @@ const BookingPage = () => {
                   <div
                     key={professional.id}
                     onClick={() => setSelectedProfessional(professional)}
-                    className={`p-4 rounded-lg border cursor-pointer transition-all hover:border-primary/50 ${
-                      selectedProfessional?.id === professional.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border"
-                    }`}
+                    className="p-4 rounded-lg border cursor-pointer transition-all"
+                    style={{
+                      borderColor: selectedProfessional?.id === professional.id ? primaryColor : undefined,
+                      backgroundColor: selectedProfessional?.id === professional.id ? `${primaryColor}0D` : undefined
+                    }}
                   >
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                        <User className="h-6 w-6 text-primary" />
+                      <div 
+                        className="w-12 h-12 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: `${primaryColor}1A` }}
+                      >
+                        <User className="h-6 w-6" style={{ color: primaryColor }} />
                       </div>
                       <div>
                         <h3 className="font-semibold">{professional.name}</h3>
@@ -385,6 +432,8 @@ const BookingPage = () => {
                 <Button
                   onClick={() => setStep(3)}
                   disabled={!selectedProfessional}
+                  style={{ backgroundColor: primaryColor }}
+                  className="text-white hover:opacity-90"
                 >
                   Próximo <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -395,10 +444,10 @@ const BookingPage = () => {
 
         {/* Step 3: Select Date and Time */}
         {step === 3 && (
-          <Card className="border-primary/20">
+          <Card style={{ borderColor: `${primaryColor}33` }}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-primary" />
+                <Clock className="h-5 w-5" style={{ color: primaryColor }} />
                 Escolha a Data e Horário
               </CardTitle>
               <CardDescription>Selecione quando deseja ser atendido</CardDescription>
@@ -412,11 +461,12 @@ const BookingPage = () => {
                     <button
                       key={date.toISOString()}
                       onClick={() => setSelectedDate(date)}
-                      className={`p-2 rounded-lg border text-center transition-all hover:border-primary/50 ${
-                        selectedDate?.toDateString() === date.toDateString()
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border"
-                      }`}
+                      className="p-2 rounded-lg border text-center transition-all"
+                      style={{
+                        borderColor: selectedDate?.toDateString() === date.toDateString() ? primaryColor : undefined,
+                        backgroundColor: selectedDate?.toDateString() === date.toDateString() ? primaryColor : undefined,
+                        color: selectedDate?.toDateString() === date.toDateString() ? 'white' : undefined
+                      }}
                     >
                       <p className="text-xs uppercase">
                         {format(date, "EEE", { locale: ptBR })}
@@ -436,11 +486,12 @@ const BookingPage = () => {
                       <button
                         key={time}
                         onClick={() => setSelectedTime(time)}
-                        className={`p-2 rounded-lg border text-center transition-all hover:border-primary/50 ${
-                          selectedTime === time
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border"
-                        }`}
+                        className="p-2 rounded-lg border text-center transition-all"
+                        style={{
+                          borderColor: selectedTime === time ? primaryColor : undefined,
+                          backgroundColor: selectedTime === time ? primaryColor : undefined,
+                          color: selectedTime === time ? 'white' : undefined
+                        }}
                       >
                         {time}
                       </button>
@@ -456,6 +507,8 @@ const BookingPage = () => {
                 <Button
                   onClick={() => setStep(4)}
                   disabled={!selectedDate || !selectedTime}
+                  style={{ backgroundColor: primaryColor }}
+                  className="text-white hover:opacity-90"
                 >
                   Próximo <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -466,22 +519,25 @@ const BookingPage = () => {
 
         {/* Step 4: Client Information */}
         {step === 4 && (
-          <Card className="border-primary/20">
+          <Card style={{ borderColor: `${primaryColor}33` }}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" />
+                <User className="h-5 w-5" style={{ color: primaryColor }} />
                 Seus Dados
               </CardTitle>
               <CardDescription>Preencha suas informações para confirmar o agendamento</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Summary */}
-              <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+              <div 
+                className="p-4 rounded-lg space-y-2"
+                style={{ backgroundColor: `${primaryColor}0D`, border: `1px solid ${primaryColor}33` }}
+              >
                 <p><strong>Serviço:</strong> {selectedService?.name}</p>
                 <p><strong>Profissional:</strong> {selectedProfessional?.name}</p>
                 <p><strong>Data:</strong> {selectedDate && format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
                 <p><strong>Horário:</strong> {selectedTime}</p>
-                <p><strong>Valor:</strong> R$ {Number(selectedService?.price || 0).toFixed(2)}</p>
+                <p><strong>Valor:</strong> <span style={{ color: accentColor, fontWeight: 'bold' }}>R$ {Number(selectedService?.price || 0).toFixed(2)}</span></p>
               </div>
 
               <div className="space-y-4">
