@@ -238,15 +238,29 @@ Telefone do estabelecimento: ${establishment.phone || 'Não informado'}`;
 function isWithinWorkingHours(workingHours: any): boolean {
   if (!workingHours) return true;
 
+  // Converter para horário de Brasília (UTC-3)
   const now = new Date();
+  const brasiliaOffset = -3 * 60; // UTC-3 em minutos
+  const localOffset = now.getTimezoneOffset(); // Offset local em minutos
+  const brasiliaTime = new Date(now.getTime() + (localOffset + brasiliaOffset) * 60 * 1000);
+  
   const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const today = days[now.getDay()];
+  const today = days[brasiliaTime.getDay()];
   const todayConfig = workingHours[today];
 
-  if (!todayConfig?.enabled) return false;
+  if (!todayConfig?.enabled) {
+    console.log(`[AI-Assistant] Dia ${today} não está habilitado`);
+    return false;
+  }
 
-  const currentTime = now.toTimeString().slice(0, 5);
-  return currentTime >= todayConfig.start && currentTime <= todayConfig.end;
+  const hours = brasiliaTime.getHours().toString().padStart(2, '0');
+  const minutes = brasiliaTime.getMinutes().toString().padStart(2, '0');
+  const currentTime = `${hours}:${minutes}`;
+  
+  const isWithin = currentTime >= todayConfig.start && currentTime <= todayConfig.end;
+  console.log(`[AI-Assistant] Horário atual (BRT): ${currentTime}, Configurado: ${todayConfig.start}-${todayConfig.end}, Dentro: ${isWithin}`);
+  
+  return isWithin;
 }
 
 serve(async (req) => {
@@ -441,9 +455,62 @@ serve(async (req) => {
           .update({ status: 'escalated', escalated_at: new Date().toISOString() })
           .eq('id', conversationId);
 
-        // TODO: Send WhatsApp to establishment if configured
+        // Enviar WhatsApp ao estabelecimento via instância Z-API do SaaS
         if (config.escalation_whatsapp) {
-          console.log('Would send escalation WhatsApp to:', config.escalation_whatsapp);
+          const Z_API_INSTANCE_ID = Deno.env.get('Z_API_INSTANCE_ID');
+          const Z_API_TOKEN = Deno.env.get('Z_API_TOKEN');
+          const Z_API_CLIENT_TOKEN = Deno.env.get('Z_API_CLIENT_TOKEN') || Z_API_TOKEN;
+
+          if (Z_API_INSTANCE_ID && Z_API_TOKEN) {
+            try {
+              // Buscar resumo da conversa para contexto
+              const { data: recentMessages } = await supabase
+                .from('ai_assistant_messages')
+                .select('sender_type, content')
+                .eq('conversation_id', conversationId)
+                .order('created_at', { ascending: false })
+                .limit(5);
+
+              const conversationSummary = recentMessages?.reverse()
+                .map(m => `${m.sender_type === 'client' ? 'Cliente' : 'Assistente'}: ${m.content.slice(0, 100)}`)
+                .join('\n') || 'Sem histórico';
+
+              const escalationMessage = `🚨 *Escalonamento - ${establishment.name}*\n\n` +
+                `*Cliente:* ${clientName || 'Não informado'}\n` +
+                `*Telefone:* ${clientPhone || 'Não informado'}\n` +
+                `*Canal:* Portal de agendamento\n\n` +
+                `*Resumo da conversa:*\n${conversationSummary}\n\n` +
+                `O cliente solicitou atendimento humano.`;
+
+              const formattedPhone = config.escalation_whatsapp.replace(/\D/g, '');
+              const phoneToSend = formattedPhone.startsWith('55') ? formattedPhone : `55${formattedPhone}`;
+
+              const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+              if (Z_API_CLIENT_TOKEN) {
+                headers['Client-Token'] = Z_API_CLIENT_TOKEN;
+              }
+
+              const zapiResponse = await fetch(
+                `https://api.z-api.io/instances/${Z_API_INSTANCE_ID}/token/${Z_API_TOKEN}/send-text`,
+                {
+                  method: 'POST',
+                  headers,
+                  body: JSON.stringify({ phone: phoneToSend, message: escalationMessage }),
+                }
+              );
+
+              if (zapiResponse.ok) {
+                console.log(`[AI-Assistant] Escalação enviada via WhatsApp para: ${phoneToSend.slice(-4)}`);
+              } else {
+                const errorText = await zapiResponse.text();
+                console.error(`[AI-Assistant] Erro ao enviar escalação: ${zapiResponse.status} - ${errorText}`);
+              }
+            } catch (error) {
+              console.error('[AI-Assistant] Erro ao enviar WhatsApp de escalação:', error);
+            }
+          } else {
+            console.log('[AI-Assistant] Z-API não configurado, escalação não enviada via WhatsApp');
+          }
         }
       }
 
