@@ -20,6 +20,8 @@ import { format, addDays, setHours, setMinutes, startOfDay, isBefore, addMinutes
 import { ptBR } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAvailability } from "@/hooks/useAvailability";
+import { useBrandColors, hexToHsl } from "@/hooks/useBrandColors";
+import { EstablishmentAIChat } from "@/components/ai-assistant/EstablishmentAIChat";
 
 type Establishment = Tables<"establishments"> & { cancellation_policy?: string | null };
 type Service = Tables<"services">;
@@ -107,6 +109,43 @@ const ClientPortal = () => {
     professionals,
     appointments: allAppointments,
   });
+
+  // Use brand colors hook
+  const brandColors = useBrandColors(
+    establishment?.logo_url,
+    {
+      primary: establishment?.brand_primary_color,
+      secondary: establishment?.brand_secondary_color,
+      accent: establishment?.brand_accent_color,
+    }
+  );
+
+  // Apply brand colors as CSS variables
+  useEffect(() => {
+    if (establishment && (brandColors.primary || establishment.brand_primary_color)) {
+      const root = document.documentElement;
+      const primaryColor = establishment.brand_primary_color || brandColors.primary;
+      const secondaryColor = establishment.brand_secondary_color || brandColors.secondary;
+      const accentColor = establishment.brand_accent_color || brandColors.accent;
+      
+      if (primaryColor) {
+        root.style.setProperty('--brand-primary', hexToHsl(primaryColor));
+      }
+      if (secondaryColor) {
+        root.style.setProperty('--brand-secondary', hexToHsl(secondaryColor));
+      }
+      if (accentColor) {
+        root.style.setProperty('--brand-accent', hexToHsl(accentColor));
+      }
+    }
+    
+    return () => {
+      const root = document.documentElement;
+      root.style.removeProperty('--brand-primary');
+      root.style.removeProperty('--brand-secondary');
+      root.style.removeProperty('--brand-accent');
+    };
+  }, [establishment, brandColors]);
 
   useEffect(() => {
     if (slug) {
@@ -805,15 +844,34 @@ const ClientPortal = () => {
     </Dialog>
   );
 
+  // Get primary color for login screen
+  const loginPrimaryColor = establishment.brand_primary_color || brandColors.primary;
+  const loginPrimaryHsl = loginPrimaryColor ? hexToHsl(loginPrimaryColor) : null;
+
   // Login/Register screen
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background py-8 px-4">
+      <div 
+        className="min-h-screen py-8 px-4"
+        style={{
+          background: loginPrimaryHsl 
+            ? `linear-gradient(to bottom right, hsl(${loginPrimaryHsl} / 0.05), hsl(var(--secondary) / 0.2), hsl(${loginPrimaryHsl} / 0.05))`
+            : undefined
+        }}
+      >
         <PhoneConfirmDialog />
         <div className="max-w-md mx-auto">
-          {/* Header */}
+          {/* Header with Logo */}
           <div className="text-center mb-8">
-            <Store className="h-12 w-12 text-primary mx-auto mb-4" />
+            {establishment.logo_url ? (
+              <img 
+                src={establishment.logo_url} 
+                alt={establishment.name}
+                className="h-16 md:h-20 w-auto object-contain mx-auto mb-4 max-w-[200px]"
+              />
+            ) : (
+              <Store className="h-12 w-12 text-primary mx-auto mb-4" />
+            )}
             <h1 className="text-2xl font-display font-bold text-foreground mb-2">
               {establishment.name}
             </h1>
@@ -1301,19 +1359,62 @@ const ClientPortal = () => {
     );
   }
 
+  // Get primary color for styling
+  const primaryColor = establishment.brand_primary_color || brandColors.primary;
+  const primaryColorHsl = primaryColor ? hexToHsl(primaryColor) : null;
+
   // Authenticated client portal
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background">
-      {/* Header */}
-      <header className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">
+    <div 
+      className="min-h-screen"
+      style={{
+        background: primaryColorHsl 
+          ? `linear-gradient(to bottom right, hsl(${primaryColorHsl} / 0.05), hsl(var(--secondary) / 0.2), hsl(${primaryColorHsl} / 0.05))`
+          : undefined
+      }}
+    >
+      {/* Header with brand colors */}
+      <header 
+        className="backdrop-blur-sm border-b sticky top-0 z-50"
+        style={{
+          backgroundColor: primaryColorHsl ? `hsl(${primaryColorHsl} / 0.95)` : undefined,
+          borderColor: primaryColorHsl ? `hsl(${primaryColorHsl} / 0.3)` : undefined,
+        }}
+      >
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-display font-bold text-foreground">
-              {establishment.name}
-            </h1>
-            <p className="text-sm text-muted-foreground">Olá, {client?.name}</p>
+          <div className="flex items-center gap-4">
+            {/* Logo */}
+            {establishment.logo_url && (
+              <img 
+                src={establishment.logo_url} 
+                alt={establishment.name}
+                className="h-10 md:h-12 w-auto object-contain max-w-[120px]"
+              />
+            )}
+            <div>
+              <h1 
+                className="text-xl font-display font-bold"
+                style={{ color: primaryColorHsl ? 'white' : undefined }}
+              >
+                {establishment.name}
+              </h1>
+              <p 
+                className="text-sm"
+                style={{ color: primaryColorHsl ? 'rgba(255,255,255,0.8)' : 'var(--muted-foreground)' }}
+              >
+                Olá, {client?.name}
+              </p>
+            </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleLogout}
+            style={{ 
+              color: primaryColorHsl ? 'white' : undefined,
+            }}
+            className={primaryColorHsl ? 'hover:bg-white/20' : ''}
+          >
             <LogOut className="h-4 w-4 mr-2" />
             Sair
           </Button>
@@ -1539,6 +1640,17 @@ const ClientPortal = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* AI Assistant Chat */}
+      <EstablishmentAIChat 
+        establishmentId={establishment.id} 
+        establishmentName={establishment.name}
+        brandColors={{
+          primary: establishment.brand_primary_color,
+          secondary: establishment.brand_secondary_color,
+          accent: establishment.brand_accent_color,
+        }}
+      />
     </div>
   );
 };
