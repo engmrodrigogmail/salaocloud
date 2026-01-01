@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Calendar, Clock, User, Phone, Mail, ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format, addDays, setHours, setMinutes, isBefore, isAfter, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
@@ -407,12 +408,15 @@ const BookingPage = () => {
                     }}
                   >
                     <div className="flex items-center gap-4">
-                      <div 
-                        className="w-12 h-12 rounded-full flex items-center justify-center"
-                        style={{ backgroundColor: `${primaryColor}1A` }}
-                      >
-                        <User className="h-6 w-6" style={{ color: primaryColor }} />
-                      </div>
+                      <Avatar className="h-12 w-12 border-2" style={{ borderColor: `${primaryColor}33` }}>
+                        <AvatarImage src={professional.avatar_url || undefined} alt={professional.name} />
+                        <AvatarFallback 
+                          className="text-sm font-semibold"
+                          style={{ backgroundColor: `${primaryColor}1A`, color: primaryColor }}
+                        >
+                          {professional.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
+                        </AvatarFallback>
+                      </Avatar>
                       <div>
                         <h3 className="font-semibold">{professional.name}</h3>
                         {professional.specialties && professional.specialties.length > 0 && (
