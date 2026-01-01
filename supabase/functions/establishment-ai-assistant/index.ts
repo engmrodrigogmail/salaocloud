@@ -161,7 +161,7 @@ async function incrementUsage(establishmentId: string): Promise<void> {
   }
 }
 
-function buildSystemPrompt(config: AssistantConfig, establishment: EstablishmentData): string {
+function buildSystemPrompt(config: AssistantConfig, establishment: EstablishmentData, clientInfo?: { name?: string; phone?: string }): string {
   const styleGuide = config.language_style === 'formal'
     ? 'Use linguagem formal e profissional. Trate o cliente por "senhor(a)".'
     : 'Use linguagem amigável e casual, mas sempre profissional. Pode usar emojis moderadamente.';
@@ -180,13 +180,25 @@ function buildSystemPrompt(config: AssistantConfig, establishment: Establishment
       ).join('\n')
     : 'Nenhuma promoção ativa no momento.';
 
+  // Client context section
+  const clientContext = clientInfo?.name 
+    ? `\n## Cliente Atual
+O cliente que está conversando com você:
+- Nome: ${clientInfo.name}
+- Telefone: ${clientInfo.phone || 'Não informado'}
+
+IMPORTANTE: Você JÁ SABE o nome e telefone deste cliente. NÃO pergunte novamente essas informações! Use o nome dele nas conversas para torná-las mais pessoais.`
+    : `\n## Cliente Atual
+O cliente ainda não está identificado. Você precisará coletar nome e telefone apenas se ele quiser agendar algo.`;
+
   return `Você é ${config.assistant_name}, assistente virtual do ${establishment.name}.
 
 ## Estilo de Comunicação
 ${styleGuide}
+${clientContext}
 
 ## Suas Capacidades
-1. **Agendamentos**: Ajudar clientes a agendar serviços, verificando disponibilidade
+1. **Agendamentos**: Ajudar clientes a agendar serviços
 2. **Remarcações**: Auxiliar na remarcação de agendamentos existentes
 3. **Promoções**: Informar sobre promoções ativas
 4. **Fila de Espera**: Se a data/hora desejada estiver ocupada, oferecer alternativas ou adicionar à fila de espera
@@ -204,13 +216,16 @@ ${promotionsInfo}
 ## Instruções Especiais
 ${config.custom_instructions || 'Sem instruções adicionais.'}
 
-## Regras Importantes
+## Regras CRÍTICAS - SIGA RIGOROSAMENTE
 1. NUNCA invente informações - se não souber, diga que vai verificar
-2. Para agendar, sempre confirme: serviço, profissional (ou qualquer um), data e horário
-3. Colete o nome e telefone do cliente se ainda não tiver
-4. Se não conseguir resolver, ofereça encaminhar para atendimento humano
-5. Mantenha respostas concisas (máximo 3 parágrafos)
-6. Se o cliente mencionar uma data/hora ocupada, sugira alternativas ou ofereça fila de espera
+2. SEJA OBJETIVO E DIRETO - responda exatamente o que foi perguntado
+3. Se o cliente pedir "o mais rápido possível" ou "primeiro horário disponível", NÃO pergunte preferência de horário. Sugira imediatamente o próximo horário disponível
+4. Se o cliente disser "qualquer profissional" ou "independente de profissional", NÃO pergunte qual profissional prefere
+5. NÃO faça perguntas redundantes - se você já tem a informação, USE-A
+6. Para agendar, confirme apenas as informações que FALTAM: serviço, profissional (se não especificado que pode ser qualquer um), data e horário
+7. Mantenha respostas CONCISAS - máximo 2 parágrafos curtos
+8. Se o cliente mencionar uma data/hora ocupada, sugira alternativas imediatamente
+9. Se não conseguir resolver, ofereça encaminhar para atendimento humano
 
 ## Ações Especiais
 - Para escalar para humano, inclua [ESCALAR] no final da resposta
@@ -249,6 +264,7 @@ serve(async (req) => {
       voiceTranscription,
       clientName,
       clientPhone,
+      clientId,
     } = await req.json();
 
     console.log('AI Assistant request:', { action, establishmentId, conversationId, messageType });
@@ -294,13 +310,14 @@ serve(async (req) => {
 
     // Handle different actions
     if (action === 'start_conversation') {
-      // Create conversation
+      // Create conversation with client info if available
       const { data: conversation, error: convError } = await supabase
         .from('ai_assistant_conversations')
         .insert({
           establishment_id: establishmentId,
-          client_name: clientName,
-          client_phone: clientPhone,
+          client_id: clientId || null,
+          client_name: clientName || null,
+          client_phone: clientPhone || null,
           channel: 'portal',
           status: 'active',
         })
@@ -371,8 +388,8 @@ serve(async (req) => {
         content: m.content,
       })) || [];
 
-      // Add system prompt
-      const systemPrompt = buildSystemPrompt(config, establishment);
+      // Add system prompt with client context
+      const systemPrompt = buildSystemPrompt(config, establishment, { name: clientName, phone: clientPhone });
 
       // Call AI
       const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {

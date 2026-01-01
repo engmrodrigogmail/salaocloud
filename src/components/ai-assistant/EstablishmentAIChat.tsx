@@ -30,10 +30,17 @@ interface BrandColors {
   accent?: string | null;
 }
 
+interface ClientData {
+  name: string;
+  phone: string;
+  id?: string;
+}
+
 interface EstablishmentAIChatProps {
   establishmentId: string;
   establishmentName: string;
   brandColors?: BrandColors;
+  clientData?: ClientData | null;
   className?: string;
 }
 
@@ -41,6 +48,7 @@ export function EstablishmentAIChat({
   establishmentId, 
   establishmentName,
   brandColors,
+  clientData,
   className 
 }: EstablishmentAIChatProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -81,6 +89,9 @@ export function EstablishmentAIChat({
         body: {
           action: 'start_conversation',
           establishmentId,
+          clientName: clientData?.name,
+          clientPhone: clientData?.phone,
+          clientId: clientData?.id,
         },
       });
 
@@ -150,6 +161,9 @@ export function EstablishmentAIChat({
           conversationId,
           message: messageContent,
           messageType: 'text',
+          clientName: clientData?.name,
+          clientPhone: clientData?.phone,
+          clientId: clientData?.id,
         },
       });
 

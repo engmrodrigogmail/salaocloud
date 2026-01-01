@@ -1667,6 +1667,11 @@ const ClientPortal = () => {
           secondary: brandColors.secondary,
           accent: brandColors.accent,
         }}
+        clientData={client ? {
+          id: client.id,
+          name: client.name,
+          phone: client.phone,
+        } : null}
       />
     </div>
   );
