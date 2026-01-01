@@ -122,21 +122,12 @@ const ClientPortal = () => {
 
   // Apply brand colors as CSS variables
   useEffect(() => {
-    if (establishment && (brandColors.primary || establishment.brand_primary_color)) {
+    if (establishment && brandColors.primary) {
       const root = document.documentElement;
-      const primaryColor = establishment.brand_primary_color || brandColors.primary;
-      const secondaryColor = establishment.brand_secondary_color || brandColors.secondary;
-      const accentColor = establishment.brand_accent_color || brandColors.accent;
       
-      if (primaryColor) {
-        root.style.setProperty('--brand-primary', hexToHsl(primaryColor));
-      }
-      if (secondaryColor) {
-        root.style.setProperty('--brand-secondary', hexToHsl(secondaryColor));
-      }
-      if (accentColor) {
-        root.style.setProperty('--brand-accent', hexToHsl(accentColor));
-      }
+      root.style.setProperty('--brand-primary', hexToHsl(brandColors.primary));
+      root.style.setProperty('--brand-secondary', hexToHsl(brandColors.secondary));
+      root.style.setProperty('--brand-accent', hexToHsl(brandColors.accent));
     }
     
     return () => {
@@ -145,7 +136,7 @@ const ClientPortal = () => {
       root.style.removeProperty('--brand-secondary');
       root.style.removeProperty('--brand-accent');
     };
-  }, [establishment, brandColors]);
+  }, [establishment, brandColors.primary, brandColors.secondary, brandColors.accent]);
 
   useEffect(() => {
     if (slug) {
@@ -845,7 +836,7 @@ const ClientPortal = () => {
   );
 
   // Get primary color for login screen
-  const loginPrimaryColor = establishment.brand_primary_color || brandColors.primary;
+  const loginPrimaryColor = brandColors.primary;
   const loginPrimaryHsl = loginPrimaryColor ? hexToHsl(loginPrimaryColor) : null;
 
   // Login/Register screen
@@ -1360,7 +1351,7 @@ const ClientPortal = () => {
   }
 
   // Get primary color for styling
-  const primaryColor = establishment.brand_primary_color || brandColors.primary;
+  const primaryColor = brandColors.primary;
   const primaryColorHsl = primaryColor ? hexToHsl(primaryColor) : null;
 
   // Authenticated client portal
@@ -1646,9 +1637,9 @@ const ClientPortal = () => {
         establishmentId={establishment.id} 
         establishmentName={establishment.name}
         brandColors={{
-          primary: establishment.brand_primary_color,
-          secondary: establishment.brand_secondary_color,
-          accent: establishment.brand_accent_color,
+          primary: brandColors.primary,
+          secondary: brandColors.secondary,
+          accent: brandColors.accent,
         }}
       />
     </div>

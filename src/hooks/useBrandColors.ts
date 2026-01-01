@@ -159,18 +159,42 @@ export const useBrandColors = (
     isExtracted: false
   });
   const [loading, setLoading] = useState(false);
+  const [hasExtracted, setHasExtracted] = useState(false);
+  
+  // Check if saved colors are available
+  const hasSavedColors = !!(savedColors?.primary && savedColors?.secondary && savedColors?.accent);
   
   // Use saved colors if available
   useEffect(() => {
-    if (savedColors?.primary && savedColors?.secondary && savedColors?.accent) {
+    if (hasSavedColors) {
       setColors({
-        primary: savedColors.primary,
-        secondary: savedColors.secondary,
-        accent: savedColors.accent,
+        primary: savedColors.primary!,
+        secondary: savedColors.secondary!,
+        accent: savedColors.accent!,
         isExtracted: false
       });
+      setHasExtracted(true); // Prevent auto-extraction when we have saved colors
     }
-  }, [savedColors?.primary, savedColors?.secondary, savedColors?.accent]);
+  }, [hasSavedColors, savedColors?.primary, savedColors?.secondary, savedColors?.accent]);
+  
+  // Auto-extract colors from logo if no saved colors are available
+  useEffect(() => {
+    if (!hasSavedColors && logoUrl && !hasExtracted && !loading) {
+      setLoading(true);
+      extractColorsFromImage(logoUrl)
+        .then((extracted) => {
+          setColors({ ...extracted, isExtracted: true });
+          setHasExtracted(true);
+        })
+        .catch((error) => {
+          console.error('Failed to auto-extract colors:', error);
+          setHasExtracted(true); // Prevent retry loop
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+  }, [logoUrl, hasSavedColors, hasExtracted, loading]);
   
   const extractColors = useCallback(async (): Promise<BrandColors | null> => {
     if (!logoUrl) return null;
@@ -179,6 +203,7 @@ export const useBrandColors = (
     try {
       const extracted = await extractColorsFromImage(logoUrl);
       setColors({ ...extracted, isExtracted: true });
+      setHasExtracted(true);
       return extracted;
     } catch (error) {
       console.error('Failed to extract colors:', error);
