@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { Briefcase, DollarSign, Building } from "lucide-react";
 import { format } from "date-fns";
+import { AvatarUpload } from "./AvatarUpload";
 
 interface Service {
   id: string;
@@ -80,6 +81,7 @@ export function ProfessionalFormDialog({
     leasing_type: "none" as "none" | "fixed_monthly" | "proportional",
     leasing_value: 0,
     leasing_base_date: "",
+    avatar_url: null as string | null,
   });
 
   useEffect(() => {
@@ -126,6 +128,7 @@ export function ProfessionalFormDialog({
         leasing_type: (fullProfessional.leasing_type as "none" | "fixed_monthly" | "proportional") || "none",
         leasing_value: fullProfessional.leasing_value || 0,
         leasing_base_date: fullProfessional.leasing_base_date || "",
+        avatar_url: fullProfessional.avatar_url || null,
       });
     }
 
@@ -166,6 +169,7 @@ export function ProfessionalFormDialog({
       leasing_type: "none",
       leasing_value: 0,
       leasing_base_date: "",
+      avatar_url: null,
     });
     setSelectedServices(new Set());
     setServiceCommissions({});
@@ -240,6 +244,7 @@ export function ProfessionalFormDialog({
             leasing_base_date: formData.leasing_type === "fixed_monthly" && formData.leasing_base_date 
               ? formData.leasing_base_date 
               : null,
+            avatar_url: formData.avatar_url,
           })
           .eq("id", editingProfessional.id);
 
@@ -259,6 +264,7 @@ export function ProfessionalFormDialog({
             leasing_base_date: formData.leasing_type === "fixed_monthly" && formData.leasing_base_date 
               ? formData.leasing_base_date 
               : null,
+            avatar_url: formData.avatar_url,
           })
           .select()
           .single();
@@ -336,6 +342,16 @@ export function ProfessionalFormDialog({
           <div className="space-y-6 py-4">
             {/* Basic Info */}
             <div className="space-y-4">
+              {/* Avatar Upload */}
+              <div className="flex justify-center">
+                <AvatarUpload
+                  avatarUrl={formData.avatar_url}
+                  professionalName={formData.name}
+                  onAvatarChange={(url) => setFormData({ ...formData, avatar_url: url })}
+                  disabled={loading}
+                />
+              </div>
+
               <div className="space-y-2">
                 <Label>Nome *</Label>
                 <Input

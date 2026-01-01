@@ -16,6 +16,7 @@ import {
   Loader2, Store, Scissors, Star, Gift, LogOut, Filter,
   ChevronLeft, ChevronRight, AlertCircle, FileText, Info
 } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format, addDays, setHours, setMinutes, startOfDay, isBefore, addMinutes, isAfter, parseISO, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
@@ -1123,7 +1124,17 @@ const ClientPortal = () => {
                     <SelectContent>
                       <SelectItem value="any">Qualquer profissional disponível</SelectItem>
                       {getProfessionalsForService(selectedService.id).map((prof) => (
-                        <SelectItem key={prof.id} value={prof.id}>{prof.name}</SelectItem>
+                        <SelectItem key={prof.id} value={prof.id}>
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-6 w-6">
+                              <AvatarImage src={prof.avatar_url || undefined} alt={prof.name} />
+                              <AvatarFallback className="text-[10px]">
+                                {prof.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span>{prof.name}</span>
+                          </div>
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -1295,13 +1306,28 @@ const ClientPortal = () => {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Summary */}
-                <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+                <div className="bg-muted/50 p-4 rounded-lg space-y-3">
                   <p><strong>Serviço:</strong> {selectedService.name}</p>
                   <p><strong>Duração:</strong> {selectedService.duration_minutes} minutos</p>
                   {establishment.show_catalog && (
                     <p><strong>Valor:</strong> R$ {Number(selectedService.price).toFixed(2)}</p>
                   )}
-                  <p><strong>Profissional:</strong> {selectedProfessional?.name || "Será definido conforme disponibilidade"}</p>
+                  <div className="flex items-center gap-2">
+                    <strong>Profissional:</strong>
+                    {selectedProfessional ? (
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8">
+                          <AvatarImage src={selectedProfessional.avatar_url || undefined} alt={selectedProfessional.name} />
+                          <AvatarFallback className="text-xs">
+                            {selectedProfessional.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span>{selectedProfessional.name}</span>
+                      </div>
+                    ) : (
+                      <span>Será definido conforme disponibilidade</span>
+                    )}
+                  </div>
                   <p><strong>Data:</strong> {format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
                   <p><strong>Horário:</strong> {selectedTime}</p>
                 </div>
