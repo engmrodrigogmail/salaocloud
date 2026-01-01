@@ -648,6 +648,11 @@ const BookingPage = () => {
         <EstablishmentAIChat 
           establishmentId={establishment.id} 
           establishmentName={establishment.name}
+          brandColors={{
+            primary: establishment.brand_primary_color,
+            secondary: establishment.brand_secondary_color,
+            accent: establishment.brand_accent_color,
+          }}
         />
       )}
     </div>

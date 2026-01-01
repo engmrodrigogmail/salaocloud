@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { 
   MessageCircle, 
@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import silviaAvatar from "@/assets/silvia-avatar.png";
 
 interface Message {
   id: string;
@@ -23,15 +24,23 @@ interface Message {
   createdAt: Date;
 }
 
+interface BrandColors {
+  primary?: string | null;
+  secondary?: string | null;
+  accent?: string | null;
+}
+
 interface EstablishmentAIChatProps {
   establishmentId: string;
   establishmentName: string;
+  brandColors?: BrandColors;
   className?: string;
 }
 
 export function EstablishmentAIChat({ 
   establishmentId, 
   establishmentName,
+  brandColors,
   className 
 }: EstablishmentAIChatProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -186,45 +195,68 @@ export function EstablishmentAIChat({
     sendMessage(inputValue);
   };
 
+  const primaryColor = brandColors?.primary || 'hsl(var(--primary))';
+
   if (!isOpen) {
     return (
-      <Button
+      <button
         onClick={() => setIsOpen(true)}
         className={cn(
-          "fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg z-50",
-          "bg-primary hover:bg-primary/90",
+          "fixed bottom-6 right-6 z-50 flex items-center gap-3 group",
+          "transition-all duration-300 hover:scale-105",
           className
         )}
-        size="icon"
       >
-        <MessageCircle className="h-6 w-6" />
-      </Button>
+        <div 
+          className="px-4 py-2 rounded-full shadow-lg text-white font-medium text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap"
+          style={{ backgroundColor: primaryColor }}
+        >
+          Fale com {assistantName}
+        </div>
+        <div 
+          className="h-16 w-16 rounded-full shadow-xl border-4 overflow-hidden ring-2 ring-offset-2 transition-shadow hover:ring-4"
+          style={{ 
+            borderColor: 'white',
+            boxShadow: `0 0 0 2px ${primaryColor}` 
+          }}
+        >
+          <img 
+            src={silviaAvatar} 
+            alt={`Fale com ${assistantName}`}
+            className="h-full w-full object-cover"
+          />
+        </div>
+      </button>
     );
   }
 
   return (
     <Card className={cn(
       "fixed bottom-6 right-6 w-[380px] max-w-[calc(100vw-3rem)] h-[600px] max-h-[calc(100vh-6rem)]",
-      "shadow-2xl z-50 flex flex-col",
+      "shadow-2xl z-50 flex flex-col overflow-hidden",
       className
     )}>
-      <CardHeader className="flex flex-row items-center justify-between p-4 border-b bg-primary text-primary-foreground rounded-t-lg">
+      <CardHeader 
+        className="flex flex-row items-center justify-between p-4 border-b text-white rounded-t-lg"
+        style={{ backgroundColor: primaryColor }}
+      >
         <div className="flex items-center gap-3">
-          <Avatar className="h-10 w-10 bg-primary-foreground/20">
-            <AvatarFallback className="bg-transparent text-primary-foreground">
+          <Avatar className="h-10 w-10 border-2 border-white/30">
+            <AvatarImage src={silviaAvatar} alt={assistantName} />
+            <AvatarFallback className="bg-white/20 text-white">
               <Bot className="h-5 w-5" />
             </AvatarFallback>
           </Avatar>
           <div>
             <h3 className="font-semibold">{assistantName}</h3>
-            <p className="text-xs text-primary-foreground/70">{establishmentName}</p>
+            <p className="text-xs text-white/70">{establishmentName}</p>
           </div>
         </div>
         <Button 
           variant="ghost" 
           size="icon"
           onClick={() => setIsOpen(false)}
-          className="text-primary-foreground hover:bg-primary-foreground/20"
+          className="text-white hover:bg-white/20"
         >
           <X className="h-5 w-5" />
         </Button>
