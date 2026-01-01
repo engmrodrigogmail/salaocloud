@@ -191,7 +191,33 @@ IMPORTANTE: Você JÁ SABE o nome e telefone deste cliente. NÃO pergunte novame
     : `\n## Cliente Atual
 O cliente ainda não está identificado. Você precisará coletar nome e telefone apenas se ele quiser agendar algo.`;
 
+  // Obter data atual no fuso horário de Brasília
+  const now = new Date();
+  const brasiliaOffset = -3 * 60;
+  const localOffset = now.getTimezoneOffset();
+  const brasiliaTime = new Date(now.getTime() + (localOffset + brasiliaOffset) * 60 * 1000);
+  
+  const diasSemana = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+  const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+  
+  const diaAtual = brasiliaTime.getDate().toString().padStart(2, '0');
+  const mesAtual = (brasiliaTime.getMonth() + 1).toString().padStart(2, '0');
+  const anoAtual = brasiliaTime.getFullYear();
+  const horaAtual = brasiliaTime.getHours().toString().padStart(2, '0');
+  const minutoAtual = brasiliaTime.getMinutes().toString().padStart(2, '0');
+  const diaSemanaAtual = diasSemana[brasiliaTime.getDay()];
+  const mesNomeAtual = meses[brasiliaTime.getMonth()];
+
+  const dataHoraInfo = `
+## Data e Hora Atual (Brasília)
+- Data: ${diaAtual}/${mesAtual}/${anoAtual} (${diaSemanaAtual}, ${diaAtual} de ${mesNomeAtual} de ${anoAtual})
+- Hora: ${horaAtual}:${minutoAtual}
+- "Amanhã" significa ${new Date(brasiliaTime.getTime() + 24 * 60 * 60 * 1000).getDate().toString().padStart(2, '0')}/${mesAtual}/${anoAtual}
+
+CRÍTICO: Use SEMPRE a data correta ao confirmar agendamentos. Hoje é ${diaAtual}/${mesAtual}/${anoAtual}, NÃO invente datas!`;
+
   return `Você é ${config.assistant_name}, assistente virtual do ${establishment.name}.
+${dataHoraInfo}
 
 ## Estilo de Comunicação
 ${styleGuide}
@@ -226,6 +252,7 @@ ${config.custom_instructions || 'Sem instruções adicionais.'}
 7. Mantenha respostas CONCISAS - máximo 2 parágrafos curtos
 8. Se o cliente mencionar uma data/hora ocupada, sugira alternativas imediatamente
 9. Se não conseguir resolver, ofereça encaminhar para atendimento humano
+10. USE A DATA ATUAL CORRETA: Hoje é ${diaAtual}/${mesAtual}/${anoAtual}. Amanhã é ${new Date(brasiliaTime.getTime() + 24 * 60 * 60 * 1000).getDate().toString().padStart(2, '0')}/${mesAtual}/${anoAtual}. NUNCA invente datas!
 
 ## Ações Especiais
 - Para escalar para humano, inclua [ESCALAR] no final da resposta
