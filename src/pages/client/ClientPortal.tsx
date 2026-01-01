@@ -338,7 +338,7 @@ const ClientPortal = () => {
       setIsAuthenticated(true);
       await fetchClientData(clientData.id);
       await fetchAllAppointments();
-      toast.success(`Bem-vindo(a), ${clientData.name}!`);
+      toast.success(`Bem-vindo(a), ${clientData.name}!`, { duration: 2000 });
     } catch (error) {
       console.error("Error authenticating:", error);
       toast.error("Erro ao fazer login");
@@ -368,7 +368,7 @@ const ClientPortal = () => {
       setNewPhone("");
       await fetchClientData(updatedClient.id);
       await fetchAllAppointments();
-      toast.success(`Bem-vindo(a), ${updatedClient.name}! Telefone atualizado.`);
+      toast.success(`Bem-vindo(a), ${updatedClient.name}! Telefone atualizado.`, { duration: 2000 });
     } catch (error) {
       console.error("Error updating phone:", error);
       toast.error("Erro ao atualizar telefone");
@@ -438,7 +438,7 @@ const ClientPortal = () => {
       }
       
       await fetchAllAppointments();
-      toast.success(`Cadastro realizado com sucesso, ${newClient.name}!`);
+      toast.success(`Cadastro realizado com sucesso, ${newClient.name}!`, { duration: 2000 });
     } catch (error) {
       console.error("Error registering:", error);
       toast.error("Erro ao fazer cadastro");
