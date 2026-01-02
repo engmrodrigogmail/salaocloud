@@ -8,8 +8,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Trash2, CreditCard, Check, AlertCircle } from "lucide-react";
+import { Loader2, Plus, Trash2, CreditCard, Check, AlertCircle, Tag, X, Percent, DollarSign } from "lucide-react";
 import type { TabWithDetails, TabItem, PaymentMethod, TabPayment } from "@/types/tabs";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface CheckoutDialogProps {
   open: boolean;
@@ -17,8 +19,9 @@ interface CheckoutDialogProps {
   tab: TabWithDetails | null;
   items: TabItem[];
   paymentMethods: PaymentMethod[];
-  onConfirm: (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[]) => Promise<void>;
+  onConfirm: (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[], couponDiscount?: number) => Promise<void>;
   loading?: boolean;
+  establishmentId?: string;
 }
 
 interface PaymentEntry {
@@ -31,6 +34,15 @@ interface PaymentEntry {
   interest_amount: number;
 }
 
+interface ValidatedCoupon {
+  id: string;
+  code: string;
+  description: string | null;
+  discount_type: string;
+  discount_value: number;
+  min_purchase_value: number | null;
+}
+
 export function CheckoutDialog({
   open,
   onOpenChange,
@@ -39,11 +51,18 @@ export function CheckoutDialog({
   paymentMethods,
   onConfirm,
   loading = false,
+  establishmentId,
 }: CheckoutDialogProps) {
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
   const [selectedMethod, setSelectedMethod] = useState<string>("");
   const [paymentAmount, setPaymentAmount] = useState<string>("");
   const [installments, setInstallments] = useState<number>(1);
+  
+  // Coupon states
+  const [couponCode, setCouponCode] = useState("");
+  const [validatingCoupon, setValidatingCoupon] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<ValidatedCoupon | null>(null);
+  const [couponError, setCouponError] = useState<string | null>(null);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -53,8 +72,17 @@ export function CheckoutDialog({
   };
 
   const subtotal = items.reduce((acc, item) => acc + Number(item.total_price), 0);
-  const discount = Number(tab?.discount_amount) || 0;
-  const total = Math.max(0, subtotal - discount);
+  const existingDiscount = Number(tab?.discount_amount) || 0;
+  
+  // Calculate coupon discount
+  const couponDiscount = appliedCoupon
+    ? appliedCoupon.discount_type === "percentage"
+      ? (subtotal - existingDiscount) * (appliedCoupon.discount_value / 100)
+      : Math.min(appliedCoupon.discount_value, subtotal - existingDiscount)
+    : 0;
+  
+  const totalDiscount = existingDiscount + couponDiscount;
+  const total = Math.max(0, subtotal - totalDiscount);
   const totalPaid = payments.reduce((acc, p) => acc + p.amount + p.interest_amount, 0);
   const remaining = total - totalPaid;
 
@@ -64,8 +92,88 @@ export function CheckoutDialog({
       setSelectedMethod("");
       setPaymentAmount(total.toFixed(2));
       setInstallments(1);
+      setCouponCode("");
+      setAppliedCoupon(null);
+      setCouponError(null);
     }
-  }, [open, total]);
+  }, [open]);
+
+  useEffect(() => {
+    if (open && payments.length === 0) {
+      setPaymentAmount(total.toFixed(2));
+    }
+  }, [total, open, payments.length]);
+
+  const validateCoupon = async () => {
+    if (!couponCode.trim() || !establishmentId) return;
+    
+    setValidatingCoupon(true);
+    setCouponError(null);
+
+    try {
+      const { data: coupon, error } = await supabase
+        .from("discount_coupons")
+        .select("*")
+        .eq("establishment_id", establishmentId)
+        .eq("code", couponCode.toUpperCase())
+        .eq("is_active", true)
+        .single();
+
+      if (error || !coupon) {
+        setCouponError("Cupom não encontrado ou inativo");
+        setValidatingCoupon(false);
+        return;
+      }
+
+      // Check validity dates
+      const now = new Date();
+      if (coupon.valid_from && new Date(coupon.valid_from) > now) {
+        setCouponError("Este cupom ainda não está válido");
+        setValidatingCoupon(false);
+        return;
+      }
+      if (coupon.valid_until && new Date(coupon.valid_until) < now) {
+        setCouponError("Este cupom expirou");
+        setValidatingCoupon(false);
+        return;
+      }
+
+      // Check max uses
+      if (coupon.max_uses && coupon.current_uses >= coupon.max_uses) {
+        setCouponError("Este cupom atingiu o limite de usos");
+        setValidatingCoupon(false);
+        return;
+      }
+
+      // Check minimum purchase
+      const subtotalAfterDiscount = subtotal - existingDiscount;
+      if (coupon.min_purchase_value && subtotalAfterDiscount < coupon.min_purchase_value) {
+        setCouponError(`Valor mínimo: ${formatCurrency(coupon.min_purchase_value)}`);
+        setValidatingCoupon(false);
+        return;
+      }
+
+      setAppliedCoupon({
+        id: coupon.id,
+        code: coupon.code,
+        description: coupon.description,
+        discount_type: coupon.discount_type,
+        discount_value: coupon.discount_value,
+        min_purchase_value: coupon.min_purchase_value,
+      });
+      toast.success("Cupom aplicado com sucesso!");
+    } catch (err) {
+      setCouponError("Erro ao validar cupom");
+    } finally {
+      setValidatingCoupon(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode("");
+    setCouponError(null);
+  };
 
   const handleAddPayment = () => {
     const method = paymentMethods.find(m => m.id === selectedMethod);
@@ -76,7 +184,6 @@ export function CheckoutDialog({
 
     let interestAmount = 0;
     if (method.has_interest && installments > 1) {
-      // Simple interest calculation
       interestAmount = amount * (method.interest_rate / 100) * installments;
     }
 
@@ -110,7 +217,22 @@ export function CheckoutDialog({
       interest_amount: p.interest_amount,
       notes: null,
     }));
-    await onConfirm(paymentData);
+
+    // Register coupon usage if applied
+    if (appliedCoupon && tab) {
+      await supabase.from("coupon_usage").insert({
+        coupon_id: appliedCoupon.id,
+        client_id: tab.client_id,
+      });
+
+      // Increment coupon uses
+      await supabase
+        .from("discount_coupons")
+        .update({ current_uses: (await supabase.from("discount_coupons").select("current_uses").eq("id", appliedCoupon.id).single()).data?.current_uses + 1 || 1 })
+        .eq("id", appliedCoupon.id);
+    }
+
+    await onConfirm(paymentData, couponDiscount);
   };
 
   const selectedPaymentMethod = paymentMethods.find(m => m.id === selectedMethod);
@@ -129,6 +251,80 @@ export function CheckoutDialog({
 
         <ScrollArea className="flex-1 pr-4">
           <div className="space-y-4">
+            {/* Coupon Section */}
+            <Card>
+              <CardContent className="pt-4">
+                <Label className="text-sm font-medium mb-2 block">Cupom de Desconto</Label>
+                {appliedCoupon ? (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
+                    <Check className="h-4 w-4 text-green-600 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-green-700">
+                        Cupom: {appliedCoupon.code}
+                      </p>
+                      <p className="text-xs text-green-600/80 flex items-center gap-1">
+                        {appliedCoupon.discount_type === "percentage" ? (
+                          <>
+                            <Percent className="h-3 w-3" />
+                            {appliedCoupon.discount_value}% de desconto
+                          </>
+                        ) : (
+                          <>
+                            <DollarSign className="h-3 w-3" />
+                            {formatCurrency(appliedCoupon.discount_value)} de desconto
+                          </>
+                        )}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={removeCoupon}
+                      className="h-8 w-8 shrink-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          value={couponCode}
+                          onChange={(e) => {
+                            setCouponCode(e.target.value.toUpperCase());
+                            setCouponError(null);
+                          }}
+                          placeholder="Código do cupom"
+                          className="pl-10 uppercase"
+                          disabled={validatingCoupon}
+                          onKeyDown={(e) => e.key === "Enter" && validateCoupon()}
+                        />
+                      </div>
+                      <Button
+                        onClick={validateCoupon}
+                        disabled={!couponCode.trim() || validatingCoupon}
+                        variant="secondary"
+                      >
+                        {validatingCoupon ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          "Aplicar"
+                        )}
+                      </Button>
+                    </div>
+                    {couponError && (
+                      <p className="text-xs text-destructive flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3" />
+                        {couponError}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Summary */}
             <Card>
               <CardContent className="pt-4">
@@ -137,10 +333,16 @@ export function CheckoutDialog({
                     <span>Itens ({items.length})</span>
                     <span>{formatCurrency(subtotal)}</span>
                   </div>
-                  {discount > 0 && (
+                  {existingDiscount > 0 && (
                     <div className="flex justify-between text-green-600">
                       <span>Desconto</span>
-                      <span>-{formatCurrency(discount)}</span>
+                      <span>-{formatCurrency(existingDiscount)}</span>
+                    </div>
+                  )}
+                  {couponDiscount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Cupom ({appliedCoupon?.code})</span>
+                      <span>-{formatCurrency(couponDiscount)}</span>
                     </div>
                   )}
                   <Separator />

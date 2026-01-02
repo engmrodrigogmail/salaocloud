@@ -127,8 +127,22 @@ export default function InternoComandas() {
     }
   };
 
-  const handleCheckout = async (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[]) => {
+  const handleCheckout = async (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[], couponDiscount?: number) => {
     if (!selectedTab) return;
+    
+    // Update discount if coupon was applied
+    if (couponDiscount && couponDiscount > 0) {
+      const currentDiscount = selectedTab.discount_amount || 0;
+      const newTotal = selectedTab.total - couponDiscount;
+      await supabase
+        .from("tabs")
+        .update({ 
+          discount_amount: currentDiscount + couponDiscount,
+          total: newTotal
+        })
+        .eq("id", selectedTab.id);
+    }
+    
     const success = await closeTab(selectedTab.id, payments, items);
     if (success) { setCheckoutOpen(false); setSelectedTab(null); }
   };
@@ -225,7 +239,7 @@ export default function InternoComandas() {
 
         <NewTabDialog open={newTabOpen} onOpenChange={setNewTabOpen} onSubmit={handleCreateTab} clients={clients} professionals={professionals} />
         <AddItemDialog open={addItemOpen} onOpenChange={setAddItemOpen} onAddItem={handleAddItem} products={products} services={services} professionals={professionals} />
-        <CheckoutDialog open={checkoutOpen} onOpenChange={setCheckoutOpen} tab={selectedTab} items={items} paymentMethods={paymentMethods} onConfirm={handleCheckout} />
+        <CheckoutDialog open={checkoutOpen} onOpenChange={setCheckoutOpen} tab={selectedTab} items={items} paymentMethods={paymentMethods} onConfirm={handleCheckout} establishmentId={establishmentId || undefined} />
       </div>
     </InternoLayout>
   );

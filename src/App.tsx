@@ -37,6 +37,7 @@ import PortalProfessionals from "./pages/portal/Professionals";
 import PortalClients from "./pages/portal/Clients";
 import PortalLoyalty from "./pages/portal/Loyalty";
 import PortalPromotions from "./pages/portal/Promotions";
+import PortalCoupons from "./pages/portal/Coupons";
 import PortalSettings from "./pages/portal/Settings";
 import PortalCommissions from "./pages/portal/Commissions";
 import PortalSubscription from "./pages/portal/Subscription";
@@ -182,6 +183,7 @@ const App = () => (
               <Route path="/portal/:slug/clientes" element={<PortalClients />} />
               <Route path="/portal/:slug/fidelidade" element={<PortalLoyalty />} />
               <Route path="/portal/:slug/promocoes" element={<PortalPromotions />} />
+              <Route path="/portal/:slug/cupons" element={<PortalCoupons />} />
               <Route path="/portal/:slug/configuracoes" element={<PortalSettings />} />
               <Route path="/portal/:slug/comissoes" element={<PortalCommissions />} />
               <Route path="/portal/:slug/assinatura" element={<PortalSubscription />} />
