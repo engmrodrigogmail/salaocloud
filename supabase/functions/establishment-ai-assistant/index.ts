@@ -47,6 +47,61 @@ interface AssistantConfig {
   custom_instructions: string | null;
 }
 
+// ============= Centralized Date/Time Utilities =============
+// Brazil timezone: UTC-3, format: dd/MM/yyyy HH:mm
+const BRAZIL_OFFSET_MINUTES = -180; // UTC-3
+
+function getBrazilNow(): Date {
+  const now = new Date();
+  const localOffset = now.getTimezoneOffset();
+  return new Date(now.getTime() + (localOffset - BRAZIL_OFFSET_MINUTES) * 60 * 1000);
+}
+
+function utcToBrazil(utcDate: Date | string): Date {
+  const date = typeof utcDate === 'string' ? new Date(utcDate) : utcDate;
+  const localOffset = date.getTimezoneOffset();
+  return new Date(date.getTime() + (localOffset - BRAZIL_OFFSET_MINUTES) * 60 * 1000);
+}
+
+function brazilToUtc(brazilDate: Date): Date {
+  return new Date(brazilDate.getTime() + 3 * 60 * 60 * 1000);
+}
+
+function formatBrazilDateTime(date: Date, options?: { dateOnly?: boolean; timeOnly?: boolean }): string {
+  if (options?.dateOnly) {
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+  if (options?.timeOnly) {
+    const hour = date.getHours().toString().padStart(2, '0');
+    const minute = date.getMinutes().toString().padStart(2, '0');
+    return `${hour}:${minute}`;
+  }
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const year = date.getFullYear();
+  const hour = date.getHours().toString().padStart(2, '0');
+  const minute = date.getMinutes().toString().padStart(2, '0');
+  return `${day}/${month}/${year} ${hour}:${minute}`;
+}
+
+function formatBrazilDateTimeShort(date: Date): string {
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const hour = date.getHours().toString().padStart(2, '0');
+  const minute = date.getMinutes().toString().padStart(2, '0');
+  return `${day}/${month} às ${hour}:${minute}`;
+}
+
+const DIAS_SEMANA_CURTOS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+const DIAS_SEMANA = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+const DIAS_SEMANA_FULL = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
+const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+const NAMED_DAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+// =============================================================
+
 async function getEstablishmentData(establishmentId: string): Promise<EstablishmentData | null> {
   // Fetch all data in parallel for better performance
   const [
@@ -376,13 +431,7 @@ async function getAvailabilityInfo(
   };
 
   try {
-    const now = new Date();
-    const brasiliaOffset = -3 * 60;
-    const localOffset = now.getTimezoneOffset();
-    const brasiliaTime = new Date(now.getTime() + (localOffset + brasiliaOffset) * 60 * 1000);
-
-    const namedDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const brasiliaTime = getBrazilNow();
 
     // Get appointments for the next 7 days
     const startDate = new Date(brasiliaTime);
@@ -390,13 +439,12 @@ async function getAvailabilityInfo(
     const endDate = new Date(brasiliaTime.getTime() + 7 * 24 * 60 * 60 * 1000);
 
     // Convert to UTC for query (Brasília UTC-3)
-    const startUTC = new Date(startDate.getTime() + 3 * 60 * 60 * 1000);
-    const endUTC = new Date(endDate.getTime() + 3 * 60 * 60 * 1000);
+    const startUTC = brazilToUtc(startDate);
+    const endUTC = brazilToUtc(endDate);
 
     log('availability_start', {
-      brasiliaNow: brasiliaTime.toISOString(),
-      localNow: now.toISOString(),
-      localOffsetMinutes: localOffset,
+      brasiliaNow: formatBrazilDateTime(brasiliaTime),
+      brasiliaTimeISO: brasiliaTime.toISOString(),
       startUTC: startUTC.toISOString(),
       endUTC: endUTC.toISOString(),
       professionalsCount: professionals.length,
@@ -490,14 +538,12 @@ async function getAvailabilityInfo(
       for (let dayOffset = 0; dayOffset < 3; dayOffset++) {
         const checkDate = new Date(brasiliaTime.getTime() + dayOffset * 24 * 60 * 60 * 1000);
         const dayIndex = checkDate.getDay();
-        const dayName = dayOffset === 0 ? 'Hoje' : dayOffset === 1 ? 'Amanhã' : diasSemana[dayIndex];
-        const dateStr = `${checkDate.getDate().toString().padStart(2, '0')}/${(checkDate.getMonth() + 1)
-          .toString()
-          .padStart(2, '0')}`;
+        const dayName = dayOffset === 0 ? 'Hoje' : dayOffset === 1 ? 'Amanhã' : DIAS_SEMANA[dayIndex];
+        const dateStr = formatBrazilDateTime(checkDate, { dateOnly: true }).slice(0, 5); // DD/MM
 
         // Get working hours for this day
         const dayConfig =
-          workingHours?.[dayIndex.toString()] || workingHours?.[dayIndex] || workingHours?.[namedDays[dayIndex]];
+          workingHours?.[dayIndex.toString()] || workingHours?.[dayIndex] || workingHours?.[NAMED_DAYS[dayIndex]];
 
         if (!dayConfig) {
           log('availability_day_skip', {
@@ -577,7 +623,7 @@ async function getAvailabilityInfo(
           const [slotHour, slotMin] = slotTime.split(':').map(Number);
           const slotDateTime = new Date(checkDate);
           slotDateTime.setHours(slotHour, slotMin, 0, 0);
-          const slotDateTimeUTC = new Date(slotDateTime.getTime() + 3 * 60 * 60 * 1000);
+          const slotDateTimeUTC = brazilToUtc(slotDateTime);
 
           // Check if this slot conflicts with any appointment
           let hasConflict = false;
@@ -671,17 +717,13 @@ async function getAvailabilityInfo(
   }
 }
 
-// Parse Brazilian date formats to Date object
-function parseBrazilianDate(dateStr: string, timeStr: string): Date | null {
+// Parse Brazilian date formats to Date object (uses centralized getBrazilNow)
+function parseBrazilianDateLocal(dateStr: string, timeStr: string): Date | null {
   try {
     dateStr = dateStr.trim();
     timeStr = timeStr.trim();
 
-    // Get current date in Brasília
-    const now = new Date();
-    const brasiliaOffset = -3 * 60;
-    const localOffset = now.getTimezoneOffset();
-    const brasiliaTime = new Date(now.getTime() + (localOffset + brasiliaOffset) * 60 * 1000);
+    const brasiliaTime = getBrazilNow();
 
     let day: number, month: number, year: number;
     const parts = dateStr.split('/');
@@ -739,11 +781,6 @@ function parseBrazilianDate(dateStr: string, timeStr: string): Date | null {
     console.error('[AI-Assistant] Erro ao parsear data:', e);
     return null;
   }
-}
-
-// Convert Brasília time to UTC for storage
-function brasiliaToUTC(brasiliaDate: Date): Date {
-  return new Date(brasiliaDate.getTime() + 3 * 60 * 60 * 1000);
 }
 
 function formatWorkingHours(workingHours: any): string {
@@ -837,35 +874,25 @@ IMPORTANTE: Você JÁ SABE o nome e telefone deste cliente. NÃO pergunte novame
 O cliente ainda não está identificado. Você precisará coletar nome e telefone apenas se ele quiser agendar algo.`;
 
   // Obter data atual no fuso horário de Brasília
-  const now = new Date();
-  const brasiliaOffset = -3 * 60;
-  const localOffset = now.getTimezoneOffset();
-  const brasiliaTime = new Date(now.getTime() + (localOffset + brasiliaOffset) * 60 * 1000);
+  const brasiliaTime = getBrazilNow();
   
-  const diasSemana = ['domingo', 'segunda-feira', 'terça-feira', 'quarta-feira', 'quinta-feira', 'sexta-feira', 'sábado'];
-  const meses = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
-  
-  const diaAtual = brasiliaTime.getDate().toString().padStart(2, '0');
-  const mesAtual = (brasiliaTime.getMonth() + 1).toString().padStart(2, '0');
+  const diaAtual = formatBrazilDateTime(brasiliaTime, { dateOnly: true });
+  const horaAtual = formatBrazilDateTime(brasiliaTime, { timeOnly: true });
+  const diaSemanaAtual = DIAS_SEMANA_FULL[brasiliaTime.getDay()];
+  const mesNomeAtual = MESES[brasiliaTime.getMonth()];
   const anoAtual = brasiliaTime.getFullYear();
-  const horaAtual = brasiliaTime.getHours().toString().padStart(2, '0');
-  const minutoAtual = brasiliaTime.getMinutes().toString().padStart(2, '0');
-  const diaSemanaAtual = diasSemana[brasiliaTime.getDay()];
-  const mesNomeAtual = meses[brasiliaTime.getMonth()];
 
   // Calcular data de amanhã corretamente
   const amanha = new Date(brasiliaTime.getTime() + 24 * 60 * 60 * 1000);
-  const diaAmanha = amanha.getDate().toString().padStart(2, '0');
-  const mesAmanha = (amanha.getMonth() + 1).toString().padStart(2, '0');
-  const anoAmanha = amanha.getFullYear();
+  const dataAmanha = formatBrazilDateTime(amanha, { dateOnly: true });
 
   const dataHoraInfo = `
 ## Data e Hora Atual (Brasília - UTC-3)
-- Data: ${diaAtual}/${mesAtual}/${anoAtual} (${diaSemanaAtual}, ${diaAtual} de ${mesNomeAtual} de ${anoAtual})
-- Hora: ${horaAtual}:${minutoAtual}
-- "Amanhã" significa ${diaAmanha}/${mesAmanha}/${anoAmanha}
+- Data: ${diaAtual} (${diaSemanaAtual}, ${brasiliaTime.getDate().toString().padStart(2, '0')} de ${mesNomeAtual} de ${anoAtual})
+- Hora: ${horaAtual}
+- "Amanhã" significa ${dataAmanha}
 
-CRÍTICO: Use SEMPRE a data correta ao confirmar agendamentos. Hoje é ${diaAtual}/${mesAtual}/${anoAtual}. NÃO invente datas!`;
+CRÍTICO: Use SEMPRE a data correta ao confirmar agendamentos. Hoje é ${diaAtual}. NÃO invente datas!`;
 
   // Disponibilidade em tempo real section
   const availabilitySection = availabilityInfo 
@@ -932,7 +959,7 @@ ${config.custom_instructions || 'Sem instruções adicionais.'}
 7. Mantenha respostas CONCISAS - máximo 2 parágrafos curtos
 8. Se o cliente mencionar uma data/hora ocupada, sugira alternativas da lista de disponibilidade
 9. Se não conseguir resolver, ofereça encaminhar para atendimento humano
-10. USE A DATA ATUAL CORRETA: Hoje é ${diaAtual}/${mesAtual}/${anoAtual}. Amanhã é ${diaAmanha}/${mesAmanha}/${anoAmanha}. NUNCA invente datas!
+10. USE A DATA ATUAL CORRETA: Hoje é ${diaAtual}. Amanhã é ${dataAmanha}. NUNCA invente datas!
 11. Ao informar sobre cupons, diga o código exato para o cliente usar
 12. Ao falar de fidelidade, explique quanto vale cada ponto e quais recompensas estão disponíveis
 13. PRIORIZE SEMPRE horários de HOJE e AMANHÃ antes de sugerir datas mais distantes!
@@ -987,12 +1014,12 @@ function isWithinWorkingHours(workingHours: any): { configured: boolean; withinH
   }
 
   // Support both formats: numeric keys (0-6) and named keys (sunday-saturday)
-  const namedDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const namedDaysLocal = NAMED_DAYS;
   
   // Check if any day has configuration
   let hasAnyConfig = false;
   for (let i = 0; i < 7; i++) {
-    const day = workingHours[i.toString()] || workingHours[i] || workingHours[namedDays[i]];
+    const day = workingHours[i.toString()] || workingHours[i] || workingHours[namedDaysLocal[i]];
     if (day?.enabled === true || day?.enabled === false) {
       hasAnyConfig = true;
       break;
@@ -1005,24 +1032,21 @@ function isWithinWorkingHours(workingHours: any): { configured: boolean; withinH
   }
 
   // Converter para horário de Brasília (UTC-3)
-  const now = new Date();
-  const brasiliaOffset = -3 * 60; // UTC-3 em minutos
-  const localOffset = now.getTimezoneOffset(); // Offset local em minutos
-  const brasiliaTime = new Date(now.getTime() + (localOffset + brasiliaOffset) * 60 * 1000);
+  const brasiliaTime = getBrazilNow();
   
   const dayIndex = brasiliaTime.getDay();
   // Try numeric key first, then named key
-  const todayConfig = workingHours[dayIndex.toString()] || workingHours[dayIndex] || workingHours[namedDays[dayIndex]];
+  const todayConfig = workingHours[dayIndex.toString()] || workingHours[dayIndex] || workingHours[namedDaysLocal[dayIndex]];
 
   // If this specific day is not configured, consider closed (not explicitly open)
   if (!todayConfig || todayConfig.enabled === undefined) {
-    console.log(`[AI-Assistant] Dia ${dayIndex} (${namedDays[dayIndex]}) não configurado - considerando fechado`);
+    console.log(`[AI-Assistant] Dia ${dayIndex} (${namedDaysLocal[dayIndex]}) não configurado - considerando fechado`);
     return { configured: true, withinHours: false };
   }
 
   // If day exists but is explicitly disabled
   if (todayConfig.enabled === false) {
-    console.log(`[AI-Assistant] Dia ${dayIndex} (${namedDays[dayIndex]}) explicitamente fechado`);
+    console.log(`[AI-Assistant] Dia ${dayIndex} (${namedDaysLocal[dayIndex]}) explicitamente fechado`);
     return { configured: true, withinHours: false };
   }
 
@@ -1048,18 +1072,9 @@ function isWithinWorkingHours(workingHours: any): { configured: boolean; withinH
 
 function formatAppointmentDate(dateString: string): string {
   const date = new Date(dateString);
-  const brasiliaOffset = -3 * 60;
-  const localOffset = date.getTimezoneOffset();
-  const brasiliaTime = new Date(date.getTime() + (localOffset + brasiliaOffset) * 60 * 1000);
-  
-  const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-  const dia = brasiliaTime.getDate().toString().padStart(2, '0');
-  const mes = (brasiliaTime.getMonth() + 1).toString().padStart(2, '0');
-  const hora = brasiliaTime.getHours().toString().padStart(2, '0');
-  const minuto = brasiliaTime.getMinutes().toString().padStart(2, '0');
-  const diaSemana = diasSemana[brasiliaTime.getDay()];
-  
-  return `${diaSemana}, ${dia}/${mes} às ${hora}:${minuto}`;
+  const brasiliaTime = utcToBrazil(date);
+  const diaSemana = DIAS_SEMANA_CURTOS[brasiliaTime.getDay()];
+  return `${diaSemana}, ${formatBrazilDateTimeShort(brasiliaTime)}`;
 }
 
 serve(async (req) => {
@@ -1480,26 +1495,23 @@ serve(async (req) => {
               scheduleData.error = 'Profissional não encontrado';
             } else {
               // Parse date using the robust function
-              const scheduledDateBrasilia = parseBrazilianDate(scheduleData.date, scheduleData.time);
+              const scheduledDateBrasilia = parseBrazilianDateLocal(scheduleData.date, scheduleData.time);
               
               if (!scheduledDateBrasilia) {
                 console.error('[AI-Assistant] Erro ao parsear data/hora:', scheduleData.date, scheduleData.time);
                 scheduleData.error = 'Data ou horário inválido';
               } else {
                 // Check if the date is in the past
-                const now = new Date();
-                const brasiliaOffset = -3 * 60;
-                const localOffset = now.getTimezoneOffset();
-                const nowBrasilia = new Date(now.getTime() + (localOffset + brasiliaOffset) * 60 * 1000);
+                const nowBrasilia = getBrazilNow();
                 
                 if (scheduledDateBrasilia < nowBrasilia) {
-                  console.error('[AI-Assistant] Data no passado:', scheduledDateBrasilia);
+                  console.error('[AI-Assistant] Data no passado:', formatBrazilDateTime(scheduledDateBrasilia));
                   scheduleData.error = 'Não é possível agendar para uma data/hora que já passou';
                 } else {
                   // Convert to UTC for storage
-                  const scheduledAtUTC = brasiliaToUTC(scheduledDateBrasilia);
+                  const scheduledAtUTC = brazilToUtc(scheduledDateBrasilia);
                   
-                  console.log('[AI-Assistant] Data agendada (Brasília):', scheduledDateBrasilia.toISOString());
+                  console.log('[AI-Assistant] Data agendada (Brasília):', formatBrazilDateTime(scheduledDateBrasilia));
                   console.log('[AI-Assistant] Data agendada (UTC):', scheduledAtUTC.toISOString());
 
                   // Check for scheduling conflicts
