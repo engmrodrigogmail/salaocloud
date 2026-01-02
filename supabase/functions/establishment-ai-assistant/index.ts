@@ -345,6 +345,143 @@ async function checkSchedulingConflict(
   }
 }
 
+// Get available time slots for the next days for each professional
+async function getAvailabilityInfo(
+  establishmentId: string,
+  establishmentWorkingHours: any,
+  professionals: Array<{ id: string; name: string; working_hours: any }>
+): Promise<string> {
+  try {
+    const now = new Date();
+    const brasiliaOffset = -3 * 60;
+    const localOffset = now.getTimezoneOffset();
+    const brasiliaTime = new Date(now.getTime() + (localOffset + brasiliaOffset) * 60 * 1000);
+    
+    const namedDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    
+    // Get appointments for the next 7 days
+    const startDate = new Date(brasiliaTime);
+    startDate.setHours(0, 0, 0, 0);
+    const endDate = new Date(brasiliaTime.getTime() + 7 * 24 * 60 * 60 * 1000);
+    
+    // Convert to UTC for query
+    const startUTC = new Date(startDate.getTime() + 3 * 60 * 60 * 1000);
+    const endUTC = new Date(endDate.getTime() + 3 * 60 * 60 * 1000);
+    
+    const { data: appointments, error } = await supabase
+      .from('appointments')
+      .select('professional_id, scheduled_at, duration_minutes')
+      .eq('establishment_id', establishmentId)
+      .in('status', ['pending', 'confirmed'])
+      .gte('scheduled_at', startUTC.toISOString())
+      .lte('scheduled_at', endUTC.toISOString())
+      .order('scheduled_at', { ascending: true });
+    
+    if (error) {
+      console.error('[AI-Assistant] Erro ao buscar agendamentos:', error);
+      return 'Não foi possível verificar disponibilidade.';
+    }
+    
+    // Build availability info per professional
+    const availabilityLines: string[] = [];
+    
+    for (const prof of professionals) {
+      const profAppointments = (appointments || []).filter(apt => apt.professional_id === prof.id);
+      
+      // Use professional working hours if available, otherwise establishment hours
+      const workingHours = prof.working_hours || establishmentWorkingHours;
+      
+      const profAvailability: string[] = [];
+      
+      // Check next 3 days (today, tomorrow, day after tomorrow)
+      for (let dayOffset = 0; dayOffset < 3; dayOffset++) {
+        const checkDate = new Date(brasiliaTime.getTime() + dayOffset * 24 * 60 * 60 * 1000);
+        const dayIndex = checkDate.getDay();
+        const dayName = dayOffset === 0 ? 'Hoje' : dayOffset === 1 ? 'Amanhã' : diasSemana[dayIndex];
+        const dateStr = `${checkDate.getDate().toString().padStart(2, '0')}/${(checkDate.getMonth() + 1).toString().padStart(2, '0')}`;
+        
+        // Get working hours for this day
+        const dayConfig = workingHours?.[dayIndex.toString()] || workingHours?.[dayIndex] || workingHours?.[namedDays[dayIndex]];
+        
+        if (!dayConfig?.enabled) {
+          continue; // Skip closed days
+        }
+        
+        const startTime = dayConfig.start || dayConfig.open || '09:00';
+        const endTime = dayConfig.end || dayConfig.close || '18:00';
+        
+        // For today, start from current time rounded up to next 30 min
+        let firstSlot = startTime;
+        if (dayOffset === 0) {
+          const currentHour = brasiliaTime.getHours();
+          const currentMin = brasiliaTime.getMinutes();
+          const nextSlotMin = currentMin < 30 ? 30 : 0;
+          const nextSlotHour = currentMin < 30 ? currentHour : currentHour + 1;
+          const nextSlotTime = `${nextSlotHour.toString().padStart(2, '0')}:${nextSlotMin.toString().padStart(2, '0')}`;
+          
+          if (nextSlotTime > startTime) {
+            firstSlot = nextSlotTime;
+          }
+        }
+        
+        // Skip if past working hours
+        if (firstSlot >= endTime) {
+          continue;
+        }
+        
+        // Find first available slot
+        let foundSlot = false;
+        let slotTime = firstSlot;
+        
+        while (slotTime < endTime && !foundSlot) {
+          const [slotHour, slotMin] = slotTime.split(':').map(Number);
+          const slotDateTime = new Date(checkDate);
+          slotDateTime.setHours(slotHour, slotMin, 0, 0);
+          const slotDateTimeUTC = new Date(slotDateTime.getTime() + 3 * 60 * 60 * 1000);
+          
+          // Check if this slot conflicts with any appointment
+          let hasConflict = false;
+          for (const apt of profAppointments) {
+            const aptStart = new Date(apt.scheduled_at);
+            const aptEnd = new Date(aptStart.getTime() + apt.duration_minutes * 60 * 1000);
+            const slotEnd = new Date(slotDateTimeUTC.getTime() + 60 * 60 * 1000); // Assume 1 hour for checking
+            
+            if (slotDateTimeUTC < aptEnd && slotEnd > aptStart) {
+              hasConflict = true;
+              break;
+            }
+          }
+          
+          if (!hasConflict) {
+            profAvailability.push(`${dayName} (${dateStr}) às ${slotTime}`);
+            foundSlot = true;
+          } else {
+            // Move to next 30 min slot
+            const [h, m] = slotTime.split(':').map(Number);
+            const nextMin = m === 0 ? 30 : 0;
+            const nextHour = m === 0 ? h : h + 1;
+            slotTime = `${nextHour.toString().padStart(2, '0')}:${nextMin.toString().padStart(2, '0')}`;
+          }
+        }
+      }
+      
+      if (profAvailability.length > 0) {
+        availabilityLines.push(`- **${prof.name}**: Próximos disponíveis: ${profAvailability.join(' | ')}`);
+      } else {
+        availabilityLines.push(`- **${prof.name}**: Sem disponibilidade nos próximos 3 dias`);
+      }
+    }
+    
+    console.log('[AI-Assistant] Disponibilidade calculada:', availabilityLines.join('\n'));
+    
+    return availabilityLines.join('\n');
+  } catch (error) {
+    console.error('[AI-Assistant] Erro ao calcular disponibilidade:', error);
+    return 'Erro ao verificar disponibilidade.';
+  }
+}
+
 // Parse Brazilian date formats to Date object
 function parseBrazilianDate(dateStr: string, timeStr: string): Date | null {
   try {
@@ -461,7 +598,7 @@ function formatWorkingHours(workingHours: any): string {
   return lines.join('\n');
 }
 
-function buildSystemPrompt(config: AssistantConfig, establishment: EstablishmentData, clientInfo?: { name?: string; phone?: string }): string {
+function buildSystemPrompt(config: AssistantConfig, establishment: EstablishmentData, clientInfo?: { name?: string; phone?: string }, availabilityInfo?: string): string {
   const styleGuide = config.language_style === 'formal'
     ? 'Use linguagem formal e profissional. Trate o cliente por "senhor(a)".'
     : 'Use linguagem amigável e casual, mas sempre profissional. Pode usar emojis moderadamente.';
@@ -541,6 +678,15 @@ O cliente ainda não está identificado. Você precisará coletar nome e telefon
 
 CRÍTICO: Use SEMPRE a data correta ao confirmar agendamentos. Hoje é ${diaAtual}/${mesAtual}/${anoAtual}. NÃO invente datas!`;
 
+  // Disponibilidade em tempo real section
+  const availabilitySection = availabilityInfo 
+    ? `\n## DISPONIBILIDADE EM TEMPO REAL - USE ESTA INFORMAÇÃO SEMPRE!
+IMPORTANTE: Esta é a disponibilidade REAL consultada no banco de dados AGORA. Use estas informações para sugerir horários!
+${availabilityInfo}
+
+REGRA CRÍTICA: Quando o cliente pedir "o mais rápido possível" ou "primeiro disponível", OFEREÇA O HORÁRIO MAIS PRÓXIMO desta lista, começando por HOJE se houver disponibilidade!`
+    : '';
+
   return `Você é ${config.assistant_name}, assistente virtual do ${establishment.name}.
 ${dataHoraInfo}
 
@@ -552,6 +698,7 @@ ${establishment.description ? `- **Sobre**: ${establishment.description}` : ''}
 
 ## Horário de Funcionamento
 ${formatWorkingHours(establishment.working_hours)}
+${availabilitySection}
 
 ## Estilo de Comunicação
 ${styleGuide}
@@ -589,16 +736,17 @@ ${config.custom_instructions || 'Sem instruções adicionais.'}
 ## Regras CRÍTICAS - SIGA RIGOROSAMENTE
 1. NUNCA invente informações - se não souber, diga que vai verificar ou encaminhe para humano
 2. SEJA OBJETIVO E DIRETO - responda exatamente o que foi perguntado
-3. Se o cliente pedir "o mais rápido possível" ou "primeiro horário disponível", NÃO pergunte preferência de horário. Sugira imediatamente o próximo horário disponível
-4. Se o cliente disser "qualquer profissional" ou "independente de profissional", NÃO pergunte qual profissional prefere
+3. Se o cliente pedir "o mais rápido possível" ou "primeiro horário disponível", USE A SEÇÃO "DISPONIBILIDADE EM TEMPO REAL" acima e sugira IMEDIATAMENTE o horário mais próximo (começando por HOJE)
+4. Se o cliente disser "qualquer profissional" ou "independente de profissional", escolha o profissional com o horário mais próximo disponível
 5. NÃO faça perguntas redundantes - se você já tem a informação, USE-A
 6. Para agendar, confirme apenas as informações que FALTAM: serviço, profissional (se não especificado que pode ser qualquer um), data e horário
 7. Mantenha respostas CONCISAS - máximo 2 parágrafos curtos
-8. Se o cliente mencionar uma data/hora ocupada, sugira alternativas imediatamente
+8. Se o cliente mencionar uma data/hora ocupada, sugira alternativas da lista de disponibilidade
 9. Se não conseguir resolver, ofereça encaminhar para atendimento humano
 10. USE A DATA ATUAL CORRETA: Hoje é ${diaAtual}/${mesAtual}/${anoAtual}. Amanhã é ${diaAmanha}/${mesAmanha}/${anoAmanha}. NUNCA invente datas!
 11. Ao informar sobre cupons, diga o código exato para o cliente usar
 12. Ao falar de fidelidade, explique quanto vale cada ponto e quais recompensas estão disponíveis
+13. PRIORIZE SEMPRE horários de HOJE e AMANHÃ antes de sugerir datas mais distantes!
 
 ## PROTOCOLO DE HORÁRIO NÃO CONFIGURADO - CRÍTICO!
 Se você ver a mensagem "HORÁRIO NÃO CONFIGURADO" nas informações de horário acima, você DEVE:
@@ -924,8 +1072,15 @@ serve(async (req) => {
         content: m.content,
       })) || [];
 
-      // Add system prompt with client context
-      const systemPrompt = buildSystemPrompt(config, establishment, { name: clientName, phone: clientPhone });
+      // Get real-time availability info
+      const availabilityInfo = await getAvailabilityInfo(
+        establishmentId,
+        establishment.working_hours,
+        establishment.professionals
+      );
+
+      // Add system prompt with client context and availability
+      const systemPrompt = buildSystemPrompt(config, establishment, { name: clientName, phone: clientPhone }, availabilityInfo);
 
       // Call AI
       const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
