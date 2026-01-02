@@ -442,14 +442,41 @@ async function getAvailabilityInfo(
     for (const prof of professionals) {
       const profAppointments = allAppointments.filter((apt: any) => apt.professional_id === prof.id);
 
-      // Use professional working hours if available, otherwise establishment hours
-      const workingHours = prof.working_hours || establishmentWorkingHours;
+      const isNonEmptyWorkingHours = (wh: any) => {
+        if (!wh || typeof wh !== 'object') return false;
+        try {
+          return Object.keys(wh).length > 0;
+        } catch {
+          return false;
+        }
+      };
+
+      const professionalHasHours = isNonEmptyWorkingHours(prof.working_hours);
+      const establishmentHasHours = isNonEmptyWorkingHours(establishmentWorkingHours);
+
+      // Use professional working hours only when it has actual config; otherwise fallback to establishment
+      const workingHours = professionalHasHours ? prof.working_hours : establishmentWorkingHours;
 
       log('availability_professional_start', {
         professionalId: prof.id,
         professionalName: prof.name,
         appointmentsCount: profAppointments.length,
-        workingHoursSource: prof.working_hours ? 'professional' : 'establishment',
+        professionalWorkingHoursMeta: {
+          type: typeof prof.working_hours,
+          isArray: Array.isArray(prof.working_hours),
+          keysCount: safeKeys(prof.working_hours).length,
+        },
+        establishmentWorkingHoursMeta: {
+          type: typeof establishmentWorkingHours,
+          isArray: Array.isArray(establishmentWorkingHours),
+          keysCount: safeKeys(establishmentWorkingHours).length,
+        },
+        workingHoursSource: professionalHasHours ? 'professional' : 'establishment',
+        workingHoursSelection: professionalHasHours
+          ? 'professional_has_config'
+          : establishmentHasHours
+            ? 'fallback_to_establishment'
+            : 'no_config_found',
         workingHoursKeys: safeKeys(workingHours),
         workingHoursSample: safeKeys(workingHours).slice(0, 10).reduce((acc: any, k: string) => {
           acc[k] = (workingHours as any)?.[k];
