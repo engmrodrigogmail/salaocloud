@@ -615,7 +615,16 @@ serve(async (req) => {
       // Check for special actions
       let shouldEscalate = false;
       let waitlistData = null;
-      let scheduleData = null;
+      let scheduleData: { 
+        service: any; 
+        professional: any; 
+        date: any; 
+        time: any; 
+        name: any; 
+        phone: any; 
+        appointmentId?: string; 
+        created?: boolean; 
+      } | null = null;
       let showAppointmentsList = false;
 
       // Check for cancellation flow trigger
@@ -714,6 +723,127 @@ serve(async (req) => {
           phone: scheduleMatch[6],
         };
         assistantMessage = assistantMessage.replace(scheduleMatch[0], '').trim();
+
+        // Actually create the appointment in the database
+        try {
+          console.log('[AI-Assistant] Tentando criar agendamento:', scheduleData);
+          
+          // Find service by name
+          const { data: serviceData } = await supabase
+            .from('services')
+            .select('id, name, price, duration_minutes')
+            .eq('establishment_id', establishmentId)
+            .ilike('name', `%${scheduleData.service.trim()}%`)
+            .eq('is_active', true)
+            .limit(1)
+            .single();
+
+          if (!serviceData) {
+            console.error('[AI-Assistant] Serviço não encontrado:', scheduleData.service);
+          } else {
+            // Find professional by name
+            const { data: professionalData } = await supabase
+              .from('professionals')
+              .select('id, name')
+              .eq('establishment_id', establishmentId)
+              .ilike('name', `%${scheduleData.professional.trim()}%`)
+              .eq('is_active', true)
+              .limit(1)
+              .single();
+
+            if (!professionalData) {
+              console.error('[AI-Assistant] Profissional não encontrado:', scheduleData.professional);
+            } else {
+              // Parse date - support formats like "02/01/2026" or "02/01"
+              let dateStr = scheduleData.date.trim();
+              let scheduledDate: Date;
+              
+              const now = new Date();
+              const brasiliaOffset = -3 * 60;
+              const localOffset = now.getTimezoneOffset();
+              const brasiliaTime = new Date(now.getTime() + (localOffset + brasiliaOffset) * 60 * 1000);
+              
+              if (dateStr.split('/').length === 2) {
+                // Format DD/MM - add current year
+                const [day, month] = dateStr.split('/');
+                dateStr = `${day}/${month}/${brasiliaTime.getFullYear()}`;
+              }
+              
+              const [day, month, year] = dateStr.split('/').map(Number);
+              const [hour, minute] = scheduleData.time.trim().split(':').map(Number);
+              
+              // Create date in Brasília timezone, then convert to UTC for storage
+              scheduledDate = new Date(year, month - 1, day, hour, minute, 0);
+              // Add 3 hours to convert Brasília to UTC
+              const scheduledAtUTC = new Date(scheduledDate.getTime() + 3 * 60 * 60 * 1000);
+              
+              console.log('[AI-Assistant] Data agendada (Brasília):', scheduledDate.toISOString());
+              console.log('[AI-Assistant] Data agendada (UTC):', scheduledAtUTC.toISOString());
+
+              // Find or create client
+              const phoneClean = (scheduleData.phone || clientPhone || '').replace(/\D/g, '');
+              let appointmentClientId = clientId;
+
+              if (!appointmentClientId && phoneClean) {
+                // Try to find existing client
+                const { data: existingClient } = await supabase
+                  .from('clients')
+                  .select('id')
+                  .eq('establishment_id', establishmentId)
+                  .eq('phone', phoneClean)
+                  .limit(1)
+                  .single();
+
+                if (existingClient) {
+                  appointmentClientId = existingClient.id;
+                } else {
+                  // Create new client
+                  const { data: newClient } = await supabase
+                    .from('clients')
+                    .insert({
+                      establishment_id: establishmentId,
+                      name: scheduleData.name || clientName || 'Cliente',
+                      phone: phoneClean,
+                    })
+                    .select('id')
+                    .single();
+
+                  if (newClient) {
+                    appointmentClientId = newClient.id;
+                  }
+                }
+              }
+
+              // Create the appointment
+              const { data: newAppointment, error: appointmentError } = await supabase
+                .from('appointments')
+                .insert({
+                  establishment_id: establishmentId,
+                  service_id: serviceData.id,
+                  professional_id: professionalData.id,
+                  client_id: appointmentClientId || null,
+                  client_name: scheduleData.name || clientName || 'Cliente',
+                  client_phone: phoneClean,
+                  scheduled_at: scheduledAtUTC.toISOString(),
+                  duration_minutes: serviceData.duration_minutes,
+                  price: serviceData.price,
+                  status: 'pending',
+                })
+                .select()
+                .single();
+
+              if (appointmentError) {
+                console.error('[AI-Assistant] Erro ao criar agendamento:', appointmentError);
+              } else {
+                console.log('[AI-Assistant] Agendamento criado com sucesso:', newAppointment.id);
+                scheduleData.appointmentId = newAppointment.id;
+                scheduleData.created = true;
+              }
+            }
+          }
+        } catch (scheduleError) {
+          console.error('[AI-Assistant] Erro no processo de agendamento:', scheduleError);
+        }
       }
 
       // Save assistant message
