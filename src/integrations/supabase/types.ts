@@ -230,6 +230,57 @@ export type Database = {
           },
         ]
       }
+      ai_conversation_feedback: {
+        Row: {
+          conversation_id: string
+          created_at: string
+          created_by: string | null
+          feedback_type: string
+          feedback_value: string | null
+          id: string
+          message_id: string | null
+          notes: string | null
+          outcome: string | null
+        }
+        Insert: {
+          conversation_id: string
+          created_at?: string
+          created_by?: string | null
+          feedback_type: string
+          feedback_value?: string | null
+          id?: string
+          message_id?: string | null
+          notes?: string | null
+          outcome?: string | null
+        }
+        Update: {
+          conversation_id?: string
+          created_at?: string
+          created_by?: string | null
+          feedback_type?: string
+          feedback_value?: string | null
+          id?: string
+          message_id?: string | null
+          notes?: string | null
+          outcome?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_conversation_feedback_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_assistant_conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_conversation_feedback_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "ai_assistant_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointment_reminders: {
         Row: {
           appointment_id: string
@@ -958,6 +1009,75 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: true
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      establishment_ai_learnings: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          confidence_score: number | null
+          context_tags: string[] | null
+          created_at: string
+          establishment_id: string
+          failure_count: number | null
+          id: string
+          ideal_response: string | null
+          is_active: boolean | null
+          learning_type: string
+          source_conversation_id: string | null
+          success_count: number | null
+          trigger_pattern: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          confidence_score?: number | null
+          context_tags?: string[] | null
+          created_at?: string
+          establishment_id: string
+          failure_count?: number | null
+          id?: string
+          ideal_response?: string | null
+          is_active?: boolean | null
+          learning_type?: string
+          source_conversation_id?: string | null
+          success_count?: number | null
+          trigger_pattern?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          confidence_score?: number | null
+          context_tags?: string[] | null
+          created_at?: string
+          establishment_id?: string
+          failure_count?: number | null
+          id?: string
+          ideal_response?: string | null
+          is_active?: boolean | null
+          learning_type?: string
+          source_conversation_id?: string | null
+          success_count?: number | null
+          trigger_pattern?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_ai_learnings_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishment_ai_learnings_source_conversation_id_fkey"
+            columns: ["source_conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_assistant_conversations"
             referencedColumns: ["id"]
           },
         ]

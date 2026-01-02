@@ -21,7 +21,7 @@ import {
   Bot,
   MessageCircle,
   Package,
-  
+  Brain,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -90,7 +90,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
     { href: `/portal/${slug}/cupons`, label: "Cupons", icon: CreditCard },
     { href: `/portal/${slug}/assistente-ia`, label: "Assistente IA", icon: Bot },
     { href: `/portal/${slug}/conversas-ia`, label: "Conversas IA", icon: MessageCircle },
-    
+    { href: `/portal/${slug}/aprendizados-ia`, label: "Aprendizados IA", icon: Brain },
     { href: `/portal/${slug}/assinatura`, label: "Assinatura", icon: Crown },
     { href: `/portal/${slug}/configuracoes`, label: "Configurações", icon: Settings },
   ];
