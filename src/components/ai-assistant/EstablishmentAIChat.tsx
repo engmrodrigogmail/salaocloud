@@ -14,7 +14,9 @@ import {
   User,
   AlertCircle,
   Calendar,
-  Check
+  Check,
+  Tag,
+  Sparkles
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -35,6 +37,22 @@ interface Appointment {
   dateTime: string;
   status: string;
   price: number;
+}
+
+interface Promotion {
+  name: string;
+  description?: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+}
+
+interface PromotionData {
+  name: string;
+  description?: string;
+  discountType: 'percentage' | 'fixed';
+  discountValue: number;
+  endDate: string;
+  allPromotions: Promotion[];
 }
 
 interface BrandColors {
@@ -80,6 +98,10 @@ export function EstablishmentAIChat({
   const [managementAction, setManagementAction] = useState<'cancel' | 'reschedule' | 'confirm' | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  
+  // Promotion state
+  const [promotionData, setPromotionData] = useState<PromotionData | null>(null);
+  const [showPromotionBanner, setShowPromotionBanner] = useState(false);
   
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -144,7 +166,13 @@ export function EstablishmentAIChat({
           createdAt: new Date(),
         }]);
       } else {
-        // New conversation - add welcome message
+        // New conversation - check for promotions first
+        if (data.promotionData && data.promotionData.allPromotions?.length > 0) {
+          setPromotionData(data.promotionData);
+          setShowPromotionBanner(true);
+        }
+        
+        // Add welcome message
         if (data.welcomeMessage) {
           setMessages([{
             id: 'welcome',
@@ -409,6 +437,68 @@ export function EstablishmentAIChat({
       <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
         <ScrollArea ref={scrollRef} className="flex-1 p-4">
           <div className="space-y-4">
+            {/* Promotion Banner - Shows at start of new conversations */}
+            {showPromotionBanner && promotionData && (
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/30 dark:to-orange-950/30 border border-amber-200 dark:border-amber-800 rounded-xl p-4 space-y-3 animate-in slide-in-from-top-2 duration-300">
+                <div className="flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shrink-0">
+                    <Sparkles className="h-5 w-5 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-amber-900 dark:text-amber-100 flex items-center gap-2">
+                      <Tag className="h-4 w-4" />
+                      Promoção Especial!
+                    </p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                      Aproveite antes que acabe!
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  {promotionData.allPromotions.map((promo, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-white/60 dark:bg-white/5 rounded-lg p-3 border border-amber-100 dark:border-amber-800/50"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-sm font-medium text-foreground">{promo.name}</p>
+                        <span className="px-2 py-0.5 text-xs font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full whitespace-nowrap">
+                          {promo.discountType === 'percentage' 
+                            ? `${promo.discountValue}% OFF` 
+                            : `R$ ${promo.discountValue} OFF`}
+                        </span>
+                      </div>
+                      {promo.description && (
+                        <p className="text-xs text-muted-foreground mt-1">{promo.description}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white border-0"
+                    onClick={() => {
+                      setShowPromotionBanner(false);
+                      sendMessage('Quero aproveitar a promoção! Me mostre os horários disponíveis.');
+                    }}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Quero Aproveitar!
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowPromotionBanner(false)}
+                  >
+                    Depois
+                  </Button>
+                </div>
+              </div>
+            )}
             {messages.map((message) => (
               <div
                 key={message.id}

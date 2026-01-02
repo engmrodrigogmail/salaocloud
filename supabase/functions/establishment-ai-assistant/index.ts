@@ -1659,6 +1659,35 @@ serve(async (req) => {
         });
       }
 
+      // Check for active promotions to highlight
+      const activePromotions = establishment.promotions || [];
+      let promotionData = null;
+      
+      if (activePromotions.length > 0) {
+        // Get the best promotion to show (first one or highest discount)
+        const bestPromotion = activePromotions.reduce((best, current) => {
+          const bestValue = best.discount_type === 'percentage' ? best.discount_value : (best.discount_value / 100);
+          const currentValue = current.discount_type === 'percentage' ? current.discount_value : (current.discount_value / 100);
+          return currentValue > bestValue ? current : best;
+        }, activePromotions[0]);
+
+        promotionData = {
+          name: bestPromotion.name,
+          description: bestPromotion.description,
+          discountType: bestPromotion.discount_type,
+          discountValue: bestPromotion.discount_value,
+          endDate: bestPromotion.end_date,
+          allPromotions: activePromotions.map(p => ({
+            name: p.name,
+            description: p.description,
+            discountType: p.discount_type,
+            discountValue: p.discount_value,
+          })),
+        };
+        
+        console.log('[AI-Assistant] Promoções ativas encontradas:', activePromotions.length);
+      }
+
       // Add offline notice if outside hours (only if hours are configured)
       let offlineNotice = null;
       if (workingHoursStatus.configured && !workingHoursStatus.withinHours && config.availability_mode === '24h_with_message') {
@@ -1671,6 +1700,7 @@ serve(async (req) => {
           welcomeMessage,
           offlineNotice,
           assistantName: config.assistant_name,
+          promotionData,
           existingMessages: existingMessages.map(m => ({
             content: m.content,
             senderType: m.sender_type,
