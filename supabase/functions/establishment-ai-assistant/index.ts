@@ -22,10 +22,17 @@ interface EstablishmentData {
   id: string;
   name: string;
   phone: string;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  description: string | null;
   working_hours: any;
-  services: Array<{ id: string; name: string; price: number; duration_minutes: number }>;
-  professionals: Array<{ id: string; name: string; specialties: string[] }>;
-  promotions: Array<{ name: string; description: string; discount_value: number; discount_type: string }>;
+  cancellation_policy: string | null;
+  services: Array<{ id: string; name: string; price: number; duration_minutes: number; description: string | null }>;
+  professionals: Array<{ id: string; name: string; specialties: string[]; working_hours: any }>;
+  promotions: Array<{ name: string; description: string; discount_value: number; discount_type: string; start_date: string; end_date: string }>;
+  coupons: Array<{ code: string; description: string | null; discount_value: number; discount_type: string; valid_until: string | null; min_purchase_value: number | null }>;
+  loyaltyProgram: { name: string; description: string | null; points_per_currency: number; rewards: Array<{ name: string; points_required: number; reward_value: number }> } | null;
 }
 
 interface AssistantConfig {
@@ -41,38 +48,74 @@ interface AssistantConfig {
 }
 
 async function getEstablishmentData(establishmentId: string): Promise<EstablishmentData | null> {
-  const { data: establishment } = await supabase
-    .from('establishments')
-    .select('id, name, phone, working_hours')
-    .eq('id', establishmentId)
-    .single();
+  // Fetch all data in parallel for better performance
+  const [
+    establishmentResult,
+    servicesResult,
+    professionalsResult,
+    promotionsResult,
+    couponsResult,
+    loyaltyResult,
+  ] = await Promise.all([
+    supabase
+      .from('establishments')
+      .select('id, name, phone, address, city, state, description, working_hours, cancellation_policy')
+      .eq('id', establishmentId)
+      .single(),
+    supabase
+      .from('services')
+      .select('id, name, price, duration_minutes, description')
+      .eq('establishment_id', establishmentId)
+      .eq('is_active', true),
+    supabase
+      .from('professionals')
+      .select('id, name, specialties, working_hours')
+      .eq('establishment_id', establishmentId)
+      .eq('is_active', true),
+    supabase
+      .from('promotions')
+      .select('name, description, discount_value, discount_type, start_date, end_date')
+      .eq('establishment_id', establishmentId)
+      .eq('is_active', true)
+      .gte('end_date', new Date().toISOString()),
+    supabase
+      .from('discount_coupons')
+      .select('code, description, discount_value, discount_type, valid_until, min_purchase_value')
+      .eq('establishment_id', establishmentId)
+      .eq('is_active', true),
+    supabase
+      .from('loyalty_programs')
+      .select(`
+        name, description, points_per_currency,
+        loyalty_rewards(name, points_required, reward_value)
+      `)
+      .eq('establishment_id', establishmentId)
+      .eq('is_active', true)
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
+  const establishment = establishmentResult.data;
   if (!establishment) return null;
 
-  const { data: services } = await supabase
-    .from('services')
-    .select('id, name, price, duration_minutes')
-    .eq('establishment_id', establishmentId)
-    .eq('is_active', true);
-
-  const { data: professionals } = await supabase
-    .from('professionals')
-    .select('id, name, specialties')
-    .eq('establishment_id', establishmentId)
-    .eq('is_active', true);
-
-  const { data: promotions } = await supabase
-    .from('promotions')
-    .select('name, description, discount_value, discount_type')
-    .eq('establishment_id', establishmentId)
-    .eq('is_active', true)
-    .gte('end_date', new Date().toISOString());
+  // Filter valid coupons (not expired)
+  const now = new Date().toISOString();
+  const validCoupons = (couponsResult.data || []).filter(
+    (c: any) => !c.valid_until || c.valid_until >= now
+  );
 
   return {
     ...establishment,
-    services: services || [],
-    professionals: professionals || [],
-    promotions: promotions || [],
+    services: servicesResult.data || [],
+    professionals: professionalsResult.data || [],
+    promotions: promotionsResult.data || [],
+    coupons: validCoupons,
+    loyaltyProgram: loyaltyResult.data ? {
+      name: loyaltyResult.data.name,
+      description: loyaltyResult.data.description,
+      points_per_currency: loyaltyResult.data.points_per_currency,
+      rewards: (loyaltyResult.data as any).loyalty_rewards || [],
+    } : null,
   };
 }
 
@@ -224,13 +267,154 @@ async function cancelAppointments(appointmentIds: string[], reason: string): Pro
   return { success: errors.length === 0, cancelled, errors };
 }
 
+// Check if there's a scheduling conflict for the professional
+async function checkSchedulingConflict(
+  establishmentId: string,
+  professionalId: string,
+  scheduledAt: Date,
+  durationMinutes: number
+): Promise<{ hasConflict: boolean; conflictingAppointment?: any }> {
+  const startTime = scheduledAt.toISOString();
+  const endTime = new Date(scheduledAt.getTime() + durationMinutes * 60 * 1000).toISOString();
+
+  // Check for overlapping appointments
+  const { data: conflicts } = await supabase
+    .from('appointments')
+    .select('id, scheduled_at, duration_minutes, client_name')
+    .eq('establishment_id', establishmentId)
+    .eq('professional_id', professionalId)
+    .in('status', ['pending', 'confirmed'])
+    .gte('scheduled_at', new Date(scheduledAt.getTime() - 4 * 60 * 60 * 1000).toISOString()) // 4 hours before
+    .lte('scheduled_at', new Date(scheduledAt.getTime() + 4 * 60 * 60 * 1000).toISOString()) // 4 hours after
+    .limit(10);
+
+  if (!conflicts || conflicts.length === 0) {
+    return { hasConflict: false };
+  }
+
+  // Check each appointment for overlap
+  for (const apt of conflicts) {
+    const aptStart = new Date(apt.scheduled_at);
+    const aptEnd = new Date(aptStart.getTime() + apt.duration_minutes * 60 * 1000);
+    const newStart = scheduledAt;
+    const newEnd = new Date(scheduledAt.getTime() + durationMinutes * 60 * 1000);
+
+    // Check for overlap: (StartA < EndB) && (EndA > StartB)
+    if (newStart < aptEnd && newEnd > aptStart) {
+      return { hasConflict: true, conflictingAppointment: apt };
+    }
+  }
+
+  return { hasConflict: false };
+}
+
+// Parse Brazilian date formats to Date object
+function parseBrazilianDate(dateStr: string, timeStr: string): Date | null {
+  try {
+    dateStr = dateStr.trim();
+    timeStr = timeStr.trim();
+
+    // Get current date in Brasília
+    const now = new Date();
+    const brasiliaOffset = -3 * 60;
+    const localOffset = now.getTimezoneOffset();
+    const brasiliaTime = new Date(now.getTime() + (localOffset + brasiliaOffset) * 60 * 1000);
+
+    let day: number, month: number, year: number;
+    const parts = dateStr.split('/');
+
+    if (parts.length === 2) {
+      // Format DD/MM - add current year, or next year if date has passed
+      day = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10);
+      year = brasiliaTime.getFullYear();
+
+      // If the date has already passed this year, use next year
+      const testDate = new Date(year, month - 1, day);
+      if (testDate < brasiliaTime) {
+        // Check if it's for "today" (same day)
+        if (day !== brasiliaTime.getDate() || month !== brasiliaTime.getMonth() + 1) {
+          year++;
+        }
+      }
+    } else if (parts.length === 3) {
+      // Format DD/MM/YYYY
+      day = parseInt(parts[0], 10);
+      month = parseInt(parts[1], 10);
+      year = parseInt(parts[2], 10);
+      // Handle 2-digit year
+      if (year < 100) {
+        year += 2000;
+      }
+    } else {
+      console.error('[AI-Assistant] Formato de data inválido:', dateStr);
+      return null;
+    }
+
+    // Parse time
+    const timeParts = timeStr.split(':');
+    const hour = parseInt(timeParts[0], 10);
+    const minute = parseInt(timeParts[1] || '0', 10);
+
+    // Validate ranges
+    if (day < 1 || day > 31 || month < 1 || month > 12 || hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      console.error('[AI-Assistant] Valores de data/hora fora do intervalo válido');
+      return null;
+    }
+
+    // Create date in Brasília timezone
+    const scheduledDate = new Date(year, month - 1, day, hour, minute, 0);
+
+    // Validate the date is valid (e.g., Feb 30 would fail)
+    if (scheduledDate.getDate() !== day || scheduledDate.getMonth() !== month - 1) {
+      console.error('[AI-Assistant] Data inválida (dia não existe no mês)');
+      return null;
+    }
+
+    return scheduledDate;
+  } catch (e) {
+    console.error('[AI-Assistant] Erro ao parsear data:', e);
+    return null;
+  }
+}
+
+// Convert Brasília time to UTC for storage
+function brasiliaToUTC(brasiliaDate: Date): Date {
+  return new Date(brasiliaDate.getTime() + 3 * 60 * 60 * 1000);
+}
+
+function formatWorkingHours(workingHours: any): string {
+  if (!workingHours) return 'Horário não definido';
+  
+  const days: Record<string, string> = {
+    monday: 'Segunda',
+    tuesday: 'Terça',
+    wednesday: 'Quarta',
+    thursday: 'Quinta',
+    friday: 'Sexta',
+    saturday: 'Sábado',
+    sunday: 'Domingo',
+  };
+  
+  const lines: string[] = [];
+  for (const [key, label] of Object.entries(days)) {
+    const day = workingHours[key];
+    if (day?.enabled) {
+      lines.push(`- ${label}: ${day.start} às ${day.end}`);
+    } else {
+      lines.push(`- ${label}: Fechado`);
+    }
+  }
+  return lines.join('\n');
+}
+
 function buildSystemPrompt(config: AssistantConfig, establishment: EstablishmentData, clientInfo?: { name?: string; phone?: string }): string {
   const styleGuide = config.language_style === 'formal'
     ? 'Use linguagem formal e profissional. Trate o cliente por "senhor(a)".'
     : 'Use linguagem amigável e casual, mas sempre profissional. Pode usar emojis moderadamente.';
 
   const servicesInfo = establishment.services.map(s => 
-    `- ${s.name}: R$ ${s.price.toFixed(2)} (${s.duration_minutes} min)`
+    `- ${s.name}: R$ ${s.price.toFixed(2)} (${s.duration_minutes} min)${s.description ? ` - ${s.description}` : ''}`
   ).join('\n');
 
   const professionalsInfo = establishment.professionals.map(p =>
@@ -242,6 +426,25 @@ function buildSystemPrompt(config: AssistantConfig, establishment: Establishment
         `- ${p.name}: ${p.discount_type === 'percentage' ? `${p.discount_value}% de desconto` : `R$ ${p.discount_value} de desconto`}${p.description ? ` - ${p.description}` : ''}`
       ).join('\n')
     : 'Nenhuma promoção ativa no momento.';
+
+  // Cupons de desconto
+  const couponsInfo = establishment.coupons.length > 0
+    ? establishment.coupons.map(c =>
+        `- Código: ${c.code} → ${c.discount_type === 'percentage' ? `${c.discount_value}% de desconto` : `R$ ${c.discount_value} de desconto`}${c.min_purchase_value ? ` (mínimo R$ ${c.min_purchase_value})` : ''}${c.description ? ` - ${c.description}` : ''}`
+      ).join('\n')
+    : 'Nenhum cupom disponível.';
+
+  // Programa de fidelidade
+  const loyaltyInfo = establishment.loyaltyProgram
+    ? `Programa: ${establishment.loyaltyProgram.name}
+${establishment.loyaltyProgram.description || ''}
+- A cada R$ 1 gasto, o cliente ganha ${establishment.loyaltyProgram.points_per_currency} ponto(s)
+Recompensas disponíveis:
+${establishment.loyaltyProgram.rewards.map(r => `  • ${r.name}: ${r.points_required} pontos (vale R$ ${r.reward_value})`).join('\n') || '  Nenhuma recompensa cadastrada.'}`
+    : 'Nenhum programa de fidelidade ativo.';
+
+  // Endereço
+  const addressInfo = [establishment.address, establishment.city, establishment.state].filter(Boolean).join(', ') || 'Endereço não informado';
 
   // Client context section
   const clientContext = clientInfo?.name 
@@ -271,16 +474,31 @@ O cliente ainda não está identificado. Você precisará coletar nome e telefon
   const diaSemanaAtual = diasSemana[brasiliaTime.getDay()];
   const mesNomeAtual = meses[brasiliaTime.getMonth()];
 
+  // Calcular data de amanhã corretamente
+  const amanha = new Date(brasiliaTime.getTime() + 24 * 60 * 60 * 1000);
+  const diaAmanha = amanha.getDate().toString().padStart(2, '0');
+  const mesAmanha = (amanha.getMonth() + 1).toString().padStart(2, '0');
+  const anoAmanha = amanha.getFullYear();
+
   const dataHoraInfo = `
-## Data e Hora Atual (Brasília)
+## Data e Hora Atual (Brasília - UTC-3)
 - Data: ${diaAtual}/${mesAtual}/${anoAtual} (${diaSemanaAtual}, ${diaAtual} de ${mesNomeAtual} de ${anoAtual})
 - Hora: ${horaAtual}:${minutoAtual}
-- "Amanhã" significa ${new Date(brasiliaTime.getTime() + 24 * 60 * 60 * 1000).getDate().toString().padStart(2, '0')}/${mesAtual}/${anoAtual}
+- "Amanhã" significa ${diaAmanha}/${mesAmanha}/${anoAmanha}
 
-CRÍTICO: Use SEMPRE a data correta ao confirmar agendamentos. Hoje é ${diaAtual}/${mesAtual}/${anoAtual}, NÃO invente datas!`;
+CRÍTICO: Use SEMPRE a data correta ao confirmar agendamentos. Hoje é ${diaAtual}/${mesAtual}/${anoAtual}. NÃO invente datas!`;
 
   return `Você é ${config.assistant_name}, assistente virtual do ${establishment.name}.
 ${dataHoraInfo}
+
+## Informações do Estabelecimento
+- **Nome**: ${establishment.name}
+- **Telefone**: ${establishment.phone || 'Não informado'}
+- **Endereço**: ${addressInfo}
+${establishment.description ? `- **Sobre**: ${establishment.description}` : ''}
+
+## Horário de Funcionamento
+${formatWorkingHours(establishment.working_hours)}
 
 ## Estilo de Comunicação
 ${styleGuide}
@@ -290,9 +508,10 @@ ${clientContext}
 1. **Agendamentos**: Ajudar clientes a agendar serviços
 2. **Remarcações**: Auxiliar na remarcação de agendamentos existentes
 3. **Cancelamentos**: Ajudar clientes a cancelar agendamentos
-4. **Promoções**: Informar sobre promoções ativas
-5. **Fila de Espera**: Se a data/hora desejada estiver ocupada, oferecer alternativas ou adicionar à fila de espera
-6. **Informações**: Responder dúvidas sobre serviços, preços e funcionamento
+4. **Promoções e Cupons**: Informar sobre promoções ativas e cupons de desconto
+5. **Programa de Fidelidade**: Explicar como funciona o programa e recompensas
+6. **Fila de Espera**: Se a data/hora desejada estiver ocupada, oferecer alternativas ou adicionar à fila de espera
+7. **Informações**: Responder dúvidas sobre serviços, preços, endereço e funcionamento
 
 ## Serviços Disponíveis
 ${servicesInfo || 'Nenhum serviço cadastrado.'}
@@ -303,11 +522,19 @@ ${professionalsInfo || 'Nenhum profissional cadastrado.'}
 ## Promoções Ativas
 ${promotionsInfo}
 
+## Cupons de Desconto
+${couponsInfo}
+
+## Programa de Fidelidade
+${loyaltyInfo}
+
+${establishment.cancellation_policy ? `## Política de Cancelamento\n${establishment.cancellation_policy}` : ''}
+
 ## Instruções Especiais
 ${config.custom_instructions || 'Sem instruções adicionais.'}
 
 ## Regras CRÍTICAS - SIGA RIGOROSAMENTE
-1. NUNCA invente informações - se não souber, diga que vai verificar
+1. NUNCA invente informações - se não souber, diga que vai verificar ou encaminhe para humano
 2. SEJA OBJETIVO E DIRETO - responda exatamente o que foi perguntado
 3. Se o cliente pedir "o mais rápido possível" ou "primeiro horário disponível", NÃO pergunte preferência de horário. Sugira imediatamente o próximo horário disponível
 4. Se o cliente disser "qualquer profissional" ou "independente de profissional", NÃO pergunte qual profissional prefere
@@ -316,7 +543,9 @@ ${config.custom_instructions || 'Sem instruções adicionais.'}
 7. Mantenha respostas CONCISAS - máximo 2 parágrafos curtos
 8. Se o cliente mencionar uma data/hora ocupada, sugira alternativas imediatamente
 9. Se não conseguir resolver, ofereça encaminhar para atendimento humano
-10. USE A DATA ATUAL CORRETA: Hoje é ${diaAtual}/${mesAtual}/${anoAtual}. Amanhã é ${new Date(brasiliaTime.getTime() + 24 * 60 * 60 * 1000).getDate().toString().padStart(2, '0')}/${mesAtual}/${anoAtual}. NUNCA invente datas!
+10. USE A DATA ATUAL CORRETA: Hoje é ${diaAtual}/${mesAtual}/${anoAtual}. Amanhã é ${diaAmanha}/${mesAmanha}/${anoAmanha}. NUNCA invente datas!
+11. Ao informar sobre cupons, diga o código exato para o cliente usar
+12. Ao falar de fidelidade, explique quanto vale cada ponto e quais recompensas estão disponíveis
 
 ## CANCELAMENTOS - REGRA ESPECIAL
 Quando o cliente mencionar palavras como "cancelar", "desmarcar", "não vou poder ir", "preciso desmarcar":
@@ -327,10 +556,8 @@ Quando o cliente mencionar palavras como "cancelar", "desmarcar", "não vou pode
 ## Ações Especiais
 - Para escalar para humano, inclua [ESCALAR] no final da resposta
 - Para adicionar à fila de espera, inclua [FILA_ESPERA:serviço:data:horário] no final
-- Para agendar, inclua [AGENDAR:serviço:profissional:data:horário:nome:telefone] no final
-- Para buscar agendamentos do cliente (cancelamento), inclua [LISTAR_AGENDAMENTOS] no final
-
-Telefone do estabelecimento: ${establishment.phone || 'Não informado'}`;
+- Para agendar, inclua [AGENDAR:serviço:profissional:data:horário:nome:telefone] no final (use a data no formato DD/MM/AAAA)
+- Para buscar agendamentos do cliente (cancelamento), inclua [LISTAR_AGENDAMENTOS] no final`;
 }
 
 function isWithinWorkingHours(workingHours: any): boolean {
@@ -623,7 +850,9 @@ serve(async (req) => {
         name: any; 
         phone: any; 
         appointmentId?: string; 
-        created?: boolean; 
+        created?: boolean;
+        error?: string;
+        conflict?: boolean;
       } | null = null;
       let showAppointmentsList = false;
 
@@ -728,7 +957,7 @@ serve(async (req) => {
         try {
           console.log('[AI-Assistant] Tentando criar agendamento:', scheduleData);
           
-          // Find service by name
+          // Find service by name (case-insensitive partial match)
           const { data: serviceData } = await supabase
             .from('services')
             .select('id, name, price, duration_minutes')
@@ -740,8 +969,9 @@ serve(async (req) => {
 
           if (!serviceData) {
             console.error('[AI-Assistant] Serviço não encontrado:', scheduleData.service);
+            scheduleData.error = 'Serviço não encontrado';
           } else {
-            // Find professional by name
+            // Find professional by name (case-insensitive partial match)
             const { data: professionalData } = await supabase
               .from('professionals')
               .select('id, name')
@@ -753,96 +983,112 @@ serve(async (req) => {
 
             if (!professionalData) {
               console.error('[AI-Assistant] Profissional não encontrado:', scheduleData.professional);
+              scheduleData.error = 'Profissional não encontrado';
             } else {
-              // Parse date - support formats like "02/01/2026" or "02/01"
-              let dateStr = scheduleData.date.trim();
-              let scheduledDate: Date;
+              // Parse date using the robust function
+              const scheduledDateBrasilia = parseBrazilianDate(scheduleData.date, scheduleData.time);
               
-              const now = new Date();
-              const brasiliaOffset = -3 * 60;
-              const localOffset = now.getTimezoneOffset();
-              const brasiliaTime = new Date(now.getTime() + (localOffset + brasiliaOffset) * 60 * 1000);
-              
-              if (dateStr.split('/').length === 2) {
-                // Format DD/MM - add current year
-                const [day, month] = dateStr.split('/');
-                dateStr = `${day}/${month}/${brasiliaTime.getFullYear()}`;
-              }
-              
-              const [day, month, year] = dateStr.split('/').map(Number);
-              const [hour, minute] = scheduleData.time.trim().split(':').map(Number);
-              
-              // Create date in Brasília timezone, then convert to UTC for storage
-              scheduledDate = new Date(year, month - 1, day, hour, minute, 0);
-              // Add 3 hours to convert Brasília to UTC
-              const scheduledAtUTC = new Date(scheduledDate.getTime() + 3 * 60 * 60 * 1000);
-              
-              console.log('[AI-Assistant] Data agendada (Brasília):', scheduledDate.toISOString());
-              console.log('[AI-Assistant] Data agendada (UTC):', scheduledAtUTC.toISOString());
-
-              // Find or create client
-              const phoneClean = (scheduleData.phone || clientPhone || '').replace(/\D/g, '');
-              let appointmentClientId = clientId;
-
-              if (!appointmentClientId && phoneClean) {
-                // Try to find existing client
-                const { data: existingClient } = await supabase
-                  .from('clients')
-                  .select('id')
-                  .eq('establishment_id', establishmentId)
-                  .eq('phone', phoneClean)
-                  .limit(1)
-                  .single();
-
-                if (existingClient) {
-                  appointmentClientId = existingClient.id;
+              if (!scheduledDateBrasilia) {
+                console.error('[AI-Assistant] Erro ao parsear data/hora:', scheduleData.date, scheduleData.time);
+                scheduleData.error = 'Data ou horário inválido';
+              } else {
+                // Check if the date is in the past
+                const now = new Date();
+                const brasiliaOffset = -3 * 60;
+                const localOffset = now.getTimezoneOffset();
+                const nowBrasilia = new Date(now.getTime() + (localOffset + brasiliaOffset) * 60 * 1000);
+                
+                if (scheduledDateBrasilia < nowBrasilia) {
+                  console.error('[AI-Assistant] Data no passado:', scheduledDateBrasilia);
+                  scheduleData.error = 'Não é possível agendar para uma data/hora que já passou';
                 } else {
-                  // Create new client
-                  const { data: newClient } = await supabase
-                    .from('clients')
-                    .insert({
-                      establishment_id: establishmentId,
-                      name: scheduleData.name || clientName || 'Cliente',
-                      phone: phoneClean,
-                    })
-                    .select('id')
-                    .single();
+                  // Convert to UTC for storage
+                  const scheduledAtUTC = brasiliaToUTC(scheduledDateBrasilia);
+                  
+                  console.log('[AI-Assistant] Data agendada (Brasília):', scheduledDateBrasilia.toISOString());
+                  console.log('[AI-Assistant] Data agendada (UTC):', scheduledAtUTC.toISOString());
 
-                  if (newClient) {
-                    appointmentClientId = newClient.id;
+                  // Check for scheduling conflicts
+                  const conflictCheck = await checkSchedulingConflict(
+                    establishmentId,
+                    professionalData.id,
+                    scheduledAtUTC,
+                    serviceData.duration_minutes
+                  );
+
+                  if (conflictCheck.hasConflict) {
+                    console.error('[AI-Assistant] Conflito de horário detectado');
+                    scheduleData.error = `Horário já ocupado. ${professionalData.name} já tem um agendamento neste horário.`;
+                    scheduleData.conflict = true;
+                  } else {
+                    // Find or create client
+                    const phoneClean = (scheduleData.phone || clientPhone || '').replace(/\D/g, '');
+                    let appointmentClientId = clientId;
+
+                    if (!appointmentClientId && phoneClean) {
+                      // Try to find existing client
+                      const { data: existingClient } = await supabase
+                        .from('clients')
+                        .select('id')
+                        .eq('establishment_id', establishmentId)
+                        .eq('phone', phoneClean)
+                        .limit(1)
+                        .single();
+
+                      if (existingClient) {
+                        appointmentClientId = existingClient.id;
+                      } else {
+                        // Create new client
+                        const { data: newClient } = await supabase
+                          .from('clients')
+                          .insert({
+                            establishment_id: establishmentId,
+                            name: scheduleData.name || clientName || 'Cliente',
+                            phone: phoneClean,
+                          })
+                          .select('id')
+                          .single();
+
+                        if (newClient) {
+                          appointmentClientId = newClient.id;
+                        }
+                      }
+                    }
+
+                    // Create the appointment
+                    const { data: newAppointment, error: appointmentError } = await supabase
+                      .from('appointments')
+                      .insert({
+                        establishment_id: establishmentId,
+                        service_id: serviceData.id,
+                        professional_id: professionalData.id,
+                        client_id: appointmentClientId || null,
+                        client_name: scheduleData.name || clientName || 'Cliente',
+                        client_phone: phoneClean,
+                        scheduled_at: scheduledAtUTC.toISOString(),
+                        duration_minutes: serviceData.duration_minutes,
+                        price: serviceData.price,
+                        status: 'pending',
+                      })
+                      .select()
+                      .single();
+
+                    if (appointmentError) {
+                      console.error('[AI-Assistant] Erro ao criar agendamento:', appointmentError);
+                      scheduleData.error = 'Erro ao salvar agendamento no banco de dados';
+                    } else {
+                      console.log('[AI-Assistant] Agendamento criado com sucesso:', newAppointment.id);
+                      scheduleData.appointmentId = newAppointment.id;
+                      scheduleData.created = true;
+                    }
                   }
                 }
-              }
-
-              // Create the appointment
-              const { data: newAppointment, error: appointmentError } = await supabase
-                .from('appointments')
-                .insert({
-                  establishment_id: establishmentId,
-                  service_id: serviceData.id,
-                  professional_id: professionalData.id,
-                  client_id: appointmentClientId || null,
-                  client_name: scheduleData.name || clientName || 'Cliente',
-                  client_phone: phoneClean,
-                  scheduled_at: scheduledAtUTC.toISOString(),
-                  duration_minutes: serviceData.duration_minutes,
-                  price: serviceData.price,
-                  status: 'pending',
-                })
-                .select()
-                .single();
-
-              if (appointmentError) {
-                console.error('[AI-Assistant] Erro ao criar agendamento:', appointmentError);
-              } else {
-                console.log('[AI-Assistant] Agendamento criado com sucesso:', newAppointment.id);
-                scheduleData.appointmentId = newAppointment.id;
-                scheduleData.created = true;
               }
             }
           }
         } catch (scheduleError) {
           console.error('[AI-Assistant] Erro no processo de agendamento:', scheduleError);
+          scheduleData.error = 'Erro interno ao processar agendamento';
         }
       }
 
