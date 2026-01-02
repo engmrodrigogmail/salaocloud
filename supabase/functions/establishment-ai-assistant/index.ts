@@ -349,68 +349,159 @@ async function checkSchedulingConflict(
 async function getAvailabilityInfo(
   establishmentId: string,
   establishmentWorkingHours: any,
-  professionals: Array<{ id: string; name: string; working_hours: any }>
+  professionals: Array<{ id: string; name: string; working_hours: any }>,
+  ctx?: { requestId?: string; conversationId?: string }
 ): Promise<string> {
+  const log = (event: string, data: Record<string, unknown> = {}) => {
+    // Centralized, structured logs to simplify debugging in function logs
+    console.log(
+      '[AI-Assistant][Availability]',
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        event,
+        establishmentId,
+        conversationId: ctx?.conversationId,
+        requestId: ctx?.requestId,
+        ...data,
+      })
+    );
+  };
+
+  const safeKeys = (v: any) => {
+    try {
+      return v && typeof v === 'object' ? Object.keys(v) : [];
+    } catch {
+      return [];
+    }
+  };
+
   try {
     const now = new Date();
     const brasiliaOffset = -3 * 60;
     const localOffset = now.getTimezoneOffset();
     const brasiliaTime = new Date(now.getTime() + (localOffset + brasiliaOffset) * 60 * 1000);
-    
+
     const namedDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const diasSemana = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
-    
+
     // Get appointments for the next 7 days
     const startDate = new Date(brasiliaTime);
     startDate.setHours(0, 0, 0, 0);
     const endDate = new Date(brasiliaTime.getTime() + 7 * 24 * 60 * 60 * 1000);
-    
-    // Convert to UTC for query
+
+    // Convert to UTC for query (Brasília UTC-3)
     const startUTC = new Date(startDate.getTime() + 3 * 60 * 60 * 1000);
     const endUTC = new Date(endDate.getTime() + 3 * 60 * 60 * 1000);
-    
+
+    log('availability_start', {
+      brasiliaNow: brasiliaTime.toISOString(),
+      localNow: now.toISOString(),
+      localOffsetMinutes: localOffset,
+      startUTC: startUTC.toISOString(),
+      endUTC: endUTC.toISOString(),
+      professionalsCount: professionals.length,
+      establishmentWorkingHoursKeys: safeKeys(establishmentWorkingHours),
+    });
+
     const { data: appointments, error } = await supabase
       .from('appointments')
-      .select('professional_id, scheduled_at, duration_minutes')
+      .select('id, professional_id, scheduled_at, duration_minutes, status')
       .eq('establishment_id', establishmentId)
       .in('status', ['pending', 'confirmed'])
       .gte('scheduled_at', startUTC.toISOString())
       .lte('scheduled_at', endUTC.toISOString())
       .order('scheduled_at', { ascending: true });
-    
+
     if (error) {
+      log('availability_appointments_error', { error: String((error as any)?.message ?? error) });
       console.error('[AI-Assistant] Erro ao buscar agendamentos:', error);
       return 'Não foi possível verificar disponibilidade.';
     }
-    
+
+    const allAppointments = appointments || [];
+    const appointmentProfessionalIds = Array.from(
+      new Set(allAppointments.map((a: any) => a.professional_id).filter(Boolean))
+    );
+
+    log('availability_appointments_fetched', {
+      count: allAppointments.length,
+      uniqueProfessionalIdsCount: appointmentProfessionalIds.length,
+      uniqueProfessionalIdsSample: appointmentProfessionalIds.slice(0, 10),
+      sample: allAppointments.slice(0, 5).map((a: any) => ({
+        id: a.id,
+        professional_id: a.professional_id,
+        scheduled_at: a.scheduled_at,
+        duration_minutes: a.duration_minutes,
+        status: a.status,
+      })),
+    });
+
     // Build availability info per professional
     const availabilityLines: string[] = [];
-    
+
     for (const prof of professionals) {
-      const profAppointments = (appointments || []).filter(apt => apt.professional_id === prof.id);
-      
+      const profAppointments = allAppointments.filter((apt: any) => apt.professional_id === prof.id);
+
       // Use professional working hours if available, otherwise establishment hours
       const workingHours = prof.working_hours || establishmentWorkingHours;
-      
+
+      log('availability_professional_start', {
+        professionalId: prof.id,
+        professionalName: prof.name,
+        appointmentsCount: profAppointments.length,
+        workingHoursSource: prof.working_hours ? 'professional' : 'establishment',
+        workingHoursKeys: safeKeys(workingHours),
+        workingHoursSample: safeKeys(workingHours).slice(0, 10).reduce((acc: any, k: string) => {
+          acc[k] = (workingHours as any)?.[k];
+          return acc;
+        }, {}),
+      });
+
       const profAvailability: string[] = [];
-      
+
       // Check next 3 days (today, tomorrow, day after tomorrow)
       for (let dayOffset = 0; dayOffset < 3; dayOffset++) {
         const checkDate = new Date(brasiliaTime.getTime() + dayOffset * 24 * 60 * 60 * 1000);
         const dayIndex = checkDate.getDay();
         const dayName = dayOffset === 0 ? 'Hoje' : dayOffset === 1 ? 'Amanhã' : diasSemana[dayIndex];
-        const dateStr = `${checkDate.getDate().toString().padStart(2, '0')}/${(checkDate.getMonth() + 1).toString().padStart(2, '0')}`;
-        
+        const dateStr = `${checkDate.getDate().toString().padStart(2, '0')}/${(checkDate.getMonth() + 1)
+          .toString()
+          .padStart(2, '0')}`;
+
         // Get working hours for this day
-        const dayConfig = workingHours?.[dayIndex.toString()] || workingHours?.[dayIndex] || workingHours?.[namedDays[dayIndex]];
-        
-        if (!dayConfig?.enabled) {
+        const dayConfig =
+          workingHours?.[dayIndex.toString()] || workingHours?.[dayIndex] || workingHours?.[namedDays[dayIndex]];
+
+        if (!dayConfig) {
+          log('availability_day_skip', {
+            professionalId: prof.id,
+            dayOffset,
+            dayIndex,
+            dayName,
+            dateStr,
+            reason: 'no_day_config',
+          });
+          continue;
+        }
+
+        // IMPORTANT: keep logic unchanged, but log what the function is seeing
+        const enabled = Boolean((dayConfig as any)?.enabled);
+        if (!enabled) {
+          log('availability_day_skip', {
+            professionalId: prof.id,
+            dayOffset,
+            dayIndex,
+            dayName,
+            dateStr,
+            reason: 'day_disabled',
+            dayConfig,
+          });
           continue; // Skip closed days
         }
-        
-        const startTime = dayConfig.start || dayConfig.open || '09:00';
-        const endTime = dayConfig.end || dayConfig.close || '18:00';
-        
+
+        const startTime = (dayConfig as any).start || (dayConfig as any).open || '09:00';
+        const endTime = (dayConfig as any).end || (dayConfig as any).close || '18:00';
+
         // For today, start from current time rounded up to next 30 min
         let firstSlot = startTime;
         if (dayOffset === 0) {
@@ -418,44 +509,91 @@ async function getAvailabilityInfo(
           const currentMin = brasiliaTime.getMinutes();
           const nextSlotMin = currentMin < 30 ? 30 : 0;
           const nextSlotHour = currentMin < 30 ? currentHour : currentHour + 1;
-          const nextSlotTime = `${nextSlotHour.toString().padStart(2, '0')}:${nextSlotMin.toString().padStart(2, '0')}`;
-          
+          const nextSlotTime = `${nextSlotHour.toString().padStart(2, '0')}:${nextSlotMin
+            .toString()
+            .padStart(2, '0')}`;
+
           if (nextSlotTime > startTime) {
             firstSlot = nextSlotTime;
           }
         }
-        
+
         // Skip if past working hours
         if (firstSlot >= endTime) {
+          log('availability_day_skip', {
+            professionalId: prof.id,
+            dayOffset,
+            dayIndex,
+            dayName,
+            dateStr,
+            reason: 'first_slot_after_end',
+            startTime,
+            endTime,
+            firstSlot,
+            brasiliaNowTime: `${brasiliaTime.getHours().toString().padStart(2, '0')}:${brasiliaTime
+              .getMinutes()
+              .toString()
+              .padStart(2, '0')}`,
+          });
           continue;
         }
-        
+
         // Find first available slot
         let foundSlot = false;
         let slotTime = firstSlot;
-        
+        let slotsChecked = 0;
+        let conflictsCount = 0;
+        let firstConflictSample: any = null;
+
         while (slotTime < endTime && !foundSlot) {
+          slotsChecked++;
           const [slotHour, slotMin] = slotTime.split(':').map(Number);
           const slotDateTime = new Date(checkDate);
           slotDateTime.setHours(slotHour, slotMin, 0, 0);
           const slotDateTimeUTC = new Date(slotDateTime.getTime() + 3 * 60 * 60 * 1000);
-          
+
           // Check if this slot conflicts with any appointment
           let hasConflict = false;
           for (const apt of profAppointments) {
             const aptStart = new Date(apt.scheduled_at);
             const aptEnd = new Date(aptStart.getTime() + apt.duration_minutes * 60 * 1000);
             const slotEnd = new Date(slotDateTimeUTC.getTime() + 60 * 60 * 1000); // Assume 1 hour for checking
-            
+
             if (slotDateTimeUTC < aptEnd && slotEnd > aptStart) {
               hasConflict = true;
+              conflictsCount++;
+              if (!firstConflictSample) {
+                firstConflictSample = {
+                  slotDateTimeUTC: slotDateTimeUTC.toISOString(),
+                  slotEndUTC: slotEnd.toISOString(),
+                  appointment: {
+                    id: apt.id,
+                    scheduled_at: apt.scheduled_at,
+                    duration_minutes: apt.duration_minutes,
+                    status: apt.status,
+                  },
+                };
+              }
               break;
             }
           }
-          
+
           if (!hasConflict) {
             profAvailability.push(`${dayName} (${dateStr}) às ${slotTime}`);
             foundSlot = true;
+            log('availability_slot_found', {
+              professionalId: prof.id,
+              dayOffset,
+              dayIndex,
+              dayName,
+              dateStr,
+              startTime,
+              endTime,
+              firstSlot,
+              foundSlotTime: slotTime,
+              slotsChecked,
+              conflictsCount,
+            });
           } else {
             // Move to next 30 min slot
             const [h, m] = slotTime.split(':').map(Number);
@@ -464,19 +602,43 @@ async function getAvailabilityInfo(
             slotTime = `${nextHour.toString().padStart(2, '0')}:${nextMin.toString().padStart(2, '0')}`;
           }
         }
+
+        if (!foundSlot) {
+          log('availability_no_slot', {
+            professionalId: prof.id,
+            dayOffset,
+            dayIndex,
+            dayName,
+            dateStr,
+            startTime,
+            endTime,
+            firstSlot,
+            slotsChecked,
+            conflictsCount,
+            firstConflictSample,
+          });
+        }
       }
-      
+
       if (profAvailability.length > 0) {
         availabilityLines.push(`- **${prof.name}**: Próximos disponíveis: ${profAvailability.join(' | ')}`);
       } else {
         availabilityLines.push(`- **${prof.name}**: Sem disponibilidade nos próximos 3 dias`);
       }
+
+      log('availability_professional_result', {
+        professionalId: prof.id,
+        professionalName: prof.name,
+        resultCount: profAvailability.length,
+        results: profAvailability,
+      });
     }
-    
-    console.log('[AI-Assistant] Disponibilidade calculada:', availabilityLines.join('\n'));
-    
+
+    log('availability_result', { availabilityLines });
+
     return availabilityLines.join('\n');
   } catch (error) {
+    log('availability_unexpected_error', { error: String(error) });
     console.error('[AI-Assistant] Erro ao calcular disponibilidade:', error);
     return 'Erro ao verificar disponibilidade.';
   }
@@ -879,6 +1041,12 @@ serve(async (req) => {
   }
 
   try {
+    const clientRequestId =
+      req.headers.get('x-client-request-id') ||
+      req.headers.get('x-request-id') ||
+      req.headers.get('cf-ray') ||
+      crypto.randomUUID();
+
     const {
       action,
       establishmentId,
@@ -893,7 +1061,18 @@ serve(async (req) => {
       cancelReason,
     } = await req.json();
 
-    console.log('AI Assistant request:', { action, establishmentId, conversationId, messageType });
+    console.log(
+      '[AI-Assistant] Request',
+      JSON.stringify({
+        ts: new Date().toISOString(),
+        requestId: clientRequestId,
+        action,
+        establishmentId,
+        conversationId,
+        messageType,
+        clientId,
+      })
+    );
 
     // Get assistant config
     const config = await getAssistantConfig(establishmentId);
@@ -1076,7 +1255,8 @@ serve(async (req) => {
       const availabilityInfo = await getAvailabilityInfo(
         establishmentId,
         establishment.working_hours,
-        establishment.professionals
+        establishment.professionals,
+        { requestId: clientRequestId, conversationId }
       );
 
       // Add system prompt with client context and availability
