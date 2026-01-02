@@ -175,32 +175,45 @@ async function checkUsageLimits(establishmentId: string): Promise<{ allowed: boo
 async function incrementUsage(establishmentId: string): Promise<void> {
   const monthYear = new Date().toISOString().slice(0, 7);
 
-  // Update subscription trial count
-  await supabase
-    .from('establishment_ai_subscriptions')
-    .update({ trial_messages_used: supabase.rpc('increment', { x: 1 }) })
-    .eq('establishment_id', establishmentId)
-    .eq('status', 'trial');
+  try {
+    // Update subscription trial count - fetch current value and increment
+    const { data: subscription } = await supabase
+      .from('establishment_ai_subscriptions')
+      .select('id, trial_messages_used')
+      .eq('establishment_id', establishmentId)
+      .eq('status', 'trial')
+      .single();
 
-  // Upsert monthly usage
-  const { data: existing } = await supabase
-    .from('ai_assistant_usage')
-    .select('id, message_count')
-    .eq('establishment_id', establishmentId)
-    .eq('month_year', monthYear)
-    .single();
+    if (subscription) {
+      await supabase
+        .from('establishment_ai_subscriptions')
+        .update({ trial_messages_used: (subscription.trial_messages_used || 0) + 1 })
+        .eq('id', subscription.id);
+    }
 
-  if (existing) {
-    await supabase
+    // Upsert monthly usage
+    const { data: existing } = await supabase
       .from('ai_assistant_usage')
-      .update({ message_count: existing.message_count + 1 })
-      .eq('id', existing.id);
-  } else {
-    await supabase.from('ai_assistant_usage').insert({
-      establishment_id: establishmentId,
-      month_year: monthYear,
-      message_count: 1,
-    });
+      .select('id, message_count')
+      .eq('establishment_id', establishmentId)
+      .eq('month_year', monthYear)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from('ai_assistant_usage')
+        .update({ message_count: (existing.message_count || 0) + 1 })
+        .eq('id', existing.id);
+    } else {
+      await supabase.from('ai_assistant_usage').insert({
+        establishment_id: establishmentId,
+        month_year: monthYear,
+        message_count: 1,
+      });
+    }
+  } catch (error) {
+    console.error('[AI-Assistant] Erro ao incrementar uso:', error);
+    // Non-blocking - don't throw
   }
 }
 
@@ -268,44 +281,68 @@ async function cancelAppointments(appointmentIds: string[], reason: string): Pro
 }
 
 // Check if there's a scheduling conflict for the professional
+// scheduledAtUTC must be in UTC timezone
 async function checkSchedulingConflict(
   establishmentId: string,
   professionalId: string,
-  scheduledAt: Date,
+  scheduledAtUTC: Date,
   durationMinutes: number
 ): Promise<{ hasConflict: boolean; conflictingAppointment?: any }> {
-  const startTime = scheduledAt.toISOString();
-  const endTime = new Date(scheduledAt.getTime() + durationMinutes * 60 * 1000).toISOString();
+  try {
+    // Calculate time window for query (4 hours before and after in UTC)
+    const windowStart = new Date(scheduledAtUTC.getTime() - 4 * 60 * 60 * 1000).toISOString();
+    const windowEnd = new Date(scheduledAtUTC.getTime() + 4 * 60 * 60 * 1000).toISOString();
 
-  // Check for overlapping appointments
-  const { data: conflicts } = await supabase
-    .from('appointments')
-    .select('id, scheduled_at, duration_minutes, client_name')
-    .eq('establishment_id', establishmentId)
-    .eq('professional_id', professionalId)
-    .in('status', ['pending', 'confirmed'])
-    .gte('scheduled_at', new Date(scheduledAt.getTime() - 4 * 60 * 60 * 1000).toISOString()) // 4 hours before
-    .lte('scheduled_at', new Date(scheduledAt.getTime() + 4 * 60 * 60 * 1000).toISOString()) // 4 hours after
-    .limit(10);
+    console.log('[AI-Assistant] Verificando conflitos:', {
+      professionalId,
+      scheduledAtUTC: scheduledAtUTC.toISOString(),
+      durationMinutes,
+      windowStart,
+      windowEnd,
+    });
 
-  if (!conflicts || conflicts.length === 0) {
-    return { hasConflict: false };
-  }
+    // Check for overlapping appointments
+    const { data: conflicts, error } = await supabase
+      .from('appointments')
+      .select('id, scheduled_at, duration_minutes, client_name')
+      .eq('establishment_id', establishmentId)
+      .eq('professional_id', professionalId)
+      .in('status', ['pending', 'confirmed'])
+      .gte('scheduled_at', windowStart)
+      .lte('scheduled_at', windowEnd)
+      .limit(20);
 
-  // Check each appointment for overlap
-  for (const apt of conflicts) {
-    const aptStart = new Date(apt.scheduled_at);
-    const aptEnd = new Date(aptStart.getTime() + apt.duration_minutes * 60 * 1000);
-    const newStart = scheduledAt;
-    const newEnd = new Date(scheduledAt.getTime() + durationMinutes * 60 * 1000);
-
-    // Check for overlap: (StartA < EndB) && (EndA > StartB)
-    if (newStart < aptEnd && newEnd > aptStart) {
-      return { hasConflict: true, conflictingAppointment: apt };
+    if (error) {
+      console.error('[AI-Assistant] Erro ao buscar conflitos:', error);
+      return { hasConflict: false }; // Fail open - let the appointment be created
     }
-  }
 
-  return { hasConflict: false };
+    if (!conflicts || conflicts.length === 0) {
+      console.log('[AI-Assistant] Nenhum conflito encontrado');
+      return { hasConflict: false };
+    }
+
+    console.log('[AI-Assistant] Agendamentos encontrados na janela:', conflicts.length);
+
+    // Check each appointment for overlap
+    for (const apt of conflicts) {
+      const aptStart = new Date(apt.scheduled_at);
+      const aptEnd = new Date(aptStart.getTime() + apt.duration_minutes * 60 * 1000);
+      const newStart = scheduledAtUTC;
+      const newEnd = new Date(scheduledAtUTC.getTime() + durationMinutes * 60 * 1000);
+
+      // Check for overlap: (StartA < EndB) && (EndA > StartB)
+      if (newStart < aptEnd && newEnd > aptStart) {
+        console.log('[AI-Assistant] Conflito detectado com:', apt.id);
+        return { hasConflict: true, conflictingAppointment: apt };
+      }
+    }
+
+    return { hasConflict: false };
+  } catch (error) {
+    console.error('[AI-Assistant] Erro inesperado em checkSchedulingConflict:', error);
+    return { hasConflict: false }; // Fail open
+  }
 }
 
 // Parse Brazilian date formats to Date object
@@ -1025,21 +1062,36 @@ serve(async (req) => {
                     const phoneClean = (scheduleData.phone || clientPhone || '').replace(/\D/g, '');
                     let appointmentClientId = clientId;
 
+                    // Validate clientId exists if provided
+                    if (appointmentClientId) {
+                      const { data: existingClientById } = await supabase
+                        .from('clients')
+                        .select('id')
+                        .eq('id', appointmentClientId)
+                        .eq('establishment_id', establishmentId)
+                        .maybeSingle();
+                      
+                      if (!existingClientById) {
+                        console.warn('[AI-Assistant] clientId fornecido não existe, tentando por telefone');
+                        appointmentClientId = undefined;
+                      }
+                    }
+
                     if (!appointmentClientId && phoneClean) {
-                      // Try to find existing client
+                      // Try to find existing client by phone
                       const { data: existingClient } = await supabase
                         .from('clients')
                         .select('id')
                         .eq('establishment_id', establishmentId)
                         .eq('phone', phoneClean)
-                        .limit(1)
-                        .single();
+                        .maybeSingle();
 
                       if (existingClient) {
                         appointmentClientId = existingClient.id;
-                      } else {
-                        // Create new client
-                        const { data: newClient } = await supabase
+                        console.log('[AI-Assistant] Cliente encontrado por telefone:', appointmentClientId);
+                      } else if (phoneClean.length >= 10) {
+                        // Create new client only if phone is valid
+                        const { data: newClient, error: clientError } = await supabase
                           .from('clients')
                           .insert({
                             establishment_id: establishmentId,
@@ -1049,8 +1101,11 @@ serve(async (req) => {
                           .select('id')
                           .single();
 
-                        if (newClient) {
+                        if (clientError) {
+                          console.error('[AI-Assistant] Erro ao criar cliente:', clientError);
+                        } else if (newClient) {
                           appointmentClientId = newClient.id;
+                          console.log('[AI-Assistant] Novo cliente criado:', appointmentClientId);
                         }
                       }
                     }
