@@ -73,10 +73,11 @@ export function EstablishmentAIChat({
   const [error, setError] = useState<string | null>(null);
   const [limitReached, setLimitReached] = useState(false);
   
-  // Cancellation flow state
+  // Appointment management state
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [selectedAppointments, setSelectedAppointments] = useState<string[]>([]);
-  const [showCancellationUI, setShowCancellationUI] = useState(false);
+  const [showAppointmentManagement, setShowAppointmentManagement] = useState(false);
+  const [managementAction, setManagementAction] = useState<'cancel' | 'reschedule' | 'confirm' | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   
@@ -88,7 +89,7 @@ export function EstablishmentAIChat({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages, showCancellationUI, showConfirmation]);
+  }, [messages, showAppointmentManagement, showConfirmation]);
 
   // Focus input when chat opens
   useEffect(() => {
@@ -125,14 +126,33 @@ export function EstablishmentAIChat({
       setConversationId(data.conversationId);
       setAssistantName(data.assistantName || 'Assistente');
 
-      // Add welcome message
-      if (data.welcomeMessage) {
-        setMessages([{
-          id: 'welcome',
-          content: data.welcomeMessage,
+      // Check if there are existing messages (conversation history from last 24h)
+      if (data.existingMessages && data.existingMessages.length > 0) {
+        const restoredMessages: Message[] = data.existingMessages.map((m: any, idx: number) => ({
+          id: `restored-${idx}`,
+          content: m.content,
+          senderType: m.senderType === 'client' ? 'client' : 'assistant',
+          createdAt: new Date(m.createdAt),
+        }));
+        setMessages(restoredMessages);
+        
+        // Add a system message indicating conversation was resumed
+        setMessages(prev => [...prev, {
+          id: 'resumed-notice',
+          content: 'Conversa retomada. Como posso ajudar?',
           senderType: 'assistant',
           createdAt: new Date(),
         }]);
+      } else {
+        // New conversation - add welcome message
+        if (data.welcomeMessage) {
+          setMessages([{
+            id: 'welcome',
+            content: data.welcomeMessage,
+            senderType: 'assistant',
+            createdAt: new Date(),
+          }]);
+        }
       }
 
       // Add offline notice if exists
@@ -173,7 +193,8 @@ export function EstablishmentAIChat({
 
       if (data.appointments && data.appointments.length > 0) {
         setAppointments(data.appointments);
-        setShowCancellationUI(true);
+        setShowAppointmentManagement(true);
+        setManagementAction(null);
         setSelectedAppointments([]);
       } else {
         // No appointments found
@@ -220,7 +241,8 @@ export function EstablishmentAIChat({
       setMessages(prev => [...prev, confirmMessage]);
 
       // Reset state
-      setShowCancellationUI(false);
+      setShowAppointmentManagement(false);
+      setManagementAction(null);
       setShowConfirmation(false);
       setAppointments([]);
       setSelectedAppointments([]);
@@ -431,8 +453,115 @@ export function EstablishmentAIChat({
               </div>
             ))}
 
-            {/* Cancellation UI - Appointment Selection */}
-            {showCancellationUI && !showConfirmation && appointments.length > 0 && (
+            {/* Appointment Management UI */}
+            {showAppointmentManagement && appointments.length > 0 && !managementAction && (
+              <div className="bg-muted/50 rounded-xl p-4 space-y-3">
+                <p className="text-sm font-medium text-foreground">
+                  Seus agendamentos:
+                </p>
+                <div className="space-y-2">
+                  {appointments.map((apt) => (
+                    <div
+                      key={apt.id}
+                      className="p-3 rounded-lg border border-border bg-background"
+                    >
+                      <p className="text-sm font-medium text-foreground">
+                        {apt.serviceName}
+                      </p>
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+                        <Calendar className="h-3 w-3" />
+                        <span>{apt.dateTime}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        com {apt.professionalName}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+                
+                <p className="text-sm text-muted-foreground pt-2">
+                  O que você gostaria de fazer?
+                </p>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Send message to AI about rescheduling
+                      setShowAppointmentManagement(false);
+                      sendMessage('Gostaria de remarcar um agendamento');
+                    }}
+                  >
+                    📅 Remarcar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Send message to AI about confirming
+                      setShowAppointmentManagement(false);
+                      const confirmMsg: Message = {
+                        id: `confirm-info-${Date.now()}`,
+                        content: 'Seus agendamentos estão confirmados! Você receberá lembretes próximo à data.',
+                        senderType: 'assistant',
+                        createdAt: new Date(),
+                      };
+                      setMessages(prev => [...prev, confirmMsg]);
+                      setAppointments([]);
+                    }}
+                  >
+                    ✅ Confirmar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Send message to AI about changing professional
+                      setShowAppointmentManagement(false);
+                      sendMessage('Gostaria de alterar o profissional de um agendamento');
+                    }}
+                  >
+                    👤 Alterar profissional
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      // Send message to AI about adding service
+                      setShowAppointmentManagement(false);
+                      sendMessage('Gostaria de adicionar um serviço ao meu agendamento');
+                    }}
+                  >
+                    ➕ Adicionar serviço
+                  </Button>
+                </div>
+                
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setManagementAction('cancel')}
+                >
+                  ❌ Cancelar agendamento
+                </Button>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-muted-foreground"
+                  onClick={() => {
+                    setShowAppointmentManagement(false);
+                    setAppointments([]);
+                  }}
+                >
+                  Fechar
+                </Button>
+              </div>
+            )}
+
+            {/* Cancel Selection UI */}
+            {showAppointmentManagement && managementAction === 'cancel' && !showConfirmation && appointments.length > 0 && (
               <div className="bg-muted/50 rounded-xl p-4 space-y-3">
                 <p className="text-sm font-medium text-foreground">
                   Selecione os agendamentos que deseja cancelar:
@@ -475,13 +604,12 @@ export function EstablishmentAIChat({
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      setShowCancellationUI(false);
-                      setAppointments([]);
+                      setManagementAction(null);
                       setSelectedAppointments([]);
                     }}
                     className="flex-1"
                   >
-                    Cancelar
+                    Voltar
                   </Button>
                   <Button
                     size="sm"
@@ -587,13 +715,13 @@ export function EstablishmentAIChat({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Digite sua mensagem..."
-              disabled={isLoading || showCancellationUI}
+              disabled={isLoading || showAppointmentManagement}
               className="flex-1"
             />
             <Button 
               type="submit" 
               size="icon"
-              disabled={!inputValue.trim() || isLoading || showCancellationUI}
+              disabled={!inputValue.trim() || isLoading || showAppointmentManagement}
               className="shrink-0"
             >
               {isLoading ? (
