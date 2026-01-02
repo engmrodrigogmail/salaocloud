@@ -639,6 +639,97 @@ export type Database = {
           },
         ]
       }
+      client_ai_preferences: {
+        Row: {
+          cancellation_count: number | null
+          client_id: string | null
+          client_phone: string
+          created_at: string
+          detected_patterns: Json | null
+          establishment_id: string
+          favorite_professional_id: string | null
+          favorite_professional_name: string | null
+          favorite_services: Json | null
+          id: string
+          last_booking_at: string | null
+          pattern_confidence: number | null
+          preferred_day_of_week: number[] | null
+          preferred_time_end: string | null
+          preferred_time_slot: string | null
+          preferred_time_start: string | null
+          prefers_earliest_available: boolean | null
+          professional_booking_count: number | null
+          total_bookings: number | null
+          updated_at: string
+        }
+        Insert: {
+          cancellation_count?: number | null
+          client_id?: string | null
+          client_phone: string
+          created_at?: string
+          detected_patterns?: Json | null
+          establishment_id: string
+          favorite_professional_id?: string | null
+          favorite_professional_name?: string | null
+          favorite_services?: Json | null
+          id?: string
+          last_booking_at?: string | null
+          pattern_confidence?: number | null
+          preferred_day_of_week?: number[] | null
+          preferred_time_end?: string | null
+          preferred_time_slot?: string | null
+          preferred_time_start?: string | null
+          prefers_earliest_available?: boolean | null
+          professional_booking_count?: number | null
+          total_bookings?: number | null
+          updated_at?: string
+        }
+        Update: {
+          cancellation_count?: number | null
+          client_id?: string | null
+          client_phone?: string
+          created_at?: string
+          detected_patterns?: Json | null
+          establishment_id?: string
+          favorite_professional_id?: string | null
+          favorite_professional_name?: string | null
+          favorite_services?: Json | null
+          id?: string
+          last_booking_at?: string | null
+          pattern_confidence?: number | null
+          preferred_day_of_week?: number[] | null
+          preferred_time_end?: string | null
+          preferred_time_slot?: string | null
+          preferred_time_start?: string | null
+          prefers_earliest_available?: boolean | null
+          professional_booking_count?: number | null
+          total_bookings?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_ai_preferences_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_ai_preferences_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_ai_preferences_favorite_professional_id_fkey"
+            columns: ["favorite_professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_loyalty_points: {
         Row: {
           client_id: string
