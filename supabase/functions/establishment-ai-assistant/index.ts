@@ -54,6 +54,22 @@ interface AILearningRow {
   confidence_score: number;
 }
 
+interface ClientPreferences {
+  id: string;
+  favorite_professional_id: string | null;
+  favorite_professional_name: string | null;
+  professional_booking_count: number;
+  preferred_day_of_week: number[] | null;
+  preferred_time_slot: string | null;
+  preferred_time_start: string | null;
+  preferred_time_end: string | null;
+  prefers_earliest_available: boolean;
+  favorite_services: Array<{ service_id: string; name: string; booking_count: number }>;
+  total_bookings: number;
+  detected_patterns: Record<string, any>;
+  pattern_confidence: number;
+}
+
 // ============= AI Learning System =============
 
 async function loadEstablishmentLearnings(establishmentId: string, userMessage: string): Promise<string> {
@@ -193,6 +209,238 @@ async function recordAppointmentOutcome(
       outcome: 'appointment_created',
     });
   }
+}
+
+// ============= Client Preferences System =============
+
+async function loadClientPreferences(
+  establishmentId: string,
+  clientPhone: string | null
+): Promise<ClientPreferences | null> {
+  if (!clientPhone) return null;
+  
+  try {
+    const phoneClean = clientPhone.replace(/\D/g, '');
+    const { data } = await supabase
+      .from('client_ai_preferences')
+      .select('*')
+      .eq('establishment_id', establishmentId)
+      .eq('client_phone', phoneClean)
+      .maybeSingle();
+
+    if (!data) return null;
+
+    console.log(`[AI-Preferences] Loaded preferences for client ${phoneClean.slice(-4)}`);
+    return {
+      id: data.id,
+      favorite_professional_id: data.favorite_professional_id,
+      favorite_professional_name: data.favorite_professional_name,
+      professional_booking_count: data.professional_booking_count || 0,
+      preferred_day_of_week: data.preferred_day_of_week,
+      preferred_time_slot: data.preferred_time_slot,
+      preferred_time_start: data.preferred_time_start,
+      preferred_time_end: data.preferred_time_end,
+      prefers_earliest_available: data.prefers_earliest_available || false,
+      favorite_services: data.favorite_services || [],
+      total_bookings: data.total_bookings || 0,
+      detected_patterns: data.detected_patterns || {},
+      pattern_confidence: data.pattern_confidence || 0,
+    };
+  } catch (error) {
+    console.error('[AI-Preferences] Error loading preferences:', error);
+    return null;
+  }
+}
+
+async function updateClientPreferences(
+  establishmentId: string,
+  clientPhone: string | null,
+  clientId: string | null,
+  professionalId: string,
+  professionalName: string,
+  serviceId: string,
+  serviceName: string,
+  scheduledAt: Date
+): Promise<void> {
+  if (!clientPhone) return;
+  
+  try {
+    const phoneClean = clientPhone.replace(/\D/g, '');
+    const dayOfWeek = scheduledAt.getDay();
+    const hour = scheduledAt.getHours();
+    
+    // Determine time slot
+    let timeSlot = 'morning';
+    if (hour >= 12 && hour < 18) timeSlot = 'afternoon';
+    else if (hour >= 18) timeSlot = 'evening';
+
+    // Try to get existing preferences
+    const { data: existing } = await supabase
+      .from('client_ai_preferences')
+      .select('*')
+      .eq('establishment_id', establishmentId)
+      .eq('client_phone', phoneClean)
+      .maybeSingle();
+
+    if (existing) {
+      // Update existing preferences
+      const newProfBookingCount = existing.favorite_professional_id === professionalId
+        ? (existing.professional_booking_count || 0) + 1
+        : 1;
+      
+      // Update favorite professional if this one has more bookings or is the first with this professional
+      const shouldUpdateFavorite = !existing.favorite_professional_id || 
+        newProfBookingCount > (existing.professional_booking_count || 0) ||
+        existing.favorite_professional_id === professionalId;
+
+      // Update favorite services
+      const favoriteServices = Array.isArray(existing.favorite_services) ? [...existing.favorite_services] : [];
+      const serviceIndex = favoriteServices.findIndex((s: any) => s.service_id === serviceId);
+      if (serviceIndex >= 0) {
+        favoriteServices[serviceIndex].booking_count = (favoriteServices[serviceIndex].booking_count || 0) + 1;
+      } else {
+        favoriteServices.push({ service_id: serviceId, name: serviceName, booking_count: 1 });
+      }
+      // Sort by booking count and keep top 5
+      favoriteServices.sort((a: any, b: any) => b.booking_count - a.booking_count);
+      const topServices = favoriteServices.slice(0, 5);
+
+      // Update preferred days
+      const preferredDays = existing.preferred_day_of_week || [];
+      if (!preferredDays.includes(dayOfWeek)) {
+        preferredDays.push(dayOfWeek);
+      }
+
+      // Detect patterns
+      const patterns = existing.detected_patterns || {};
+      patterns.last_booking_day = dayOfWeek;
+      patterns.last_booking_hour = hour;
+      patterns.booking_history = patterns.booking_history || [];
+      patterns.booking_history.push({ 
+        professional_id: professionalId, 
+        service_id: serviceId, 
+        day: dayOfWeek, 
+        hour,
+        date: new Date().toISOString() 
+      });
+      // Keep last 20 bookings for pattern analysis
+      if (patterns.booking_history.length > 20) {
+        patterns.booking_history = patterns.booking_history.slice(-20);
+      }
+
+      // Calculate pattern confidence based on consistency
+      const profCounts: Record<string, number> = {};
+      patterns.booking_history.forEach((b: any) => {
+        profCounts[b.professional_id] = (profCounts[b.professional_id] || 0) + 1;
+      });
+      const topProfCount = Math.max(...Object.values(profCounts));
+      const patternConfidence = patterns.booking_history.length > 2 
+        ? topProfCount / patterns.booking_history.length 
+        : 0;
+
+      await supabase
+        .from('client_ai_preferences')
+        .update({
+          client_id: clientId || existing.client_id,
+          favorite_professional_id: shouldUpdateFavorite ? professionalId : existing.favorite_professional_id,
+          favorite_professional_name: shouldUpdateFavorite ? professionalName : existing.favorite_professional_name,
+          professional_booking_count: shouldUpdateFavorite ? newProfBookingCount : existing.professional_booking_count,
+          preferred_day_of_week: preferredDays,
+          preferred_time_slot: timeSlot,
+          preferred_time_start: `${hour.toString().padStart(2, '0')}:00`,
+          favorite_services: topServices,
+          total_bookings: (existing.total_bookings || 0) + 1,
+          last_booking_at: new Date().toISOString(),
+          detected_patterns: patterns,
+          pattern_confidence: patternConfidence,
+        })
+        .eq('id', existing.id);
+
+      console.log(`[AI-Preferences] Updated preferences for client ${phoneClean.slice(-4)}, confidence: ${patternConfidence.toFixed(2)}`);
+    } else {
+      // Create new preferences
+      await supabase.from('client_ai_preferences').insert({
+        establishment_id: establishmentId,
+        client_phone: phoneClean,
+        client_id: clientId,
+        favorite_professional_id: professionalId,
+        favorite_professional_name: professionalName,
+        professional_booking_count: 1,
+        preferred_day_of_week: [dayOfWeek],
+        preferred_time_slot: timeSlot,
+        preferred_time_start: `${hour.toString().padStart(2, '0')}:00`,
+        favorite_services: [{ service_id: serviceId, name: serviceName, booking_count: 1 }],
+        total_bookings: 1,
+        last_booking_at: new Date().toISOString(),
+        detected_patterns: {
+          last_booking_day: dayOfWeek,
+          last_booking_hour: hour,
+          booking_history: [{ professional_id: professionalId, service_id: serviceId, day: dayOfWeek, hour, date: new Date().toISOString() }]
+        },
+        pattern_confidence: 0,
+      });
+
+      console.log(`[AI-Preferences] Created preferences for client ${phoneClean.slice(-4)}`);
+    }
+  } catch (error) {
+    console.error('[AI-Preferences] Error updating preferences:', error);
+  }
+}
+
+function buildClientPreferencesContext(
+  preferences: ClientPreferences | null,
+  professionals: Array<{ id: string; name: string }>
+): string {
+  if (!preferences || preferences.total_bookings < 2) {
+    return '';
+  }
+
+  const lines: string[] = [];
+  lines.push('\n## Preferências Detectadas do Cliente');
+  lines.push('IMPORTANTE: Use estas informações para PERSONALIZAR o atendimento!');
+
+  // Professional preference
+  if (preferences.favorite_professional_name && preferences.professional_booking_count >= 2) {
+    const confidence = preferences.pattern_confidence >= 0.6 ? 'alta' : preferences.pattern_confidence >= 0.4 ? 'média' : 'baixa';
+    lines.push(`\n**Profissional Preferido**: ${preferences.favorite_professional_name} (${preferences.professional_booking_count} agendamentos, confiança ${confidence})`);
+    lines.push(`- OFEREÇA PROATIVAMENTE os horários de ${preferences.favorite_professional_name} primeiro!`);
+    lines.push(`- Diga algo como: "Notei que você costuma agendar com ${preferences.favorite_professional_name}. Posso verificar os horários disponíveis?"` );
+  }
+
+  // Time preferences
+  if (preferences.preferred_time_slot) {
+    const slotNames: Record<string, string> = { morning: 'manhã', afternoon: 'tarde', evening: 'noite' };
+    lines.push(`\n**Horário Preferido**: ${slotNames[preferences.preferred_time_slot] || preferences.preferred_time_slot}`);
+    if (preferences.preferred_time_start) {
+      lines.push(`- Horário mais comum: por volta das ${preferences.preferred_time_start}`);
+    }
+  }
+
+  // Day preferences
+  if (preferences.preferred_day_of_week && preferences.preferred_day_of_week.length > 0) {
+    const dayNames = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+    const preferredDays = preferences.preferred_day_of_week.map(d => dayNames[d]).join(', ');
+    lines.push(`**Dias Preferidos**: ${preferredDays}`);
+  }
+
+  // Service preferences
+  if (preferences.favorite_services && preferences.favorite_services.length > 0) {
+    const topService = preferences.favorite_services[0];
+    if (topService.booking_count >= 2) {
+      lines.push(`\n**Serviço Favorito**: ${topService.name} (${topService.booking_count} vezes)`);
+    }
+  }
+
+  // Total bookings context
+  if (preferences.total_bookings >= 5) {
+    lines.push(`\n**Cliente Frequente**: ${preferences.total_bookings} agendamentos realizados. Trate com atenção especial!`);
+  }
+
+  if (lines.length <= 2) return ''; // Only header, no real info
+
+  lines.push('\n**REGRA**: Quando este cliente pedir para agendar, PRIMEIRO sugira o profissional/horário preferido antes de perguntar preferências!');
+
+  return lines.join('\n');
 }
 
 // ============= Centralized Date/Time Utilities =============
@@ -987,7 +1235,7 @@ function formatWorkingHours(workingHours: any): string {
   return lines.join('\n');
 }
 
-function buildSystemPrompt(config: AssistantConfig, establishment: EstablishmentData, clientInfo?: { name?: string; phone?: string }, availabilityInfo?: string): string {
+function buildSystemPrompt(config: AssistantConfig, establishment: EstablishmentData, clientInfo?: { name?: string; phone?: string }, availabilityInfo?: string, clientPreferencesContext?: string): string {
   const styleGuide = config.language_style === 'formal'
     ? 'Use linguagem formal e profissional. Trate o cliente por "senhor(a)".'
     : 'Use linguagem amigável e casual, mas sempre profissional. Pode usar emojis moderadamente.';
@@ -1082,6 +1330,7 @@ ${availabilitySection}
 ## Estilo de Comunicação
 ${styleGuide}
 ${clientContext}
+${clientPreferencesContext || ''}
 
 ## Suas Capacidades
 1. **Agendamentos**: Ajudar clientes a agendar serviços
@@ -1527,8 +1776,12 @@ serve(async (req) => {
         { requestId: clientRequestId, conversationId }
       );
 
-      // Add system prompt with client context and availability
-      let systemPrompt = buildSystemPrompt(config, establishment, { name: clientName, phone: clientPhone }, availabilityInfo);
+      // Load client preferences for personalization
+      const clientPreferences = await loadClientPreferences(establishmentId, clientPhone);
+      const clientPreferencesContext = buildClientPreferencesContext(clientPreferences, establishment.professionals);
+
+      // Add system prompt with client context, availability, and preferences
+      let systemPrompt = buildSystemPrompt(config, establishment, { name: clientName, phone: clientPhone }, availabilityInfo, clientPreferencesContext);
       
       // Load and inject establishment-specific learnings
       const learningsContext = await loadEstablishmentLearnings(establishmentId, message);
@@ -1860,6 +2113,18 @@ serve(async (req) => {
                       
                       // Record success for learning - this helps improve future responses
                       await recordAppointmentOutcome(establishmentId, conversationId, message, assistantMessage, true);
+                      
+                      // Update client preferences for personalization
+                      await updateClientPreferences(
+                        establishmentId,
+                        phoneClean,
+                        appointmentClientId || null,
+                        professionalData.id,
+                        professionalData.name,
+                        serviceData.id,
+                        serviceData.name,
+                        scheduledDateBrasilia
+                      );
                     }
                   }
                 }
