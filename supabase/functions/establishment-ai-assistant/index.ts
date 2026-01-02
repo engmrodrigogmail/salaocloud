@@ -989,17 +989,18 @@ Se você ver a mensagem "HORÁRIO NÃO CONFIGURADO" nas informações de horári
 6. Incluir [NOTIFICAR_HORARIO] ao final da sua mensagem para gerar notificação ao estabelecimento
 7. NÃO tente agendar, nem dar informações de horário, nem prosseguir com atendimento normal
 
-## CANCELAMENTOS - REGRA ESPECIAL
-Quando o cliente mencionar palavras como "cancelar", "desmarcar", "não vou poder ir", "preciso desmarcar":
+## CONSULTA DE AGENDAMENTOS - REGRA IMPORTANTE
+Quando o cliente perguntar sobre seus agendamentos, quiser verificar, cancelar, remarcar ou alterar algo:
 - Responda IMEDIATAMENTE com [LISTAR_AGENDAMENTOS] no final da sua mensagem
-- NÃO pergunte detalhes do agendamento, o sistema irá mostrar botões automaticamente
-- Exemplo de resposta: "Claro, vou buscar seus agendamentos para que você possa selecionar qual deseja cancelar. [LISTAR_AGENDAMENTOS]"
+- NÃO pergunte detalhes antes de listar, o sistema vai mostrar os agendamentos automaticamente
+- APÓS mostrar os agendamentos, o sistema exibirá opções para o cliente escolher o que deseja fazer
+- Exemplo de resposta: "Claro! Vou buscar seus agendamentos. [LISTAR_AGENDAMENTOS]"
 
 ## Ações Especiais
 - Para escalar para humano, inclua [ESCALAR] no final da resposta
 - Para adicionar à fila de espera, inclua [FILA_ESPERA|serviço|data|horário] no final (use | como separador)
 - Para agendar, inclua [AGENDAR|serviço|profissional|data|horário|nome|telefone] no final (use | como separador, data no formato DD/MM/AAAA, horário no formato HH:MM)
-- Para buscar agendamentos do cliente (cancelamento), inclua [LISTAR_AGENDAMENTOS] no final
+- Para buscar agendamentos do cliente, inclua [LISTAR_AGENDAMENTOS] no final
 - Para notificar estabelecimento sobre horário não configurado, inclua [NOTIFICAR_HORARIO] no final`;
 
 // IMPORTANTE: O separador | é usado para evitar conflitos com : no horário (ex: 13:30)
@@ -1176,35 +1177,90 @@ serve(async (req) => {
 
     // Handle different actions
     if (action === 'start_conversation') {
-      // Create conversation with client info if available
-      const { data: conversation, error: convError } = await supabase
-        .from('ai_assistant_conversations')
-        .insert({
-          establishment_id: establishmentId,
-          client_id: clientId || null,
-          client_name: clientName || null,
-          client_phone: clientPhone || null,
-          channel: 'portal',
-          status: 'active',
-        })
-        .select()
-        .single();
+      // Check for existing conversation from last 24 hours for this client
+      const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+      let existingConversation = null;
+      let existingMessages: Array<{ sender_type: string; content: string; created_at: string }> = [];
 
-      if (convError) {
-        console.error('Error creating conversation:', convError);
-        throw convError;
+      if (clientId || clientPhone) {
+        // Find existing active conversation from last 24h
+        const conversationQuery = supabase
+          .from('ai_assistant_conversations')
+          .select('id, created_at')
+          .eq('establishment_id', establishmentId)
+          .eq('status', 'active')
+          .gte('created_at', last24h)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        if (clientId) {
+          conversationQuery.eq('client_id', clientId);
+        } else if (clientPhone) {
+          conversationQuery.eq('client_phone', clientPhone);
+        }
+
+        const { data: existingConv } = await conversationQuery.maybeSingle();
+        
+        if (existingConv) {
+          existingConversation = existingConv;
+          console.log('[AI-Assistant] Conversa existente encontrada:', existingConv.id);
+          
+          // Fetch messages from existing conversation
+          const { data: messages } = await supabase
+            .from('ai_assistant_messages')
+            .select('sender_type, content, created_at')
+            .eq('conversation_id', existingConv.id)
+            .order('created_at', { ascending: true });
+          
+          existingMessages = messages || [];
+          console.log('[AI-Assistant] Mensagens recuperadas:', existingMessages.length);
+        }
       }
 
-      // Send welcome message
-      const welcomeMessage = config.welcome_message || 
-        `Olá! Sou ${config.assistant_name}, assistente virtual do ${establishment.name}. Como posso ajudar?`;
+      let conversationId: string;
+      let welcomeMessage: string;
 
-      await supabase.from('ai_assistant_messages').insert({
-        conversation_id: conversation.id,
-        sender_type: 'assistant',
-        message_type: 'text',
-        content: welcomeMessage,
-      });
+      if (existingConversation && existingMessages.length > 0) {
+        // Resume existing conversation
+        conversationId = existingConversation.id;
+        welcomeMessage = ''; // No welcome message needed when resuming
+        
+        // Update the conversation's updated_at
+        await supabase
+          .from('ai_assistant_conversations')
+          .update({ updated_at: new Date().toISOString() })
+          .eq('id', conversationId);
+      } else {
+        // Create new conversation
+        const { data: conversation, error: convError } = await supabase
+          .from('ai_assistant_conversations')
+          .insert({
+            establishment_id: establishmentId,
+            client_id: clientId || null,
+            client_name: clientName || null,
+            client_phone: clientPhone || null,
+            channel: 'portal',
+            status: 'active',
+          })
+          .select()
+          .single();
+
+        if (convError) {
+          console.error('Error creating conversation:', convError);
+          throw convError;
+        }
+
+        conversationId = conversation.id;
+        welcomeMessage = config.welcome_message || 
+          `Olá! Sou ${config.assistant_name}, assistente virtual do ${establishment.name}. Como posso ajudar?`;
+
+        await supabase.from('ai_assistant_messages').insert({
+          conversation_id: conversationId,
+          sender_type: 'assistant',
+          message_type: 'text',
+          content: welcomeMessage,
+        });
+      }
 
       // Add offline notice if outside hours (only if hours are configured)
       let offlineNotice = null;
@@ -1214,10 +1270,15 @@ serve(async (req) => {
 
       return new Response(
         JSON.stringify({
-          conversationId: conversation.id,
+          conversationId,
           welcomeMessage,
           offlineNotice,
           assistantName: config.assistant_name,
+          existingMessages: existingMessages.map(m => ({
+            content: m.content,
+            senderType: m.sender_type,
+            createdAt: m.created_at,
+          })),
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
