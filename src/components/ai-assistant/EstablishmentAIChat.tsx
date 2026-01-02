@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { 
   MessageCircle, 
   X, 
@@ -11,7 +12,9 @@ import {
   Loader2,
   Bot,
   User,
-  AlertCircle
+  AlertCircle,
+  Calendar,
+  Check
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
@@ -22,6 +25,16 @@ interface Message {
   content: string;
   senderType: 'client' | 'assistant';
   createdAt: Date;
+  showAppointmentsList?: boolean;
+}
+
+interface Appointment {
+  id: string;
+  serviceName: string;
+  professionalName: string;
+  dateTime: string;
+  status: string;
+  price: number;
 }
 
 interface BrandColors {
@@ -60,6 +73,13 @@ export function EstablishmentAIChat({
   const [error, setError] = useState<string | null>(null);
   const [limitReached, setLimitReached] = useState(false);
   
+  // Cancellation flow state
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [selectedAppointments, setSelectedAppointments] = useState<string[]>([]);
+  const [showCancellationUI, setShowCancellationUI] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -68,7 +88,7 @@ export function EstablishmentAIChat({
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, showCancellationUI, showConfirmation]);
 
   // Focus input when chat opens
   useEffect(() => {
@@ -130,13 +150,95 @@ export function EstablishmentAIChat({
     } finally {
       setIsLoading(false);
     }
-  }, [conversationId, establishmentId]);
+  }, [conversationId, establishmentId, clientData]);
 
   useEffect(() => {
     if (isOpen && !conversationId) {
       startConversation();
     }
   }, [isOpen, conversationId, startConversation]);
+
+  const fetchAppointments = async () => {
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('establishment-ai-assistant', {
+        body: {
+          action: 'get_appointments',
+          establishmentId,
+          clientId: clientData?.id,
+          clientPhone: clientData?.phone,
+        },
+      });
+
+      if (fnError) throw fnError;
+
+      if (data.appointments && data.appointments.length > 0) {
+        setAppointments(data.appointments);
+        setShowCancellationUI(true);
+        setSelectedAppointments([]);
+      } else {
+        // No appointments found
+        const noApptMessage: Message = {
+          id: `no-appt-${Date.now()}`,
+          content: 'Não encontrei agendamentos futuros para você. Posso ajudar com algo mais?',
+          senderType: 'assistant',
+          createdAt: new Date(),
+        };
+        setMessages(prev => [...prev, noApptMessage]);
+      }
+    } catch (err) {
+      console.error('Error fetching appointments:', err);
+      setError('Erro ao buscar agendamentos.');
+    }
+  };
+
+  const handleCancelAppointments = async () => {
+    if (selectedAppointments.length === 0) return;
+
+    setIsCancelling(true);
+    setError(null);
+
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('establishment-ai-assistant', {
+        body: {
+          action: 'cancel_appointments',
+          establishmentId,
+          conversationId,
+          appointmentIds: selectedAppointments,
+          cancelReason: 'Cancelado pelo cliente via assistente virtual',
+        },
+      });
+
+      if (fnError) throw fnError;
+
+      // Add confirmation message
+      const confirmMessage: Message = {
+        id: `cancel-confirm-${Date.now()}`,
+        content: data.message || 'Agendamento(s) cancelado(s) com sucesso!',
+        senderType: 'assistant',
+        createdAt: new Date(),
+      };
+      setMessages(prev => [...prev, confirmMessage]);
+
+      // Reset state
+      setShowCancellationUI(false);
+      setShowConfirmation(false);
+      setAppointments([]);
+      setSelectedAppointments([]);
+    } catch (err) {
+      console.error('Error cancelling appointments:', err);
+      setError('Erro ao cancelar agendamentos. Tente novamente.');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const toggleAppointmentSelection = (id: string) => {
+    setSelectedAppointments(prev => 
+      prev.includes(id) 
+        ? prev.filter(a => a !== id) 
+        : [...prev, id]
+    );
+  };
 
   const sendMessage = async (messageContent: string) => {
     if (!messageContent.trim() || !conversationId || isLoading || limitReached) return;
@@ -183,9 +285,15 @@ export function EstablishmentAIChat({
         content: data.message,
         senderType: 'assistant',
         createdAt: new Date(),
+        showAppointmentsList: data.showAppointmentsList,
       };
 
       setMessages(prev => [...prev, assistantMessage]);
+
+      // If AI triggered appointments list, fetch them
+      if (data.showAppointmentsList) {
+        await fetchAppointments();
+      }
 
       // Handle escalation
       if (data.shouldEscalate) {
@@ -323,6 +431,121 @@ export function EstablishmentAIChat({
               </div>
             ))}
 
+            {/* Cancellation UI - Appointment Selection */}
+            {showCancellationUI && !showConfirmation && appointments.length > 0 && (
+              <div className="bg-muted/50 rounded-xl p-4 space-y-3">
+                <p className="text-sm font-medium text-foreground">
+                  Selecione os agendamentos que deseja cancelar:
+                </p>
+                <div className="space-y-2">
+                  {appointments.map((apt) => (
+                    <div
+                      key={apt.id}
+                      onClick={() => toggleAppointmentSelection(apt.id)}
+                      className={cn(
+                        "flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors",
+                        selectedAppointments.includes(apt.id)
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-background hover:bg-muted/50"
+                      )}
+                    >
+                      <Checkbox
+                        checked={selectedAppointments.includes(apt.id)}
+                        onCheckedChange={() => toggleAppointmentSelection(apt.id)}
+                        className="mt-0.5"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {apt.serviceName}
+                        </p>
+                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1">
+                          <Calendar className="h-3 w-3" />
+                          <span>{apt.dateTime}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          com {apt.professionalName}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowCancellationUI(false);
+                      setAppointments([]);
+                      setSelectedAppointments([]);
+                    }}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => setShowConfirmation(true)}
+                    disabled={selectedAppointments.length === 0}
+                    className="flex-1"
+                  >
+                    Continuar ({selectedAppointments.length})
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Confirmation Dialog */}
+            {showConfirmation && (
+              <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 space-y-3">
+                <p className="text-sm font-medium text-foreground">
+                  Confirmar cancelamento de {selectedAppointments.length} agendamento(s)?
+                </p>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  {appointments
+                    .filter(apt => selectedAppointments.includes(apt.id))
+                    .map(apt => (
+                      <li key={apt.id} className="flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
+                        {apt.serviceName} - {apt.dateTime}
+                      </li>
+                    ))
+                  }
+                </ul>
+                
+                <div className="flex gap-2 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowConfirmation(false)}
+                    disabled={isCancelling}
+                    className="flex-1"
+                  >
+                    Voltar
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleCancelAppointments}
+                    disabled={isCancelling}
+                    className="flex-1"
+                  >
+                    {isCancelling ? (
+                      <>
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        Cancelando...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="h-4 w-4 mr-2" />
+                        Confirmar
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {isLoading && (
               <div className="flex gap-2 justify-start">
                 <Avatar className="h-8 w-8 shrink-0">
@@ -364,13 +587,13 @@ export function EstablishmentAIChat({
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder="Digite sua mensagem..."
-              disabled={isLoading}
+              disabled={isLoading || showCancellationUI}
               className="flex-1"
             />
             <Button 
               type="submit" 
               size="icon"
-              disabled={!inputValue.trim() || isLoading}
+              disabled={!inputValue.trim() || isLoading || showCancellationUI}
               className="shrink-0"
             >
               {isLoading ? (

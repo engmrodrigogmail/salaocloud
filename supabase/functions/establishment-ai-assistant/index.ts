@@ -161,6 +161,69 @@ async function incrementUsage(establishmentId: string): Promise<void> {
   }
 }
 
+async function getClientFutureAppointments(establishmentId: string, clientId?: string, clientPhone?: string): Promise<any[]> {
+  if (!clientId && !clientPhone) return [];
+
+  const now = new Date().toISOString();
+  
+  let query = supabase
+    .from('appointments')
+    .select(`
+      id,
+      scheduled_at,
+      status,
+      client_name,
+      client_phone,
+      service:services(id, name, price),
+      professional:professionals(id, name)
+    `)
+    .eq('establishment_id', establishmentId)
+    .in('status', ['pending', 'confirmed'])
+    .gte('scheduled_at', now)
+    .order('scheduled_at', { ascending: true });
+
+  if (clientId) {
+    query = query.eq('client_id', clientId);
+  } else if (clientPhone) {
+    const phoneClean = clientPhone.replace(/\D/g, '');
+    query = query.eq('client_phone', phoneClean);
+  }
+
+  const { data, error } = await query;
+  
+  if (error) {
+    console.error('Error fetching appointments:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+async function cancelAppointments(appointmentIds: string[], reason: string): Promise<{ success: boolean; cancelled: number; errors: string[] }> {
+  const errors: string[] = [];
+  let cancelled = 0;
+
+  for (const id of appointmentIds) {
+    const { error } = await supabase
+      .from('appointments')
+      .update({
+        status: 'cancelled',
+        cancelled_reason: reason,
+        cancelled_via_whatsapp: false,
+      })
+      .eq('id', id);
+
+    if (error) {
+      console.error(`Error cancelling appointment ${id}:`, error);
+      errors.push(id);
+    } else {
+      cancelled++;
+    }
+  }
+
+  return { success: errors.length === 0, cancelled, errors };
+}
+
 function buildSystemPrompt(config: AssistantConfig, establishment: EstablishmentData, clientInfo?: { name?: string; phone?: string }): string {
   const styleGuide = config.language_style === 'formal'
     ? 'Use linguagem formal e profissional. Trate o cliente por "senhor(a)".'
@@ -226,9 +289,10 @@ ${clientContext}
 ## Suas Capacidades
 1. **Agendamentos**: Ajudar clientes a agendar serviços
 2. **Remarcações**: Auxiliar na remarcação de agendamentos existentes
-3. **Promoções**: Informar sobre promoções ativas
-4. **Fila de Espera**: Se a data/hora desejada estiver ocupada, oferecer alternativas ou adicionar à fila de espera
-5. **Informações**: Responder dúvidas sobre serviços, preços e funcionamento
+3. **Cancelamentos**: Ajudar clientes a cancelar agendamentos
+4. **Promoções**: Informar sobre promoções ativas
+5. **Fila de Espera**: Se a data/hora desejada estiver ocupada, oferecer alternativas ou adicionar à fila de espera
+6. **Informações**: Responder dúvidas sobre serviços, preços e funcionamento
 
 ## Serviços Disponíveis
 ${servicesInfo || 'Nenhum serviço cadastrado.'}
@@ -254,10 +318,17 @@ ${config.custom_instructions || 'Sem instruções adicionais.'}
 9. Se não conseguir resolver, ofereça encaminhar para atendimento humano
 10. USE A DATA ATUAL CORRETA: Hoje é ${diaAtual}/${mesAtual}/${anoAtual}. Amanhã é ${new Date(brasiliaTime.getTime() + 24 * 60 * 60 * 1000).getDate().toString().padStart(2, '0')}/${mesAtual}/${anoAtual}. NUNCA invente datas!
 
+## CANCELAMENTOS - REGRA ESPECIAL
+Quando o cliente mencionar palavras como "cancelar", "desmarcar", "não vou poder ir", "preciso desmarcar":
+- Responda IMEDIATAMENTE com [LISTAR_AGENDAMENTOS] no final da sua mensagem
+- NÃO pergunte detalhes do agendamento, o sistema irá mostrar botões automaticamente
+- Exemplo de resposta: "Claro, vou buscar seus agendamentos para que você possa selecionar qual deseja cancelar. [LISTAR_AGENDAMENTOS]"
+
 ## Ações Especiais
 - Para escalar para humano, inclua [ESCALAR] no final da resposta
 - Para adicionar à fila de espera, inclua [FILA_ESPERA:serviço:data:horário] no final
 - Para agendar, inclua [AGENDAR:serviço:profissional:data:horário:nome:telefone] no final
+- Para buscar agendamentos do cliente (cancelamento), inclua [LISTAR_AGENDAMENTOS] no final
 
 Telefone do estabelecimento: ${establishment.phone || 'Não informado'}`;
 }
@@ -290,6 +361,22 @@ function isWithinWorkingHours(workingHours: any): boolean {
   return isWithin;
 }
 
+function formatAppointmentDate(dateString: string): string {
+  const date = new Date(dateString);
+  const brasiliaOffset = -3 * 60;
+  const localOffset = date.getTimezoneOffset();
+  const brasiliaTime = new Date(date.getTime() + (localOffset + brasiliaOffset) * 60 * 1000);
+  
+  const diasSemana = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  const dia = brasiliaTime.getDate().toString().padStart(2, '0');
+  const mes = (brasiliaTime.getMonth() + 1).toString().padStart(2, '0');
+  const hora = brasiliaTime.getHours().toString().padStart(2, '0');
+  const minuto = brasiliaTime.getMinutes().toString().padStart(2, '0');
+  const diaSemana = diasSemana[brasiliaTime.getDay()];
+  
+  return `${diaSemana}, ${dia}/${mes} às ${hora}:${minuto}`;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -306,6 +393,8 @@ serve(async (req) => {
       clientName,
       clientPhone,
       clientId,
+      appointmentIds,
+      cancelReason,
     } = await req.json();
 
     console.log('AI Assistant request:', { action, establishmentId, conversationId, messageType });
@@ -398,6 +487,62 @@ serve(async (req) => {
       );
     }
 
+    // Action: Get client's future appointments for cancellation
+    if (action === 'get_appointments') {
+      const appointments = await getClientFutureAppointments(establishmentId, clientId, clientPhone);
+      
+      const formattedAppointments = appointments.map(apt => ({
+        id: apt.id,
+        serviceName: apt.service?.name || 'Serviço',
+        professionalName: apt.professional?.name || 'Profissional',
+        dateTime: formatAppointmentDate(apt.scheduled_at),
+        status: apt.status,
+        price: apt.service?.price || 0,
+      }));
+
+      return new Response(
+        JSON.stringify({ appointments: formattedAppointments }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Action: Cancel selected appointments
+    if (action === 'cancel_appointments') {
+      if (!appointmentIds || appointmentIds.length === 0) {
+        return new Response(
+          JSON.stringify({ error: 'Nenhum agendamento selecionado.' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const result = await cancelAppointments(appointmentIds, cancelReason || 'Cancelado pelo cliente via assistente virtual');
+      
+      // Save cancellation message to conversation
+      if (conversationId) {
+        const cancelMessage = result.success
+          ? `✅ ${result.cancelled} agendamento(s) cancelado(s) com sucesso!`
+          : `⚠️ ${result.cancelled} agendamento(s) cancelado(s), mas houve ${result.errors.length} erro(s).`;
+
+        await supabase.from('ai_assistant_messages').insert({
+          conversation_id: conversationId,
+          sender_type: 'assistant',
+          message_type: 'text',
+          content: cancelMessage,
+        });
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: result.success,
+          cancelled: result.cancelled,
+          message: result.success 
+            ? `${result.cancelled} agendamento(s) cancelado(s) com sucesso!`
+            : `Alguns agendamentos não puderam ser cancelados.`
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     if (action === 'send_message') {
       if (!conversationId || !message) {
         return new Response(
@@ -471,6 +616,13 @@ serve(async (req) => {
       let shouldEscalate = false;
       let waitlistData = null;
       let scheduleData = null;
+      let showAppointmentsList = false;
+
+      // Check for cancellation flow trigger
+      if (assistantMessage.includes('[LISTAR_AGENDAMENTOS]')) {
+        showAppointmentsList = true;
+        assistantMessage = assistantMessage.replace('[LISTAR_AGENDAMENTOS]', '').trim();
+      }
 
       if (assistantMessage.includes('[ESCALAR]')) {
         shouldEscalate = true;
@@ -570,7 +722,7 @@ serve(async (req) => {
         sender_type: 'assistant',
         message_type: 'text',
         content: assistantMessage,
-        metadata: { waitlistData, scheduleData, shouldEscalate },
+        metadata: { waitlistData, scheduleData, shouldEscalate, showAppointmentsList },
       });
 
       // Increment usage
@@ -582,6 +734,7 @@ serve(async (req) => {
           shouldEscalate,
           waitlistData,
           scheduleData,
+          showAppointmentsList,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
