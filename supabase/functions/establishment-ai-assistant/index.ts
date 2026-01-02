@@ -426,24 +426,26 @@ function formatWorkingHours(workingHours: any): string {
     return 'HORÁRIO NÃO CONFIGURADO - O estabelecimento NÃO informou o horário de funcionamento. SIGA O PROTOCOLO DE HORÁRIO NÃO CONFIGURADO.';
   }
   
-  const days: Record<string, string> = {
-    monday: 'Segunda',
-    tuesday: 'Terça',
-    wednesday: 'Quarta',
-    thursday: 'Quinta',
-    friday: 'Sexta',
-    saturday: 'Sábado',
-    sunday: 'Domingo',
-  };
+  // Support both formats: 
+  // - Named keys: { monday: { enabled, start, end }, ... }
+  // - Numeric keys: { 0: { enabled, open, close }, ... } where 0=Sunday, 1=Monday, etc.
+  const dayLabels = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+  const namedDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   
   const lines: string[] = [];
   let hasAnyDayConfigured = false;
   
-  for (const [key, label] of Object.entries(days)) {
-    const day = workingHours[key];
+  for (let i = 0; i < 7; i++) {
+    // Try numeric key first, then named key
+    const day = workingHours[i.toString()] || workingHours[i] || workingHours[namedDays[i]];
+    const label = dayLabels[i];
+    
     if (day?.enabled) {
       hasAnyDayConfigured = true;
-      lines.push(`- ${label}: ${day.start} às ${day.end}`);
+      // Support both start/end and open/close formats
+      const startTime = day.start || day.open;
+      const endTime = day.end || day.close;
+      lines.push(`- ${label}: ${startTime} às ${endTime}`);
     } else if (day && day.enabled === false) {
       // Explicitly marked as closed
       lines.push(`- ${label}: Fechado`);
@@ -627,9 +629,17 @@ function isWorkingHoursConfigured(workingHours: any): boolean {
     return false;
   }
   
-  // Check if at least one day is configured
-  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  return days.some(day => workingHours[day]?.enabled === true || workingHours[day]?.enabled === false);
+  // Support both formats: numeric keys (0-6) and named keys (sunday-saturday)
+  const namedDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  
+  for (let i = 0; i < 7; i++) {
+    const day = workingHours[i.toString()] || workingHours[i] || workingHours[namedDays[i]];
+    if (day?.enabled === true || day?.enabled === false) {
+      return true;
+    }
+  }
+  
+  return false;
 }
 
 function isWithinWorkingHours(workingHours: any): { configured: boolean; withinHours: boolean } {
@@ -639,9 +649,18 @@ function isWithinWorkingHours(workingHours: any): { configured: boolean; withinH
     return { configured: false, withinHours: false };
   }
 
+  // Support both formats: numeric keys (0-6) and named keys (sunday-saturday)
+  const namedDays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  
   // Check if any day has configuration
-  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-  const hasAnyConfig = days.some(day => workingHours[day]?.enabled === true || workingHours[day]?.enabled === false);
+  let hasAnyConfig = false;
+  for (let i = 0; i < 7; i++) {
+    const day = workingHours[i.toString()] || workingHours[i] || workingHours[namedDays[i]];
+    if (day?.enabled === true || day?.enabled === false) {
+      hasAnyConfig = true;
+      break;
+    }
+  }
   
   if (!hasAnyConfig) {
     console.log('[AI-Assistant] Nenhum dia configurado no horário');
@@ -654,35 +673,39 @@ function isWithinWorkingHours(workingHours: any): { configured: boolean; withinH
   const localOffset = now.getTimezoneOffset(); // Offset local em minutos
   const brasiliaTime = new Date(now.getTime() + (localOffset + brasiliaOffset) * 60 * 1000);
   
-  const today = days[brasiliaTime.getDay()];
-  const todayConfig = workingHours[today];
+  const dayIndex = brasiliaTime.getDay();
+  // Try numeric key first, then named key
+  const todayConfig = workingHours[dayIndex.toString()] || workingHours[dayIndex] || workingHours[namedDays[dayIndex]];
 
   // If this specific day is not configured, consider closed (not explicitly open)
   if (!todayConfig || todayConfig.enabled === undefined) {
-    console.log(`[AI-Assistant] Dia ${today} não configurado - considerando fechado`);
+    console.log(`[AI-Assistant] Dia ${dayIndex} (${namedDays[dayIndex]}) não configurado - considerando fechado`);
     return { configured: true, withinHours: false };
   }
 
   // If day exists but is explicitly disabled
   if (todayConfig.enabled === false) {
-    console.log(`[AI-Assistant] Dia ${today} explicitamente fechado`);
+    console.log(`[AI-Assistant] Dia ${dayIndex} (${namedDays[dayIndex]}) explicitamente fechado`);
     return { configured: true, withinHours: false };
   }
 
-  // If day is enabled, check time range
-  if (todayConfig.enabled && todayConfig.start && todayConfig.end) {
+  // If day is enabled, check time range - support both start/end and open/close formats
+  const startTime = todayConfig.start || todayConfig.open;
+  const endTime = todayConfig.end || todayConfig.close;
+  
+  if (todayConfig.enabled && startTime && endTime) {
     const hours = brasiliaTime.getHours().toString().padStart(2, '0');
     const minutes = brasiliaTime.getMinutes().toString().padStart(2, '0');
     const currentTime = `${hours}:${minutes}`;
     
-    const isWithin = currentTime >= todayConfig.start && currentTime <= todayConfig.end;
-    console.log(`[AI-Assistant] Horário atual (BRT): ${currentTime}, Configurado: ${todayConfig.start}-${todayConfig.end}, Dentro: ${isWithin}`);
+    const isWithin = currentTime >= startTime && currentTime <= endTime;
+    console.log(`[AI-Assistant] Horário atual (BRT): ${currentTime}, Configurado: ${startTime}-${endTime}, Dentro: ${isWithin}`);
     
     return { configured: true, withinHours: isWithin };
   }
 
   // Default to closed if configuration is incomplete
-  console.log(`[AI-Assistant] Configuração incompleta para ${today} - considerando fechado`);
+  console.log(`[AI-Assistant] Configuração incompleta para dia ${dayIndex} - considerando fechado`);
   return { configured: true, withinHours: false };
 }
 
