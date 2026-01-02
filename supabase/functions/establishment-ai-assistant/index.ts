@@ -48,23 +48,38 @@ interface AssistantConfig {
 }
 
 // ============= Centralized Date/Time Utilities =============
-// Brazil timezone: UTC-3, format: dd/MM/yyyy HH:mm
-const BRAZIL_OFFSET_MINUTES = -180; // UTC-3
+// IMPORTANT: This runtime typically runs in UTC. We need helpers that make
+// Date#getHours()/getDay() reflect Brazil (America/Sao_Paulo) wall-clock time.
+// We do that by shifting the underlying timestamp by the difference between
+// the current runtime timezone and Brazil's timezone.
+//
+// In JS, getTimezoneOffset() returns minutes to add to LOCAL time to get UTC.
+// For Brazil (UTC-3), that offset is 180.
+const BRAZIL_TZ_OFFSET_MINUTES = 180; // UTC-3
+
+function shiftToBrazilWallClock(date: Date): Date {
+  const localOffset = date.getTimezoneOffset();
+  // T' = T + (localOffset - brazilOffset)
+  return new Date(date.getTime() + (localOffset - BRAZIL_TZ_OFFSET_MINUTES) * 60 * 1000);
+}
+
+function unshiftFromBrazilWallClock(brazilWallClockDate: Date): Date {
+  const localOffset = brazilWallClockDate.getTimezoneOffset();
+  // T = T' + (brazilOffset - localOffset)
+  return new Date(brazilWallClockDate.getTime() + (BRAZIL_TZ_OFFSET_MINUTES - localOffset) * 60 * 1000);
+}
 
 function getBrazilNow(): Date {
-  const now = new Date();
-  const localOffset = now.getTimezoneOffset();
-  return new Date(now.getTime() + (localOffset - BRAZIL_OFFSET_MINUTES) * 60 * 1000);
+  return shiftToBrazilWallClock(new Date());
 }
 
 function utcToBrazil(utcDate: Date | string): Date {
   const date = typeof utcDate === 'string' ? new Date(utcDate) : utcDate;
-  const localOffset = date.getTimezoneOffset();
-  return new Date(date.getTime() + (localOffset - BRAZIL_OFFSET_MINUTES) * 60 * 1000);
+  return shiftToBrazilWallClock(date);
 }
 
 function brazilToUtc(brazilDate: Date): Date {
-  return new Date(brazilDate.getTime() + 3 * 60 * 60 * 1000);
+  return unshiftFromBrazilWallClock(brazilDate);
 }
 
 function formatBrazilDateTime(date: Date, options?: { dateOnly?: boolean; timeOnly?: boolean }): string {

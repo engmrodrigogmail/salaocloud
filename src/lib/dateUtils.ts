@@ -9,33 +9,44 @@ import { ptBR } from 'date-fns/locale';
 
 // Timezone identifier for Brazil
 export const BRAZIL_TIMEZONE = 'America/Sao_Paulo';
-export const BRAZIL_OFFSET_MINUTES = -180; // UTC-3 = -180 minutes
 
-/**
- * Get current date/time in Brazil timezone
- */
-export function getBrazilNow(): Date {
-  const now = new Date();
-  const localOffset = now.getTimezoneOffset();
-  const brazilOffset = BRAZIL_OFFSET_MINUTES;
-  return new Date(now.getTime() + (localOffset - brazilOffset) * 60 * 1000);
+// In JS, getTimezoneOffset() returns minutes to add to LOCAL time to get UTC.
+// For Brazil (UTC-3), that offset is 180.
+export const BRAZIL_TZ_OFFSET_MINUTES = 180;
+
+function shiftToBrazilWallClock(date: Date): Date {
+  const localOffset = date.getTimezoneOffset();
+  return new Date(date.getTime() + (localOffset - BRAZIL_TZ_OFFSET_MINUTES) * 60 * 1000);
+}
+
+function unshiftFromBrazilWallClock(brazilWallClockDate: Date): Date {
+  const localOffset = brazilWallClockDate.getTimezoneOffset();
+  return new Date(
+    brazilWallClockDate.getTime() + (BRAZIL_TZ_OFFSET_MINUTES - localOffset) * 60 * 1000
+  );
 }
 
 /**
- * Convert a UTC date to Brazil timezone
+ * Get current date/time in Brazil wall-clock (safe even if user's browser is in another timezone).
+ */
+export function getBrazilNow(): Date {
+  return shiftToBrazilWallClock(new Date());
+}
+
+/**
+ * Convert a UTC date (ISO from DB) to Brazil wall-clock date (for getHours/getDay consistency).
  */
 export function utcToBrazil(utcDate: Date | string): Date {
   const date = typeof utcDate === 'string' ? parseISO(utcDate) : utcDate;
-  const localOffset = date.getTimezoneOffset();
-  const brazilOffset = BRAZIL_OFFSET_MINUTES;
-  return new Date(date.getTime() + (localOffset - brazilOffset) * 60 * 1000);
+  return shiftToBrazilWallClock(date);
 }
 
 /**
- * Convert a Brazil timezone date to UTC for storage
+ * Convert a Brazil wall-clock Date back to the real UTC instant.
+ * Use when you created a Date from Brazil day/hour (e.g., user input) and need to store/query in UTC.
  */
 export function brazilToUtc(brazilDate: Date): Date {
-  return new Date(brazilDate.getTime() + 3 * 60 * 60 * 1000);
+  return unshiftFromBrazilWallClock(brazilDate);
 }
 
 /**
