@@ -22,6 +22,7 @@ import {
   MessageCircle,
   Package,
   Brain,
+  Tag,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -87,7 +88,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
     { href: `/portal/${slug}/fidelidade`, label: "Fidelidade", icon: Star },
     { href: `/portal/${slug}/promocoes`, label: "Promoções", icon: Gift },
     { href: `/portal/${slug}/comissoes`, label: "Comissões", icon: DollarSign },
-    { href: `/portal/${slug}/cupons`, label: "Cupons", icon: CreditCard },
+    { href: `/portal/${slug}/cupons`, label: "Cupons", icon: Tag },
     { href: `/portal/${slug}/assistente-ia`, label: "Assistente IA", icon: Bot },
     { href: `/portal/${slug}/conversas-ia`, label: "Conversas IA", icon: MessageCircle },
     { href: `/portal/${slug}/aprendizados-ia`, label: "Aprendizados IA", icon: Brain },
