@@ -421,7 +421,10 @@ function brasiliaToUTC(brasiliaDate: Date): Date {
 }
 
 function formatWorkingHours(workingHours: any): string {
-  if (!workingHours) return 'Horário não definido';
+  // Check if working_hours is empty or not defined - means always open (not configured)
+  if (!workingHours || Object.keys(workingHours).length === 0) {
+    return 'Horário de funcionamento não configurado - considere que o estabelecimento está ABERTO em horário comercial normal (seg-sex 9h-18h, sáb 9h-13h)';
+  }
   
   const days: Record<string, string> = {
     monday: 'Segunda',
@@ -434,14 +437,27 @@ function formatWorkingHours(workingHours: any): string {
   };
   
   const lines: string[] = [];
+  let hasAnyDayConfigured = false;
+  
   for (const [key, label] of Object.entries(days)) {
     const day = workingHours[key];
     if (day?.enabled) {
+      hasAnyDayConfigured = true;
       lines.push(`- ${label}: ${day.start} às ${day.end}`);
-    } else {
+    } else if (day && day.enabled === false) {
+      // Explicitly marked as closed
       lines.push(`- ${label}: Fechado`);
+    } else {
+      // Not configured - don't say it's closed
+      lines.push(`- ${label}: Não configurado (considere aberto em horário comercial)`);
     }
   }
+  
+  // If no day is configured, return default message
+  if (!hasAnyDayConfigured) {
+    return 'Horário de funcionamento não configurado - considere que o estabelecimento está ABERTO em horário comercial normal (seg-sex 9h-18h, sáb 9h-13h)';
+  }
+  
   return lines.join('\n');
 }
 
@@ -598,7 +614,11 @@ Quando o cliente mencionar palavras como "cancelar", "desmarcar", "não vou pode
 }
 
 function isWithinWorkingHours(workingHours: any): boolean {
-  if (!workingHours) return true;
+  // If working_hours is null, undefined, or empty object - consider always open
+  if (!workingHours || Object.keys(workingHours).length === 0) {
+    console.log('[AI-Assistant] Horário não configurado - considerando sempre aberto');
+    return true;
+  }
 
   // Converter para horário de Brasília (UTC-3)
   const now = new Date();
@@ -610,19 +630,33 @@ function isWithinWorkingHours(workingHours: any): boolean {
   const today = days[brasiliaTime.getDay()];
   const todayConfig = workingHours[today];
 
-  if (!todayConfig?.enabled) {
-    console.log(`[AI-Assistant] Dia ${today} não está habilitado`);
+  // If this specific day is not configured, assume open (not explicitly closed)
+  if (!todayConfig) {
+    console.log(`[AI-Assistant] Dia ${today} não configurado - considerando aberto`);
+    return true;
+  }
+
+  // If day exists but is explicitly disabled
+  if (todayConfig.enabled === false) {
+    console.log(`[AI-Assistant] Dia ${today} explicitamente fechado`);
     return false;
   }
 
-  const hours = brasiliaTime.getHours().toString().padStart(2, '0');
-  const minutes = brasiliaTime.getMinutes().toString().padStart(2, '0');
-  const currentTime = `${hours}:${minutes}`;
-  
-  const isWithin = currentTime >= todayConfig.start && currentTime <= todayConfig.end;
-  console.log(`[AI-Assistant] Horário atual (BRT): ${currentTime}, Configurado: ${todayConfig.start}-${todayConfig.end}, Dentro: ${isWithin}`);
-  
-  return isWithin;
+  // If day is enabled, check time range
+  if (todayConfig.enabled && todayConfig.start && todayConfig.end) {
+    const hours = brasiliaTime.getHours().toString().padStart(2, '0');
+    const minutes = brasiliaTime.getMinutes().toString().padStart(2, '0');
+    const currentTime = `${hours}:${minutes}`;
+    
+    const isWithin = currentTime >= todayConfig.start && currentTime <= todayConfig.end;
+    console.log(`[AI-Assistant] Horário atual (BRT): ${currentTime}, Configurado: ${todayConfig.start}-${todayConfig.end}, Dentro: ${isWithin}`);
+    
+    return isWithin;
+  }
+
+  // Default to open if configuration is incomplete
+  console.log(`[AI-Assistant] Configuração incompleta para ${today} - considerando aberto`);
+  return true;
 }
 
 function formatAppointmentDate(dateString: string): string {
