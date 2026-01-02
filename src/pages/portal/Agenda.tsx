@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
   Calendar, Clock, ChevronLeft, ChevronRight, 
-  Check, X, Loader2, Search, Edit, Trash2, Filter, Ban
+  Check, X, Loader2, Search, Edit, Trash2, Ban
 } from "lucide-react";
 import { BlockScheduleDialog } from "@/components/schedule/BlockScheduleDialog";
 import { BlockedTimesList } from "@/components/schedule/BlockedTimesList";
@@ -404,32 +404,58 @@ export default function PortalAgenda() {
 
   return (
     <PortalLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold">Agenda</h1>
-            <p className="text-muted-foreground">Visualize e gerencie todos os agendamentos</p>
+      <div className="space-y-4 md:space-y-6">
+        {/* Header - Compact for mobile */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl md:text-3xl font-bold">Agenda</h1>
+            <div className="flex items-center gap-1 md:gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setCurrentDate(new Date())}
+                className="h-8 px-2 md:px-3"
+              >
+                Hoje
+              </Button>
+              <Select value={viewMode} onValueChange={(v: "day" | "week" | "month" | "year") => setViewMode(v)}>
+                <SelectTrigger className="w-24 md:w-32 h-8">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">Dia</SelectItem>
+                  <SelectItem value="week">Semana</SelectItem>
+                  <SelectItem value="month">Mês</SelectItem>
+                  <SelectItem value="year">Ano</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {establishment?.id && <CancelledHistoryDialog establishmentId={establishment.id} />}
-            <Button variant="outline" onClick={() => setBlockDialogOpen(true)}>
-              <Ban className="h-4 w-4 mr-2" />
-              Bloquear Agenda
+          
+          {/* Date Navigation - Inline with actions on mobile */}
+          <div className="flex items-center justify-between bg-muted/50 rounded-lg p-2">
+            <Button variant="ghost" size="icon" onClick={() => navigateDate(-1)} className="h-8 w-8">
+              <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Select value={viewMode} onValueChange={(v: "day" | "week" | "month" | "year") => setViewMode(v)}>
-              <SelectTrigger className="w-32">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="day">Diária</SelectItem>
-                <SelectItem value="week">Semanal</SelectItem>
-                <SelectItem value="month">Mensal</SelectItem>
-                <SelectItem value="year">Anual</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button variant="outline" onClick={() => setCurrentDate(new Date())}>
-              Hoje
+            <h2 className="text-sm md:text-base font-medium capitalize text-center flex-1 truncate px-2">
+              {getDateLabel()}
+            </h2>
+            <Button variant="ghost" size="icon" onClick={() => navigateDate(1)} className="h-8 w-8">
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Action buttons - Compact row */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+            {establishment?.id && <CancelledHistoryDialog establishmentId={establishment.id} />}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => setBlockDialogOpen(true)}
+              className="h-8 whitespace-nowrap"
+            >
+              <Ban className="h-3.5 w-3.5 mr-1.5" />
+              Bloquear
             </Button>
           </div>
         </div>
@@ -452,77 +478,61 @@ export default function PortalAgenda() {
           onRefresh={() => {}}
         />
 
-        {/* Filters */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex flex-wrap items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Filter className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Filtros:</span>
+        {/* Filters - Collapsible on mobile */}
+        <Card className="overflow-hidden">
+          <CardContent className="p-3 md:p-4">
+            <div className="space-y-3">
+              {/* Search - Full width on mobile */}
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar cliente, serviço..."
+                  value={filterSearch}
+                  onChange={(e) => setFilterSearch(e.target.value)}
+                  className="pl-10 h-9"
+                />
               </div>
-              <div className="flex-1 min-w-[200px]">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por nome, CPF, celular..."
-                    value={filterSearch}
-                    onChange={(e) => setFilterSearch(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+              
+              {/* Filter selects - Row on all sizes */}
+              <div className="flex gap-2">
+                <Select value={filterService} onValueChange={setFilterService}>
+                  <SelectTrigger className="flex-1 h-9 text-xs md:text-sm">
+                    <SelectValue placeholder="Serviço" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos Serviços</SelectItem>
+                    {services.map(s => (
+                      <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={filterProfessional} onValueChange={setFilterProfessional}>
+                  <SelectTrigger className="flex-1 h-9 text-xs md:text-sm">
+                    <SelectValue placeholder="Profissional" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos Profissionais</SelectItem>
+                    {professionals.map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <Select value={filterService} onValueChange={setFilterService}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Serviço" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos Serviços</SelectItem>
-                  {services.map(s => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select value={filterProfessional} onValueChange={setFilterProfessional}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Profissional" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos Profissionais</SelectItem>
-                  {professionals.map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             </div>
           </CardContent>
         </Card>
 
-        {/* Date Navigation */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <Button variant="outline" size="icon" onClick={() => navigateDate(-1)}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <div className="text-center">
-                <h2 className="text-lg font-semibold capitalize">{getDateLabel()}</h2>
-              </div>
-              <Button variant="outline" size="icon" onClick={() => navigateDate(1)}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="flex items-center justify-center gap-6 mt-4">
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-green-500/30 border border-green-500" />
-                <span className="text-sm">Livre</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded bg-red-500/30 border border-red-500" />
-                <span className="text-sm">Ocupado</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Legend - Compact inline */}
+        <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-green-500/30 border border-green-500" />
+            <span>Livre</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-3 h-3 rounded bg-red-500/30 border border-red-500" />
+            <span>Ocupado</span>
+          </div>
+        </div>
 
         {/* Calendar Grid */}
         {loading ? (
