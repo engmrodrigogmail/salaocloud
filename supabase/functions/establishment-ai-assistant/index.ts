@@ -997,10 +997,12 @@ Quando o cliente mencionar palavras como "cancelar", "desmarcar", "não vou pode
 
 ## Ações Especiais
 - Para escalar para humano, inclua [ESCALAR] no final da resposta
-- Para adicionar à fila de espera, inclua [FILA_ESPERA:serviço:data:horário] no final
-- Para agendar, inclua [AGENDAR:serviço:profissional:data:horário:nome:telefone] no final (use a data no formato DD/MM/AAAA)
+- Para adicionar à fila de espera, inclua [FILA_ESPERA|serviço|data|horário] no final (use | como separador)
+- Para agendar, inclua [AGENDAR|serviço|profissional|data|horário|nome|telefone] no final (use | como separador, data no formato DD/MM/AAAA, horário no formato HH:MM)
 - Para buscar agendamentos do cliente (cancelamento), inclua [LISTAR_AGENDAMENTOS] no final
 - Para notificar estabelecimento sobre horário não configurado, inclua [NOTIFICAR_HORARIO] no final`;
+
+// IMPORTANTE: O separador | é usado para evitar conflitos com : no horário (ex: 13:30)
 }
 
 function isWorkingHoursConfigured(workingHours: any): boolean {
@@ -1455,31 +1457,42 @@ serve(async (req) => {
         }
       }
 
-      const waitlistMatch = assistantMessage.match(/\[FILA_ESPERA:([^:]+):([^:]+):([^\]]+)\]/);
+      // Support both | and : separators for backward compatibility
+      const waitlistMatchPipe = assistantMessage.match(/\[FILA_ESPERA\|([^|]+)\|([^|]+)\|([^\]]+)\]/);
+      const waitlistMatchColon = assistantMessage.match(/\[FILA_ESPERA:([^:]+):([^:]+):([^\]]+)\]/);
+      const waitlistMatch = waitlistMatchPipe || waitlistMatchColon;
       if (waitlistMatch) {
         waitlistData = {
-          service: waitlistMatch[1],
-          date: waitlistMatch[2],
-          time: waitlistMatch[3],
+          service: waitlistMatch[1].trim(),
+          date: waitlistMatch[2].trim(),
+          time: waitlistMatch[3].trim(),
         };
         assistantMessage = assistantMessage.replace(waitlistMatch[0], '').trim();
+        console.log('[AI-Assistant] Fila de espera detectada:', waitlistData);
       }
 
-      const scheduleMatch = assistantMessage.match(/\[AGENDAR:([^:]+):([^:]+):([^:]+):([^:]+):([^:]+):([^\]]+)\]/);
+      // Support both | and : separators for backward compatibility
+      // IMPORTANT: | separator is preferred because : conflicts with time format (13:30)
+      const scheduleMatchPipe = assistantMessage.match(/\[AGENDAR\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^|]+)\|([^\]]+)\]/);
+      // For colon separator, be more careful with time format - capture HH:MM as a single group
+      const scheduleMatchColon = assistantMessage.match(/\[AGENDAR:([^:]+):([^:]+):([^:]+):(\d{1,2}:\d{2}):([^:]+):([^\]]+)\]/);
+      const scheduleMatch = scheduleMatchPipe || scheduleMatchColon;
+      
       if (scheduleMatch) {
         scheduleData = {
-          service: scheduleMatch[1],
-          professional: scheduleMatch[2],
-          date: scheduleMatch[3],
-          time: scheduleMatch[4],
-          name: scheduleMatch[5],
-          phone: scheduleMatch[6],
+          service: scheduleMatch[1].trim(),
+          professional: scheduleMatch[2].trim(),
+          date: scheduleMatch[3].trim(),
+          time: scheduleMatch[4].trim(),
+          name: scheduleMatch[5].trim(),
+          phone: scheduleMatch[6].trim(),
         };
         assistantMessage = assistantMessage.replace(scheduleMatch[0], '').trim();
 
         // Actually create the appointment in the database
         try {
-          console.log('[AI-Assistant] Tentando criar agendamento:', scheduleData);
+          console.log('[AI-Assistant] Tentando criar agendamento:', JSON.stringify(scheduleData));
+          console.log('[AI-Assistant] Regex usado:', scheduleMatchPipe ? 'pipe (|)' : 'colon (:)');
           
           // Find service by name (case-insensitive partial match)
           const { data: serviceData } = await supabase
@@ -1510,6 +1523,7 @@ serve(async (req) => {
               scheduleData.error = 'Profissional não encontrado';
             } else {
               // Parse date using the robust function
+              console.log('[AI-Assistant] Parseando data:', scheduleData.date, 'e horário:', scheduleData.time);
               const scheduledDateBrasilia = parseBrazilianDateLocal(scheduleData.date, scheduleData.time);
               
               if (!scheduledDateBrasilia) {
@@ -1518,6 +1532,12 @@ serve(async (req) => {
               } else {
                 // Check if the date is in the past
                 const nowBrasilia = getBrazilNow();
+                
+                console.log('[AI-Assistant] Data parseada (Brasília wall-clock):', formatBrazilDateTime(scheduledDateBrasilia));
+                console.log('[AI-Assistant] Agora (Brasília wall-clock):', formatBrazilDateTime(nowBrasilia));
+                console.log('[AI-Assistant] scheduledDateBrasilia.getTime():', scheduledDateBrasilia.getTime());
+                console.log('[AI-Assistant] nowBrasilia.getTime():', nowBrasilia.getTime());
+                console.log('[AI-Assistant] É passado?:', scheduledDateBrasilia < nowBrasilia);
                 
                 if (scheduledDateBrasilia < nowBrasilia) {
                   console.error('[AI-Assistant] Data no passado:', formatBrazilDateTime(scheduledDateBrasilia));
