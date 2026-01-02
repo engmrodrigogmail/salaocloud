@@ -49,7 +49,7 @@ import InternoComandas from "./pages/interno/Comandas";
 import PortalAgenda from "./pages/portal/Agenda";
 import PortalAIAssistant from "./pages/portal/AIAssistant";
 import PortalAIConversations from "./pages/portal/AIConversations";
-
+import PortalAILearnings from "./pages/portal/AILearnings";
 
 // Admin AI
 import AdminAIAddon from "./pages/admin/AIAddon";
@@ -187,7 +187,7 @@ const App = () => (
               <Route path="/portal/:slug/assinatura" element={<PortalSubscription />} />
               <Route path="/portal/:slug/assistente-ia" element={<PortalAIAssistant />} />
               <Route path="/portal/:slug/conversas-ia" element={<PortalAIConversations />} />
-              
+              <Route path="/portal/:slug/aprendizados-ia" element={<PortalAILearnings />} />
 
               {/* Interno routes - Establishment Internal Operations */}
               <Route path="/interno/:slug" element={<InternoDashboard />} />

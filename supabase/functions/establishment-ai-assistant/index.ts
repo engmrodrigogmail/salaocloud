@@ -47,6 +47,154 @@ interface AssistantConfig {
   custom_instructions: string | null;
 }
 
+interface AILearningRow {
+  trigger_pattern: string | null;
+  ideal_response: string | null;
+  context_tags: string[] | null;
+  confidence_score: number;
+}
+
+// ============= AI Learning System =============
+
+async function loadEstablishmentLearnings(establishmentId: string, userMessage: string): Promise<string> {
+  try {
+    // Get top learnings by confidence score
+    const { data: learnings } = await supabase
+      .from('establishment_ai_learnings')
+      .select('trigger_pattern, ideal_response, context_tags, confidence_score')
+      .eq('establishment_id', establishmentId)
+      .eq('is_active', true)
+      .order('confidence_score', { ascending: false })
+      .limit(15);
+
+    if (!learnings || learnings.length === 0) {
+      return '';
+    }
+
+    // Filter relevant learnings based on context tags and message similarity
+    const lowerMessage = userMessage.toLowerCase();
+    const relevantLearnings = learnings.filter((l: AILearningRow) => {
+      // Check if any context tag matches the message
+      if (l.context_tags?.some((tag: string) => lowerMessage.includes(tag.toLowerCase()))) {
+        return true;
+      }
+      // Check if trigger pattern is similar
+      if (l.trigger_pattern && lowerMessage.includes(l.trigger_pattern.toLowerCase().slice(0, 20))) {
+        return true;
+      }
+      // Include high-confidence learnings
+      return l.confidence_score >= 0.8;
+    }).slice(0, 10);
+
+    if (relevantLearnings.length === 0) {
+      return '';
+    }
+
+    let learningsText = '\n\n## Aprendizados do Estabelecimento (use para melhorar suas respostas):\n';
+    relevantLearnings.forEach((l: AILearningRow, i: number) => {
+      if (l.trigger_pattern && l.ideal_response) {
+        learningsText += `${i + 1}. Quando perguntarem sobre "${l.trigger_pattern.slice(0, 50)}...", responda similar a: "${l.ideal_response.slice(0, 150)}..."\n`;
+      }
+    });
+
+    console.log(`[AI-Learning] Loaded ${relevantLearnings.length} learnings for establishment`);
+    return learningsText;
+  } catch (error) {
+    console.error('[AI-Learning] Error loading learnings:', error);
+    return '';
+  }
+}
+
+async function recordAutoLearning(
+  establishmentId: string,
+  conversationId: string,
+  userMessage: string,
+  assistantResponse: string,
+  outcome: 'success' | 'failure',
+  contextTags: string[]
+): Promise<void> {
+  try {
+    // First, check if there's a similar learning already
+    const { data: existingLearnings } = await supabase
+      .from('establishment_ai_learnings')
+      .select('id, success_count, failure_count, confidence_score')
+      .eq('establishment_id', establishmentId)
+      .ilike('trigger_pattern', `%${userMessage.slice(0, 30)}%`)
+      .limit(1);
+
+    if (existingLearnings && existingLearnings.length > 0) {
+      // Update existing learning
+      const existing = existingLearnings[0];
+      const newSuccessCount = outcome === 'success' ? existing.success_count + 1 : existing.success_count;
+      const newFailureCount = outcome === 'failure' ? existing.failure_count + 1 : existing.failure_count;
+      const total = newSuccessCount + newFailureCount;
+      const newConfidence = total > 0 ? newSuccessCount / total : 0.5;
+
+      await supabase
+        .from('establishment_ai_learnings')
+        .update({
+          success_count: newSuccessCount,
+          failure_count: newFailureCount,
+          confidence_score: Math.min(0.99, newConfidence),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id);
+
+      console.log(`[AI-Learning] Updated learning ${existing.id}, new confidence: ${newConfidence.toFixed(2)}`);
+    } else if (outcome === 'success') {
+      // Create new learning only for successful interactions
+      await supabase.from('establishment_ai_learnings').insert({
+        establishment_id: establishmentId,
+        learning_type: 'auto',
+        trigger_pattern: userMessage.slice(0, 500),
+        ideal_response: assistantResponse.slice(0, 1000),
+        context_tags: contextTags,
+        success_count: 1,
+        failure_count: 0,
+        confidence_score: 0.6, // Start with moderate confidence
+        source_conversation_id: conversationId,
+      });
+
+      console.log(`[AI-Learning] Created new learning for establishment ${establishmentId}`);
+    }
+
+    // Record feedback
+    await supabase.from('ai_conversation_feedback').insert({
+      conversation_id: conversationId,
+      feedback_type: outcome,
+      outcome: outcome === 'success' ? 'positive_interaction' : 'negative_interaction',
+    });
+  } catch (error) {
+    console.error('[AI-Learning] Error recording learning:', error);
+  }
+}
+
+async function recordAppointmentOutcome(
+  establishmentId: string,
+  conversationId: string,
+  userMessage: string,
+  assistantResponse: string,
+  created: boolean
+): Promise<void> {
+  const contextTags = ['agendamento', 'horário', 'agendar', 'marcar'];
+  await recordAutoLearning(
+    establishmentId,
+    conversationId,
+    userMessage,
+    assistantResponse,
+    created ? 'success' : 'failure',
+    contextTags
+  );
+  
+  if (created) {
+    await supabase.from('ai_conversation_feedback').insert({
+      conversation_id: conversationId,
+      feedback_type: 'success',
+      outcome: 'appointment_created',
+    });
+  }
+}
+
 // ============= Centralized Date/Time Utilities =============
 // IMPORTANT: This runtime typically runs in UTC. We need helpers that make
 // Date#getHours()/getDay() reflect Brazil (America/Sao_Paulo) wall-clock time.
@@ -1380,7 +1528,13 @@ serve(async (req) => {
       );
 
       // Add system prompt with client context and availability
-      const systemPrompt = buildSystemPrompt(config, establishment, { name: clientName, phone: clientPhone }, availabilityInfo);
+      let systemPrompt = buildSystemPrompt(config, establishment, { name: clientName, phone: clientPhone }, availabilityInfo);
+      
+      // Load and inject establishment-specific learnings
+      const learningsContext = await loadEstablishmentLearnings(establishmentId, message);
+      if (learningsContext) {
+        systemPrompt += learningsContext;
+      }
 
       // Call AI
       const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -1696,10 +1850,16 @@ serve(async (req) => {
                     if (appointmentError) {
                       console.error('[AI-Assistant] Erro ao criar agendamento:', appointmentError);
                       scheduleData.error = 'Erro ao salvar agendamento no banco de dados';
+                      
+                      // Record failure for learning
+                      await recordAppointmentOutcome(establishmentId, conversationId, message, assistantMessage, false);
                     } else {
                       console.log('[AI-Assistant] Agendamento criado com sucesso:', newAppointment.id);
                       scheduleData.appointmentId = newAppointment.id;
                       scheduleData.created = true;
+                      
+                      // Record success for learning - this helps improve future responses
+                      await recordAppointmentOutcome(establishmentId, conversationId, message, assistantMessage, true);
                     }
                   }
                 }
