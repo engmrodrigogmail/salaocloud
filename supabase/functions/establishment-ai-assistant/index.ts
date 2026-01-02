@@ -421,9 +421,9 @@ function brasiliaToUTC(brasiliaDate: Date): Date {
 }
 
 function formatWorkingHours(workingHours: any): string {
-  // Check if working_hours is empty or not defined - means always open (not configured)
+  // Check if working_hours is empty or not defined
   if (!workingHours || Object.keys(workingHours).length === 0) {
-    return 'Horário de funcionamento não configurado - considere que o estabelecimento está ABERTO em horário comercial normal (seg-sex 9h-18h, sáb 9h-13h)';
+    return 'HORÁRIO NÃO CONFIGURADO - O estabelecimento NÃO informou o horário de funcionamento. SIGA O PROTOCOLO DE HORÁRIO NÃO CONFIGURADO.';
   }
   
   const days: Record<string, string> = {
@@ -447,15 +447,13 @@ function formatWorkingHours(workingHours: any): string {
     } else if (day && day.enabled === false) {
       // Explicitly marked as closed
       lines.push(`- ${label}: Fechado`);
-    } else {
-      // Not configured - don't say it's closed
-      lines.push(`- ${label}: Não configurado (considere aberto em horário comercial)`);
     }
+    // Don't list days that aren't configured
   }
   
-  // If no day is configured, return default message
+  // If no day is configured, return the warning message
   if (!hasAnyDayConfigured) {
-    return 'Horário de funcionamento não configurado - considere que o estabelecimento está ABERTO em horário comercial normal (seg-sex 9h-18h, sáb 9h-13h)';
+    return 'HORÁRIO NÃO CONFIGURADO - O estabelecimento NÃO informou o horário de funcionamento. SIGA O PROTOCOLO DE HORÁRIO NÃO CONFIGURADO.';
   }
   
   return lines.join('\n');
@@ -600,6 +598,16 @@ ${config.custom_instructions || 'Sem instruções adicionais.'}
 11. Ao informar sobre cupons, diga o código exato para o cliente usar
 12. Ao falar de fidelidade, explique quanto vale cada ponto e quais recompensas estão disponíveis
 
+## PROTOCOLO DE HORÁRIO NÃO CONFIGURADO - CRÍTICO!
+Se você ver a mensagem "HORÁRIO NÃO CONFIGURADO" nas informações de horário acima, você DEVE:
+1. Informar ao cliente: "Infelizmente, o estabelecimento ainda não nos informou seus horários de funcionamento"
+2. Pedir desculpas pela inconveniência
+3. Sugerir que o cliente entre em contato diretamente com o estabelecimento pelo telefone: ${establishment.phone || 'não informado'}
+4. Dizer que você vai notificar o estabelecimento sobre essa situação
+5. Encerrar a conversa educadamente
+6. Incluir [NOTIFICAR_HORARIO] ao final da sua mensagem para gerar notificação ao estabelecimento
+7. NÃO tente agendar, nem dar informações de horário, nem prosseguir com atendimento normal
+
 ## CANCELAMENTOS - REGRA ESPECIAL
 Quando o cliente mencionar palavras como "cancelar", "desmarcar", "não vou poder ir", "preciso desmarcar":
 - Responda IMEDIATAMENTE com [LISTAR_AGENDAMENTOS] no final da sua mensagem
@@ -610,14 +618,34 @@ Quando o cliente mencionar palavras como "cancelar", "desmarcar", "não vou pode
 - Para escalar para humano, inclua [ESCALAR] no final da resposta
 - Para adicionar à fila de espera, inclua [FILA_ESPERA:serviço:data:horário] no final
 - Para agendar, inclua [AGENDAR:serviço:profissional:data:horário:nome:telefone] no final (use a data no formato DD/MM/AAAA)
-- Para buscar agendamentos do cliente (cancelamento), inclua [LISTAR_AGENDAMENTOS] no final`;
+- Para buscar agendamentos do cliente (cancelamento), inclua [LISTAR_AGENDAMENTOS] no final
+- Para notificar estabelecimento sobre horário não configurado, inclua [NOTIFICAR_HORARIO] no final`;
 }
 
-function isWithinWorkingHours(workingHours: any): boolean {
-  // If working_hours is null, undefined, or empty object - consider always open
+function isWorkingHoursConfigured(workingHours: any): boolean {
   if (!workingHours || Object.keys(workingHours).length === 0) {
-    console.log('[AI-Assistant] Horário não configurado - considerando sempre aberto');
-    return true;
+    return false;
+  }
+  
+  // Check if at least one day is configured
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  return days.some(day => workingHours[day]?.enabled === true || workingHours[day]?.enabled === false);
+}
+
+function isWithinWorkingHours(workingHours: any): { configured: boolean; withinHours: boolean } {
+  // If working_hours is null, undefined, or empty object - NOT configured
+  if (!workingHours || Object.keys(workingHours).length === 0) {
+    console.log('[AI-Assistant] Horário não configurado');
+    return { configured: false, withinHours: false };
+  }
+
+  // Check if any day has configuration
+  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const hasAnyConfig = days.some(day => workingHours[day]?.enabled === true || workingHours[day]?.enabled === false);
+  
+  if (!hasAnyConfig) {
+    console.log('[AI-Assistant] Nenhum dia configurado no horário');
+    return { configured: false, withinHours: false };
   }
 
   // Converter para horário de Brasília (UTC-3)
@@ -626,20 +654,19 @@ function isWithinWorkingHours(workingHours: any): boolean {
   const localOffset = now.getTimezoneOffset(); // Offset local em minutos
   const brasiliaTime = new Date(now.getTime() + (localOffset + brasiliaOffset) * 60 * 1000);
   
-  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
   const today = days[brasiliaTime.getDay()];
   const todayConfig = workingHours[today];
 
-  // If this specific day is not configured, assume open (not explicitly closed)
-  if (!todayConfig) {
-    console.log(`[AI-Assistant] Dia ${today} não configurado - considerando aberto`);
-    return true;
+  // If this specific day is not configured, consider closed (not explicitly open)
+  if (!todayConfig || todayConfig.enabled === undefined) {
+    console.log(`[AI-Assistant] Dia ${today} não configurado - considerando fechado`);
+    return { configured: true, withinHours: false };
   }
 
   // If day exists but is explicitly disabled
   if (todayConfig.enabled === false) {
     console.log(`[AI-Assistant] Dia ${today} explicitamente fechado`);
-    return false;
+    return { configured: true, withinHours: false };
   }
 
   // If day is enabled, check time range
@@ -651,12 +678,12 @@ function isWithinWorkingHours(workingHours: any): boolean {
     const isWithin = currentTime >= todayConfig.start && currentTime <= todayConfig.end;
     console.log(`[AI-Assistant] Horário atual (BRT): ${currentTime}, Configurado: ${todayConfig.start}-${todayConfig.end}, Dentro: ${isWithin}`);
     
-    return isWithin;
+    return { configured: true, withinHours: isWithin };
   }
 
-  // Default to open if configuration is incomplete
-  console.log(`[AI-Assistant] Configuração incompleta para ${today} - considerando aberto`);
-  return true;
+  // Default to closed if configuration is incomplete
+  console.log(`[AI-Assistant] Configuração incompleta para ${today} - considerando fechado`);
+  return { configured: true, withinHours: false };
 }
 
 function formatAppointmentDate(dateString: string): string {
@@ -707,8 +734,10 @@ serve(async (req) => {
     }
 
     // Check working hours
-    const isOnline = isWithinWorkingHours(config.working_hours);
-    if (config.availability_mode === 'only_business_hours' && !isOnline) {
+    const workingHoursStatus = isWithinWorkingHours(config.working_hours);
+    
+    // Only apply business hours restriction if hours ARE configured
+    if (config.availability_mode === 'only_business_hours' && workingHoursStatus.configured && !workingHoursStatus.withinHours) {
       return new Response(
         JSON.stringify({ 
           offline: true,
@@ -768,9 +797,9 @@ serve(async (req) => {
         content: welcomeMessage,
       });
 
-      // Add offline notice if outside hours
+      // Add offline notice if outside hours (only if hours are configured)
       let offlineNotice = null;
-      if (!isOnline && config.availability_mode === '24h_with_message') {
+      if (workingHoursStatus.configured && !workingHoursStatus.withinHours && config.availability_mode === '24h_with_message') {
         offlineNotice = config.offline_message;
       }
 
@@ -926,11 +955,80 @@ serve(async (req) => {
         conflict?: boolean;
       } | null = null;
       let showAppointmentsList = false;
+      let notifyWorkingHours = false;
 
       // Check for cancellation flow trigger
       if (assistantMessage.includes('[LISTAR_AGENDAMENTOS]')) {
         showAppointmentsList = true;
         assistantMessage = assistantMessage.replace('[LISTAR_AGENDAMENTOS]', '').trim();
+      }
+
+      // Check for working hours notification
+      if (assistantMessage.includes('[NOTIFICAR_HORARIO]')) {
+        notifyWorkingHours = true;
+        assistantMessage = assistantMessage.replace('[NOTIFICAR_HORARIO]', '').trim();
+        
+        // Create notification for establishment about missing working hours
+        try {
+          // Get conversation summary
+          const { data: recentMessages } = await supabase
+            .from('ai_assistant_messages')
+            .select('sender_type, content')
+            .eq('conversation_id', conversationId)
+            .order('created_at', { ascending: false })
+            .limit(5);
+
+          const conversationSummary = recentMessages?.reverse()
+            .map(m => `${m.sender_type === 'client' ? 'Cliente' : 'Assistente'}: ${m.content.slice(0, 100)}`)
+            .join('\n') || 'Sem histórico';
+
+          console.log('[AI-Assistant] Notificação de horário não configurado - Resumo:', conversationSummary);
+
+          // Send WhatsApp notification to establishment if configured
+          if (config.escalation_whatsapp) {
+            const Z_API_INSTANCE_ID = Deno.env.get('Z_API_INSTANCE_ID');
+            const Z_API_TOKEN = Deno.env.get('Z_API_TOKEN');
+            const Z_API_CLIENT_TOKEN = Deno.env.get('Z_API_CLIENT_TOKEN') || Z_API_TOKEN;
+
+            if (Z_API_INSTANCE_ID && Z_API_TOKEN) {
+              const notificationMessage = `⚠️ *Ação Necessária - ${establishment.name}*\n\n` +
+                `*Problema:* Horário de funcionamento não configurado\n\n` +
+                `Um cliente tentou obter informações sobre o horário de funcionamento, mas o estabelecimento ainda não configurou essas informações no sistema.\n\n` +
+                `*Cliente:* ${clientName || 'Não identificado'}\n` +
+                `*Telefone:* ${clientPhone || 'Não informado'}\n\n` +
+                `*Resumo da conversa:*\n${conversationSummary}\n\n` +
+                `*O que fazer:*\nAcesse o portal e configure o horário de funcionamento em:\n` +
+                `Configurações > Informações do Estabelecimento > Horário de Funcionamento\n\n` +
+                `Isso permitirá que a assistente virtual atenda melhor seus clientes.`;
+
+              const formattedPhone = config.escalation_whatsapp.replace(/\D/g, '');
+              const phoneToSend = formattedPhone.startsWith('55') ? formattedPhone : `55${formattedPhone}`;
+
+              const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+              if (Z_API_CLIENT_TOKEN) {
+                headers['Client-Token'] = Z_API_CLIENT_TOKEN;
+              }
+
+              const zapiResponse = await fetch(
+                `https://api.z-api.io/instances/${Z_API_INSTANCE_ID}/token/${Z_API_TOKEN}/send-text`,
+                {
+                  method: 'POST',
+                  headers,
+                  body: JSON.stringify({ phone: phoneToSend, message: notificationMessage }),
+                }
+              );
+
+              if (zapiResponse.ok) {
+                console.log(`[AI-Assistant] Notificação de horário enviada via WhatsApp para: ${phoneToSend.slice(-4)}`);
+              } else {
+                const errorText = await zapiResponse.text();
+                console.error(`[AI-Assistant] Erro ao enviar notificação: ${zapiResponse.status} - ${errorText}`);
+              }
+            }
+          }
+        } catch (error) {
+          console.error('[AI-Assistant] Erro ao processar notificação de horário:', error);
+        }
       }
 
       if (assistantMessage.includes('[ESCALAR]')) {
