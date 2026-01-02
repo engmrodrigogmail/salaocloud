@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -51,6 +52,10 @@ interface Coupon {
   description: string | null;
   discount_type: string;
   discount_value: number;
+  discount_target: string;
+  applicable_service_ids: string[];
+  applicable_product_ids: string[];
+  calculate_commission_after_discount: boolean;
   max_uses: number | null;
   current_uses: number;
   min_purchase_value: number | null;
@@ -58,6 +63,16 @@ interface Coupon {
   valid_until: string | null;
   is_active: boolean;
   created_at: string;
+}
+
+interface Service {
+  id: string;
+  name: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
 }
 
 interface CouponUsage {
@@ -80,11 +95,18 @@ export default function PortalCoupons() {
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   const [selectedCouponForUsages, setSelectedCouponForUsages] = useState<string | null>(null);
 
+  const [services, setServices] = useState<Service[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+
   const [couponForm, setCouponForm] = useState({
     code: "",
     description: "",
     discount_type: "percentage",
     discount_value: 10,
+    discount_target: "total",
+    applicable_service_ids: [] as string[],
+    applicable_product_ids: [] as string[],
+    calculate_commission_after_discount: true,
     max_uses: "",
     min_purchase_value: "",
     valid_from: "",
@@ -100,8 +122,30 @@ export default function PortalCoupons() {
   useEffect(() => {
     if (establishmentId) {
       fetchCoupons();
+      fetchServices();
+      fetchProducts();
     }
   }, [establishmentId]);
+
+  const fetchServices = async () => {
+    const { data } = await supabase
+      .from("services")
+      .select("id, name")
+      .eq("establishment_id", establishmentId)
+      .eq("is_active", true)
+      .order("name");
+    if (data) setServices(data);
+  };
+
+  const fetchProducts = async () => {
+    const { data } = await supabase
+      .from("products")
+      .select("id, name")
+      .eq("establishment_id", establishmentId)
+      .eq("is_active", true)
+      .order("name");
+    if (data) setProducts(data);
+  };
 
   const fetchEstablishment = async () => {
     const { data } = await supabase
@@ -160,6 +204,10 @@ export default function PortalCoupons() {
         description: couponForm.description || null,
         discount_type: couponForm.discount_type,
         discount_value: couponForm.discount_value,
+        discount_target: couponForm.discount_target,
+        applicable_service_ids: couponForm.applicable_service_ids,
+        applicable_product_ids: couponForm.applicable_product_ids,
+        calculate_commission_after_discount: couponForm.calculate_commission_after_discount,
         max_uses: couponForm.max_uses ? parseInt(couponForm.max_uses) : null,
         min_purchase_value: couponForm.min_purchase_value
           ? parseFloat(couponForm.min_purchase_value)
@@ -194,6 +242,10 @@ export default function PortalCoupons() {
         description: couponForm.description || null,
         discount_type: couponForm.discount_type,
         discount_value: couponForm.discount_value,
+        discount_target: couponForm.discount_target,
+        applicable_service_ids: couponForm.applicable_service_ids,
+        applicable_product_ids: couponForm.applicable_product_ids,
+        calculate_commission_after_discount: couponForm.calculate_commission_after_discount,
         max_uses: couponForm.max_uses ? parseInt(couponForm.max_uses) : null,
         min_purchase_value: couponForm.min_purchase_value
           ? parseFloat(couponForm.min_purchase_value)
@@ -246,6 +298,10 @@ export default function PortalCoupons() {
       description: "",
       discount_type: "percentage",
       discount_value: 10,
+      discount_target: "total",
+      applicable_service_ids: [],
+      applicable_product_ids: [],
+      calculate_commission_after_discount: true,
       max_uses: "",
       min_purchase_value: "",
       valid_from: "",
@@ -283,6 +339,10 @@ export default function PortalCoupons() {
       description: coupon.description || "",
       discount_type: coupon.discount_type,
       discount_value: coupon.discount_value,
+      discount_target: coupon.discount_target || "total",
+      applicable_service_ids: coupon.applicable_service_ids || [],
+      applicable_product_ids: coupon.applicable_product_ids || [],
+      calculate_commission_after_discount: coupon.calculate_commission_after_discount ?? true,
       max_uses: coupon.max_uses?.toString() || "",
       min_purchase_value: coupon.min_purchase_value?.toString() || "",
       valid_from: coupon.valid_from ? coupon.valid_from.slice(0, 16) : "",
@@ -383,7 +443,114 @@ export default function PortalCoupons() {
                         })
                       }
                     />
+                </div>
+                
+                {/* Discount Target Section */}
+                <div className="space-y-2">
+                  <Label>Aplicar desconto sobre</Label>
+                  <Select
+                    value={couponForm.discount_target}
+                    onValueChange={(value) =>
+                      setCouponForm({ 
+                        ...couponForm, 
+                        discount_target: value,
+                        applicable_service_ids: [],
+                        applicable_product_ids: []
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="total">Total da Comanda</SelectItem>
+                      <SelectItem value="services">Serviços</SelectItem>
+                      <SelectItem value="products">Produtos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {couponForm.discount_target === "services" && (
+                  <div className="space-y-2">
+                    <Label>Serviços Aplicáveis</Label>
+                    <div className="flex flex-wrap gap-2 p-3 border rounded-lg max-h-32 overflow-y-auto">
+                      {services.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">Nenhum serviço cadastrado</p>
+                      ) : (
+                        services.map((service) => (
+                          <div key={service.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`service-${service.id}`}
+                              checked={couponForm.applicable_service_ids.includes(service.id)}
+                              onCheckedChange={(checked) => {
+                                const newIds = checked
+                                  ? [...couponForm.applicable_service_ids, service.id]
+                                  : couponForm.applicable_service_ids.filter(id => id !== service.id);
+                                setCouponForm({ ...couponForm, applicable_service_ids: newIds });
+                              }}
+                            />
+                            <Label htmlFor={`service-${service.id}`} className="font-normal text-sm">
+                              {service.name}
+                            </Label>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Deixe vazio para aplicar a todos os serviços
+                    </p>
                   </div>
+                )}
+
+                {couponForm.discount_target === "products" && (
+                  <div className="space-y-2">
+                    <Label>Produtos Aplicáveis</Label>
+                    <div className="flex flex-wrap gap-2 p-3 border rounded-lg max-h-32 overflow-y-auto">
+                      {products.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">Nenhum produto cadastrado</p>
+                      ) : (
+                        products.map((product) => (
+                          <div key={product.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`product-${product.id}`}
+                              checked={couponForm.applicable_product_ids.includes(product.id)}
+                              onCheckedChange={(checked) => {
+                                const newIds = checked
+                                  ? [...couponForm.applicable_product_ids, product.id]
+                                  : couponForm.applicable_product_ids.filter(id => id !== product.id);
+                                setCouponForm({ ...couponForm, applicable_product_ids: newIds });
+                              }}
+                            />
+                            <Label htmlFor={`product-${product.id}`} className="font-normal text-sm">
+                              {product.name}
+                            </Label>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Deixe vazio para aplicar a todos os produtos
+                    </p>
+                  </div>
+                )}
+
+                {/* Commission calculation option */}
+                <div className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <Label className="text-sm">Calcular comissão após desconto</Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {couponForm.calculate_commission_after_discount 
+                        ? "A comissão será calculada sobre o valor com desconto"
+                        : "A comissão será calculada sobre o valor original"}
+                    </p>
+                  </div>
+                  <Switch
+                    checked={couponForm.calculate_commission_after_discount}
+                    onCheckedChange={(checked) =>
+                      setCouponForm({ ...couponForm, calculate_commission_after_discount: checked })
+                    }
+                  />
+                </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -762,6 +929,113 @@ export default function PortalCoupons() {
                     }
                   />
                 </div>
+              </div>
+              
+              {/* Discount Target Section */}
+              <div className="space-y-2">
+                <Label>Aplicar desconto sobre</Label>
+                <Select
+                  value={couponForm.discount_target}
+                  onValueChange={(value) =>
+                    setCouponForm({ 
+                      ...couponForm, 
+                      discount_target: value,
+                      applicable_service_ids: [],
+                      applicable_product_ids: []
+                    })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="total">Total da Comanda</SelectItem>
+                    <SelectItem value="services">Serviços</SelectItem>
+                    <SelectItem value="products">Produtos</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {couponForm.discount_target === "services" && (
+                <div className="space-y-2">
+                  <Label>Serviços Aplicáveis</Label>
+                  <div className="flex flex-wrap gap-2 p-3 border rounded-lg max-h-32 overflow-y-auto">
+                    {services.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Nenhum serviço cadastrado</p>
+                    ) : (
+                      services.map((service) => (
+                        <div key={service.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`edit-service-${service.id}`}
+                            checked={couponForm.applicable_service_ids.includes(service.id)}
+                            onCheckedChange={(checked) => {
+                              const newIds = checked
+                                ? [...couponForm.applicable_service_ids, service.id]
+                                : couponForm.applicable_service_ids.filter(id => id !== service.id);
+                              setCouponForm({ ...couponForm, applicable_service_ids: newIds });
+                            }}
+                          />
+                          <Label htmlFor={`edit-service-${service.id}`} className="font-normal text-sm">
+                            {service.name}
+                          </Label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Deixe vazio para aplicar a todos os serviços
+                  </p>
+                </div>
+              )}
+
+              {couponForm.discount_target === "products" && (
+                <div className="space-y-2">
+                  <Label>Produtos Aplicáveis</Label>
+                  <div className="flex flex-wrap gap-2 p-3 border rounded-lg max-h-32 overflow-y-auto">
+                    {products.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">Nenhum produto cadastrado</p>
+                    ) : (
+                      products.map((product) => (
+                        <div key={product.id} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`edit-product-${product.id}`}
+                            checked={couponForm.applicable_product_ids.includes(product.id)}
+                            onCheckedChange={(checked) => {
+                              const newIds = checked
+                                ? [...couponForm.applicable_product_ids, product.id]
+                                : couponForm.applicable_product_ids.filter(id => id !== product.id);
+                              setCouponForm({ ...couponForm, applicable_product_ids: newIds });
+                            }}
+                          />
+                          <Label htmlFor={`edit-product-${product.id}`} className="font-normal text-sm">
+                            {product.name}
+                          </Label>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Deixe vazio para aplicar a todos os produtos
+                  </p>
+                </div>
+              )}
+
+              {/* Commission calculation option */}
+              <div className="flex items-center justify-between p-3 border rounded-lg">
+                <div>
+                  <Label className="text-sm">Calcular comissão após desconto</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {couponForm.calculate_commission_after_discount 
+                      ? "A comissão será calculada sobre o valor com desconto"
+                      : "A comissão será calculada sobre o valor original"}
+                  </p>
+                </div>
+                <Switch
+                  checked={couponForm.calculate_commission_after_discount}
+                  onCheckedChange={(checked) =>
+                    setCouponForm({ ...couponForm, calculate_commission_after_discount: checked })
+                  }
+                />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">

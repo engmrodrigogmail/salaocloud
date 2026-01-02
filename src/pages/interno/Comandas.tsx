@@ -16,7 +16,7 @@ import { NewTabDialog } from "@/components/tabs/NewTabDialog";
 import { AddItemDialog } from "@/components/tabs/AddItemDialog";
 import { TabDetailsCard } from "@/components/tabs/TabDetailsCard";
 import { TabListCard } from "@/components/tabs/TabListCard";
-import { CheckoutDialog } from "@/components/tabs/CheckoutDialog";
+import { CheckoutDialog, type CouponInfo } from "@/components/tabs/CheckoutDialog";
 import type { TabWithDetails, TabPayment } from "@/types/tabs";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -127,20 +127,23 @@ export default function InternoComandas() {
     }
   };
 
-  const handleCheckout = async (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[], couponDiscount?: number) => {
+  const handleCheckout = async (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[], couponInfo?: CouponInfo) => {
     if (!selectedTab) return;
     
     // Update discount if coupon was applied
-    if (couponDiscount && couponDiscount > 0) {
+    if (couponInfo && couponInfo.discount > 0) {
       const currentDiscount = selectedTab.discount_amount || 0;
-      const newTotal = selectedTab.total - couponDiscount;
+      const newTotal = selectedTab.total - couponInfo.discount;
       await supabase
         .from("tabs")
         .update({ 
-          discount_amount: currentDiscount + couponDiscount,
+          discount_amount: currentDiscount + couponInfo.discount,
           total: newTotal
         })
         .eq("id", selectedTab.id);
+      
+      // TODO: Commission calculation can use couponInfo.calculateCommissionAfterDiscount
+      // to determine whether to calculate commission on original or discounted value
     }
     
     const success = await closeTab(selectedTab.id, payments, items);

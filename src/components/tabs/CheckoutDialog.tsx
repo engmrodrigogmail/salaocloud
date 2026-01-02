@@ -13,13 +13,21 @@ import type { TabWithDetails, TabItem, PaymentMethod, TabPayment } from "@/types
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+export interface CouponInfo {
+  discount: number;
+  calculateCommissionAfterDiscount: boolean;
+  discountTarget: string;
+  applicableServiceIds: string[];
+  applicableProductIds: string[];
+}
+
 interface CheckoutDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tab: TabWithDetails | null;
   items: TabItem[];
   paymentMethods: PaymentMethod[];
-  onConfirm: (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[], couponDiscount?: number) => Promise<void>;
+  onConfirm: (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[], couponInfo?: CouponInfo) => Promise<void>;
   loading?: boolean;
   establishmentId?: string;
 }
@@ -40,6 +48,10 @@ interface ValidatedCoupon {
   description: string | null;
   discount_type: string;
   discount_value: number;
+  discount_target: string;
+  applicable_service_ids: string[];
+  applicable_product_ids: string[];
+  calculate_commission_after_discount: boolean;
   min_purchase_value: number | null;
 }
 
@@ -74,12 +86,45 @@ export function CheckoutDialog({
   const subtotal = items.reduce((acc, item) => acc + Number(item.total_price), 0);
   const existingDiscount = Number(tab?.discount_amount) || 0;
   
-  // Calculate coupon discount
-  const couponDiscount = appliedCoupon
-    ? appliedCoupon.discount_type === "percentage"
-      ? (subtotal - existingDiscount) * (appliedCoupon.discount_value / 100)
-      : Math.min(appliedCoupon.discount_value, subtotal - existingDiscount)
-    : 0;
+  // Calculate coupon discount based on target
+  const calculateCouponDiscount = () => {
+    if (!appliedCoupon) return 0;
+    
+    let applicableAmount = 0;
+    
+    if (appliedCoupon.discount_target === "total") {
+      // Apply to entire tab
+      applicableAmount = subtotal - existingDiscount;
+    } else if (appliedCoupon.discount_target === "services") {
+      // Apply only to services (optionally filtered by specific IDs)
+      const serviceItems = items.filter(item => item.item_type === "service");
+      if (appliedCoupon.applicable_service_ids.length > 0) {
+        applicableAmount = serviceItems
+          .filter(item => item.service_id && appliedCoupon.applicable_service_ids.includes(item.service_id))
+          .reduce((acc, item) => acc + Number(item.total_price), 0);
+      } else {
+        applicableAmount = serviceItems.reduce((acc, item) => acc + Number(item.total_price), 0);
+      }
+    } else if (appliedCoupon.discount_target === "products") {
+      // Apply only to products (optionally filtered by specific IDs)
+      const productItems = items.filter(item => item.item_type === "product");
+      if (appliedCoupon.applicable_product_ids.length > 0) {
+        applicableAmount = productItems
+          .filter(item => item.product_id && appliedCoupon.applicable_product_ids.includes(item.product_id))
+          .reduce((acc, item) => acc + Number(item.total_price), 0);
+      } else {
+        applicableAmount = productItems.reduce((acc, item) => acc + Number(item.total_price), 0);
+      }
+    }
+    
+    if (appliedCoupon.discount_type === "percentage") {
+      return applicableAmount * (appliedCoupon.discount_value / 100);
+    } else {
+      return Math.min(appliedCoupon.discount_value, applicableAmount);
+    }
+  };
+  
+  const couponDiscount = calculateCouponDiscount();
   
   const totalDiscount = existingDiscount + couponDiscount;
   const total = Math.max(0, subtotal - totalDiscount);
@@ -159,6 +204,10 @@ export function CheckoutDialog({
         description: coupon.description,
         discount_type: coupon.discount_type,
         discount_value: coupon.discount_value,
+        discount_target: coupon.discount_target || "total",
+        applicable_service_ids: coupon.applicable_service_ids || [],
+        applicable_product_ids: coupon.applicable_product_ids || [],
+        calculate_commission_after_discount: coupon.calculate_commission_after_discount ?? true,
         min_purchase_value: coupon.min_purchase_value,
       });
       toast.success("Cupom aplicado com sucesso!");
@@ -232,7 +281,15 @@ export function CheckoutDialog({
         .eq("id", appliedCoupon.id);
     }
 
-    await onConfirm(paymentData, couponDiscount);
+    const couponInfo: CouponInfo | undefined = appliedCoupon ? {
+      discount: couponDiscount,
+      calculateCommissionAfterDiscount: appliedCoupon.calculate_commission_after_discount,
+      discountTarget: appliedCoupon.discount_target,
+      applicableServiceIds: appliedCoupon.applicable_service_ids,
+      applicableProductIds: appliedCoupon.applicable_product_ids,
+    } : undefined;
+
+    await onConfirm(paymentData, couponInfo);
   };
 
   const selectedPaymentMethod = paymentMethods.find(m => m.id === selectedMethod);
@@ -274,6 +331,9 @@ export function CheckoutDialog({
                             {formatCurrency(appliedCoupon.discount_value)} de desconto
                           </>
                         )}
+                        <span className="text-green-600/60">
+                          ({appliedCoupon.discount_target === "services" ? "serviços" : appliedCoupon.discount_target === "products" ? "produtos" : "total"})
+                        </span>
                       </p>
                     </div>
                     <Button
