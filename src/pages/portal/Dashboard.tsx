@@ -15,7 +15,11 @@ import {
   DollarSign,
   Bot,
   MessageSquare,
+  AlertTriangle,
 } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 interface Establishment {
   id: string;
@@ -23,6 +27,7 @@ interface Establishment {
   owner_id: string;
   trial_ends_at: string | null;
   subscription_plan: string;
+  working_hours: unknown;
 }
 
 export default function PortalDashboard() {
@@ -57,7 +62,7 @@ export default function PortalDashboard() {
     try {
       const { data, error } = await supabase
         .from("establishments")
-        .select("id, name, owner_id, trial_ends_at, subscription_plan")
+        .select("id, name, owner_id, trial_ends_at, subscription_plan, working_hours")
         .eq("slug", slug)
         .single();
 
@@ -136,6 +141,11 @@ export default function PortalDashboard() {
     );
   }
 
+  // Check if working_hours is empty or not configured
+  const isWorkingHoursEmpty = !establishment?.working_hours || 
+    (typeof establishment.working_hours === 'object' && 
+     Object.keys(establishment.working_hours as Record<string, unknown>).length === 0);
+
   return (
     <PortalLayout>
       <div className="space-y-6">
@@ -143,6 +153,34 @@ export default function PortalDashboard() {
           trialEndsAt={establishment?.trial_ends_at || null} 
           subscriptionPlan={establishment?.subscription_plan || ""} 
         />
+
+        {/* Alert for missing working hours */}
+        {isWorkingHoursEmpty && (
+          <Alert variant="destructive" className="border-orange-500 bg-orange-50 dark:bg-orange-950/20">
+            <AlertTriangle className="h-5 w-5 text-orange-600" />
+            <AlertTitle className="text-orange-800 dark:text-orange-400">
+              Horário de funcionamento não configurado
+            </AlertTitle>
+            <AlertDescription className="text-orange-700 dark:text-orange-300">
+              <p className="mb-3">
+                Sua assistente virtual não consegue informar o horário de funcionamento aos clientes. 
+                Configure os horários para melhorar o atendimento automatizado.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button asChild variant="outline" size="sm" className="border-orange-500 text-orange-700 hover:bg-orange-100 dark:hover:bg-orange-950">
+                  <Link to={`/portal/${slug}/configuracoes`}>
+                    Configurar Horários
+                  </Link>
+                </Button>
+                <Button asChild variant="ghost" size="sm" className="text-orange-600 hover:text-orange-800">
+                  <Link to={`/portal/${slug}/conversas-ia`}>
+                    Ver Conversas da IA
+                  </Link>
+                </Button>
+              </div>
+            </AlertDescription>
+          </Alert>
+        )}
         
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>

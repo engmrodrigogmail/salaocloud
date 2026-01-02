@@ -963,72 +963,12 @@ serve(async (req) => {
         assistantMessage = assistantMessage.replace('[LISTAR_AGENDAMENTOS]', '').trim();
       }
 
-      // Check for working hours notification
+      // Check for working hours notification - just log it, no WhatsApp notification
+      // The establishment will see an in-app alert on the portal dashboard
       if (assistantMessage.includes('[NOTIFICAR_HORARIO]')) {
         notifyWorkingHours = true;
         assistantMessage = assistantMessage.replace('[NOTIFICAR_HORARIO]', '').trim();
-        
-        // Create notification for establishment about missing working hours
-        try {
-          // Get conversation summary
-          const { data: recentMessages } = await supabase
-            .from('ai_assistant_messages')
-            .select('sender_type, content')
-            .eq('conversation_id', conversationId)
-            .order('created_at', { ascending: false })
-            .limit(5);
-
-          const conversationSummary = recentMessages?.reverse()
-            .map(m => `${m.sender_type === 'client' ? 'Cliente' : 'Assistente'}: ${m.content.slice(0, 100)}`)
-            .join('\n') || 'Sem histórico';
-
-          console.log('[AI-Assistant] Notificação de horário não configurado - Resumo:', conversationSummary);
-
-          // Send WhatsApp notification to establishment if configured
-          if (config.escalation_whatsapp) {
-            const Z_API_INSTANCE_ID = Deno.env.get('Z_API_INSTANCE_ID');
-            const Z_API_TOKEN = Deno.env.get('Z_API_TOKEN');
-            const Z_API_CLIENT_TOKEN = Deno.env.get('Z_API_CLIENT_TOKEN') || Z_API_TOKEN;
-
-            if (Z_API_INSTANCE_ID && Z_API_TOKEN) {
-              const notificationMessage = `⚠️ *Ação Necessária - ${establishment.name}*\n\n` +
-                `*Problema:* Horário de funcionamento não configurado\n\n` +
-                `Um cliente tentou obter informações sobre o horário de funcionamento, mas o estabelecimento ainda não configurou essas informações no sistema.\n\n` +
-                `*Cliente:* ${clientName || 'Não identificado'}\n` +
-                `*Telefone:* ${clientPhone || 'Não informado'}\n\n` +
-                `*Resumo da conversa:*\n${conversationSummary}\n\n` +
-                `*O que fazer:*\nAcesse o portal e configure o horário de funcionamento em:\n` +
-                `Configurações > Informações do Estabelecimento > Horário de Funcionamento\n\n` +
-                `Isso permitirá que a assistente virtual atenda melhor seus clientes.`;
-
-              const formattedPhone = config.escalation_whatsapp.replace(/\D/g, '');
-              const phoneToSend = formattedPhone.startsWith('55') ? formattedPhone : `55${formattedPhone}`;
-
-              const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-              if (Z_API_CLIENT_TOKEN) {
-                headers['Client-Token'] = Z_API_CLIENT_TOKEN;
-              }
-
-              const zapiResponse = await fetch(
-                `https://api.z-api.io/instances/${Z_API_INSTANCE_ID}/token/${Z_API_TOKEN}/send-text`,
-                {
-                  method: 'POST',
-                  headers,
-                  body: JSON.stringify({ phone: phoneToSend, message: notificationMessage }),
-                }
-              );
-
-              if (zapiResponse.ok) {
-                console.log(`[AI-Assistant] Notificação de horário enviada via WhatsApp para: ${phoneToSend.slice(-4)}`);
-              } else {
-                const errorText = await zapiResponse.text();
-                console.error(`[AI-Assistant] Erro ao enviar notificação: ${zapiResponse.status} - ${errorText}`);
-              }
-            }
-          }
-        } catch (error) {
-          console.error('[AI-Assistant] Erro ao processar notificação de horário:', error);
-        }
+        console.log('[AI-Assistant] Horário de funcionamento não configurado - Cliente:', clientName, clientPhone);
       }
 
       if (assistantMessage.includes('[ESCALAR]')) {
