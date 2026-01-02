@@ -994,10 +994,14 @@ export type Database = {
       }
       discount_coupons: {
         Row: {
+          applicable_product_ids: string[] | null
+          applicable_service_ids: string[] | null
+          calculate_commission_after_discount: boolean
           code: string
           created_at: string
           current_uses: number
           description: string | null
+          discount_target: string
           discount_type: string
           discount_value: number
           establishment_id: string
@@ -1009,10 +1013,14 @@ export type Database = {
           valid_until: string | null
         }
         Insert: {
+          applicable_product_ids?: string[] | null
+          applicable_service_ids?: string[] | null
+          calculate_commission_after_discount?: boolean
           code: string
           created_at?: string
           current_uses?: number
           description?: string | null
+          discount_target?: string
           discount_type?: string
           discount_value: number
           establishment_id: string
@@ -1024,10 +1032,14 @@ export type Database = {
           valid_until?: string | null
         }
         Update: {
+          applicable_product_ids?: string[] | null
+          applicable_service_ids?: string[] | null
+          calculate_commission_after_discount?: boolean
           code?: string
           created_at?: string
           current_uses?: number
           description?: string | null
+          discount_target?: string
           discount_type?: string
           discount_value?: number
           establishment_id?: string

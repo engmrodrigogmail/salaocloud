@@ -81,6 +81,7 @@ const SUBSCRIPTION_PLANS = [
 ];
 
 const SAAS_FEATURES = [
+  { value: "ai_assistant", label: "Assistente Virtual IA" },
   { value: "reports", label: "Relatórios" },
   { value: "commissions", label: "Controle de Comissões" },
   { value: "api_access", label: "Acesso à API" },
