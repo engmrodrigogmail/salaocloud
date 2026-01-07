@@ -63,8 +63,8 @@ export function Header() {
 
         {/* CTA Buttons */}
         <div className="hidden md:flex items-center gap-3">
-          <Button variant="ghost" asChild>
-            <Link to="/auth">Entrar</Link>
+          <Button variant="ghost" asChild className="text-sm">
+            <Link to="/auth">Já tenho cadastro. Entrar</Link>
           </Button>
           <Button className="bg-gradient-primary hover:opacity-90 glow-blue" asChild>
             <Link to="/auth?mode=signup">Começar Grátis</Link>
@@ -97,7 +97,7 @@ export function Header() {
             ))}
             <div className="flex flex-col gap-2 pt-4 border-t border-border">
               <Button variant="outline" asChild>
-                <Link to="/auth">Entrar</Link>
+                <Link to="/auth">Já tenho cadastro. Entrar</Link>
               </Button>
               <Button className="bg-gradient-primary" asChild>
                 <Link to="/auth?mode=signup">Começar Grátis</Link>
