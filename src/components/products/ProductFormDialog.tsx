@@ -341,11 +341,10 @@ export function ProductFormDialog({
             <Label htmlFor="price">Preço (R$) *</Label>
             <Input
               id="price"
-              type="number"
-              step="0.01"
-              min="0"
+              type="text"
+              inputMode="decimal"
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={(e) => setPrice(e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.'))}
               placeholder="0.00"
             />
           </div>

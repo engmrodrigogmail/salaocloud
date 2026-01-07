@@ -79,7 +79,7 @@ export function ProfessionalFormDialog({
     specialties: "",
     is_active: true,
     leasing_type: "none" as "none" | "fixed_monthly" | "proportional",
-    leasing_value: 0,
+    leasing_value: "",
     leasing_base_date: "",
     avatar_url: null as string | null,
   });
@@ -126,7 +126,7 @@ export function ProfessionalFormDialog({
         specialties: fullProfessional.specialties?.join(", ") || "",
         is_active: fullProfessional.is_active,
         leasing_type: (fullProfessional.leasing_type as "none" | "fixed_monthly" | "proportional") || "none",
-        leasing_value: fullProfessional.leasing_value || 0,
+        leasing_value: fullProfessional.leasing_value ? String(fullProfessional.leasing_value) : "",
         leasing_base_date: fullProfessional.leasing_base_date || "",
         avatar_url: fullProfessional.avatar_url || null,
       });
@@ -167,7 +167,7 @@ export function ProfessionalFormDialog({
       specialties: "",
       is_active: true,
       leasing_type: "none",
-      leasing_value: 0,
+      leasing_value: "",
       leasing_base_date: "",
       avatar_url: null,
     });
@@ -240,7 +240,7 @@ export function ProfessionalFormDialog({
             specialties: specialtiesArray.length > 0 ? specialtiesArray : null,
             is_active: formData.is_active,
             leasing_type: formData.leasing_type,
-            leasing_value: formData.leasing_type !== "none" ? formData.leasing_value : 0,
+            leasing_value: formData.leasing_type !== "none" ? (parseFloat(formData.leasing_value) || 0) : 0,
             leasing_base_date: formData.leasing_type === "fixed_monthly" && formData.leasing_base_date 
               ? formData.leasing_base_date 
               : null,
@@ -260,7 +260,7 @@ export function ProfessionalFormDialog({
             specialties: specialtiesArray.length > 0 ? specialtiesArray : null,
             is_active: formData.is_active,
             leasing_type: formData.leasing_type,
-            leasing_value: formData.leasing_type !== "none" ? formData.leasing_value : 0,
+            leasing_value: formData.leasing_type !== "none" ? (parseFloat(formData.leasing_value) || 0) : 0,
             leasing_base_date: formData.leasing_type === "fixed_monthly" && formData.leasing_base_date 
               ? formData.leasing_base_date 
               : null,
@@ -438,14 +438,12 @@ export function ProfessionalFormDialog({
                           : "Percentual (%)"}
                       </Label>
                       <Input
-                        type="number"
-                        min="0"
-                        max={formData.leasing_type === "proportional" ? 100 : undefined}
-                        step={formData.leasing_type === "proportional" ? 1 : 0.01}
+                        type="text"
+                        inputMode="decimal"
                         value={formData.leasing_value}
                         onChange={(e) => setFormData({ 
                           ...formData, 
-                          leasing_value: parseFloat(e.target.value) || 0 
+                          leasing_value: e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.') 
                         })}
                         placeholder={formData.leasing_type === "fixed_monthly" ? "1500.00" : "30"}
                       />

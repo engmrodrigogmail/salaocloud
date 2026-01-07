@@ -42,7 +42,7 @@ export function AddItemDialog({
   loading = false,
 }: AddItemDialogProps) {
   const [activeTab, setActiveTab] = useState<string>("products");
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState("1");
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedProfessional, setSelectedProfessional] = useState<string>("");
@@ -75,7 +75,7 @@ export function AddItemDialog({
     await onAddItem({
       name: selectedProduct.name,
       unit_price: selectedProduct.price,
-      quantity,
+      quantity: parseInt(quantity) || 1,
       item_type: "product",
       product_id: selectedProduct.id,
       professional_id: selectedProfessional || undefined,
@@ -88,7 +88,7 @@ export function AddItemDialog({
     await onAddItem({
       name: selectedService.name,
       unit_price: selectedService.price,
-      quantity,
+      quantity: parseInt(quantity) || 1,
       item_type: "service",
       service_id: selectedService.id,
       professional_id: selectedProfessional || undefined,
@@ -100,8 +100,8 @@ export function AddItemDialog({
     if (!customName || !customPrice) return;
     await onAddItem({
       name: customName,
-      unit_price: parseFloat(customPrice),
-      quantity,
+      unit_price: parseFloat(customPrice) || 0,
+      quantity: parseInt(quantity) || 1,
       item_type: "custom",
       professional_id: selectedProfessional || undefined,
       description: customDescription || undefined,
@@ -110,7 +110,7 @@ export function AddItemDialog({
   };
 
   const resetForm = () => {
-    setQuantity(1);
+    setQuantity("1");
     setSelectedProduct(null);
     setSelectedService(null);
     setSelectedProfessional("");
@@ -188,15 +188,15 @@ export function AddItemDialog({
               <div className="space-y-3 p-3 bg-muted/50 rounded-md">
                 <div className="flex justify-between items-center">
                   <span className="font-medium">{selectedProduct.name}</span>
-                  <span>{formatCurrency(selectedProduct.price * quantity)}</span>
+                  <span>{formatCurrency(selectedProduct.price * (parseInt(quantity) || 1))}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Label>Qtd:</Label>
                   <Input
-                    type="number"
-                    min={1}
+                    type="text"
+                    inputMode="numeric"
                     value={quantity}
-                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                    onChange={(e) => setQuantity(e.target.value.replace(/[^0-9]/g, ''))}
                     className="w-20"
                   />
                 </div>
@@ -242,15 +242,15 @@ export function AddItemDialog({
               <div className="space-y-3 p-3 bg-muted/50 rounded-md">
                 <div className="flex justify-between items-center">
                   <span className="font-medium">{selectedService.name}</span>
-                  <span>{formatCurrency(selectedService.price * quantity)}</span>
+                  <span>{formatCurrency(selectedService.price * (parseInt(quantity) || 1))}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Label>Qtd:</Label>
                   <Input
-                    type="number"
-                    min={1}
+                    type="text"
+                    inputMode="numeric"
                     value={quantity}
-                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                    onChange={(e) => setQuantity(e.target.value.replace(/[^0-9]/g, ''))}
                     className="w-20"
                   />
                 </div>
@@ -287,21 +287,20 @@ export function AddItemDialog({
                 <div className="space-y-2">
                   <Label>Valor Unitário *</Label>
                   <Input
-                    type="number"
-                    step="0.01"
-                    min={0}
+                    type="text"
+                    inputMode="decimal"
                     value={customPrice}
-                    onChange={(e) => setCustomPrice(e.target.value)}
+                    onChange={(e) => setCustomPrice(e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.'))}
                     placeholder="0.00"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Quantidade</Label>
                   <Input
-                    type="number"
-                    min={1}
+                    type="text"
+                    inputMode="numeric"
                     value={quantity}
-                    onChange={(e) => setQuantity(parseInt(e.target.value) || 1)}
+                    onChange={(e) => setQuantity(e.target.value.replace(/[^0-9]/g, ''))}
                   />
                 </div>
               </div>
@@ -317,7 +316,7 @@ export function AddItemDialog({
                 <div className="p-3 bg-muted/50 rounded-md">
                   <div className="flex justify-between items-center mb-3">
                     <span className="font-medium">{customName}</span>
-                    <span>{formatCurrency(parseFloat(customPrice) * quantity)}</span>
+                    <span>{formatCurrency((parseFloat(customPrice) || 0) * (parseInt(quantity) || 1))}</span>
                   </div>
                   <Button onClick={handleAddCustom} disabled={loading} className="w-full">
                     {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}

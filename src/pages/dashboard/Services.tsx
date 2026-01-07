@@ -54,8 +54,8 @@ export default function Services() {
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    duration_minutes: 30,
-    price: 0,
+    duration_minutes: "30",
+    price: "",
     is_active: true,
   });
 
@@ -107,8 +107,8 @@ export default function Services() {
           .update({
             name: formData.name,
             description: formData.description || null,
-            duration_minutes: formData.duration_minutes,
-            price: formData.price,
+            duration_minutes: parseInt(formData.duration_minutes) || 30,
+            price: parseFloat(formData.price) || 0,
             is_active: formData.is_active,
           })
           .eq("id", editingService.id);
@@ -121,8 +121,8 @@ export default function Services() {
           establishment_id: establishmentId,
           name: formData.name,
           description: formData.description || null,
-          duration_minutes: formData.duration_minutes,
-          price: formData.price,
+          duration_minutes: parseInt(formData.duration_minutes) || 30,
+          price: parseFloat(formData.price) || 0,
           is_active: formData.is_active,
         });
 
@@ -161,8 +161,8 @@ export default function Services() {
     setFormData({
       name: "",
       description: "",
-      duration_minutes: 30,
-      price: 0,
+      duration_minutes: "30",
+      price: "",
       is_active: true,
     });
     setEditingService(null);
@@ -173,8 +173,8 @@ export default function Services() {
     setFormData({
       name: service.name,
       description: service.description || "",
-      duration_minutes: service.duration_minutes,
-      price: service.price,
+      duration_minutes: String(service.duration_minutes),
+      price: String(service.price),
       is_active: service.is_active,
     });
     setIsDialogOpen(true);
@@ -241,13 +241,14 @@ export default function Services() {
                   <div className="space-y-2">
                     <Label>Duração (min) *</Label>
                     <Input
-                      type="number"
-                      min={5}
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={formData.duration_minutes}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          duration_minutes: parseInt(e.target.value) || 30,
+                          duration_minutes: e.target.value.replace(/[^0-9]/g, ''),
                         })
                       }
                     />
@@ -255,14 +256,13 @@ export default function Services() {
                   <div className="space-y-2">
                     <Label>Preço (R$) *</Label>
                     <Input
-                      type="number"
-                      min={0}
-                      step={0.01}
+                      type="text"
+                      inputMode="decimal"
                       value={formData.price}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          price: parseFloat(e.target.value) || 0,
+                          price: e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.'),
                         })
                       }
                     />
