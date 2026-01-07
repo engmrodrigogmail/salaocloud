@@ -72,8 +72,8 @@ export function ServiceFormDialog({
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    duration_minutes: 30,
-    price: 0,
+    duration_minutes: "30",
+    price: "",
     is_active: true,
   });
 
@@ -107,8 +107,8 @@ export function ServiceFormDialog({
     setFormData({
       name: editingService.name,
       description: editingService.description || "",
-      duration_minutes: editingService.duration_minutes,
-      price: editingService.price,
+      duration_minutes: String(editingService.duration_minutes),
+      price: String(editingService.price),
       is_active: editingService.is_active,
     });
 
@@ -143,8 +143,8 @@ export function ServiceFormDialog({
     setFormData({
       name: "",
       description: "",
-      duration_minutes: 30,
-      price: 0,
+      duration_minutes: "30",
+      price: "",
       is_active: true,
     });
     setSelectedProfessionals(new Set());
@@ -205,8 +205,8 @@ export function ServiceFormDialog({
           .update({
             name: formData.name,
             description: formData.description || null,
-            duration_minutes: formData.duration_minutes,
-            price: formData.price,
+            duration_minutes: parseInt(formData.duration_minutes) || 30,
+            price: parseFloat(formData.price) || 0,
             is_active: formData.is_active,
           })
           .eq("id", editingService.id);
@@ -219,8 +219,8 @@ export function ServiceFormDialog({
             establishment_id: establishmentId,
             name: formData.name,
             description: formData.description || null,
-            duration_minutes: formData.duration_minutes,
-            price: formData.price,
+            duration_minutes: parseInt(formData.duration_minutes) || 30,
+            price: parseFloat(formData.price) || 0,
             is_active: formData.is_active,
           })
           .select()
@@ -309,20 +309,21 @@ export function ServiceFormDialog({
                 <div className="space-y-2">
                   <Label>Duração (min) *</Label>
                   <Input
-                    type="number"
-                    min={5}
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={formData.duration_minutes}
-                    onChange={(e) => setFormData({ ...formData, duration_minutes: parseInt(e.target.value) || 30 })}
+                    onChange={(e) => setFormData({ ...formData, duration_minutes: e.target.value.replace(/[^0-9]/g, '') })}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Preço (R$) *</Label>
                   <Input
-                    type="number"
-                    min={0}
-                    step={0.01}
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*[.,]?[0-9]*"
                     value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.') })}
                   />
                 </div>
               </div>

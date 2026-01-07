@@ -51,8 +51,8 @@ export function AddCommissionDialog({
   const [formData, setFormData] = useState({
     professional_id: "",
     commission_rule_id: "",
-    reference_value: 0,
-    commission_amount: 0,
+    reference_value: "",
+    commission_amount: "",
     description: "",
   });
 
@@ -62,8 +62,8 @@ export function AddCommissionDialog({
       setFormData({
         professional_id: "",
         commission_rule_id: "",
-        reference_value: 0,
-        commission_amount: 0,
+        reference_value: "",
+        commission_amount: "",
         description: "",
       });
     }
@@ -81,43 +81,47 @@ export function AddCommissionDialog({
 
   const handleRuleChange = (ruleId: string) => {
     const rule = rules.find((r) => r.id === ruleId);
-    if (rule && formData.reference_value > 0) {
+    const refValue = parseFloat(formData.reference_value) || 0;
+    if (rule && refValue > 0) {
       const amount =
         rule.commission_type === "percentage"
-          ? (formData.reference_value * rule.commission_value) / 100
+          ? (refValue * rule.commission_value) / 100
           : rule.commission_value;
 
       setFormData({
         ...formData,
         commission_rule_id: ruleId,
-        commission_amount: amount,
+        commission_amount: String(amount),
       });
     } else {
       setFormData({ ...formData, commission_rule_id: ruleId });
     }
   };
 
-  const handleReferenceValueChange = (value: number) => {
+  const handleReferenceValueChange = (value: string) => {
+    const numValue = parseFloat(value.replace(',', '.')) || 0;
     const rule = rules.find((r) => r.id === formData.commission_rule_id);
     let amount = formData.commission_amount;
 
     if (rule) {
-      amount =
+      const calcAmount =
         rule.commission_type === "percentage"
-          ? (value * rule.commission_value) / 100
+          ? (numValue * rule.commission_value) / 100
           : rule.commission_value;
+      amount = String(calcAmount);
     }
 
     setFormData({
       ...formData,
-      reference_value: value,
+      reference_value: value.replace(/[^0-9.,]/g, '').replace(',', '.'),
       commission_amount: amount,
     });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.professional_id || formData.commission_amount <= 0) {
+    const commissionAmount = parseFloat(formData.commission_amount) || 0;
+    if (!formData.professional_id || commissionAmount <= 0) {
       toast.error("Preencha todos os campos obrigatórios");
       return;
     }
@@ -128,8 +132,8 @@ export function AddCommissionDialog({
         establishment_id: establishmentId,
         professional_id: formData.professional_id,
         commission_rule_id: formData.commission_rule_id || null,
-        reference_value: formData.reference_value,
-        commission_amount: formData.commission_amount,
+        reference_value: parseFloat(formData.reference_value) || 0,
+        commission_amount: parseFloat(formData.commission_amount) || 0,
         description: formData.description || null,
         status: "pending",
       });
@@ -198,11 +202,10 @@ export function AddCommissionDialog({
             <Label htmlFor="reference_value">Valor de Referência (R$)</Label>
             <Input
               id="reference_value"
-              type="number"
-              step="0.01"
-              min="0"
+              type="text"
+              inputMode="decimal"
               value={formData.reference_value}
-              onChange={(e) => handleReferenceValueChange(parseFloat(e.target.value) || 0)}
+              onChange={(e) => handleReferenceValueChange(e.target.value)}
               placeholder="Valor da venda/serviço"
             />
           </div>
@@ -211,12 +214,11 @@ export function AddCommissionDialog({
             <Label htmlFor="commission_amount">Valor da Comissão (R$) *</Label>
             <Input
               id="commission_amount"
-              type="number"
-              step="0.01"
-              min="0"
+              type="text"
+              inputMode="decimal"
               value={formData.commission_amount}
               onChange={(e) =>
-                setFormData({ ...formData, commission_amount: parseFloat(e.target.value) || 0 })
+                setFormData({ ...formData, commission_amount: e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.') })
               }
             />
           </div>
