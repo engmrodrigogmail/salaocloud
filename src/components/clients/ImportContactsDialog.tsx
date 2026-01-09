@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Download, Smartphone, Loader2, UserPlus, AlertCircle } from "lucide-react";
+import { Download, Smartphone, Loader2, UserPlus, AlertCircle, Info, ArrowRight } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Contact {
@@ -36,7 +36,7 @@ export function ImportContactsDialog({ establishmentId, onImportComplete }: Impo
   const [importing, setImporting] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContacts, setSelectedContacts] = useState<Set<number>>(new Set());
-  const [step, setStep] = useState<"initial" | "select" | "importing">("initial");
+  const [step, setStep] = useState<"initial" | "instructions" | "select" | "importing">("initial");
 
   const handleSelectContacts = async () => {
     if (!isContactPickerSupported()) {
@@ -218,13 +218,9 @@ export function ImportContactsDialog({ establishmentId, onImportComplete }: Impo
                   </div>
                 </div>
 
-                <Button onClick={handleSelectContacts} disabled={loading} className="w-full">
-                  {loading ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Smartphone className="h-4 w-4 mr-2" />
-                  )}
-                  {loading ? "Aguardando seleção..." : "Selecionar Contatos"}
+                <Button onClick={() => setStep("instructions")} className="w-full">
+                  <Smartphone className="h-4 w-4 mr-2" />
+                  Selecionar Contatos
                 </Button>
               </>
             ) : (
@@ -239,6 +235,36 @@ export function ImportContactsDialog({ establishmentId, onImportComplete }: Impo
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {step === "instructions" && (
+          <div className="space-y-4 py-4">
+            <div className="flex items-start gap-3 p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+              <Info className="h-5 w-5 text-blue-500 mt-0.5 shrink-0" />
+              <div className="space-y-2">
+                <p className="font-medium text-blue-600 dark:text-blue-400">Como funciona:</p>
+                <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                  <li>Na próxima tela, <strong>selecione os contatos desejados</strong> tocando em cada um</li>
+                  <li>Toque em <strong>"Concluído"</strong> quando terminar</li>
+                  <li>Depois você poderá revisar e usar <strong>"Selecionar todos"</strong> se precisar</li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setStep("initial")} className="flex-1">
+                Voltar
+              </Button>
+              <Button onClick={handleSelectContacts} disabled={loading} className="flex-1">
+                {loading ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                )}
+                {loading ? "Aguardando..." : "Continuar"}
+              </Button>
+            </div>
           </div>
         )}
 
