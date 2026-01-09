@@ -244,13 +244,20 @@ export function ImportContactsDialog({ establishmentId, onImportComplete }: Impo
 
         {step === "select" && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                {selectedContacts.size} de {contacts.length} selecionados
-              </p>
-              <Button variant="ghost" size="sm" onClick={toggleAll}>
-                {selectedContacts.size === contacts.length ? "Desmarcar todos" : "Selecionar todos"}
-              </Button>
+            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
+              <div 
+                className="flex items-center gap-3 cursor-pointer flex-1"
+                onClick={toggleAll}
+              >
+                <Checkbox
+                  checked={selectedContacts.size === contacts.length && contacts.length > 0}
+                  onCheckedChange={toggleAll}
+                />
+                <span className="font-medium">Selecionar todos</span>
+              </div>
+              <span className="text-sm text-muted-foreground">
+                {selectedContacts.size}/{contacts.length}
+              </span>
             </div>
 
             <ScrollArea className="h-[300px] rounded-lg border p-2">
