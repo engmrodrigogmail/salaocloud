@@ -13,6 +13,16 @@ export function HeroSection() {
         <div className="absolute top-1/4 -left-20 w-72 h-72 bg-primary/10 rounded-full blur-2xl opacity-60" />
         <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-secondary/10 rounded-full blur-2xl opacity-60" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-accent/5 rounded-full blur-2xl opacity-50" />
+        
+        {/* Attention-grabbing text that fades with animation */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full px-4 text-center animate-fade-in-out">
+          <p className="font-display text-lg sm:text-xl md:text-2xl font-bold text-gradient-gold tracking-tight">
+            Se mão de obra é um de seus problemas, sugerimos ler com atenção.
+          </p>
+          <p className="font-display text-base sm:text-lg md:text-xl font-semibold text-destructive mt-1">
+            Não adie o inevitável!
+          </p>
+        </div>
       </div>
 
       <div className="container mx-auto px-4 pt-24 pb-16 relative z-10">
