@@ -17,10 +17,10 @@ export function HeroSection() {
         {/* Attention-grabbing text that fades with animation */}
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full px-4 text-center animate-fade-in-out">
           <p className="font-display text-lg sm:text-xl md:text-2xl font-bold text-gradient-gold tracking-tight">
-            Se mão de obra é um de seus problemas, sugerimos ler com atenção.
+            Se mão de obra é um de seus problemas, esta página é pra você!
           </p>
           <p className="font-display text-base sm:text-lg md:text-xl font-semibold text-destructive mt-1">
-            Não adie o inevitável!
+            O futuro chegou, vai ficar de fora?
           </p>
         </div>
       </div>
