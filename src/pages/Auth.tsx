@@ -75,12 +75,36 @@ export default function Auth() {
       if (role === "super_admin") {
         navigate("/admin");
       } else if (role === "establishment") {
-        navigate("/dashboard");
+        // Find the establishment slug to redirect to portal
+        supabase
+          .from("establishments")
+          .select("slug")
+          .eq("owner_id", user.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data?.slug) {
+              navigate(`/portal/${data.slug}`);
+            } else {
+              navigate("/onboarding");
+            }
+          });
       } else if (role === "client") {
         navigate("/meus-agendamentos");
       } else {
-        // New user without role - redirect to establishment onboarding
-        navigate("/onboarding");
+        // No role found - check if user already has an establishment
+        supabase
+          .from("establishments")
+          .select("slug")
+          .eq("owner_id", user.id)
+          .maybeSingle()
+          .then(({ data }) => {
+            if (data?.slug) {
+              // User has establishment but missing role - redirect to portal anyway
+              navigate(`/portal/${data.slug}`);
+            } else {
+              navigate("/onboarding");
+            }
+          });
       }
     }
   }, [user, role, loading, navigate, isSignup]);
