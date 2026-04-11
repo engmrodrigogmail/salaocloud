@@ -65,51 +65,39 @@ export default function Auth() {
     defaultValues: { fullName: "", email: "", password: "", confirmPassword: "" },
   });
 
+  const redirectToEstablishment = (userId: string) => {
+    supabase
+      .from("establishments")
+      .select("slug, name")
+      .eq("owner_id", userId)
+      .then(({ data }) => {
+        if (!data || data.length === 0) {
+          navigate("/onboarding");
+        } else if (data.length === 1) {
+          navigate(`/portal/${data[0].slug}`);
+        } else {
+          setEstablishments(data as { slug: string; name: string }[]);
+          setShowPicker(true);
+        }
+      });
+  };
+
   // Redirect based on role when user is authenticated
   useEffect(() => {
-    debug("state", {
-      isSignup,
-      loading,
-      hasUser: !!user,
-      role,
-    });
+    debug("state", { isSignup, loading, hasUser: !!user, role });
 
-    if (!loading && user) {
+    if (!loading && user && !showPicker) {
       if (role === "super_admin") {
         navigate("/admin");
       } else if (role === "establishment") {
-        // Find the establishment slug to redirect to portal
-        supabase
-          .from("establishments")
-          .select("slug")
-          .eq("owner_id", user.id)
-          .limit(1)
-          .then(({ data }) => {
-            if (data && data.length > 0 && data[0].slug) {
-              navigate(`/portal/${data[0].slug}`);
-            } else {
-              navigate("/onboarding");
-            }
-          });
+        redirectToEstablishment(user.id);
       } else if (role === "client") {
         navigate("/meus-agendamentos");
       } else {
-        // No role found - check if user already has an establishment
-        supabase
-          .from("establishments")
-          .select("slug")
-          .eq("owner_id", user.id)
-          .limit(1)
-          .then(({ data }) => {
-            if (data && data.length > 0 && data[0].slug) {
-              navigate(`/portal/${data[0].slug}`);
-            } else {
-              navigate("/onboarding");
-            }
-          });
+        redirectToEstablishment(user.id);
       }
     }
-  }, [user, role, loading, navigate, isSignup]);
+  }, [user, role, loading, navigate, isSignup, showPicker]);
 
   const handleLogin = async (data: LoginFormData) => {
     debug("login_submit", { emailLen: data.email.length });
