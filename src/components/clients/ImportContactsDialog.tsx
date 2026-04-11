@@ -119,33 +119,40 @@ export function ImportContactsDialog({ establishmentId, onImportComplete }: Impo
 
     try {
       const contactsToImport = contacts.filter((_, i) => selectedContacts.has(i));
-      let imported = 0;
-      let skipped = 0;
+      
+      // Get all existing phones in one query
+      const phones = contactsToImport.map(c => c.phone);
+      const BATCH = 500;
+      const existingPhones = new Set<string>();
 
-      for (const contact of contactsToImport) {
-        // Check if client already exists by phone
-        const { data: existing } = await supabase
+      for (let i = 0; i < phones.length; i += BATCH) {
+        const batch = phones.slice(i, i + BATCH);
+        const { data } = await supabase
           .from("clients")
-          .select("id")
+          .select("phone")
           .eq("establishment_id", establishmentId)
-          .eq("phone", contact.phone)
-          .maybeSingle();
+          .in("phone", batch);
+        data?.forEach(r => existingPhones.add(r.phone));
+      }
 
-        if (existing) {
-          skipped++;
-          continue;
-        }
-
-        // Insert new client
-        const { error } = await supabase.from("clients").insert({
+      const newContacts = contactsToImport
+        .filter(c => !existingPhones.has(c.phone))
+        .map(c => ({
           establishment_id: establishmentId,
-          name: contact.name,
-          phone: contact.phone,
-          email: contact.email || null,
-        });
+          name: c.name,
+          phone: c.phone,
+          email: c.email || null,
+        }));
 
-        if (!error) {
-          imported++;
+      const skipped = contactsToImport.length - newContacts.length;
+      let imported = 0;
+
+      // Insert in batches
+      for (let i = 0; i < newContacts.length; i += BATCH) {
+        const batch = newContacts.slice(i, i + BATCH);
+        const { error, data } = await supabase.from("clients").insert(batch).select("id");
+        if (!error && data) {
+          imported += data.length;
         }
       }
 
@@ -154,6 +161,9 @@ export function ImportContactsDialog({ establishmentId, onImportComplete }: Impo
       }
       if (skipped > 0) {
         toast.info(`${skipped} contato${skipped > 1 ? "s" : ""} já existente${skipped > 1 ? "s" : ""}`);
+      }
+      if (imported === 0 && skipped === 0) {
+        toast.info("Nenhum contato para importar");
       }
 
       onImportComplete();
