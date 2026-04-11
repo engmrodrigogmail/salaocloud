@@ -43,6 +43,8 @@ export default function Auth() {
   const [isSignup, setIsSignup] = useState(searchParams.get("mode") === "signup");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [establishments, setEstablishments] = useState<{ slug: string; name: string }[]>([]);
+  const [showPicker, setShowPicker] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signIn, signUp, user, role, loading } = useAuth();
