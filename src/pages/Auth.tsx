@@ -81,10 +81,10 @@ export default function Auth() {
           .from("establishments")
           .select("slug")
           .eq("owner_id", user.id)
-          .maybeSingle()
+          .limit(1)
           .then(({ data }) => {
-            if (data?.slug) {
-              navigate(`/portal/${data.slug}`);
+            if (data && data.length > 0 && data[0].slug) {
+              navigate(`/portal/${data[0].slug}`);
             } else {
               navigate("/onboarding");
             }
@@ -97,11 +97,10 @@ export default function Auth() {
           .from("establishments")
           .select("slug")
           .eq("owner_id", user.id)
-          .maybeSingle()
+          .limit(1)
           .then(({ data }) => {
-            if (data?.slug) {
-              // User has establishment but missing role - redirect to portal anyway
-              navigate(`/portal/${data.slug}`);
+            if (data && data.length > 0 && data[0].slug) {
+              navigate(`/portal/${data[0].slug}`);
             } else {
               navigate("/onboarding");
             }
