@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Eye, EyeOff, ArrowLeft, Loader2 } from "lucide-react";
+import { Eye, EyeOff, ArrowLeft, Loader2, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,8 @@ export default function Auth() {
   const [isSignup, setIsSignup] = useState(searchParams.get("mode") === "signup");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [establishments, setEstablishments] = useState<{ slug: string; name: string }[]>([]);
+  const [showPicker, setShowPicker] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signIn, signUp, user, role, loading } = useAuth();
@@ -63,51 +65,39 @@ export default function Auth() {
     defaultValues: { fullName: "", email: "", password: "", confirmPassword: "" },
   });
 
+  const redirectToEstablishment = (userId: string) => {
+    supabase
+      .from("establishments")
+      .select("slug, name")
+      .eq("owner_id", userId)
+      .then(({ data }) => {
+        if (!data || data.length === 0) {
+          navigate("/onboarding");
+        } else if (data.length === 1) {
+          navigate(`/portal/${data[0].slug}`);
+        } else {
+          setEstablishments(data as { slug: string; name: string }[]);
+          setShowPicker(true);
+        }
+      });
+  };
+
   // Redirect based on role when user is authenticated
   useEffect(() => {
-    debug("state", {
-      isSignup,
-      loading,
-      hasUser: !!user,
-      role,
-    });
+    debug("state", { isSignup, loading, hasUser: !!user, role });
 
-    if (!loading && user) {
+    if (!loading && user && !showPicker) {
       if (role === "super_admin") {
         navigate("/admin");
       } else if (role === "establishment") {
-        // Find the establishment slug to redirect to portal
-        supabase
-          .from("establishments")
-          .select("slug")
-          .eq("owner_id", user.id)
-          .limit(1)
-          .then(({ data }) => {
-            if (data && data.length > 0 && data[0].slug) {
-              navigate(`/portal/${data[0].slug}`);
-            } else {
-              navigate("/onboarding");
-            }
-          });
+        redirectToEstablishment(user.id);
       } else if (role === "client") {
         navigate("/meus-agendamentos");
       } else {
-        // No role found - check if user already has an establishment
-        supabase
-          .from("establishments")
-          .select("slug")
-          .eq("owner_id", user.id)
-          .limit(1)
-          .then(({ data }) => {
-            if (data && data.length > 0 && data[0].slug) {
-              navigate(`/portal/${data[0].slug}`);
-            } else {
-              navigate("/onboarding");
-            }
-          });
+        redirectToEstablishment(user.id);
       }
     }
-  }, [user, role, loading, navigate, isSignup]);
+  }, [user, role, loading, navigate, isSignup, showPicker]);
 
   const handleLogin = async (data: LoginFormData) => {
     debug("login_submit", { emailLen: data.email.length });
@@ -167,6 +157,39 @@ export default function Auth() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/30">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (showPicker) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
+        <div className="max-w-md w-full">
+          <img src={logo} alt="Salão Cloud" className="h-12 w-auto mb-8 mx-auto" />
+          <h1 className="font-display text-2xl font-bold text-center mb-2">
+            Qual estabelecimento deseja acessar?
+          </h1>
+          <p className="text-muted-foreground text-center mb-8">
+            Você possui {establishments.length} estabelecimentos cadastrados
+          </p>
+          <div className="space-y-3">
+            {establishments.map((est) => (
+              <button
+                key={est.slug}
+                onClick={() => navigate(`/portal/${est.slug}`)}
+                className="w-full flex items-center gap-4 p-4 rounded-xl border bg-card hover:border-primary hover:shadow-md transition-all text-left"
+              >
+                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Building2 className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <div className="font-semibold">{est.name}</div>
+                  <div className="text-sm text-muted-foreground">/{est.slug}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
