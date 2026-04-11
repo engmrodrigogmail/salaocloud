@@ -161,7 +161,39 @@ export default function Auth() {
     );
   }
 
-  return (
+  if (showPicker) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
+        <div className="max-w-md w-full">
+          <img src={logo} alt="Salão Cloud" className="h-12 w-auto mb-8 mx-auto" />
+          <h1 className="font-display text-2xl font-bold text-center mb-2">
+            Qual estabelecimento deseja acessar?
+          </h1>
+          <p className="text-muted-foreground text-center mb-8">
+            Você possui {establishments.length} estabelecimentos cadastrados
+          </p>
+          <div className="space-y-3">
+            {establishments.map((est) => (
+              <button
+                key={est.slug}
+                onClick={() => navigate(`/portal/${est.slug}`)}
+                className="w-full flex items-center gap-4 p-4 rounded-xl border bg-card hover:border-primary hover:shadow-md transition-all text-left"
+              >
+                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <Building2 className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <div className="font-semibold">{est.name}</div>
+                  <div className="text-sm text-muted-foreground">/{est.slug}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
     <div className="min-h-screen flex">
       {/* Left side - Form */}
       <div className="flex-1 flex flex-col justify-center px-8 py-12 lg:px-16">
