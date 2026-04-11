@@ -194,6 +194,7 @@ export default function Auth() {
     );
   }
 
+  return (
     <div className="min-h-screen flex">
       {/* Left side - Form */}
       <div className="flex-1 flex flex-col justify-center px-8 py-12 lg:px-16">
