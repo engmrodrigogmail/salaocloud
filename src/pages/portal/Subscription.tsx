@@ -189,7 +189,7 @@ export default function PortalSubscription() {
     }
   };
 
-  const trialStatus = getTrialStatus();
+  
   const isCurrentPlan = (planSlug: string) => establishment?.subscription_plan === planSlug;
   const hasActiveSubscription = !!establishment?.stripe_subscription_id;
 
