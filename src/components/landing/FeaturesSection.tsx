@@ -72,34 +72,33 @@ const features = [
 
 export function FeaturesSection() {
   return (
-    <section id="funcionalidades" className="py-24 bg-muted/30">
+    <section id="funcionalidades" className="py-24 bg-secondary">
       <div className="container mx-auto px-4">
         {/* Section header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <span className="text-sm font-semibold text-primary uppercase tracking-wider">
+          <span className="text-xs font-semibold text-primary uppercase tracking-premium">
             Funcionalidades
           </span>
-          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mt-4 mb-6">
-            Tudo que você precisa pra{" "}
-            <span className="text-gradient-primary">bombar seu salão</span>
+          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mt-5 mb-5 text-foreground">
+            Tudo que você precisa pra <span className="text-primary">bombar seu salão</span>
           </h2>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-base md:text-lg text-muted-foreground">
             Ferramentas poderosas, interface amigável. Feito por quem entende do ramo.
           </p>
         </div>
 
-        {/* Features grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Features grid — minimalist cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {features.map((feature, index) => (
             <div
               key={feature.title + index}
-              className="group p-6 rounded-2xl bg-card border border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300 animate-fade-in-up"
-              style={{ animationDelay: `${index * 0.1}s` }}
+              className="group p-6 rounded-sm bg-card border border-border hover:border-primary/40 transition-all duration-300 animate-fade-in-up"
+              style={{ animationDelay: `${Math.min(index * 0.05, 0.4)}s` }}
             >
-              <div className="w-12 h-12 rounded-xl bg-gradient-primary flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                <feature.icon className="text-white" size={24} />
+              <div className="w-10 h-10 rounded-sm border border-primary/30 bg-primary/5 flex items-center justify-center mb-5 group-hover:bg-primary group-hover:border-primary transition-colors">
+                <feature.icon className="text-primary group-hover:text-primary-foreground transition-colors" size={20} strokeWidth={1.5} />
               </div>
-              <h3 className="font-display text-lg font-semibold mb-2">
+              <h3 className="font-display text-base font-bold mb-2 text-foreground">
                 {feature.title}
               </h3>
               <p className="text-sm text-muted-foreground leading-relaxed">

@@ -1,37 +1,30 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import { useTrialDays } from "@/hooks/useTrialDays";
 
 export function CTASection() {
-  const { trialDays } = useTrialDays();
-
   return (
-    <section className="py-24">
+    <section className="py-24 bg-secondary">
       <div className="container mx-auto px-4">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-primary p-12 md:p-16 text-center">
-          {/* Background decorations */}
-          <div className="absolute inset-0 overflow-hidden">
-            <div className="absolute top-0 left-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-            <div className="absolute bottom-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
-          </div>
-
+        <div className="relative overflow-hidden rounded-sm border border-primary/20 bg-card p-12 md:p-16 text-center">
           <div className="relative z-10 max-w-3xl mx-auto">
-            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-6">
-              Bora transformar seu salão?
+            <span className="text-xs font-semibold text-primary uppercase tracking-premium">
+              Pronto para começar?
+            </span>
+            <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold text-foreground mt-5 mb-5">
+              Bora transformar seu <span className="text-primary">salão</span>?
             </h2>
-            <p className="text-lg text-white/80 mb-10 max-w-2xl mx-auto">
-              Comece agora mesmo com {trialDays} dias grátis. Sem cartão, sem compromisso. 
-              Só você e um sistema que vai facilitar sua vida.
+            <p className="text-base md:text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
+              Você e um sistema feito sob medida para facilitar a sua rotina e encantar seus clientes.
             </p>
             <Button
               size="lg"
-              className="bg-white text-primary hover:bg-white/90 font-semibold px-10 h-14 text-base group"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold uppercase tracking-premium px-10 h-12 rounded-sm text-xs group"
               asChild
             >
               <Link to="/auth?mode=signup">
-                Começar Meu Teste Grátis
-                <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
+                Contratar Agora
+                <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={16} />
               </Link>
             </Button>
           </div>
