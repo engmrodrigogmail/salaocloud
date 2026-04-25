@@ -14,8 +14,9 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
-        display: ["Space Grotesk", "system-ui", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        display: ["Playfair Display", "Georgia", "serif"],
+        serif: ["Playfair Display", "Georgia", "serif"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -70,8 +71,9 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
         brand: {
-          blue: "hsl(var(--brand-blue))",
-          purple: "hsl(var(--brand-purple))",
+          copper: "hsl(var(--brand-copper))",
+          "copper-light": "hsl(var(--brand-copper-light))",
+          "copper-dark": "hsl(var(--brand-copper-dark))",
           gold: "hsl(var(--brand-gold))",
         },
       },

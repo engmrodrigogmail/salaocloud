@@ -66,7 +66,7 @@ export function Header() {
           <Button variant="ghost" asChild className="text-sm">
             <Link to="/auth">Já tenho cadastro. Entrar</Link>
           </Button>
-          <Button className="bg-gradient-primary hover:opacity-90 glow-blue" asChild>
+          <Button className="bg-gradient-gold hover:opacity-90 glow-gold text-secondary font-semibold uppercase tracking-wide" asChild>
             <Link to="/auth?mode=signup">Começar Grátis</Link>
           </Button>
         </div>
@@ -99,7 +99,7 @@ export function Header() {
               <Button variant="outline" asChild>
                 <Link to="/auth">Já tenho cadastro. Entrar</Link>
               </Button>
-              <Button className="bg-gradient-primary" asChild>
+              <Button className="bg-gradient-gold text-secondary font-semibold" asChild>
                 <Link to="/auth?mode=signup">Começar Grátis</Link>
               </Button>
             </div>
