@@ -10,7 +10,7 @@ export function FAQSection() {
     {
       question: "Como funciona o Salão Cloud?",
       answer:
-        "É uma plataforma online completa para gestão de salões e barbearias. Você gerencia agenda, clientes, profissionais, comandas, comissões, fidelidade e muito mais — tudo em um único lugar, pelo computador ou celular.",
+        "É uma plataforma online completa para gestão de salões de beleza. Você gerencia agenda, clientes, profissionais, comandas, comissões, fidelidade e muito mais — tudo em um único lugar, pelo computador ou celular.",
     },
     {
       question: "Consigo cancelar a qualquer momento?",
