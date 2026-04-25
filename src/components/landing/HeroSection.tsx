@@ -17,8 +17,6 @@ export function HeroSection() {
           className="w-full h-auto object-contain object-top"
           loading="eager"
         />
-        {/* Soft fade on the left edge to blend into cream background */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[hsl(40_30%_96%)] via-transparent to-transparent" />
       </div>
 
       <div className="container mx-auto px-6 lg:px-10 pt-28 md:pt-32 pb-16 relative z-10 min-h-screen flex flex-col">
