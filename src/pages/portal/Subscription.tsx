@@ -119,20 +119,6 @@ export default function PortalSubscription() {
     return price;
   };
 
-  const getTrialStatus = () => {
-    if (!establishment?.trial_ends_at) return null;
-    
-    const now = new Date();
-    const trialEnd = new Date(establishment.trial_ends_at);
-    const diffTime = trialEnd.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays <= 0) {
-      return { expired: true, days: 0 };
-    }
-    return { expired: false, days: diffDays };
-  };
-
   const handleSubscribe = async (plan: Plan) => {
     const priceId = isYearly ? plan.stripe_price_id_yearly : plan.stripe_price_id_monthly;
     
