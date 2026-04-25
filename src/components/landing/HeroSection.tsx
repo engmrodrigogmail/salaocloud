@@ -37,9 +37,9 @@ export function HeroSection() {
 
           {/* Headline */}
           <h1 className="font-display font-bold leading-[1.05] tracking-tight mb-5 text-foreground text-4xl sm:text-5xl md:text-[3.5rem] lg:text-[4rem]">
-            Menos preocupação.
+            Menos preocupações.
             <br />
-            Mais clientes.
+            Mais Clientes.
           </h1>
 
           {/* Subtitle */}
