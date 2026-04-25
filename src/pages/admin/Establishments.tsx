@@ -319,7 +319,6 @@ export default function AdminEstablishments() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos Planos</SelectItem>
-              <SelectItem value="trial">Trial</SelectItem>
               <SelectItem value="basic">Básico</SelectItem>
               <SelectItem value="professional">Profissional</SelectItem>
               <SelectItem value="premium">Premium</SelectItem>
