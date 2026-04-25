@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Twitter, Facebook } from "lucide-react";
 import heroModels from "@/assets/hero-models.png";
-import heroSalonBg from "@/assets/hero-salon-bg.jpg";
 
 export function HeroSection() {
   return (
@@ -10,29 +9,16 @@ export function HeroSection() {
       id="inicio"
       className="relative min-h-screen overflow-hidden bg-[hsl(40_30%_96%)] text-[hsl(0_0%_12%)]"
     >
-      {/* Models area: salon background full-width behind, models on right in front */}
-      <div className="absolute left-0 right-0 top-28 md:top-32 pointer-events-none">
-        {/* Full-width salon background, height matches models image */}
-        <div className="relative w-full">
-          <img
-            src={heroSalonBg}
-            alt=""
-            aria-hidden="true"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          {/* Gradient overlay: stronger fade on left, softer toward right */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[hsl(40_30%_96%)]/95 via-[hsl(40_30%_96%)]/70 to-[hsl(40_30%_96%)]/30" />
-
-          {/* Models image, kept at original size on the right */}
-          <div className="relative ml-auto w-[45%] md:w-[40%] lg:w-[38%]">
-            <img
-              src={heroModels}
-              alt="Profissionais do Salão Cloud — equipe diversa de cabeleireiros e maquiadores"
-              className="w-full h-auto object-contain object-top relative z-10"
-              loading="eager"
-            />
-          </div>
-        </div>
+      {/* Models image: right side, top aligned with "SALÃO CLOUD" headline */}
+      <div className="absolute right-0 top-28 md:top-32 w-[45%] md:w-[40%] lg:w-[38%] pointer-events-none">
+        <img
+          src={heroModels}
+          alt="Profissionais do Salão Cloud — equipe diversa de cabeleireiros e maquiadores"
+          className="w-full h-auto object-contain object-top"
+          loading="eager"
+        />
+        {/* Soft fade on the left edge to blend into cream background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[hsl(40_30%_96%)] via-transparent to-transparent" />
       </div>
 
       <div className="container mx-auto px-6 lg:px-10 pt-28 md:pt-32 pb-16 relative z-10 min-h-screen flex flex-col">
