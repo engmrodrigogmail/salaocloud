@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PortalLayout } from "@/components/layouts/PortalLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { TrialCountdown } from "@/components/TrialCountdown";
+
 import { 
   Calendar, 
   Users, 
@@ -149,11 +149,6 @@ export default function PortalDashboard() {
   return (
     <PortalLayout>
       <div className="space-y-6">
-        <TrialCountdown 
-          trialEndsAt={establishment?.trial_ends_at || null} 
-          subscriptionPlan={establishment?.subscription_plan || ""} 
-        />
-
         {/* Alert for missing working hours */}
         {isWorkingHoursEmpty && (
           <Alert variant="destructive" className="border-orange-500 bg-orange-50 dark:bg-orange-950/20">

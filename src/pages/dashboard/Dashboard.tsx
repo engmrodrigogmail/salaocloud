@@ -13,7 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { TrialCountdown } from "@/components/TrialCountdown";
+
 
 interface Appointment {
   id: string;
@@ -135,12 +135,6 @@ export default function EstablishmentDashboard() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* Trial Countdown */}
-        <TrialCountdown 
-          trialEndsAt={establishment?.trial_ends_at} 
-          subscriptionPlan={establishment?.subscription_plan} 
-        />
-
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
