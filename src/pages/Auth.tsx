@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTrialDays } from "@/hooks/useTrialDays";
 import logo from "@/assets/logo.webp";
 
 const loginSchema = z.object({
@@ -48,7 +47,6 @@ export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signIn, signUp, user, role, loading } = useAuth();
-  const { trialDays } = useTrialDays();
 
   const debugEnabled = import.meta.env.DEV;
   const debug = (...args: unknown[]) => {
@@ -215,7 +213,7 @@ export default function Auth() {
             </h1>
             <p className="text-muted-foreground">
               {isSignup
-                ? `Comece agora seu teste grátis de ${trialDays} dias`
+                ? "Cadastre seu salão e comece a receber agendamentos hoje."
                 : "Entre para acessar seu painel"}
             </p>
           </div>
@@ -370,7 +368,7 @@ export default function Auth() {
                   {isLoading ? (
                     <Loader2 className="h-5 w-5 animate-spin" />
                   ) : (
-                    "Criar Conta Grátis"
+                    "Criar Conta"
                   )}
                 </Button>
               </form>
@@ -474,37 +472,42 @@ export default function Auth() {
             >
               {isSignup
                 ? "Já tem uma conta? Faça login"
-                : "Não tem conta? Cadastre-se grátis"}
+                : "Não tem conta? Cadastre-se"}
             </button>
           </div>
         </div>
       </div>
 
       {/* Right side - Decoration */}
-      <div className="hidden lg:flex flex-1 bg-gradient-primary items-center justify-center p-16">
-        <div className="max-w-md text-white text-center">
-          <h2 className="font-display text-4xl font-bold mb-6">
-            Menos preocupação. Mais clientes.
+      <div className="hidden lg:flex flex-1 bg-primary items-center justify-center p-16">
+        <div className="max-w-md text-primary-foreground text-center">
+          <p className="text-xs uppercase tracking-premium mb-5 opacity-80">
+            Salão Cloud
+          </p>
+          <h2 className="font-display text-4xl font-bold mb-6 leading-tight">
+            Menos preocupações.
+            <br />
+            Mais Clientes.
           </h2>
-          <p className="text-white/80 text-lg">
-            O sistema completo para você gerenciar seu salão de forma simples e eficiente.
+          <p className="text-primary-foreground/80 text-lg">
+            O sistema completo para gerenciar seu salão com elegância e simplicidade.
           </p>
           <div className="mt-12 grid grid-cols-2 gap-6 text-left">
-            <div className="bg-white/10 rounded-xl p-4">
-              <div className="text-3xl font-bold">{trialDays}</div>
-              <div className="text-sm text-white/70">dias grátis</div>
-            </div>
-            <div className="bg-white/10 rounded-xl p-4">
+            <div className="bg-primary-foreground/10 rounded-sm p-4">
               <div className="text-3xl font-bold">500+</div>
-              <div className="text-sm text-white/70">salões ativos</div>
+              <div className="text-sm text-primary-foreground/70">salões ativos</div>
             </div>
-            <div className="bg-white/10 rounded-xl p-4">
+            <div className="bg-primary-foreground/10 rounded-sm p-4">
               <div className="text-3xl font-bold">10k+</div>
-              <div className="text-sm text-white/70">agendamentos/mês</div>
+              <div className="text-sm text-primary-foreground/70">agendamentos/mês</div>
             </div>
-            <div className="bg-white/10 rounded-xl p-4">
+            <div className="bg-primary-foreground/10 rounded-sm p-4">
               <div className="text-3xl font-bold">4.9</div>
-              <div className="text-sm text-white/70">avaliação média</div>
+              <div className="text-sm text-primary-foreground/70">avaliação média</div>
+            </div>
+            <div className="bg-primary-foreground/10 rounded-sm p-4">
+              <div className="text-3xl font-bold">24/7</div>
+              <div className="text-sm text-primary-foreground/70">atendimento IA</div>
             </div>
           </div>
         </div>

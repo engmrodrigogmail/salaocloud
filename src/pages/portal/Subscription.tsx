@@ -223,32 +223,15 @@ export default function PortalSubscription() {
           </p>
         </div>
 
-        {/* Trial/Subscription Status */}
-        {trialStatus && !hasActiveSubscription && (
-          <Card className={cn(
-            "border-2",
-            trialStatus.expired 
-              ? "border-destructive bg-destructive/5" 
-              : "border-amber-500 bg-amber-500/5"
-          )}>
+        {/* No active subscription notice */}
+        {!hasActiveSubscription && (
+          <Card className="border-2 border-primary/30 bg-primary/5">
             <CardContent className="py-4">
               <div className="flex items-center gap-3">
-                <AlertTriangle className={cn(
-                  "h-5 w-5",
-                  trialStatus.expired ? "text-destructive" : "text-amber-500"
-                )} />
-                <div>
-                  {trialStatus.expired ? (
-                    <p className="font-medium text-destructive">
-                      Seu período de teste expirou. Assine agora para continuar usando o sistema.
-                    </p>
-                  ) : (
-                    <p className="font-medium text-amber-600">
-                      Restam <strong>{trialStatus.days} dias</strong> do seu período de teste. 
-                      Assine agora para garantir acesso contínuo.
-                    </p>
-                  )}
-                </div>
+                <AlertTriangle className="h-5 w-5 text-primary" />
+                <p className="font-medium text-foreground">
+                  Você ainda não possui uma assinatura ativa. Escolha um plano abaixo para liberar todas as funcionalidades.
+                </p>
               </div>
             </CardContent>
           </Card>
