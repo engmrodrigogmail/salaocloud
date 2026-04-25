@@ -82,7 +82,6 @@ interface Establishment {
   subscription_plan: string;
   created_at: string;
   owner_id: string;
-  trial_ends_at: string | null;
 }
 
 interface EstablishmentStats {
