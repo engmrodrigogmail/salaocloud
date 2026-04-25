@@ -31,7 +31,6 @@ interface Establishment {
   id: string;
   name: string;
   subscription_plan: string;
-  trial_ends_at: string | null;
   stripe_subscription_id: string | null;
 }
 
@@ -61,7 +60,7 @@ export default function PortalSubscription() {
       // Fetch establishment
       const { data: estData, error: estError } = await supabase
         .from("establishments")
-        .select("id, name, subscription_plan, trial_ends_at, stripe_subscription_id")
+        .select("id, name, subscription_plan, stripe_subscription_id")
         .eq("slug", slug)
         .single();
 
@@ -120,20 +119,6 @@ export default function PortalSubscription() {
     return price;
   };
 
-  const getTrialStatus = () => {
-    if (!establishment?.trial_ends_at) return null;
-    
-    const now = new Date();
-    const trialEnd = new Date(establishment.trial_ends_at);
-    const diffTime = trialEnd.getTime() - now.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays <= 0) {
-      return { expired: true, days: 0 };
-    }
-    return { expired: false, days: diffDays };
-  };
-
   const handleSubscribe = async (plan: Plan) => {
     const priceId = isYearly ? plan.stripe_price_id_yearly : plan.stripe_price_id_monthly;
     
@@ -190,7 +175,7 @@ export default function PortalSubscription() {
     }
   };
 
-  const trialStatus = getTrialStatus();
+  
   const isCurrentPlan = (planSlug: string) => establishment?.subscription_plan === planSlug;
   const hasActiveSubscription = !!establishment?.stripe_subscription_id;
 

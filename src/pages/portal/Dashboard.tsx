@@ -25,7 +25,6 @@ interface Establishment {
   id: string;
   name: string;
   owner_id: string;
-  trial_ends_at: string | null;
   subscription_plan: string;
   working_hours: unknown;
 }
@@ -62,7 +61,7 @@ export default function PortalDashboard() {
     try {
       const { data, error } = await supabase
         .from("establishments")
-        .select("id, name, owner_id, trial_ends_at, subscription_plan, working_hours")
+        .select("id, name, owner_id, subscription_plan, working_hours")
         .eq("slug", slug)
         .single();
 
