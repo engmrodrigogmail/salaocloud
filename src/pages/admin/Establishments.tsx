@@ -632,12 +632,7 @@ export default function AdminEstablishments() {
                 <EstablishmentFeaturesCheck
                   establishmentId={selectedEstablishment.id}
                   subscriptionPlan={selectedEstablishment.subscription_plan}
-                  isTrialPeriod={
-                    selectedEstablishment.subscription_plan === "trial" ||
-                    (selectedEstablishment.trial_ends_at
-                      ? new Date(selectedEstablishment.trial_ends_at) > new Date()
-                      : false)
-                  }
+                  isTrialPeriod={false}
                 />
               </TabsContent>
             </Tabs>
