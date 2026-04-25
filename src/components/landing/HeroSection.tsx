@@ -9,16 +9,16 @@ export function HeroSection() {
       id="inicio"
       className="relative min-h-screen overflow-hidden bg-[hsl(40_30%_96%)] text-[hsl(0_0%_12%)]"
     >
-      {/* Hero image fills full background */}
-      <div className="absolute inset-0">
+      {/* Models image: right side, less than half width */}
+      <div className="absolute inset-y-0 right-0 w-[45%] md:w-[40%] lg:w-[38%] pointer-events-none">
         <img
           src={heroModels}
-          alt="Profissionais do Salão Cloud em salão moderno com espelhos iluminados e neons"
-          className="w-full h-full object-cover object-right"
+          alt="Profissionais do Salão Cloud — equipe diversa de cabeleireiros e maquiadores"
+          className="w-full h-full object-contain object-bottom-right"
           loading="eager"
         />
-        {/* Cream gradient on the left to keep text readable */}
-        <div className="absolute inset-0 bg-gradient-to-r from-[hsl(40_30%_96%)] via-[hsl(40_30%_96%)/0.6] to-transparent md:from-[hsl(40_30%_96%)] md:via-[hsl(40_30%_96%)/0.4] md:to-transparent" />
+        {/* Soft fade on the left edge to blend into cream background */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[hsl(40_30%_96%)] via-transparent to-transparent" />
       </div>
 
       <div className="container mx-auto px-6 lg:px-10 pt-28 md:pt-32 pb-16 relative z-10 min-h-screen flex flex-col">
