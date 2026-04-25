@@ -1,4 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /portal
+Disallow: /interno
+Disallow: /onboarding
+Disallow: /install
 
 Sitemap: https://salaocloud.com.br/sitemap.xml
