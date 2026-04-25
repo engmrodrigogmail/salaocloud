@@ -219,12 +219,11 @@ export default function AdminEstablishments() {
 
   const getPlanBadge = (plan: string) => {
     const config: Record<string, { bg: string; text: string }> = {
-      trial: { bg: "bg-muted", text: "text-muted-foreground" },
       basic: { bg: "bg-primary/10", text: "text-primary" },
       professional: { bg: "bg-secondary/10", text: "text-secondary" },
       premium: { bg: "bg-accent/10", text: "text-accent-foreground" },
     };
-    const { bg, text } = config[plan] || config.trial;
+    const { bg, text } = config[plan] || { bg: "bg-muted", text: "text-muted-foreground" };
     return (
       <Badge className={`${bg} ${text}`}>
         {plan.charAt(0).toUpperCase() + plan.slice(1)}
