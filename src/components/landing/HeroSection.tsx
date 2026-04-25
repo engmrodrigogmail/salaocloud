@@ -9,12 +9,12 @@ export function HeroSection() {
       id="inicio"
       className="relative min-h-screen overflow-hidden bg-[hsl(40_30%_96%)] text-[hsl(0_0%_12%)]"
     >
-      {/* Models image: right side, less than half width */}
-      <div className="absolute inset-y-0 right-0 w-[45%] md:w-[40%] lg:w-[38%] pointer-events-none">
+      {/* Models image: right side, top aligned with "SALÃO CLOUD" headline */}
+      <div className="absolute right-0 top-28 md:top-32 w-[45%] md:w-[40%] lg:w-[38%] pointer-events-none">
         <img
           src={heroModels}
           alt="Profissionais do Salão Cloud — equipe diversa de cabeleireiros e maquiadores"
-          className="w-full h-full object-contain object-bottom-right"
+          className="w-full h-auto object-contain object-top"
           loading="eager"
         />
         {/* Soft fade on the left edge to blend into cream background */}
