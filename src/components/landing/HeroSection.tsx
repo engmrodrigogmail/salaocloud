@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Twitter, Facebook } from "lucide-react";
 import heroModels from "@/assets/hero-models.png";
+import heroSalonBg from "@/assets/hero-salon-bg.jpg";
 
 export function HeroSection() {
   return (
@@ -9,8 +10,29 @@ export function HeroSection() {
       id="inicio"
       className="relative min-h-screen overflow-hidden bg-[hsl(40_30%_96%)] text-[hsl(0_0%_12%)]"
     >
-      {/* Models image: right side, top aligned with "SALÃO CLOUD" headline */}
-      <div className="absolute right-0 top-28 md:top-32 w-[45%] md:w-[40%] lg:w-[38%] pointer-events-none">
+      {/* Salon background — full width, height matches models image, with left-to-right transparency gradient */}
+      <div className="absolute left-0 right-0 top-28 md:top-32 pointer-events-none">
+        <div className="relative w-full" style={{ aspectRatio: "1920 / 1024" }}>
+          <img
+            src={heroSalonBg}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 w-full h-full object-cover"
+            loading="eager"
+          />
+          {/* Transparency gradient: stronger on the left half (still visible), fading toward the right */}
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(to right, hsl(40 30% 96% / 0.85) 0%, hsl(40 30% 96% / 0.7) 35%, hsl(40 30% 96% / 0.45) 60%, hsl(40 30% 96% / 0.2) 85%, hsl(40 30% 96% / 0.05) 100%)",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Models image: right side, top aligned with "SALÃO CLOUD" headline, in front of salon bg */}
+      <div className="absolute right-0 top-28 md:top-32 w-[45%] md:w-[40%] lg:w-[38%] pointer-events-none z-[5]">
         <img
           src={heroModels}
           alt="Profissionais do Salão Cloud — equipe diversa de cabeleireiros e maquiadores"
