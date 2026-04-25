@@ -534,16 +534,6 @@ export default function AdminEstablishments() {
                       })}
                     </span>
                   </div>
-                  {selectedEstablishment.trial_ends_at && (
-                    <div className="flex justify-between py-2 border-b">
-                      <span className="text-muted-foreground">Trial até</span>
-                      <span>
-                        {format(new Date(selectedEstablishment.trial_ends_at), "dd/MM/yyyy", {
-                          locale: ptBR,
-                        })}
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="flex gap-2 pt-4">
