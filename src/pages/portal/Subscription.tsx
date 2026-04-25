@@ -31,7 +31,6 @@ interface Establishment {
   id: string;
   name: string;
   subscription_plan: string;
-  trial_ends_at: string | null;
   stripe_subscription_id: string | null;
 }
 
@@ -61,7 +60,7 @@ export default function PortalSubscription() {
       // Fetch establishment
       const { data: estData, error: estError } = await supabase
         .from("establishments")
-        .select("id, name, subscription_plan, trial_ends_at, stripe_subscription_id")
+        .select("id, name, subscription_plan, stripe_subscription_id")
         .eq("slug", slug)
         .single();
 
