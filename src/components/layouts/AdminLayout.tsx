@@ -65,12 +65,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     navigate("/");
   };
 
+  const TEST_ESTABLISHMENT_SLUG = "salao-teste-saas";
+
   const handleImpersonate = (role: "establishment" | "client") => {
     startImpersonation(role);
     if (role === "establishment") {
-      navigate("/dashboard");
+      // Navigate to the test establishment portal — full feature set, like any external salon
+      navigate(`/portal/${TEST_ESTABLISHMENT_SLUG}`);
     } else if (role === "client") {
-      navigate("/meus-agendamentos");
+      navigate(`/${TEST_ESTABLISHMENT_SLUG}`);
     }
   };
 
