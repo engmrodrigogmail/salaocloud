@@ -87,28 +87,27 @@ const TestimonialCard = ({ testimonial }: { testimonial: Testimonial }) => {
     .slice(0, 2);
 
   return (
-    <Card className="h-full bg-card/50 backdrop-blur-sm border-border/50 hover:border-primary/30 transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
+    <Card className="h-full bg-card border border-border hover:border-primary/40 transition-all duration-300 rounded-sm shadow-none">
       <CardContent className="p-6 flex flex-col h-full">
         <div className="flex items-start gap-4 mb-4">
-          <Avatar className="h-12 w-12 border-2 border-primary/20">
-            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
+          <Avatar className="h-12 w-12">
+            <AvatarFallback className="bg-primary text-primary-foreground font-semibold text-sm">
               {initials}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1">
             <h4 className="font-semibold text-foreground">{testimonial.name}</h4>
-            <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+            <p className="text-xs text-muted-foreground mb-1">{testimonial.role}</p>
             <StarRating rating={testimonial.rating} />
           </div>
         </div>
-        
-        <blockquote className="flex-1 text-muted-foreground italic mb-4">
+
+        <blockquote className="flex-1 text-muted-foreground italic text-sm leading-relaxed">
           "{testimonial.content}"
         </blockquote>
-        
-        <div className="pt-4 border-t border-border/50">
-          <span className="inline-flex items-center gap-2 text-sm font-medium text-primary">
-            <Star className="h-4 w-4 fill-primary" />
+
+        <div className="pt-4 mt-4 border-t border-border">
+          <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
             {testimonial.highlight}
           </span>
         </div>
@@ -122,30 +121,26 @@ export const TestimonialsSection = () => {
   const businessTestimonials = testimonials.filter((t) => t.type === "business");
 
   return (
-    <section className="py-20 bg-gradient-to-b from-background to-muted/30">
+    <section className="py-24 bg-background">
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16">
-          <span className="inline-block px-4 py-1.5 mb-4 text-sm font-medium bg-primary/10 text-primary rounded-full">
+        <div className="text-center max-w-3xl mx-auto mb-14">
+          <span className="text-xs font-semibold text-primary uppercase tracking-premium">
             Depoimentos
           </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+          <h2 className="font-display text-3xl sm:text-4xl md:text-5xl font-bold mt-5 mb-5 text-foreground">
             Quem usa, <span className="text-primary">recomenda</span>
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Veja o que clientes e donos de estabelecimentos falam sobre a experiência com nossa plataforma
+          <p className="text-base md:text-lg text-muted-foreground">
+            Veja o que clientes e donos de estabelecimentos falam sobre nossa plataforma.
           </p>
         </div>
 
         {/* Clientes */}
-        <div className="mb-16">
-          <div className="flex items-center gap-3 mb-8">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
-            <h3 className="text-xl font-semibold text-foreground whitespace-nowrap">
-              💇 Clientes dos Estabelecimentos
-            </h3>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
+        <div className="mb-14">
+          <h3 className="text-xs font-semibold text-foreground uppercase tracking-premium mb-6 text-center">
+            Clientes dos Estabelecimentos
+          </h3>
+          <div className="grid md:grid-cols-3 gap-5 max-w-6xl mx-auto">
             {clientTestimonials.map((testimonial, index) => (
               <TestimonialCard key={index} testimonial={testimonial} />
             ))}
@@ -154,14 +149,10 @@ export const TestimonialsSection = () => {
 
         {/* Estabelecimentos */}
         <div>
-          <div className="flex items-center gap-3 mb-8">
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
-            <h3 className="text-xl font-semibold text-foreground whitespace-nowrap">
-              🏪 Donos de Estabelecimentos
-            </h3>
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
-          </div>
-          <div className="grid md:grid-cols-3 gap-6">
+          <h3 className="text-xs font-semibold text-foreground uppercase tracking-premium mb-6 text-center">
+            Donos de Estabelecimentos
+          </h3>
+          <div className="grid md:grid-cols-3 gap-5 max-w-6xl mx-auto">
             {businessTestimonials.map((testimonial, index) => (
               <TestimonialCard key={index} testimonial={testimonial} />
             ))}
