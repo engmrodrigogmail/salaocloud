@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
-import heroImage from "@/assets/hero-bronze.jpg";
 
 export function HeroSection() {
   return (
@@ -9,7 +8,7 @@ export function HeroSection() {
       id="inicio"
       className="relative w-full overflow-hidden bg-background"
       style={{
-        backgroundImage: `url(${heroImage})`,
+        backgroundImage: `url('https://files.manuscdn.com/user_upload_by_module/session_file/310419663031638273/nTFVuUDPTmoitPgN.png')`,
         backgroundSize: "cover",
         backgroundPosition: "center right",
         backgroundRepeat: "no-repeat",
@@ -21,7 +20,7 @@ export function HeroSection() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            "linear-gradient(to right, hsl(0 0% 100% / 0.94) 0%, hsl(0 0% 100% / 0.85) 30%, hsl(0 0% 100% / 0.4) 55%, hsl(0 0% 100% / 0.05) 80%, transparent 100%)",
+            "linear-gradient(to right, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.75) 25%, rgba(255,255,255,0.35) 50%, rgba(255,255,255,0.08) 70%, rgba(255,255,255,0) 100%)",
         }}
       />
 
