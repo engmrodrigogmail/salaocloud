@@ -93,7 +93,7 @@ interface EstablishmentStats {
 }
 
 type StatusFilter = "all" | "active" | "pending" | "suspended";
-type PlanFilter = "all" | "trial" | "basic" | "professional" | "premium";
+type PlanFilter = "all" | "basic" | "professional" | "premium";
 
 export default function AdminEstablishments() {
   const [establishments, setEstablishments] = useState<Establishment[]>([]);
