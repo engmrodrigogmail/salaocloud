@@ -1,97 +1,13 @@
-import { useState, useEffect } from "react";
 import { AdminLayout } from "@/components/layouts/AdminLayout";
-import { Settings, Bell, Shield, Database, Calendar, Save, Loader2 } from "lucide-react";
+import { Bell, Shield, Database } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-
-interface PlatformSetting {
-  id: string;
-  key: string;
-  value: string;
-  description: string | null;
-}
 
 export default function AdminSettings() {
-  const [settings, setSettings] = useState<PlatformSetting[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [trialDays, setTrialDays] = useState("14");
-
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  const fetchSettings = async () => {
-    const { data, error } = await supabase
-      .from("platform_settings")
-      .select("*")
-      .order("key");
-
-    if (error) {
-      console.error("Error fetching settings:", error);
-    } else {
-      setSettings(data || []);
-      const trialSetting = data?.find(s => s.key === "trial_days");
-      if (trialSetting) {
-        setTrialDays(trialSetting.value);
-      }
-    }
-    setLoading(false);
-  };
-
-  const updateSetting = async (key: string, value: string, description?: string) => {
-    setSaving(true);
-    
-    const existingSetting = settings.find(s => s.key === key);
-    
-    if (existingSetting) {
-      const { error } = await supabase
-        .from("platform_settings")
-        .update({ value, updated_at: new Date().toISOString() })
-        .eq("id", existingSetting.id);
-
-      if (error) {
-        toast.error("Erro ao salvar configuração");
-        console.error(error);
-      } else {
-        toast.success("Configuração salva com sucesso!");
-        fetchSettings();
-      }
-    } else {
-      const { error } = await supabase
-        .from("platform_settings")
-        .insert({ key, value, description: description || null });
-
-      if (error) {
-        toast.error("Erro ao criar configuração");
-        console.error(error);
-      } else {
-        toast.success("Configuração criada com sucesso!");
-        fetchSettings();
-      }
-    }
-    
-    setSaving(false);
-  };
-
-  const handleSaveTrialDays = () => {
-    const days = parseInt(trialDays);
-    if (isNaN(days) || days < 0 || days > 365) {
-      toast.error("Dias de teste deve ser um número entre 0 e 365");
-      return;
-    }
-    updateSetting("trial_days", trialDays, "Número de dias do período de teste gratuito");
-  };
-
   return (
     <AdminLayout>
       <div className="space-y-6">
-        {/* Header */}
         <div>
           <h1 className="font-display text-3xl font-bold">Configurações</h1>
           <p className="text-muted-foreground mt-1">
@@ -100,46 +16,6 @@ export default function AdminSettings() {
         </div>
 
         <div className="grid gap-6">
-          {/* Trial Settings */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Período de Teste
-              </CardTitle>
-              <CardDescription>
-                Configure o período de teste gratuito para novos estabelecimentos
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-end gap-4">
-                <div className="flex-1 space-y-2">
-                  <Label htmlFor="trial-days">Dias de Teste Grátis</Label>
-                  <Input
-                    id="trial-days"
-                    type="number"
-                    min="0"
-                    max="365"
-                    value={trialDays}
-                    onChange={(e) => setTrialDays(e.target.value)}
-                    placeholder="14"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Novos estabelecimentos terão acesso completo por este período
-                  </p>
-                </div>
-                <Button onClick={handleSaveTrialDays} disabled={saving}>
-                  {saving ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Save className="h-4 w-4 mr-2" />
-                  )}
-                  Salvar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
           {/* Notifications */}
           <Card>
             <CardHeader>
@@ -235,10 +111,6 @@ export default function AdminSettings() {
                 <div className="flex justify-between py-2 border-b border-border">
                   <span className="text-muted-foreground">Ambiente</span>
                   <span className="font-medium">Produção</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-border">
-                  <span className="text-muted-foreground">Dias de teste configurados</span>
-                  <span className="font-medium">{loading ? "..." : `${trialDays} dias`}</span>
                 </div>
                 <div className="flex justify-between py-2">
                   <span className="text-muted-foreground">Última atualização</span>

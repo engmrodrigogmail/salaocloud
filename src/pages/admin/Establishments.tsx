@@ -82,7 +82,6 @@ interface Establishment {
   subscription_plan: string;
   created_at: string;
   owner_id: string;
-  trial_ends_at: string | null;
 }
 
 interface EstablishmentStats {
@@ -94,7 +93,7 @@ interface EstablishmentStats {
 }
 
 type StatusFilter = "all" | "active" | "pending" | "suspended";
-type PlanFilter = "all" | "trial" | "basic" | "professional" | "premium";
+type PlanFilter = "all" | "basic" | "professional" | "premium";
 
 export default function AdminEstablishments() {
   const [establishments, setEstablishments] = useState<Establishment[]>([]);
@@ -220,12 +219,11 @@ export default function AdminEstablishments() {
 
   const getPlanBadge = (plan: string) => {
     const config: Record<string, { bg: string; text: string }> = {
-      trial: { bg: "bg-muted", text: "text-muted-foreground" },
       basic: { bg: "bg-primary/10", text: "text-primary" },
       professional: { bg: "bg-secondary/10", text: "text-secondary" },
       premium: { bg: "bg-accent/10", text: "text-accent-foreground" },
     };
-    const { bg, text } = config[plan] || config.trial;
+    const { bg, text } = config[plan] || { bg: "bg-muted", text: "text-muted-foreground" };
     return (
       <Badge className={`${bg} ${text}`}>
         {plan.charAt(0).toUpperCase() + plan.slice(1)}
@@ -321,7 +319,6 @@ export default function AdminEstablishments() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos Planos</SelectItem>
-              <SelectItem value="trial">Trial</SelectItem>
               <SelectItem value="basic">Básico</SelectItem>
               <SelectItem value="professional">Profissional</SelectItem>
               <SelectItem value="premium">Premium</SelectItem>
@@ -537,16 +534,6 @@ export default function AdminEstablishments() {
                       })}
                     </span>
                   </div>
-                  {selectedEstablishment.trial_ends_at && (
-                    <div className="flex justify-between py-2 border-b">
-                      <span className="text-muted-foreground">Trial até</span>
-                      <span>
-                        {format(new Date(selectedEstablishment.trial_ends_at), "dd/MM/yyyy", {
-                          locale: ptBR,
-                        })}
-                      </span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="flex gap-2 pt-4">
@@ -645,12 +632,7 @@ export default function AdminEstablishments() {
                 <EstablishmentFeaturesCheck
                   establishmentId={selectedEstablishment.id}
                   subscriptionPlan={selectedEstablishment.subscription_plan}
-                  isTrialPeriod={
-                    selectedEstablishment.subscription_plan === "trial" ||
-                    (selectedEstablishment.trial_ends_at
-                      ? new Date(selectedEstablishment.trial_ends_at) > new Date()
-                      : false)
-                  }
+                  isTrialPeriod={false}
                 />
               </TabsContent>
             </Tabs>
