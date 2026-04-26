@@ -1,0 +1,1 @@
+ALTER TABLE public.professionals DROP COLUMN IF EXISTS commission_percentage;
