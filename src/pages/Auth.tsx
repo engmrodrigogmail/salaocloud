@@ -388,7 +388,6 @@ export default function Auth() {
               <form
                 onSubmit={loginForm.handleSubmit(handleLogin)}
                 className="space-y-5"
-                autoComplete="off"
               >
                 <FormField
                   control={loginForm.control}
@@ -398,21 +397,14 @@ export default function Auth() {
                       <FormLabel>Email</FormLabel>
                       <FormControl>
                         <Input
+                          {...field}
                           type="email"
                           placeholder="seu@email.com"
                           autoComplete="email"
-                          onFocus={(e) =>
-                            debug("focus", {
-                              field: "login.email",
-                              disabled: e.currentTarget.disabled,
-                              readOnly: e.currentTarget.readOnly,
-                            })
-                          }
-                          onChange={(e) => {
-                            debug("change", { field: "login.email", len: e.target.value.length });
-                            field.onChange(e);
-                          }}
-                          {...field}
+                          inputMode="email"
+                          autoCapitalize="none"
+                          autoCorrect="off"
+                          spellCheck={false}
                         />
                       </FormControl>
                       <FormMessage />
@@ -429,21 +421,10 @@ export default function Auth() {
                       <FormControl>
                         <div className="relative">
                           <Input
+                            {...field}
                             type={showPassword ? "text" : "password"}
                             placeholder="••••••••"
                             autoComplete="current-password"
-                            onFocus={(e) =>
-                              debug("focus", {
-                                field: "login.password",
-                                disabled: e.currentTarget.disabled,
-                                readOnly: e.currentTarget.readOnly,
-                              })
-                            }
-                            onChange={(e) => {
-                              debug("change", { field: "login.password", len: e.target.value.length });
-                              field.onChange(e);
-                            }}
-                            {...field}
                           />
                           <button
                             type="button"
