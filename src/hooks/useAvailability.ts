@@ -467,6 +467,7 @@ export function useAvailability({
     isEstablishmentOpen,
     isProfessionalAvailable,
     isTimeSlotAvailable,
+    hasProfessionalConflict,
     getWorkingHoursForDay,
     getEstablishmentWorkingHoursMessage,
     findNextAvailableSlot,
