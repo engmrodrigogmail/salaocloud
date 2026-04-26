@@ -70,6 +70,10 @@ export default function PortalSettings() {
     secondary: null as string | null,
     accent: null as string | null
   });
+  const [showProfessionalNames, setShowProfessionalNames] = useState(true);
+  const [showPrices, setShowPrices] = useState(true);
+  const [showServiceDuration, setShowServiceDuration] = useState(true);
+  const [savingPortal, setSavingPortal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
