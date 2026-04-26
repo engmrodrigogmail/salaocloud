@@ -279,16 +279,19 @@ const BookingPage = () => {
   const secondaryColor = establishment.brand_secondary_color || 'hsl(var(--secondary))';
 
   return (
-    <div 
-      className="min-h-screen py-8 px-4"
-      style={{
-        ...brandStyle,
-        background: hasBrandColors 
-          ? `linear-gradient(135deg, ${secondaryColor}15, ${primaryColor}08, ${secondaryColor}10)`
-          : undefined
-      }}
-    >
-      <div className="max-w-2xl mx-auto">
+    <>
+      <ImpersonationBanner />
+      <div 
+        className="min-h-screen py-8 px-4"
+        style={{
+          ...brandStyle,
+          background: hasBrandColors 
+            ? `linear-gradient(135deg, ${secondaryColor}15, ${primaryColor}08, ${secondaryColor}10)`
+            : undefined,
+          paddingTop: isImpersonating ? "3.5rem" : undefined,
+        }}
+      >
+        <div className="max-w-2xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
           {establishment.logo_url && (
