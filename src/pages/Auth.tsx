@@ -200,7 +200,10 @@ export default function Auth() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div
+      className="min-h-screen flex salon-photo-bg"
+      style={{ ['--salon-bg-image' as any]: `url(${salonBg})` }}
+    >
       {/* Left side - Form */}
       <div className="flex-1 flex flex-col justify-center px-8 py-12 lg:px-16">
         <div className="max-w-md w-full mx-auto">
