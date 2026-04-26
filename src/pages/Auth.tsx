@@ -403,75 +403,59 @@ export default function Auth() {
               </form>
             </Form>
           ) : (
-            <Form {...loginForm}>
-              <form
-                onSubmit={loginForm.handleSubmit(handleLogin)}
-                className="space-y-5"
-              >
-                <FormField
-                  control={loginForm.control}
+            <form onSubmit={handleNativeLogin} className="space-y-5">
+              <div className="space-y-2">
+                <FormLabel htmlFor="login-email">Email</FormLabel>
+                <Input
+                  id="login-email"
                   name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="email"
-                          placeholder="seu@email.com"
-                          autoComplete="email"
-                          inputMode="email"
-                          autoCapitalize="none"
-                          autoCorrect="off"
-                          spellCheck={false}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+                  type="text"
+                  placeholder="seu@email.com"
+                  autoComplete="username email"
+                  inputMode="email"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  enterKeyHint="next"
+                  className="h-14 text-lg"
                 />
+              </div>
 
-                <FormField
-                  control={loginForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Senha</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            {...field}
-                            type={showPassword ? "text" : "password"}
-                            placeholder="••••••••"
-                            autoComplete="current-password"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          >
-                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="space-y-2">
+                <FormLabel htmlFor="login-password">Senha</FormLabel>
+                <div className="relative">
+                  <Input
+                    id="login-password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    enterKeyHint="done"
+                    className="h-14 pr-12 text-lg"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+              </div>
 
-                <Button
-                  type="submit"
-                  className="w-full h-12 bg-gradient-primary hover:opacity-90 font-semibold"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    "Entrar"
-                  )}
-                </Button>
-              </form>
-            </Form>
+              <Button
+                type="submit"
+                className="w-full h-12 bg-gradient-primary hover:opacity-90 font-semibold"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  "Entrar"
+                )}
+              </Button>
+            </form>
           )}
 
           <div className="mt-6 text-center">
