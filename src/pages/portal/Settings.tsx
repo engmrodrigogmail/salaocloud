@@ -305,7 +305,6 @@ export default function PortalSettings() {
     { value: "client-portal", label: "Portal da Cliente", icon: Eye },
   ];
 
-  const [activeTab, setActiveTab] = useState("general");
 
   return (
     <PortalLayout>
