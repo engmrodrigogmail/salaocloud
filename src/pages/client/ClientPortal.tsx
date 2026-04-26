@@ -791,126 +791,117 @@ const ClientPortal = () => {
     );
   }
 
-  // Phone confirmation dialog
-  const PhoneConfirmDialog = () => (
-    <Dialog open={showPhoneConfirm} onOpenChange={setShowPhoneConfirm}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Confirmar Atualização de Telefone</DialogTitle>
-          <DialogDescription>
-            O telefone informado ({formatPhone(newPhone)}) é diferente do cadastrado ({pendingClient?.phone ? formatPhone(pendingClient.phone) : ""}).
-            Deseja atualizar seu telefone de contato?
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter className="flex gap-2 sm:justify-end">
-          <Button variant="outline" onClick={handleCancelPhoneUpdate}>
-            Não, usar o cadastrado
-          </Button>
-          <Button onClick={handleConfirmPhoneUpdate} disabled={authenticating}>
-            {authenticating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            Sim, atualizar telefone
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-
   // Login/Register screen
   if (!isAuthenticated) {
+    const showStitchScreen = emailChecked && stitchSourceClient !== null;
+    const showLoginScreen = emailChecked && clientExists && !stitchSourceClient;
+
     return (
       <div className="min-h-screen bg-background">
-        <PhoneConfirmDialog />
-        <EstablishmentNameHeader
-          name={establishment.name}
-          subtitle="Área do Cliente"
+        <LGPDTermsDialog
+          open={showTermsDialog}
+          onOpenChange={setShowTermsDialog}
+          onAccept={() => setAcceptedTerms(true)}
         />
+        <EstablishmentNameHeader name={establishment.name} subtitle="Área do Cliente" />
         <div className="max-w-md mx-auto px-4 py-6 sm:py-8">
-
           <Card>
             <CardHeader>
               <CardTitle>
-                {!cpfChecked ? "Identificação" : clientExists ? "Acesse sua conta" : "Novo Cadastro"}
+                {!emailChecked
+                  ? "Identificação"
+                  : showStitchScreen
+                    ? "Bem-vindo(a) de volta!"
+                    : showLoginScreen
+                      ? "Acessar conta"
+                      : "Novo Cadastro"}
               </CardTitle>
               <CardDescription>
-                {!cpfChecked 
-                  ? "Informe seu CPF para verificarmos seu cadastro"
-                  : clientExists 
-                    ? "Confirme seu telefone para continuar"
-                    : "Preencha seus dados para se cadastrar"
-                }
+                {!emailChecked
+                  ? "Informe seu e-mail para continuar"
+                  : showStitchScreen
+                    ? "Reconhecemos você de outro salão da nossa rede"
+                    : showLoginScreen
+                      ? "Confirme para acessar sua conta"
+                      : "Preencha seus dados para se cadastrar"}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {!cpfChecked ? (
+              {!emailChecked ? (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="cpfCheck">CPF</Label>
+                    <Label htmlFor="emailCheck">E-mail</Label>
                     <div className="relative">
-                      <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
-                        id="cpfCheck"
-                        value={cpfToCheck}
-                        onChange={(e) => setCpfToCheck(formatCpf(e.target.value))}
-                        placeholder="000.000.000-00"
+                        id="emailCheck"
+                        type="email"
+                        autoComplete="email"
+                        inputMode="email"
+                        value={emailToCheck}
+                        onChange={(e) => setEmailToCheck(e.target.value)}
+                        placeholder="seu@email.com"
                         className="pl-10"
                       />
                     </div>
                   </div>
-                  <Button 
-                    className="w-full" 
-                    onClick={handleCheckCpf}
-                    disabled={checkingCpf || cpfToCheck.replace(/\D/g, "").length !== 11}
+                  <Button
+                    className="w-full"
+                    onClick={handleCheckEmail}
+                    disabled={checkingEmail || !emailToCheck.trim()}
                   >
-                    {checkingCpf ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : null}
-                    Verificar CPF
+                    {checkingEmail && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                    Verificar
                   </Button>
                 </>
-              ) : clientExists ? (
+              ) : showStitchScreen ? (
+                <>
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription>
+                      Olá, <strong>{stitchSourceClient?.name}</strong>! Vamos vincular seu
+                      cadastro a este salão para que você possa agendar.
+                    </AlertDescription>
+                  </Alert>
+                  <Button className="w-full" onClick={handleStitch} disabled={authenticating}>
+                    {authenticating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                    Continuar
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => {
+                      setEmailChecked(false);
+                      setStitchSourceClient(null);
+                    }}
+                  >
+                    <ArrowLeft className="h-4 w-4 mr-2" /> Usar outro e-mail
+                  </Button>
+                </>
+              ) : showLoginScreen ? (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="cpf">CPF</Label>
+                    <Label>E-mail</Label>
                     <div className="relative">
-                      <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="cpf"
-                        value={cpf}
-                        readOnly
-                        className="pl-10 bg-muted"
-                      />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input value={emailToCheck} readOnly className="pl-10 bg-muted" />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phone">Celular cadastrado</Label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="phone"
-                        value={phone}
-                        onChange={(e) => setPhone(formatPhone(e.target.value))}
-                        placeholder="(11) 99999-9999"
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  <Button 
-                    className="w-full" 
-                    onClick={handleLogin}
-                    disabled={authenticating}
-                  >
-                    {authenticating ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : null}
+                  <Button className="w-full" onClick={handleLogin} disabled={authenticating}>
+                    {authenticating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                     Entrar
                   </Button>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     className="w-full"
-                    onClick={() => { setCpfChecked(false); setCpfToCheck(""); }}
+                    onClick={() => {
+                      setEmailChecked(false);
+                      setEmailToCheck("");
+                      setClient(null);
+                      setClientExists(false);
+                    }}
                   >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Voltar
+                    <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
                   </Button>
                 </>
               ) : (
@@ -925,19 +916,14 @@ const ClientPortal = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="regCpf">CPF</Label>
+                    <Label>E-mail</Label>
                     <div className="relative">
-                      <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="regCpf"
-                        value={registerCpf}
-                        readOnly
-                        className="pl-10 bg-muted"
-                      />
+                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input value={emailToCheck} readOnly className="pl-10 bg-muted" />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="regPhone">Celular</Label>
+                    <Label htmlFor="regPhone">Celular / WhatsApp</Label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
@@ -949,23 +935,83 @@ const ClientPortal = () => {
                       />
                     </div>
                   </div>
-                  <Button 
-                    className="w-full" 
+                  <div className="space-y-2">
+                    <Label htmlFor="regCpf">
+                      CPF <span className="text-muted-foreground text-xs">(opcional)</span>
+                    </Label>
+                    <div className="relative">
+                      <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        id="regCpf"
+                        value={registerCpf}
+                        onChange={(e) => setRegisterCpf(formatCpf(e.target.value))}
+                        placeholder="000.000.000-00"
+                        className="pl-10"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Usado apenas para emissão de nota fiscal
+                    </p>
+                  </div>
+
+                  <div className="space-y-3 pt-2 border-t">
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="acceptTerms"
+                        checked={acceptedTerms}
+                        onCheckedChange={(v) => setAcceptedTerms(v === true)}
+                        className="mt-1"
+                      />
+                      <Label
+                        htmlFor="acceptTerms"
+                        className="text-sm font-normal leading-snug cursor-pointer"
+                      >
+                        Li e aceito os{" "}
+                        <button
+                          type="button"
+                          onClick={() => setShowTermsDialog(true)}
+                          className="text-primary underline hover:opacity-80"
+                        >
+                          Termos de Uso e Política de Privacidade
+                        </button>
+                        .
+                      </Label>
+                    </div>
+                    <div className="flex items-start gap-2 rounded-lg border bg-muted/40 p-3">
+                      <Checkbox
+                        id="shareHistory"
+                        checked={shareHistoryConsent}
+                        onCheckedChange={(v) => setShareHistoryConsent(v === true)}
+                        className="mt-1"
+                      />
+                      <Label
+                        htmlFor="shareHistory"
+                        className="text-sm font-normal leading-snug cursor-pointer"
+                      >
+                        Aceito compartilhar meu histórico de procedimentos com salões
+                        parceiros da plataforma Salão Cloud para um atendimento mais
+                        personalizado.
+                      </Label>
+                    </div>
+                  </div>
+
+                  <Button
+                    className="w-full"
                     onClick={handleRegister}
-                    disabled={authenticating}
+                    disabled={authenticating || !acceptedTerms}
                   >
-                    {authenticating ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : null}
+                    {authenticating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                     Cadastrar
                   </Button>
-                  <Button 
-                    variant="ghost" 
+                  <Button
+                    variant="ghost"
                     className="w-full"
-                    onClick={() => { setCpfChecked(false); setCpfToCheck(""); }}
+                    onClick={() => {
+                      setEmailChecked(false);
+                      setEmailToCheck("");
+                    }}
                   >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Voltar
+                    <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
                   </Button>
                 </>
               )}
@@ -973,157 +1019,6 @@ const ClientPortal = () => {
           </Card>
         </div>
       </div>
-    );
-  }
-
-  // Booking flow
-  if (isBooking) {
-    const availableSlots = selectedDate && selectedService 
-      ? generateAvailableSlots(selectedDate, selectedProfessional?.id || null, selectedService.duration_minutes)
-      : [];
-
-    const alternatives = selectedDate && selectedTime && selectedService && !isTimeSlotAvailable(
-      selectedDate, selectedTime, selectedProfessional?.id || null, selectedService.duration_minutes
-    ) ? findAlternatives(selectedDate, selectedTime, selectedService.id, selectedProfessional?.id || null) : null;
-
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background py-8 px-4">
-        <div className="max-w-2xl mx-auto">
-          <Button variant="ghost" onClick={() => setIsBooking(false)} className="mb-4">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Voltar ao Portal
-          </Button>
-
-          <h1 className="text-2xl font-display font-bold text-foreground mb-6">
-            Novo Agendamento
-          </h1>
-
-          {/* Step 1: Select Service */}
-          {bookingStep === 1 && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Scissors className="h-5 w-5 text-primary" />
-                  Escolha o Serviço
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {services.map((service) => (
-                  <div
-                    key={service.id}
-                    onClick={() => setSelectedService(service)}
-                    className={`p-4 rounded-lg border cursor-pointer transition-all hover:border-primary/50 ${
-                      selectedService?.id === service.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border"
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-semibold">{service.name}</h3>
-                        {service.description && (
-                          <p className="text-sm text-muted-foreground">{service.description}</p>
-                        )}
-                        <p className="text-sm text-muted-foreground mt-1">
-                          <Clock className="h-3 w-3 inline mr-1" />
-                          {service.duration_minutes} min
-                        </p>
-                      </div>
-                      {establishment.show_catalog && (
-                        <p className="font-bold text-accent">
-                          R$ {Number(service.price).toFixed(2)}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                ))}
-                <div className="flex justify-end mt-6">
-                  <Button onClick={() => setBookingStep(2)} disabled={!selectedService}>
-                    Próximo <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Step 2: Select Date and Time */}
-          {bookingStep === 2 && selectedService && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  Escolha a Data e Horário
-                </CardTitle>
-                <CardDescription>
-                  Serviço: {selectedService.name} ({selectedService.duration_minutes} min)
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                {/* Optional Professional Selection */}
-                <div>
-                  <Label className="text-base font-semibold mb-3 block">Profissional (opcional)</Label>
-                  <Select 
-                    value={selectedProfessional?.id || "any"}
-                    onValueChange={(v) => {
-                      if (v === "any") {
-                        setSelectedProfessional(null);
-                      } else {
-                        const prof = professionals.find(p => p.id === v);
-                        setSelectedProfessional(prof || null);
-                      }
-                      setSelectedTime(null);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Qualquer profissional disponível" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="any">Qualquer profissional disponível</SelectItem>
-                      {getProfessionalsForService(selectedService.id).map((prof) => (
-                        <SelectItem key={prof.id} value={prof.id}>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarImage src={prof.avatar_url || undefined} alt={prof.name} />
-                              <AvatarFallback className="text-[10px]">
-                                {prof.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span>{prof.name}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Date Selection */}
-                <div>
-                  <Label className="text-base font-semibold mb-3 block">Data</Label>
-                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                    {generateDates().map((date) => {
-                      const isOpen = isDateOpen(date);
-                      return (
-                        <button
-                          key={date.toISOString()}
-                          onClick={() => handleDateSelect(date)}
-                          className={`p-2 rounded-lg border text-center transition-all ${
-                            !isOpen 
-                              ? "border-muted bg-muted/50 text-muted-foreground"
-                              : selectedDate?.toDateString() === date.toDateString()
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "border-border hover:border-primary/50"
-                          }`}
-                        >
-                          <p className="text-xs uppercase">
-                            {format(date, "EEE", { locale: ptBR })}
-                          </p>
-                          <p className="text-lg font-bold">{format(date, "dd")}</p>
-                          {!isOpen && <p className="text-[10px]">Fechado</p>}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
 
                 {/* Closed Establishment Message */}
                 {showClosedMessage && selectedDate && (
