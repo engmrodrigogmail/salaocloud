@@ -242,7 +242,7 @@ export default function PortalSettings() {
           </div>
 
           {/* Desktop: Grid tabs (no horizontal scroll) */}
-          <TabsList className="hidden md:grid md:grid-cols-5 mb-6 h-auto p-1 w-full">
+          <TabsList className="hidden md:grid md:grid-cols-4 mb-6 h-auto p-1 w-full">
             {SECTIONS.map(({ value, label, icon: Icon }) => (
               <TabsTrigger
                 key={value}
@@ -254,93 +254,6 @@ export default function PortalSettings() {
               </TabsTrigger>
             ))}
           </TabsList>
-
-          <TabsContent value="general">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Image className="h-5 w-5 text-primary" />
-                  Logo do Estabelecimento
-                </CardTitle>
-                <CardDescription>
-                  Adicione seu logo para personalizar a página de agendamento vista pelos seus clientes
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex flex-col sm:flex-row gap-6 items-start">
-                  {/* Logo Preview */}
-                  <div className="flex-shrink-0">
-                    {establishment?.logo_url ? (
-                      <div className="relative group">
-                        <div className="w-32 h-32 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 flex items-center justify-center overflow-hidden">
-                          <img
-                            src={establishment.logo_url}
-                            alt="Logo do estabelecimento"
-                            className="max-w-full max-h-full object-contain p-2"
-                          />
-                        </div>
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={handleRemoveLogo}
-                          disabled={saving}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="w-32 h-32 rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/50 flex items-center justify-center">
-                        <Image className="h-8 w-8 text-muted-foreground/50" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Upload Controls */}
-                  <div className="flex-1 space-y-4">
-                    <div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoUpload}
-                        className="hidden"
-                        id="logo-upload"
-                      />
-                      <Button
-                        variant="outline"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploadingLogo}
-                        className="w-full sm:w-auto"
-                      >
-                        {uploadingLogo ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : (
-                          <Upload className="h-4 w-4 mr-2" />
-                        )}
-                        {uploadingLogo ? "Enviando..." : "Enviar Logo"}
-                      </Button>
-                    </div>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>• Formatos aceitos: JPG, PNG, WEBP, SVG</p>
-                      <p>• Tamanho máximo: 2MB</p>
-                      <p>• Recomendado: imagem quadrada ou com proporção 2:1</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Brand Colors Card */}
-            {establishment && (
-              <BrandColorsCard
-                establishmentId={establishment.id}
-                logoUrl={establishment.logo_url}
-                savedColors={brandColors}
-                onColorsUpdate={(colors) => setBrandColors(colors)}
-              />
-            )}
-          </TabsContent>
 
           <TabsContent value="working-hours">
             <Card>
