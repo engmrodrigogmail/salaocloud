@@ -74,6 +74,7 @@ export default function PortalSettings() {
   const [showPrices, setShowPrices] = useState(true);
   const [showServiceDuration, setShowServiceDuration] = useState(true);
   const [savingPortal, setSavingPortal] = useState(false);
+  const [activeTab, setActiveTab] = useState("general");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
