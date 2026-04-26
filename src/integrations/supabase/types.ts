@@ -781,10 +781,13 @@ export type Database = {
           created_at: string
           email: string | null
           establishment_id: string
+          global_identity_email: string | null
           id: string
           name: string
           notes: string | null
           phone: string
+          shared_history_consent: boolean
+          terms_accepted_at: string | null
           updated_at: string
           user_id: string | null
         }
@@ -793,10 +796,13 @@ export type Database = {
           created_at?: string
           email?: string | null
           establishment_id: string
+          global_identity_email?: string | null
           id?: string
           name: string
           notes?: string | null
           phone: string
+          shared_history_consent?: boolean
+          terms_accepted_at?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -805,10 +811,13 @@ export type Database = {
           created_at?: string
           email?: string | null
           establishment_id?: string
+          global_identity_email?: string | null
           id?: string
           name?: string
           notes?: string | null
           phone?: string
+          shared_history_consent?: boolean
+          terms_accepted_at?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -2029,6 +2038,13 @@ export type Database = {
             referencedRelation: "tab_items"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "professional_commissions_tab_item_id_fkey"
+            columns: ["tab_item_id"]
+            isOneToOne: false
+            referencedRelation: "vw_shared_client_history"
+            referencedColumns: ["tab_item_id"]
+          },
         ]
       }
       professional_services: {
@@ -2646,7 +2662,25 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      vw_shared_client_history: {
+        Row: {
+          closed_at: string | null
+          duration_minutes: number | null
+          establishment_id: string | null
+          global_identity_email: string | null
+          service_name: string | null
+          tab_item_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tabs_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       delete_email: {
