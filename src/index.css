@@ -239,7 +239,12 @@
     background-size: cover;
     background-position: center right;
     background-repeat: no-repeat;
-    background-attachment: fixed;
+    background-attachment: scroll;
+  }
+  @media (min-width: 1024px) {
+    .salon-photo-bg {
+      background-attachment: fixed;
+    }
   }
 
   /* Card translúcido sobre fundo fotográfico */
