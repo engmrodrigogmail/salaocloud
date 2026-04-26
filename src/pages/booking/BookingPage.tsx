@@ -28,6 +28,7 @@ type Establishment = Tables<"establishments"> & {
 const BookingPage = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { isImpersonating } = useImpersonation();
   
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(true);
