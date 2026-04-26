@@ -665,7 +665,8 @@ const BookingPage = () => {
           }}
         />
       )}
-    </div>
+      </div>
+    </>
   );
 };
 
