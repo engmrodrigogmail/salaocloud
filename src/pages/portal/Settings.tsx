@@ -186,6 +186,28 @@ export default function PortalSettings() {
     }
   };
 
+  const handleSavePortalSettings = async () => {
+    if (!establishment) return;
+    setSavingPortal(true);
+    try {
+      const { error } = await supabase
+        .from("establishments")
+        .update({
+          show_professional_names: showProfessionalNames,
+          show_prices: showPrices,
+          show_service_duration: showServiceDuration,
+        } as never)
+        .eq("id", establishment.id);
+      if (error) throw error;
+      toast.success("Configurações do portal atualizadas!");
+    } catch (error) {
+      console.error("Error saving portal settings:", error);
+      toast.error("Erro ao salvar");
+    } finally {
+      setSavingPortal(false);
+    }
+  };
+
   const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !establishment) return;
