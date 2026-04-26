@@ -67,8 +67,9 @@ interface UseAvailabilityReturn {
   closures: Closure[];
   loading: boolean;
   isEstablishmentOpen: (date: Date, time?: string) => boolean;
-  isProfessionalAvailable: (date: Date, time: string, professionalId: string, durationMinutes: number) => boolean;
-  isTimeSlotAvailable: (date: Date, time: string, professionalId: string | null, durationMinutes: number, serviceId: string, availableProfs: Professional[]) => boolean;
+  isProfessionalAvailable: (date: Date, time: string, professionalId: string, durationMinutes: number, isAdminOverride?: boolean) => boolean;
+  isTimeSlotAvailable: (date: Date, time: string, professionalId: string | null, durationMinutes: number, serviceId: string, availableProfs: Professional[], isAdminOverride?: boolean) => boolean;
+  hasProfessionalConflict: (date: Date, time: string, professionalId: string, durationMinutes: number, excludeAppointmentId?: string) => boolean;
   getWorkingHoursForDay: (date: Date, professionalId?: string) => { open: string; close: string } | null;
   getEstablishmentWorkingHoursMessage: () => string;
   findNextAvailableSlot: (fromDate: Date, serviceId: string, durationMinutes: number, preferredProfessionalId: string | null, availableProfs: Professional[]) => NextAvailableSlot | null;
