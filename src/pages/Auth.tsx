@@ -154,16 +154,21 @@ export default function Auth() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/30">
+      <div
+        className="min-h-screen flex items-center justify-center salon-photo-bg"
+        style={{ ['--salon-bg-image' as any]: `url(${salonBg})` }}
+      >
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
 
-  if (showPicker) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
-        <div className="max-w-md w-full">
+      <div
+        className="min-h-screen flex items-center justify-center salon-photo-bg px-4"
+        style={{ ['--salon-bg-image' as any]: `url(${salonBg})` }}
+      >
+        <div className="max-w-md w-full premium-card p-6 sm:p-8">
           <img src={logo} alt="Salão Cloud" className="h-12 w-auto mb-8 mx-auto" />
           <h1 className="font-display text-2xl font-bold text-center mb-2">
             Qual estabelecimento deseja acessar?
