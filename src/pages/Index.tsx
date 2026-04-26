@@ -10,7 +10,7 @@ import { SupportChat } from "@/components/landing/SupportChat";
 
 const Index = () => {
   return (
-    <div className="min-h-screen">
+    <div className="landing-light-theme min-h-screen">
       <Header />
       <main>
         <HeroSection />
