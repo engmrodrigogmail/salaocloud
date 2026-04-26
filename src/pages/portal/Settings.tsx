@@ -98,18 +98,6 @@ export default function PortalSettings() {
       // Set agenda settings
       if (data.agenda_slot_interval) setAgendaSlotInterval(data.agenda_slot_interval);
       if (data.agenda_expand_hours) setAgendaExpandHours(data.agenda_expand_hours);
-      
-      // Set brand colors - need to cast since types may not be updated yet
-      const estData = data as Establishment & {
-        brand_primary_color?: string | null;
-        brand_secondary_color?: string | null;
-        brand_accent_color?: string | null;
-      };
-      setBrandColors({
-        primary: estData.brand_primary_color || null,
-        secondary: estData.brand_secondary_color || null,
-        accent: estData.brand_accent_color || null
-      });
 
       // Portal display toggles (default to true if not set)
       const portalData = data as Establishment;
@@ -201,83 +189,6 @@ export default function PortalSettings() {
     }
   };
 
-  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !establishment) return;
-
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      toast.error("Por favor, selecione uma imagem válida");
-      return;
-    }
-
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("A imagem deve ter no máximo 2MB");
-      return;
-    }
-
-    setUploadingLogo(true);
-
-    try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${establishment.id}-${Date.now()}.${fileExt}`;
-
-      // Upload the file
-      const { error: uploadError } = await supabase.storage
-        .from("establishment-logos")
-        .upload(fileName, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from("establishment-logos")
-        .getPublicUrl(fileName);
-
-      // Update establishment with new logo URL
-      const { error: updateError } = await supabase
-        .from("establishments")
-        .update({ logo_url: urlData.publicUrl })
-        .eq("id", establishment.id);
-
-      if (updateError) throw updateError;
-
-      setEstablishment({ ...establishment, logo_url: urlData.publicUrl });
-      toast.success("Logo atualizado com sucesso!");
-    } catch (error) {
-      console.error("Error uploading logo:", error);
-      toast.error("Erro ao fazer upload do logo");
-    } finally {
-      setUploadingLogo(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  };
-
-  const handleRemoveLogo = async () => {
-    if (!establishment) return;
-
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from("establishments")
-        .update({ logo_url: null })
-        .eq("id", establishment.id);
-
-      if (error) throw error;
-
-      setEstablishment({ ...establishment, logo_url: null });
-      toast.success("Logo removido!");
-    } catch (error) {
-      console.error("Error removing logo:", error);
-      toast.error("Erro ao remover logo");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   if (authLoading || loading) {
     return (
       <PortalLayout>
@@ -290,7 +201,6 @@ export default function PortalSettings() {
   }
 
   const SECTIONS = [
-    { value: "general", label: "Geral", icon: Settings },
     { value: "working-hours", label: "Horário de Funcionamento", icon: Clock },
     { value: "professional-hours", label: "Jornada dos Profissionais", icon: Users },
     { value: "agenda-settings", label: "Visualização da Agenda", icon: CalendarDays },
