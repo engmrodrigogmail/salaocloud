@@ -126,6 +126,29 @@
     --sidebar-border: 0 0% 14%;
     --sidebar-ring: 25 70% 55%;
   }
+
+  /* ===== Landing pública mantém paleta clara original ===== */
+  .landing-light-theme {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 17%;
+    --primary: 31 32% 41%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 12% 95%;
+    --secondary-foreground: 0 0% 17%;
+    --accent: 25 21% 53%;
+    --accent-foreground: 0 0% 100%;
+    --muted: 30 12% 95%;
+    --muted-foreground: 0 0% 40%;
+    --border: 0 0% 91%;
+    --input: 0 0% 91%;
+    --ring: 31 32% 41%;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
 }
 
 @layer base {
