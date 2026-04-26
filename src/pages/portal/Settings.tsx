@@ -560,6 +560,71 @@ export default function PortalSettings() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="client-portal" className="space-y-6">
+            {establishment && (
+              <QRCodeCard slug={establishment.slug} establishmentName={establishment.name} />
+            )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5 text-primary" />
+                  Exibição na Página de Agendamento
+                </CardTitle>
+                <CardDescription>
+                  Controle quais informações suas clientes veem ao agendar online.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[
+                  {
+                    id: "show-prof",
+                    label: "Exibir nome dos profissionais",
+                    description: "Quando desligado, o sistema escolhe o profissional automaticamente.",
+                    checked: showProfessionalNames,
+                    setter: setShowProfessionalNames,
+                  },
+                  {
+                    id: "show-prices",
+                    label: "Exibir preços dos serviços",
+                    description: "Quando desligado, será mostrado \"Preço sob consulta\".",
+                    checked: showPrices,
+                    setter: setShowPrices,
+                  },
+                  {
+                    id: "show-duration",
+                    label: "Exibir duração dos serviços",
+                    description: "Quando desligado, oculta os minutos/horas no card do serviço.",
+                    checked: showServiceDuration,
+                    setter: setShowServiceDuration,
+                  },
+                ].map(({ id, label, description, checked, setter }) => (
+                  <div
+                    key={id}
+                    className="flex items-start justify-between gap-4 rounded-lg border bg-card p-4"
+                  >
+                    <div className="space-y-0.5">
+                      <Label htmlFor={id} className="text-base">{label}</Label>
+                      <p className="text-sm text-muted-foreground">{description}</p>
+                    </div>
+                    <Switch id={id} checked={checked} onCheckedChange={setter} />
+                  </div>
+                ))}
+
+                <div className="flex justify-end pt-4">
+                  <Button onClick={handleSavePortalSettings} disabled={savingPortal}>
+                    {savingPortal ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-2" />
+                    )}
+                    Salvar Preferências
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
     </PortalLayout>
