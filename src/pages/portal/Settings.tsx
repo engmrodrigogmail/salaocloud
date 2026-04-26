@@ -12,12 +12,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Clock, Save, Loader2, Users, Settings, Upload, X, Image, CalendarDays, Palette } from "lucide-react";
+import { Clock, Save, Loader2, Users, Settings, Upload, X, Image, CalendarDays, Palette, Eye } from "lucide-react";
 import type { Tables, Json } from "@/integrations/supabase/types";
 import { ProfessionalWorkingHoursCard } from "@/components/settings/ProfessionalWorkingHoursCard";
 import { BrandColorsCard } from "@/components/settings/BrandColorsCard";
+import { QRCodeCard } from "@/components/booking/QRCodeCard";
 
-type Establishment = Tables<"establishments">;
+type Establishment = Tables<"establishments"> & {
+  show_professional_names?: boolean | null;
+  show_prices?: boolean | null;
+  show_service_duration?: boolean | null;
+};
 
 interface WorkingHoursDay {
   open: string;
@@ -65,6 +70,10 @@ export default function PortalSettings() {
     secondary: null as string | null,
     accent: null as string | null
   });
+  const [showProfessionalNames, setShowProfessionalNames] = useState(true);
+  const [showPrices, setShowPrices] = useState(true);
+  const [showServiceDuration, setShowServiceDuration] = useState(true);
+  const [savingPortal, setSavingPortal] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -108,6 +117,12 @@ export default function PortalSettings() {
         secondary: estData.brand_secondary_color || null,
         accent: estData.brand_accent_color || null
       });
+
+      // Portal display toggles (default to true if not set)
+      const portalData = data as Establishment;
+      setShowProfessionalNames(portalData.show_professional_names !== false);
+      setShowPrices(portalData.show_prices !== false);
+      setShowServiceDuration(portalData.show_service_duration !== false);
     } catch (error) {
       console.error("Error fetching establishment:", error);
       toast.error("Erro ao carregar dados");
@@ -168,6 +183,28 @@ export default function PortalSettings() {
       toast.error("Erro ao salvar");
     } finally {
       setSavingAgenda(false);
+    }
+  };
+
+  const handleSavePortalSettings = async () => {
+    if (!establishment) return;
+    setSavingPortal(true);
+    try {
+      const { error } = await supabase
+        .from("establishments")
+        .update({
+          show_professional_names: showProfessionalNames,
+          show_prices: showPrices,
+          show_service_duration: showServiceDuration,
+        } as never)
+        .eq("id", establishment.id);
+      if (error) throw error;
+      toast.success("Configurações do portal atualizadas!");
+    } catch (error) {
+      console.error("Error saving portal settings:", error);
+      toast.error("Erro ao salvar");
+    } finally {
+      setSavingPortal(false);
     }
   };
 
@@ -286,6 +323,10 @@ export default function PortalSettings() {
             <TabsTrigger value="agenda-settings" className="flex items-center gap-2">
               <CalendarDays className="h-4 w-4" />
               Visualização da Agenda
+            </TabsTrigger>
+            <TabsTrigger value="client-portal" className="flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              Portal da Cliente
             </TabsTrigger>
           </TabsList>
 
@@ -514,6 +555,71 @@ export default function PortalSettings() {
                       <Save className="h-4 w-4 mr-2" />
                     )}
                     Salvar Configurações
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="client-portal" className="space-y-6">
+            {establishment && (
+              <QRCodeCard slug={establishment.slug} establishmentName={establishment.name} />
+            )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5 text-primary" />
+                  Exibição na Página de Agendamento
+                </CardTitle>
+                <CardDescription>
+                  Controle quais informações suas clientes veem ao agendar online.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {[
+                  {
+                    id: "show-prof",
+                    label: "Exibir nome dos profissionais",
+                    description: "Quando desligado, o sistema escolhe o profissional automaticamente.",
+                    checked: showProfessionalNames,
+                    setter: setShowProfessionalNames,
+                  },
+                  {
+                    id: "show-prices",
+                    label: "Exibir preços dos serviços",
+                    description: "Quando desligado, será mostrado \"Preço sob consulta\".",
+                    checked: showPrices,
+                    setter: setShowPrices,
+                  },
+                  {
+                    id: "show-duration",
+                    label: "Exibir duração dos serviços",
+                    description: "Quando desligado, oculta os minutos/horas no card do serviço.",
+                    checked: showServiceDuration,
+                    setter: setShowServiceDuration,
+                  },
+                ].map(({ id, label, description, checked, setter }) => (
+                  <div
+                    key={id}
+                    className="flex items-start justify-between gap-4 rounded-lg border bg-card p-4"
+                  >
+                    <div className="space-y-0.5">
+                      <Label htmlFor={id} className="text-base">{label}</Label>
+                      <p className="text-sm text-muted-foreground">{description}</p>
+                    </div>
+                    <Switch id={id} checked={checked} onCheckedChange={setter} />
+                  </div>
+                ))}
+
+                <div className="flex justify-end pt-4">
+                  <Button onClick={handleSavePortalSettings} disabled={savingPortal}>
+                    {savingPortal ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-2" />
+                    )}
+                    Salvar Preferências
                   </Button>
                 </div>
               </CardContent>

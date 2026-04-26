@@ -1385,6 +1385,9 @@ export type Database = {
           owner_id: string
           phone: string | null
           show_catalog: boolean
+          show_prices: boolean
+          show_professional_names: boolean
+          show_service_duration: boolean
           slug: string
           state: string | null
           status: Database["public"]["Enums"]["establishment_status"]
@@ -1414,6 +1417,9 @@ export type Database = {
           owner_id: string
           phone?: string | null
           show_catalog?: boolean
+          show_prices?: boolean
+          show_professional_names?: boolean
+          show_service_duration?: boolean
           slug: string
           state?: string | null
           status?: Database["public"]["Enums"]["establishment_status"]
@@ -1443,6 +1449,9 @@ export type Database = {
           owner_id?: string
           phone?: string | null
           show_catalog?: boolean
+          show_prices?: boolean
+          show_professional_names?: boolean
+          show_service_duration?: boolean
           slug?: string
           state?: string | null
           status?: Database["public"]["Enums"]["establishment_status"]

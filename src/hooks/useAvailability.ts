@@ -67,8 +67,9 @@ interface UseAvailabilityReturn {
   closures: Closure[];
   loading: boolean;
   isEstablishmentOpen: (date: Date, time?: string) => boolean;
-  isProfessionalAvailable: (date: Date, time: string, professionalId: string, durationMinutes: number) => boolean;
-  isTimeSlotAvailable: (date: Date, time: string, professionalId: string | null, durationMinutes: number, serviceId: string, availableProfs: Professional[]) => boolean;
+  isProfessionalAvailable: (date: Date, time: string, professionalId: string, durationMinutes: number, isAdminOverride?: boolean) => boolean;
+  isTimeSlotAvailable: (date: Date, time: string, professionalId: string | null, durationMinutes: number, serviceId: string, availableProfs: Professional[], isAdminOverride?: boolean) => boolean;
+  hasProfessionalConflict: (date: Date, time: string, professionalId: string, durationMinutes: number, excludeAppointmentId?: string) => boolean;
   getWorkingHoursForDay: (date: Date, professionalId?: string) => { open: string; close: string } | null;
   getEstablishmentWorkingHoursMessage: () => string;
   findNextAvailableSlot: (fromDate: Date, serviceId: string, durationMinutes: number, preferredProfessionalId: string | null, availableProfs: Professional[]) => NextAvailableSlot | null;
@@ -250,13 +251,14 @@ export function useAvailability({
   }, [blockedTimes]);
 
   // Check if a professional has an existing appointment at the time
-  const hasProfessionalAppointment = useCallback((date: Date, time: string, professionalId: string, durationMinutes: number): boolean => {
+  const hasProfessionalAppointment = useCallback((date: Date, time: string, professionalId: string, durationMinutes: number, excludeAppointmentId?: string): boolean => {
     const [hours, minutes] = time.split(":").map(Number);
     const slotStart = setMinutes(setHours(date, hours), minutes);
     const slotEnd = addMinutes(slotStart, durationMinutes);
 
     return appointments.some(apt => {
       if (apt.status === "cancelled") return false;
+      if (excludeAppointmentId && apt.id === excludeAppointmentId) return false;
       if (apt.professional_id !== professionalId) return false;
       
       const aptStart = parseISO(apt.scheduled_at);
@@ -266,8 +268,13 @@ export function useAvailability({
     });
   }, [appointments]);
 
+  // Public helper: check if there's an existing conflicting appointment for the professional
+  const hasProfessionalConflict = useCallback((date: Date, time: string, professionalId: string, durationMinutes: number, excludeAppointmentId?: string): boolean => {
+    return hasProfessionalAppointment(date, time, professionalId, durationMinutes, excludeAppointmentId);
+  }, [hasProfessionalAppointment]);
+
   // Check if a professional is available
-  const isProfessionalAvailable = useCallback((date: Date, time: string, professionalId: string, durationMinutes: number): boolean => {
+  const isProfessionalAvailable = useCallback((date: Date, time: string, professionalId: string, durationMinutes: number, isAdminOverride: boolean = false): boolean => {
     // Check establishment open
     if (!isEstablishmentOpen(date, time)) return false;
     
@@ -287,8 +294,8 @@ export function useAvailability({
     // Check blocked times
     if (isProfessionalBlocked(date, time, professionalId, durationMinutes)) return false;
     
-    // Check existing appointments
-    if (hasProfessionalAppointment(date, time, professionalId, durationMinutes)) return false;
+    // Check existing appointments (skipped when admin explicitly allows simultaneous booking)
+    if (!isAdminOverride && hasProfessionalAppointment(date, time, professionalId, durationMinutes)) return false;
     
     return true;
   }, [isEstablishmentOpen, getWorkingHoursForDay, isProfessionalBlocked, hasProfessionalAppointment]);
@@ -300,13 +307,14 @@ export function useAvailability({
     professionalId: string | null, 
     durationMinutes: number,
     serviceId: string,
-    availableProfs: Professional[]
+    availableProfs: Professional[],
+    isAdminOverride: boolean = false
   ): boolean => {
     if (professionalId) {
-      return isProfessionalAvailable(date, time, professionalId, durationMinutes);
+      return isProfessionalAvailable(date, time, professionalId, durationMinutes, isAdminOverride);
     }
     
-    return availableProfs.some(p => isProfessionalAvailable(date, time, p.id, durationMinutes));
+    return availableProfs.some(p => isProfessionalAvailable(date, time, p.id, durationMinutes, isAdminOverride));
   }, [isProfessionalAvailable]);
 
   // Generate establishment working hours message
@@ -459,6 +467,7 @@ export function useAvailability({
     isEstablishmentOpen,
     isProfessionalAvailable,
     isTimeSlotAvailable,
+    hasProfessionalConflict,
     getWorkingHoursForDay,
     getEstablishmentWorkingHoursMessage,
     findNextAvailableSlot,
