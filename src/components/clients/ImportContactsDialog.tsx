@@ -118,8 +118,16 @@ export function ImportContactsDialog({ establishmentId, onImportComplete }: Impo
     setStep("importing");
 
     try {
-      const contactsToImport = contacts.filter((_, i) => selectedContacts.has(i));
-      
+      // Deduplicate by phone within the selection itself (same phone in 2 contacts)
+      const seen = new Set<string>();
+      const contactsToImport = contacts
+        .filter((_, i) => selectedContacts.has(i))
+        .filter((c) => {
+          if (!c.phone || seen.has(c.phone)) return false;
+          seen.add(c.phone);
+          return true;
+        });
+
       // Get all existing phones in one query
       const phones = contactsToImport.map(c => c.phone);
       const BATCH = 500;
