@@ -22,7 +22,7 @@ import { format, addDays, setHours, setMinutes, startOfDay, isBefore, addMinutes
 import { ptBR } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAvailability } from "@/hooks/useAvailability";
-import { useBrandColors, hexToHsl } from "@/hooks/useBrandColors";
+import { EstablishmentNameHeader } from "@/components/branding/EstablishmentNameHeader";
 import { EstablishmentAIChat } from "@/components/ai-assistant/EstablishmentAIChat";
 
 type Establishment = Tables<"establishments"> & { cancellation_policy?: string | null };
@@ -112,33 +112,8 @@ const ClientPortal = () => {
     appointments: allAppointments,
   });
 
-  // Use brand colors hook
-  const brandColors = useBrandColors(
-    establishment?.logo_url,
-    {
-      primary: establishment?.brand_primary_color,
-      secondary: establishment?.brand_secondary_color,
-      accent: establishment?.brand_accent_color,
-    }
-  );
+  // Brand colors and logo customization removed — SaaS uses unified design tokens.
 
-  // Apply brand colors as CSS variables
-  useEffect(() => {
-    if (establishment && brandColors.primary) {
-      const root = document.documentElement;
-      
-      root.style.setProperty('--brand-primary', hexToHsl(brandColors.primary));
-      root.style.setProperty('--brand-secondary', hexToHsl(brandColors.secondary));
-      root.style.setProperty('--brand-accent', hexToHsl(brandColors.accent));
-    }
-    
-    return () => {
-      const root = document.documentElement;
-      root.style.removeProperty('--brand-primary');
-      root.style.removeProperty('--brand-secondary');
-      root.style.removeProperty('--brand-accent');
-    };
-  }, [establishment, brandColors.primary, brandColors.secondary, brandColors.accent]);
 
   useEffect(() => {
     if (slug) {
@@ -837,39 +812,16 @@ const ClientPortal = () => {
     </Dialog>
   );
 
-  // Get primary color for login screen
-  const loginPrimaryColor = brandColors.primary;
-  const loginPrimaryHsl = loginPrimaryColor ? hexToHsl(loginPrimaryColor) : null;
-
   // Login/Register screen
   if (!isAuthenticated) {
     return (
-      <div 
-        className="min-h-screen py-8 px-4"
-        style={{
-          background: loginPrimaryHsl 
-            ? `linear-gradient(to bottom right, hsl(${loginPrimaryHsl} / 0.05), hsl(var(--secondary) / 0.2), hsl(${loginPrimaryHsl} / 0.05))`
-            : undefined
-        }}
-      >
+      <div className="min-h-screen bg-background">
         <PhoneConfirmDialog />
-        <div className="max-w-md mx-auto">
-          {/* Header with Logo */}
-          <div className="text-center mb-8">
-            {establishment.logo_url ? (
-              <img 
-                src={establishment.logo_url} 
-                alt={establishment.name}
-                className="h-16 md:h-20 w-auto object-contain mx-auto mb-4 max-w-[200px]"
-              />
-            ) : (
-              <Store className="h-12 w-12 text-primary mx-auto mb-4" />
-            )}
-            <h1 className="text-2xl font-display font-bold text-foreground mb-2">
-              {establishment.name}
-            </h1>
-            <p className="text-muted-foreground">Área do Cliente</p>
-          </div>
+        <EstablishmentNameHeader
+          name={establishment.name}
+          subtitle="Área do Cliente"
+        />
+        <div className="max-w-md mx-auto px-4 py-6 sm:py-8">
 
           <Card>
             <CardHeader>
@@ -1377,67 +1329,21 @@ const ClientPortal = () => {
     );
   }
 
-  // Get primary color for styling
-  const primaryColor = brandColors.primary;
-  const primaryColorHsl = primaryColor ? hexToHsl(primaryColor) : null;
-
   // Authenticated client portal
   return (
-    <div 
-      className="min-h-screen"
-      style={{
-        background: primaryColorHsl 
-          ? `linear-gradient(to bottom right, hsl(${primaryColorHsl} / 0.05), hsl(var(--secondary) / 0.2), hsl(${primaryColorHsl} / 0.05))`
-          : undefined
-      }}
-    >
-      {/* Header with brand colors */}
-      <header 
-        className="backdrop-blur-sm border-b sticky top-0 z-50"
-        style={{
-          backgroundColor: primaryColorHsl ? `hsl(${primaryColorHsl} / 0.95)` : undefined,
-          borderColor: primaryColorHsl ? `hsl(${primaryColorHsl} / 0.3)` : undefined,
-        }}
-      >
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {/* Logo */}
-            {establishment.logo_url && (
-              <img 
-                src={establishment.logo_url} 
-                alt={establishment.name}
-                className="h-10 md:h-12 w-auto object-contain max-w-[120px]"
-              />
-            )}
-            <div>
-              <h1 
-                className="text-xl font-display font-bold"
-                style={{ color: primaryColorHsl ? 'white' : undefined }}
-              >
-                {establishment.name}
-              </h1>
-              <p 
-                className="text-sm"
-                style={{ color: primaryColorHsl ? 'rgba(255,255,255,0.8)' : 'var(--muted-foreground)' }}
-              >
-                Olá, {client?.name}
-              </p>
-            </div>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleLogout}
-            style={{ 
-              color: primaryColorHsl ? 'white' : undefined,
-            }}
-            className={primaryColorHsl ? 'hover:bg-white/20' : ''}
-          >
+    <div className="min-h-screen bg-background">
+      <EstablishmentNameHeader
+        name={establishment.name}
+        subtitle={client?.name ? `Olá, ${client.name}` : undefined}
+      />
+      <div className="border-b border-border bg-background">
+        <div className="max-w-7xl mx-auto px-4 py-2 flex justify-end">
+          <Button variant="ghost" size="sm" onClick={handleLogout}>
             <LogOut className="h-4 w-4 mr-2" />
             Sair
           </Button>
         </div>
-      </header>
+      </div>
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         <Tabs defaultValue="booking" className="space-y-6">
@@ -1660,14 +1566,9 @@ const ClientPortal = () => {
       </main>
 
       {/* AI Assistant Chat */}
-      <EstablishmentAIChat 
-        establishmentId={establishment.id} 
+      <EstablishmentAIChat
+        establishmentId={establishment.id}
         establishmentName={establishment.name}
-        brandColors={{
-          primary: brandColors.primary,
-          secondary: brandColors.secondary,
-          accent: brandColors.accent,
-        }}
         clientData={client ? {
           id: client.id,
           name: client.name,

@@ -12,10 +12,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Clock, Save, Loader2, Users, Settings, Upload, X, Image, CalendarDays, Palette, Eye } from "lucide-react";
+import { Clock, Save, Loader2, Users, Settings, CalendarDays, Eye } from "lucide-react";
 import type { Tables, Json } from "@/integrations/supabase/types";
 import { ProfessionalWorkingHoursCard } from "@/components/settings/ProfessionalWorkingHoursCard";
-import { BrandColorsCard } from "@/components/settings/BrandColorsCard";
 import { QRCodeCard } from "@/components/booking/QRCodeCard";
 
 type Establishment = Tables<"establishments"> & {
@@ -61,21 +60,14 @@ export default function PortalSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingAgenda, setSavingAgenda] = useState(false);
-  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [workingHours, setWorkingHours] = useState<WorkingHours>(DEFAULT_WORKING_HOURS);
   const [agendaSlotInterval, setAgendaSlotInterval] = useState(30);
   const [agendaExpandHours, setAgendaExpandHours] = useState(1);
-  const [brandColors, setBrandColors] = useState({
-    primary: null as string | null,
-    secondary: null as string | null,
-    accent: null as string | null
-  });
   const [showProfessionalNames, setShowProfessionalNames] = useState(true);
   const [showPrices, setShowPrices] = useState(true);
   const [showServiceDuration, setShowServiceDuration] = useState(true);
   const [savingPortal, setSavingPortal] = useState(false);
-  const [activeTab, setActiveTab] = useState("general");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState("working-hours");
 
   useEffect(() => {
     if (user && slug) {
@@ -106,18 +98,6 @@ export default function PortalSettings() {
       // Set agenda settings
       if (data.agenda_slot_interval) setAgendaSlotInterval(data.agenda_slot_interval);
       if (data.agenda_expand_hours) setAgendaExpandHours(data.agenda_expand_hours);
-      
-      // Set brand colors - need to cast since types may not be updated yet
-      const estData = data as Establishment & {
-        brand_primary_color?: string | null;
-        brand_secondary_color?: string | null;
-        brand_accent_color?: string | null;
-      };
-      setBrandColors({
-        primary: estData.brand_primary_color || null,
-        secondary: estData.brand_secondary_color || null,
-        accent: estData.brand_accent_color || null
-      });
 
       // Portal display toggles (default to true if not set)
       const portalData = data as Establishment;
@@ -209,83 +189,6 @@ export default function PortalSettings() {
     }
   };
 
-  const handleLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !establishment) return;
-
-    // Validate file type
-    if (!file.type.startsWith("image/")) {
-      toast.error("Por favor, selecione uma imagem válida");
-      return;
-    }
-
-    // Validate file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("A imagem deve ter no máximo 2MB");
-      return;
-    }
-
-    setUploadingLogo(true);
-
-    try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${establishment.id}-${Date.now()}.${fileExt}`;
-
-      // Upload the file
-      const { error: uploadError } = await supabase.storage
-        .from("establishment-logos")
-        .upload(fileName, file, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from("establishment-logos")
-        .getPublicUrl(fileName);
-
-      // Update establishment with new logo URL
-      const { error: updateError } = await supabase
-        .from("establishments")
-        .update({ logo_url: urlData.publicUrl })
-        .eq("id", establishment.id);
-
-      if (updateError) throw updateError;
-
-      setEstablishment({ ...establishment, logo_url: urlData.publicUrl });
-      toast.success("Logo atualizado com sucesso!");
-    } catch (error) {
-      console.error("Error uploading logo:", error);
-      toast.error("Erro ao fazer upload do logo");
-    } finally {
-      setUploadingLogo(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  };
-
-  const handleRemoveLogo = async () => {
-    if (!establishment) return;
-
-    setSaving(true);
-    try {
-      const { error } = await supabase
-        .from("establishments")
-        .update({ logo_url: null })
-        .eq("id", establishment.id);
-
-      if (error) throw error;
-
-      setEstablishment({ ...establishment, logo_url: null });
-      toast.success("Logo removido!");
-    } catch (error) {
-      console.error("Error removing logo:", error);
-      toast.error("Erro ao remover logo");
-    } finally {
-      setSaving(false);
-    }
-  };
-
   if (authLoading || loading) {
     return (
       <PortalLayout>
@@ -298,7 +201,6 @@ export default function PortalSettings() {
   }
 
   const SECTIONS = [
-    { value: "general", label: "Geral", icon: Settings },
     { value: "working-hours", label: "Horário de Funcionamento", icon: Clock },
     { value: "professional-hours", label: "Jornada dos Profissionais", icon: Users },
     { value: "agenda-settings", label: "Visualização da Agenda", icon: CalendarDays },
@@ -340,7 +242,7 @@ export default function PortalSettings() {
           </div>
 
           {/* Desktop: Grid tabs (no horizontal scroll) */}
-          <TabsList className="hidden md:grid md:grid-cols-5 mb-6 h-auto p-1 w-full">
+          <TabsList className="hidden md:grid md:grid-cols-4 mb-6 h-auto p-1 w-full">
             {SECTIONS.map(({ value, label, icon: Icon }) => (
               <TabsTrigger
                 key={value}
@@ -352,93 +254,6 @@ export default function PortalSettings() {
               </TabsTrigger>
             ))}
           </TabsList>
-
-          <TabsContent value="general">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Image className="h-5 w-5 text-primary" />
-                  Logo do Estabelecimento
-                </CardTitle>
-                <CardDescription>
-                  Adicione seu logo para personalizar a página de agendamento vista pelos seus clientes
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex flex-col sm:flex-row gap-6 items-start">
-                  {/* Logo Preview */}
-                  <div className="flex-shrink-0">
-                    {establishment?.logo_url ? (
-                      <div className="relative group">
-                        <div className="w-32 h-32 rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 flex items-center justify-center overflow-hidden">
-                          <img
-                            src={establishment.logo_url}
-                            alt="Logo do estabelecimento"
-                            className="max-w-full max-h-full object-contain p-2"
-                          />
-                        </div>
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute -top-2 -right-2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={handleRemoveLogo}
-                          disabled={saving}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="w-32 h-32 rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/50 flex items-center justify-center">
-                        <Image className="h-8 w-8 text-muted-foreground/50" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Upload Controls */}
-                  <div className="flex-1 space-y-4">
-                    <div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        onChange={handleLogoUpload}
-                        className="hidden"
-                        id="logo-upload"
-                      />
-                      <Button
-                        variant="outline"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={uploadingLogo}
-                        className="w-full sm:w-auto"
-                      >
-                        {uploadingLogo ? (
-                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        ) : (
-                          <Upload className="h-4 w-4 mr-2" />
-                        )}
-                        {uploadingLogo ? "Enviando..." : "Enviar Logo"}
-                      </Button>
-                    </div>
-                    <div className="text-sm text-muted-foreground space-y-1">
-                      <p>• Formatos aceitos: JPG, PNG, WEBP, SVG</p>
-                      <p>• Tamanho máximo: 2MB</p>
-                      <p>• Recomendado: imagem quadrada ou com proporção 2:1</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Brand Colors Card */}
-            {establishment && (
-              <BrandColorsCard
-                establishmentId={establishment.id}
-                logoUrl={establishment.logo_url}
-                savedColors={brandColors}
-                onColorsUpdate={(colors) => setBrandColors(colors)}
-              />
-            )}
-          </TabsContent>
 
           <TabsContent value="working-hours">
             <Card>
