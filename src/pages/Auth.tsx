@@ -18,6 +18,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/assets/logo.webp";
+import salonBg from "@/assets/salon-dark-bg.png";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
