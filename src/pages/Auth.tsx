@@ -163,6 +163,7 @@ export default function Auth() {
     );
   }
 
+  if (showPicker) {
     return (
       <div
         className="min-h-screen flex items-center justify-center salon-photo-bg px-4"
