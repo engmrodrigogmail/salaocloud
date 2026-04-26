@@ -12,10 +12,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Clock, Save, Loader2, Users, Settings, Upload, X, Image, CalendarDays, Palette, Eye } from "lucide-react";
+import { Clock, Save, Loader2, Users, Settings, CalendarDays, Eye } from "lucide-react";
 import type { Tables, Json } from "@/integrations/supabase/types";
 import { ProfessionalWorkingHoursCard } from "@/components/settings/ProfessionalWorkingHoursCard";
-import { BrandColorsCard } from "@/components/settings/BrandColorsCard";
 import { QRCodeCard } from "@/components/booking/QRCodeCard";
 
 type Establishment = Tables<"establishments"> & {
@@ -61,21 +60,14 @@ export default function PortalSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingAgenda, setSavingAgenda] = useState(false);
-  const [uploadingLogo, setUploadingLogo] = useState(false);
   const [workingHours, setWorkingHours] = useState<WorkingHours>(DEFAULT_WORKING_HOURS);
   const [agendaSlotInterval, setAgendaSlotInterval] = useState(30);
   const [agendaExpandHours, setAgendaExpandHours] = useState(1);
-  const [brandColors, setBrandColors] = useState({
-    primary: null as string | null,
-    secondary: null as string | null,
-    accent: null as string | null
-  });
   const [showProfessionalNames, setShowProfessionalNames] = useState(true);
   const [showPrices, setShowPrices] = useState(true);
   const [showServiceDuration, setShowServiceDuration] = useState(true);
   const [savingPortal, setSavingPortal] = useState(false);
-  const [activeTab, setActiveTab] = useState("general");
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [activeTab, setActiveTab] = useState("working-hours");
 
   useEffect(() => {
     if (user && slug) {
