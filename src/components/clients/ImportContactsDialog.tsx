@@ -118,8 +118,16 @@ export function ImportContactsDialog({ establishmentId, onImportComplete }: Impo
     setStep("importing");
 
     try {
-      const contactsToImport = contacts.filter((_, i) => selectedContacts.has(i));
-      
+      // Deduplicate by phone within the selection itself (same phone in 2 contacts)
+      const seen = new Set<string>();
+      const contactsToImport = contacts
+        .filter((_, i) => selectedContacts.has(i))
+        .filter((c) => {
+          if (!c.phone || seen.has(c.phone)) return false;
+          seen.add(c.phone);
+          return true;
+        });
+
       // Get all existing phones in one query
       const phones = contactsToImport.map(c => c.phone);
       const BATCH = 500;
@@ -280,18 +288,25 @@ export function ImportContactsDialog({ establishmentId, onImportComplete }: Impo
 
         {step === "select" && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border">
-              <div 
-                className="flex items-center gap-3 cursor-pointer flex-1"
-                onClick={toggleAll}
-              >
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/10 border border-blue-500/30">
+              <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+              <p className="text-xs text-muted-foreground">
+                Use <strong>"Selecionar todos"</strong> abaixo para importar todos de uma vez, ou desmarque os que não quiser.
+              </p>
+            </div>
+
+            <div 
+              className="flex items-center justify-between p-3 bg-primary/10 rounded-lg border border-primary/30 cursor-pointer hover:bg-primary/15 transition-colors"
+              onClick={toggleAll}
+            >
+              <div className="flex items-center gap-3 flex-1">
                 <Checkbox
                   checked={selectedContacts.size === contacts.length && contacts.length > 0}
                   onCheckedChange={toggleAll}
                 />
-                <span className="font-medium">Selecionar todos</span>
+                <span className="font-semibold">Selecionar todos</span>
               </div>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm font-medium text-primary">
                 {selectedContacts.size}/{contacts.length}
               </span>
             </div>
