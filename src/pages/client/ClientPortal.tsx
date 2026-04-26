@@ -14,9 +14,10 @@ import { toast } from "sonner";
 import { 
   Calendar, Clock, User, Phone, CreditCard, ArrowLeft, 
   Loader2, Store, Scissors, Star, Gift, LogOut, Filter,
-  ChevronLeft, ChevronRight, AlertCircle, FileText, Info
+  ChevronLeft, ChevronRight, AlertCircle, FileText, Info, MessageCircle
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, addDays, setHours, setMinutes, startOfDay, isBefore, addMinutes, isAfter, parseISO, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
