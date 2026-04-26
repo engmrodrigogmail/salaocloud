@@ -117,6 +117,12 @@ export default function PortalSettings() {
         secondary: estData.brand_secondary_color || null,
         accent: estData.brand_accent_color || null
       });
+
+      // Portal display toggles (default to true if not set)
+      const portalData = data as Establishment;
+      setShowProfessionalNames(portalData.show_professional_names !== false);
+      setShowPrices(portalData.show_prices !== false);
+      setShowServiceDuration(portalData.show_service_duration !== false);
     } catch (error) {
       console.error("Error fetching establishment:", error);
       toast.error("Erro ao carregar dados");
