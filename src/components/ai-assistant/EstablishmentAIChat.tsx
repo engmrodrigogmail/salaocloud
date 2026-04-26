@@ -359,7 +359,7 @@ export function EstablishmentAIChat({
     sendMessage(inputValue);
   };
 
-  const primaryColor = brandColors?.primary || 'hsl(var(--primary))';
+  const primaryColor = 'hsl(var(--primary))';
 
   if (!isOpen) {
     return (
