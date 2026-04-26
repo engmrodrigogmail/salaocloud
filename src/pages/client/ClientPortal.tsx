@@ -22,7 +22,7 @@ import { format, addDays, setHours, setMinutes, startOfDay, isBefore, addMinutes
 import { ptBR } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
 import { useAvailability } from "@/hooks/useAvailability";
-import { useBrandColors, hexToHsl } from "@/hooks/useBrandColors";
+import { EstablishmentNameHeader } from "@/components/branding/EstablishmentNameHeader";
 import { EstablishmentAIChat } from "@/components/ai-assistant/EstablishmentAIChat";
 
 type Establishment = Tables<"establishments"> & { cancellation_policy?: string | null };
@@ -112,33 +112,8 @@ const ClientPortal = () => {
     appointments: allAppointments,
   });
 
-  // Use brand colors hook
-  const brandColors = useBrandColors(
-    establishment?.logo_url,
-    {
-      primary: establishment?.brand_primary_color,
-      secondary: establishment?.brand_secondary_color,
-      accent: establishment?.brand_accent_color,
-    }
-  );
+  // Brand colors and logo customization removed — SaaS uses unified design tokens.
 
-  // Apply brand colors as CSS variables
-  useEffect(() => {
-    if (establishment && brandColors.primary) {
-      const root = document.documentElement;
-      
-      root.style.setProperty('--brand-primary', hexToHsl(brandColors.primary));
-      root.style.setProperty('--brand-secondary', hexToHsl(brandColors.secondary));
-      root.style.setProperty('--brand-accent', hexToHsl(brandColors.accent));
-    }
-    
-    return () => {
-      const root = document.documentElement;
-      root.style.removeProperty('--brand-primary');
-      root.style.removeProperty('--brand-secondary');
-      root.style.removeProperty('--brand-accent');
-    };
-  }, [establishment, brandColors.primary, brandColors.secondary, brandColors.accent]);
 
   useEffect(() => {
     if (slug) {
