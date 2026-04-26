@@ -2082,7 +2082,6 @@ export type Database = {
       professionals: {
         Row: {
           avatar_url: string | null
-          commission_percentage: number | null
           created_at: string
           email: string | null
           establishment_id: string
@@ -2100,7 +2099,6 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
-          commission_percentage?: number | null
           created_at?: string
           email?: string | null
           establishment_id: string
@@ -2118,7 +2116,6 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
-          commission_percentage?: number | null
           created_at?: string
           email?: string | null
           establishment_id?: string
