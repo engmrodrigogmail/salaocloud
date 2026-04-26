@@ -227,101 +227,79 @@ const ClientPortal = () => {
     return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
   };
 
-  // Step 1: Check if CPF exists
-  const handleCheckCpf = async () => {
+  // Step 1: Check if email exists in this establishment OR globally
+  const handleCheckEmail = async () => {
     if (!establishment) return;
-    
-    const cpfClean = cpfToCheck.replace(/\D/g, "");
-    
-    if (cpfClean.length !== 11) {
-      toast.error("CPF inválido");
+
+    const email = emailToCheck.trim().toLowerCase();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast.error("E-mail inválido");
       return;
     }
 
-    setCheckingCpf(true);
+    setCheckingEmail(true);
 
     try {
-      const { data: clientData, error } = await supabase
+      // Check current establishment
+      const { data: localClient, error: localError } = await supabase
         .from("clients")
         .select("*")
         .eq("establishment_id", establishment.id)
-        .eq("cpf", cpfClean)
+        .or(`global_identity_email.eq.${email},email.eq.${email}`)
         .maybeSingle();
 
-      if (error) throw error;
+      if (localError) throw localError;
 
-      setCpfChecked(true);
-      
-      if (clientData) {
+      setEmailChecked(true);
+
+      if (localClient) {
         setClientExists(true);
-        setCpf(formatCpf(cpfClean));
-      } else {
-        setClientExists(false);
-        setRegisterCpf(formatCpf(cpfClean));
+        setClient(localClient);
+        return;
       }
+
+      // Identity stitching: check if this email exists anywhere on the platform
+      const { data: globalClient } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("global_identity_email", email)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (globalClient) {
+        // Cliente existe em outro salão — fazer stitching
+        setStitchSourceClient(globalClient);
+        setClientExists(true);
+        return;
+      }
+
+      // Novo cadastro
+      setClientExists(false);
     } catch (error) {
-      console.error("Error checking CPF:", error);
-      toast.error("Erro ao verificar CPF");
+      console.error("Error checking email:", error);
+      toast.error("Erro ao verificar e-mail");
     } finally {
-      setCheckingCpf(false);
+      setCheckingEmail(false);
     }
   };
 
-  // State for phone confirmation dialog
-  const [showPhoneConfirm, setShowPhoneConfirm] = useState(false);
-  const [pendingClient, setPendingClient] = useState<Client | null>(null);
-  const [newPhone, setNewPhone] = useState("");
-
+  // Login (cliente já existe neste salão) — entra direto via e-mail (sem senha, sem CPF)
   const handleLogin = async () => {
-    if (!establishment) return;
-    
-    const cpfClean = cpf.replace(/\D/g, "");
-    const phoneClean = phone.replace(/\D/g, "");
-    
-    if (cpfClean.length !== 11) {
-      toast.error("CPF inválido");
-      return;
-    }
-    
-    if (phoneClean.length < 10) {
-      toast.error("Telefone inválido");
-      return;
-    }
-
+    if (!client) return;
     setAuthenticating(true);
-
     try {
-      // Only check by CPF, not by phone
-      const { data: clientData, error } = await supabase
-        .from("clients")
-        .select("*")
-        .eq("establishment_id", establishment.id)
-        .eq("cpf", cpfClean)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (!clientData) {
-        toast.error("Cadastro não encontrado. Verifique o CPF.");
-        return;
+      // Garantir global_identity_email preenchido
+      if (!client.global_identity_email) {
+        await supabase
+          .from("clients")
+          .update({ global_identity_email: emailToCheck.trim().toLowerCase() })
+          .eq("id", client.id);
       }
-
-      // Check if phone is different from registered
-      if (clientData.phone !== phoneClean) {
-        // Show confirmation dialog for phone update
-        setPendingClient(clientData);
-        setNewPhone(phoneClean);
-        setShowPhoneConfirm(true);
-        setAuthenticating(false);
-        return;
-      }
-
-      // Phone matches, proceed with login
-      setClient(clientData);
       setIsAuthenticated(true);
-      await fetchClientData(clientData.id);
+      await fetchClientData(client.id);
       await fetchAllAppointments();
-      toast.success(`Bem-vindo(a), ${clientData.name}!`, { duration: 2000 });
+      toast.success(`Bem-vindo(a), ${client.name}!`, { duration: 2000 });
     } catch (error) {
       console.error("Error authenticating:", error);
       toast.error("Erro ao fazer login");
@@ -330,62 +308,72 @@ const ClientPortal = () => {
     }
   };
 
-  const handleConfirmPhoneUpdate = async () => {
-    if (!pendingClient) return;
-
+  // Identity stitching: criar registro local copiando dados do registro global
+  const handleStitch = async () => {
+    if (!establishment || !stitchSourceClient) return;
     setAuthenticating(true);
     try {
-      // Update phone number
-      const { error } = await supabase
+      const email = emailToCheck.trim().toLowerCase();
+      const { data: newClient, error } = await supabase
         .from("clients")
-        .update({ phone: newPhone })
-        .eq("id", pendingClient.id);
+        .insert({
+          establishment_id: establishment.id,
+          name: stitchSourceClient.name,
+          phone: stitchSourceClient.phone,
+          email,
+          global_identity_email: email,
+          terms_accepted_at: new Date().toISOString(),
+          shared_history_consent: stitchSourceClient.shared_history_consent ?? false,
+        })
+        .select()
+        .single();
 
       if (error) throw error;
 
-      const updatedClient = { ...pendingClient, phone: newPhone };
-      setClient(updatedClient);
+      setClient(newClient);
+      setStitchSourceClient(null);
       setIsAuthenticated(true);
-      setShowPhoneConfirm(false);
-      setPendingClient(null);
-      setNewPhone("");
-      await fetchClientData(updatedClient.id);
+
+      if (loyaltyProgram) {
+        await supabase.from("client_loyalty_points").insert({
+          client_id: newClient.id,
+          loyalty_program_id: loyaltyProgram.id,
+          points_balance: 0,
+          total_points_earned: 0,
+        });
+      }
+
       await fetchAllAppointments();
-      toast.success(`Bem-vindo(a), ${updatedClient.name}! Telefone atualizado.`, { duration: 2000 });
+      toast.success(`Bem-vindo(a) de volta, ${newClient.name}!`, { duration: 2500 });
     } catch (error) {
-      console.error("Error updating phone:", error);
-      toast.error("Erro ao atualizar telefone");
+      console.error("Error stitching identity:", error);
+      toast.error("Erro ao vincular cadastro");
     } finally {
       setAuthenticating(false);
     }
   };
 
-  const handleCancelPhoneUpdate = () => {
-    setShowPhoneConfirm(false);
-    setPendingClient(null);
-    setNewPhone("");
-    setPhone("");
-    toast.info("Informe o telefone cadastrado para continuar.");
-  };
-
   const handleRegister = async () => {
     if (!establishment) return;
-    
+
     const cpfClean = registerCpf.replace(/\D/g, "");
     const phoneClean = registerPhone.replace(/\D/g, "");
-    
+    const email = emailToCheck.trim().toLowerCase();
+
     if (!registerName.trim()) {
       toast.error("Nome é obrigatório");
       return;
     }
-    
-    if (cpfClean.length !== 11) {
+    if (phoneClean.length < 10) {
+      toast.error("Celular inválido");
+      return;
+    }
+    if (cpfClean && cpfClean.length !== 11) {
       toast.error("CPF inválido");
       return;
     }
-    
-    if (phoneClean.length < 10) {
-      toast.error("Telefone inválido");
+    if (!acceptedTerms) {
+      toast.error("Você precisa aceitar os Termos de Uso para continuar");
       return;
     }
 
@@ -397,8 +385,12 @@ const ClientPortal = () => {
         .insert({
           establishment_id: establishment.id,
           name: registerName.trim(),
-          cpf: cpfClean,
+          cpf: cpfClean || null,
           phone: phoneClean,
+          email,
+          global_identity_email: email,
+          terms_accepted_at: new Date().toISOString(),
+          shared_history_consent: shareHistoryConsent,
         })
         .select()
         .single();
@@ -407,8 +399,7 @@ const ClientPortal = () => {
 
       setClient(newClient);
       setIsAuthenticated(true);
-      
-      // Create loyalty points if program exists
+
       if (loyaltyProgram) {
         await supabase
           .from("client_loyalty_points")
@@ -419,7 +410,7 @@ const ClientPortal = () => {
             total_points_earned: 0,
           });
       }
-      
+
       await fetchAllAppointments();
       toast.success(`Cadastro realizado com sucesso, ${newClient.name}!`, { duration: 2000 });
     } catch (error) {
