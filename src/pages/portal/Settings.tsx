@@ -12,12 +12,17 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Clock, Save, Loader2, Users, Settings, Upload, X, Image, CalendarDays, Palette } from "lucide-react";
+import { Clock, Save, Loader2, Users, Settings, Upload, X, Image, CalendarDays, Palette, Eye } from "lucide-react";
 import type { Tables, Json } from "@/integrations/supabase/types";
 import { ProfessionalWorkingHoursCard } from "@/components/settings/ProfessionalWorkingHoursCard";
 import { BrandColorsCard } from "@/components/settings/BrandColorsCard";
+import { QRCodeCard } from "@/components/booking/QRCodeCard";
 
-type Establishment = Tables<"establishments">;
+type Establishment = Tables<"establishments"> & {
+  show_professional_names?: boolean | null;
+  show_prices?: boolean | null;
+  show_service_duration?: boolean | null;
+};
 
 interface WorkingHoursDay {
   open: string;
