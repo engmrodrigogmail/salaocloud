@@ -122,6 +122,25 @@ export default function Auth() {
     }
   };
 
+  const handleNativeLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const email = String(formData.get("email") || "").trim();
+    const password = String(formData.get("password") || "");
+    const parsed = loginSchema.safeParse({ email, password });
+
+    if (!parsed.success) {
+      toast({
+        variant: "destructive",
+        title: "Verifique os dados",
+        description: parsed.error.issues[0]?.message || "Informe email e senha válidos.",
+      });
+      return;
+    }
+
+    await handleLogin(parsed.data);
+  };
+
   const handleSignup = async (data: SignupFormData) => {
     debug("signup_submit", {
       emailLen: data.email.length,
