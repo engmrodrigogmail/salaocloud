@@ -27,7 +27,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useInternoTour } from "@/hooks/useInternoTour";
-import logo from "@/assets/logo-salaocloud.png";
+import logo from "@/assets/logo-salaocloud-v5.png";
 import salonBg from "@/assets/salon-dark-bg.png";
 
 interface InternoLayoutProps {

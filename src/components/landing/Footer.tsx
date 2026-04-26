@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Instagram, Facebook, Linkedin, Mail, MapPin, MessageCircle } from "lucide-react";
-import logo from "@/assets/logo-salaocloud-light.png";
+import logo from "@/assets/logo-salaocloud-v5.png";
 
 const footerLinks = {
   produto: [
