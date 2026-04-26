@@ -296,38 +296,61 @@ export default function PortalSettings() {
     );
   }
 
+  const SECTIONS = [
+    { value: "general", label: "Geral", icon: Settings },
+    { value: "working-hours", label: "Horário de Funcionamento", icon: Clock },
+    { value: "professional-hours", label: "Jornada dos Profissionais", icon: Users },
+    { value: "agenda-settings", label: "Visualização da Agenda", icon: CalendarDays },
+    { value: "client-portal", label: "Portal da Cliente", icon: Eye },
+  ];
+
+  const [activeTab, setActiveTab] = [tabState[0], tabState[1]] as const;
+
   return (
     <PortalLayout>
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-5xl mx-auto">
         <div>
-          <h1 className="font-display text-3xl font-bold">Configurações</h1>
-          <p className="text-muted-foreground mt-1">
-            Configurações do estabelecimento
+          <h1 className="font-display text-2xl sm:text-3xl font-bold">Configurações</h1>
+          <p className="text-muted-foreground mt-1 text-sm sm:text-base">
+            Personalize seu estabelecimento e a experiência das suas clientes
           </p>
         </div>
 
-        <Tabs defaultValue="general" className="w-full">
-          <TabsList className="mb-4">
-            <TabsTrigger value="general" className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Geral
-            </TabsTrigger>
-            <TabsTrigger value="working-hours" className="flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Horário de Funcionamento
-            </TabsTrigger>
-            <TabsTrigger value="professional-hours" className="flex items-center gap-2">
-              <Users className="h-4 w-4" />
-              Jornada dos Profissionais
-            </TabsTrigger>
-            <TabsTrigger value="agenda-settings" className="flex items-center gap-2">
-              <CalendarDays className="h-4 w-4" />
-              Visualização da Agenda
-            </TabsTrigger>
-            <TabsTrigger value="client-portal" className="flex items-center gap-2">
-              <Eye className="h-4 w-4" />
-              Portal da Cliente
-            </TabsTrigger>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          {/* Mobile: Select dropdown */}
+          <div className="md:hidden mb-4">
+            <Label htmlFor="settings-section" className="text-xs text-muted-foreground mb-1.5 block">
+              Seção
+            </Label>
+            <Select value={activeTab} onValueChange={setActiveTab}>
+              <SelectTrigger id="settings-section" className="w-full h-12">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SECTIONS.map(({ value, label, icon: Icon }) => (
+                  <SelectItem key={value} value={value}>
+                    <span className="flex items-center gap-2">
+                      <Icon className="h-4 w-4" />
+                      {label}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Desktop: Grid tabs (no horizontal scroll) */}
+          <TabsList className="hidden md:grid md:grid-cols-5 mb-6 h-auto p-1 w-full">
+            {SECTIONS.map(({ value, label, icon: Icon }) => (
+              <TabsTrigger
+                key={value}
+                value={value}
+                className="flex items-center gap-2 py-2.5 text-xs lg:text-sm whitespace-normal text-center"
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span>{label}</span>
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           <TabsContent value="general">
