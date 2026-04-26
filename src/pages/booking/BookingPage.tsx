@@ -396,3 +396,203 @@ const BookingPage = () => {
           </Card>
         )}
 
+        {/* Step 3: Select Date and Time */}
+        {step === 3 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-primary" />
+                Escolha a Data e Horário
+              </CardTitle>
+              <CardDescription>Selecione quando deseja ser atendido</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div>
+                <Label className="text-base font-semibold mb-3 block">Data</Label>
+                <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                  {generateDates().map((date) => {
+                    const isSelected = selectedDate?.toDateString() === date.toDateString();
+                    return (
+                      <button
+                        key={date.toISOString()}
+                        onClick={() => setSelectedDate(date)}
+                        className={`p-2 rounded-lg border text-center transition-all ${
+                          isSelected
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border hover:border-primary/40"
+                        }`}
+                      >
+                        <p className="text-xs uppercase">
+                          {format(date, "EEE", { locale: ptBR })}
+                        </p>
+                        <p className="text-lg font-bold">{format(date, "dd")}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {selectedDate && (
+                <div>
+                  <Label className="text-base font-semibold mb-3 block">Horário</Label>
+                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                    {generateTimeSlots().map((time) => {
+                      const isSelected = selectedTime === time;
+                      return (
+                        <button
+                          key={time}
+                          onClick={() => setSelectedTime(time)}
+                          className={`p-2 rounded-lg border text-center transition-all ${
+                            isSelected
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border hover:border-primary/40"
+                          }`}
+                        >
+                          {time}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-between mt-6">
+                <Button variant="outline" onClick={() => setStep(2)}>
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+                </Button>
+                <Button
+                  onClick={() => setStep(4)}
+                  disabled={!selectedDate || !selectedTime}
+                >
+                  Próximo <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 4: Client Information */}
+        {step === 4 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <User className="h-5 w-5 text-primary" />
+                Seus Dados
+              </CardTitle>
+              <CardDescription>Preencha suas informações para confirmar o agendamento</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="p-4 rounded-lg space-y-2 bg-primary/5 border border-primary/20">
+                <p><strong>Serviço:</strong> {selectedService?.name}</p>
+                <p><strong>Profissional:</strong> {selectedProfessional?.name}</p>
+                <p><strong>Data:</strong> {selectedDate && format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
+                <p><strong>Horário:</strong> {selectedTime}</p>
+                <p><strong>Valor:</strong> <span className="font-bold text-accent">R$ {Number(selectedService?.price || 0).toFixed(2)}</span></p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="name">Nome Completo *</Label>
+                  <Input
+                    id="name"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    placeholder="Seu nome completo"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cpf">CPF *</Label>
+                  <Input
+                    id="cpf"
+                    value={clientCpf}
+                    onChange={(e) => setClientCpf(formatCpf(e.target.value))}
+                    placeholder="000.000.000-00"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="phone">Celular *</Label>
+                  <Input
+                    id="phone"
+                    value={clientPhone}
+                    onChange={(e) => setClientPhone(formatPhone(e.target.value))}
+                    placeholder="(11) 99999-9999"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email">E-mail (opcional)</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={clientEmail}
+                    onChange={(e) => setClientEmail(e.target.value)}
+                    placeholder="seu@email.com"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="notes">Observações (opcional)</Label>
+                  <Textarea
+                    id="notes"
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Alguma observação para o atendimento?"
+                    rows={3}
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-between mt-6">
+                <Button variant="outline" onClick={() => setStep(3)}>
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
+                </Button>
+                <Button
+                  onClick={handleSubmit}
+                  disabled={submitting || !clientName.trim() || !clientPhone.trim() || !clientCpf.trim()}
+                >
+                  {submitting ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Check className="mr-2 h-4 w-4" />
+                  )}
+                  Confirmar Agendamento
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step 5: Confirmation */}
+        {step === 5 && (
+          <Card className="border-accent/20">
+            <CardContent className="p-8 text-center">
+              <div className="w-20 h-20 rounded-full bg-accent/20 flex items-center justify-center mx-auto mb-6">
+                <Check className="h-10 w-10 text-accent" />
+              </div>
+              <h2 className="text-2xl font-bold mb-2">Agendamento Confirmado!</h2>
+              <p className="text-muted-foreground mb-6">
+                Seu agendamento foi realizado com sucesso. Você receberá uma confirmação em breve.
+              </p>
+              <div className="bg-muted/50 p-4 rounded-lg text-left space-y-2 mb-6">
+                <p><strong>Serviço:</strong> {selectedService?.name}</p>
+                <p><strong>Profissional:</strong> {selectedProfessional?.name}</p>
+                <p><strong>Data:</strong> {selectedDate && format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
+                <p><strong>Horário:</strong> {selectedTime}</p>
+              </div>
+              <Button onClick={() => navigate("/")}>Voltar ao Início</Button>
+            </CardContent>
+          </Card>
+        )}
+        </div>
+
+        {establishment && (
+          <EstablishmentAIChat
+            establishmentId={establishment.id}
+            establishmentName={establishment.name}
+          />
+        )}
+      </div>
+    </>
+  );
+};
+
+export default BookingPage;
+
