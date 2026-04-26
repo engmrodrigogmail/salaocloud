@@ -21,6 +21,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import logo from "@/assets/logo.webp";
+import salonBg from "@/assets/salon-dark-bg.png";
 
 const onboardingSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
@@ -219,7 +220,10 @@ export default function Onboarding() {
     const fullBookingUrl = `https://salaocloud.com.br/${createdSlug}`;
 
     return (
-      <div className="min-h-screen bg-muted/30 flex flex-col">
+      <div
+        className="min-h-screen salon-photo-bg flex flex-col"
+        style={{ ['--salon-bg-image' as any]: `url(${salonBg})` }}
+      >
         {/* Header */}
         <header className="bg-background border-b border-border py-4 px-6">
           <img src={logo} alt="Salão Cloud" className="h-10 w-auto" />
@@ -382,7 +386,10 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 flex flex-col">
+    <div
+      className="min-h-screen salon-photo-bg flex flex-col"
+      style={{ ['--salon-bg-image' as any]: `url(${salonBg})` }}
+    >
       {/* Header */}
       <header className="bg-background border-b border-border py-4 px-6">
         <img src={logo} alt="Salão Cloud" className="h-10 w-auto" />

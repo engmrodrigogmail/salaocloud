@@ -12,70 +12,67 @@
 
 @layer base {
   :root {
+    /* ===== DARK PREMIUM (paleta global do SaaS) ===== */
     /* Brand Colors - Bronze (HSL) */
-    /* #8B6F47 = 31 32% 41% */
-    --brand-copper: 31 32% 41%;
-    /* #A0826D = 25 21% 53% */
-    --brand-copper-light: 25 21% 53%;
-    /* #6B5D52 = 24 13% 37% */
-    --brand-copper-dark: 24 13% 37%;
-    --brand-gold: 35 38% 58%;
+    --brand-copper: 31 45% 52%;          /* mais luminoso para contraste no dark */
+    --brand-copper-light: 35 50% 62%;
+    --brand-copper-dark: 24 30% 38%;
+    --brand-gold: 42 65% 62%;
 
-    /* Core palette */
-    /* #FFFFFF base, with cream surface #F5F3F0 = 30 12% 95% */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 17%; /* #2C2C2C */
+    /* Core palette — carvão profundo */
+    --background: 0 0% 8%;               /* #141414 */
+    --foreground: 35 18% 92%;            /* #F1ECE5 — off-white quente */
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 17%;
+    --card: 0 0% 12%;                    /* #1f1f1f */
+    --card-foreground: 35 18% 92%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 17%;
+    --popover: 0 0% 11%;
+    --popover-foreground: 35 18% 92%;
 
-    /* Primary: Bronze */
-    --primary: 31 32% 41%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary: Bronze luminoso */
+    --primary: 31 45% 52%;
+    --primary-foreground: 0 0% 8%;
 
-    /* Secondary: cream surface */
-    --secondary: 30 12% 95%;
-    --secondary-foreground: 0 0% 17%;
+    /* Secondary: superfície escura */
+    --secondary: 0 0% 16%;
+    --secondary-foreground: 35 18% 92%;
 
-    /* Accent: Bronze light */
-    --accent: 25 21% 53%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent: bronze claro */
+    --accent: 35 50% 62%;
+    --accent-foreground: 0 0% 8%;
 
     /* Muted */
-    --muted: 30 12% 95%;
-    --muted-foreground: 0 0% 40%; /* #666666 */
+    --muted: 0 0% 14%;
+    --muted-foreground: 35 8% 65%;
 
     /* Destructive */
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
 
     /* Success */
-    --success: 142 50% 36%;
-    --success-foreground: 0 0% 100%;
+    --success: 142 50% 45%;
+    --success-foreground: 0 0% 8%;
 
     /* Warning */
-    --warning: 30 80% 50%;
+    --warning: 35 80% 55%;
     --warning-foreground: 0 0% 8%;
 
-    /* Borders and inputs — fios finos cinza claro */
-    --border: 0 0% 91%; /* #E8E8E8 */
-    --input: 0 0% 91%;
-    --ring: 31 32% 41%;
+    /* Borders & inputs — sutis sobre dark */
+    --border: 0 0% 20%;
+    --input: 0 0% 18%;
+    --ring: 31 45% 52%;
 
-    --radius: 0.25rem; /* 4px — premium minimalist */
+    --radius: 0.5rem;
 
-    /* Sidebar (cream luxury) */
-    --sidebar-background: 30 12% 97%;
-    --sidebar-foreground: 0 0% 17%;
-    --sidebar-primary: 31 32% 41%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 30 12% 92%;
-    --sidebar-accent-foreground: 0 0% 17%;
-    --sidebar-border: 0 0% 91%;
-    --sidebar-ring: 31 32% 41%;
+    /* Sidebar (carvão sólido) */
+    --sidebar-background: 0 0% 5%;       /* #0d0d0d */
+    --sidebar-foreground: 35 15% 85%;
+    --sidebar-primary: 31 45% 52%;
+    --sidebar-primary-foreground: 0 0% 8%;
+    --sidebar-accent: 0 0% 11%;
+    --sidebar-accent-foreground: 35 18% 92%;
+    --sidebar-border: 0 0% 14%;
+    --sidebar-ring: 31 45% 52%;
 
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(24 13% 37%) 0%, hsl(31 32% 41%) 100%);
@@ -128,6 +125,29 @@
     --sidebar-accent-foreground: 35 20% 88%;
     --sidebar-border: 0 0% 14%;
     --sidebar-ring: 25 70% 55%;
+  }
+
+  /* ===== Landing pública mantém paleta clara original ===== */
+  .landing-light-theme {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 17%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 17%;
+    --primary: 31 32% 41%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 30 12% 95%;
+    --secondary-foreground: 0 0% 17%;
+    --accent: 25 21% 53%;
+    --accent-foreground: 0 0% 100%;
+    --muted: 30 12% 95%;
+    --muted-foreground: 0 0% 40%;
+    --border: 0 0% 91%;
+    --input: 0 0% 91%;
+    --ring: 31 32% 41%;
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
   }
 }
 
@@ -209,6 +229,36 @@
   .text-gradient-copper {
     @apply bg-clip-text text-transparent;
     background-image: var(--gradient-copper-shine);
+  }
+
+  /* ===== Dark Premium — fundo fotográfico do salão ===== */
+  .salon-photo-bg {
+    background-image:
+      linear-gradient(to right, hsl(0 0% 8% / 0.96) 0%, hsl(0 0% 8% / 0.85) 55%, hsl(0 0% 8% / 0.55) 100%),
+      var(--salon-bg-image);
+    background-size: cover;
+    background-position: center right;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+
+  /* Card translúcido sobre fundo fotográfico */
+  .premium-card {
+    @apply rounded-xl border backdrop-blur-md;
+    background-color: hsl(0 0% 14% / 0.85);
+    border-color: hsl(var(--brand-copper) / 0.3);
+    box-shadow: var(--shadow-md);
+  }
+  .premium-card-hover {
+    @apply transition-colors;
+  }
+  .premium-card-hover:hover {
+    border-color: hsl(var(--brand-copper));
+  }
+
+  /* Wrapper utilitário para tabelas com scroll horizontal seguro */
+  .table-scroll {
+    @apply w-full overflow-x-auto;
   }
 }
 

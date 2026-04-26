@@ -44,6 +44,7 @@ import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { usePortalTour } from "@/hooks/usePortalTour";
 import logo from "@/assets/logo-salaocloud.png";
+import salonBg from "@/assets/salon-dark-bg.png";
 
 interface PortalLayoutProps {
   children: React.ReactNode;
@@ -102,12 +103,12 @@ export function PortalLayout({ children }: PortalLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-background">
       {/* Impersonation Banner */}
       <ImpersonationBanner />
 
       {/* Top bar */}
-      <header className={`fixed left-0 right-0 h-16 bg-background border-b border-border z-50 flex items-center justify-between px-4 ${isImpersonating ? 'top-10' : 'top-0'}`}>
+      <header className={`fixed left-0 right-0 h-16 bg-sidebar border-b border-sidebar-border z-50 flex items-center justify-between px-4 ${isImpersonating ? 'top-10' : 'top-0'}`}>
         <div className="flex items-center gap-4">
           <button
             className="lg:hidden p-2"
@@ -195,10 +196,10 @@ export function PortalLayout({ children }: PortalLayoutProps) {
                 key={item.href}
                 to={item.href}
                 onClick={() => setIsSidebarOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors border-l-4 ${
                   isActive
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent"
+                    ? "bg-gradient-to-r from-brand-copper/20 to-transparent text-brand-copper border-brand-copper"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-brand-copper border-transparent"
                 }`}
               >
                 <item.icon size={20} />
@@ -218,8 +219,11 @@ export function PortalLayout({ children }: PortalLayoutProps) {
       )}
 
       {/* Main content */}
-      <main className={`lg:pl-64 ${isImpersonating ? 'pt-[104px]' : 'pt-16'}`}>
-        <div className="p-6">{children}</div>
+      <main
+        className={`lg:pl-64 ${isImpersonating ? 'pt-[104px]' : 'pt-16'} salon-photo-bg min-h-screen`}
+        style={{ ['--salon-bg-image' as any]: `url(${salonBg})` }}
+      >
+        <div className="p-4 sm:p-6">{children}</div>
       </main>
     </div>
   );
