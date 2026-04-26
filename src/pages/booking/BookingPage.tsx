@@ -14,6 +14,8 @@ import { ptBR } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
 import { EstablishmentAIChat } from "@/components/ai-assistant/EstablishmentAIChat";
 import { hexToHsl } from "@/hooks/useBrandColors";
+import { ImpersonationBanner } from "@/components/ImpersonationBanner";
+import { useImpersonation } from "@/contexts/ImpersonationContext";
 
 type Service = Tables<"services">;
 type Professional = Tables<"professionals">;
