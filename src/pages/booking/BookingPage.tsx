@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,23 +7,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Calendar, Clock, User, Phone, Mail, ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
+import { Calendar, Clock, User, ArrowLeft, ArrowRight, Check, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { format, addDays, setHours, setMinutes, isBefore, isAfter, startOfDay } from "date-fns";
+import { format, addDays, setHours, setMinutes, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
 import { EstablishmentAIChat } from "@/components/ai-assistant/EstablishmentAIChat";
-import { hexToHsl } from "@/hooks/useBrandColors";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
+import { EstablishmentNameHeader } from "@/components/branding/EstablishmentNameHeader";
 
 type Service = Tables<"services">;
 type Professional = Tables<"professionals">;
-type Establishment = Tables<"establishments"> & {
-  brand_primary_color?: string | null;
-  brand_secondary_color?: string | null;
-  brand_accent_color?: string | null;
-};
+type Establishment = Tables<"establishments">;
+
 
 const BookingPage = () => {
   const { slug } = useParams();
@@ -229,31 +226,9 @@ const BookingPage = () => {
     }
   };
 
-  // Generate CSS custom properties for brand colors
-  const brandStyle = useMemo(() => {
-    if (!establishment) return {};
-    
-    const primary = establishment.brand_primary_color;
-    const secondary = establishment.brand_secondary_color;
-    const accent = establishment.brand_accent_color;
-    
-    if (!primary && !secondary && !accent) return {};
-    
-    return {
-      '--brand-primary': primary ? hexToHsl(primary) : undefined,
-      '--brand-secondary': secondary ? hexToHsl(secondary) : undefined,
-      '--brand-accent': accent ? hexToHsl(accent) : undefined,
-      '--brand-primary-hex': primary || undefined,
-      '--brand-secondary-hex': secondary || undefined,
-      '--brand-accent-hex': accent || undefined,
-    } as React.CSSProperties;
-  }, [establishment]);
-
-  const hasBrandColors = establishment?.brand_primary_color || establishment?.brand_secondary_color || establishment?.brand_accent_color;
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -261,7 +236,7 @@ const BookingPage = () => {
 
   if (!establishment) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="p-6 text-center">
             <h2 className="text-xl font-bold mb-2">Estabelecimento não encontrado</h2>
@@ -273,56 +248,32 @@ const BookingPage = () => {
     );
   }
 
-  // Dynamic styles based on brand colors
-  const primaryColor = establishment.brand_primary_color || 'hsl(var(--primary))';
-  const accentColor = establishment.brand_accent_color || 'hsl(var(--accent))';
-  const secondaryColor = establishment.brand_secondary_color || 'hsl(var(--secondary))';
-
   return (
     <>
       <ImpersonationBanner />
-      <div 
-        className="min-h-screen py-8 px-4"
-        style={{
-          ...brandStyle,
-          background: hasBrandColors 
-            ? `linear-gradient(135deg, ${secondaryColor}15, ${primaryColor}08, ${secondaryColor}10)`
-            : undefined,
-          paddingTop: isImpersonating ? "3.5rem" : undefined,
-        }}
+      <div
+        className="min-h-screen bg-background"
+        style={{ paddingTop: isImpersonating ? "2.5rem" : undefined }}
       >
-        <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          {establishment.logo_url && (
-            <div className="flex justify-center mb-4">
-              <img 
-                src={establishment.logo_url} 
-                alt={`Logo ${establishment.name}`}
-                className="max-h-16 sm:max-h-20 max-w-[200px] sm:max-w-[280px] w-auto h-auto object-contain"
-              />
-            </div>
-          )}
-          <h1 className="text-3xl font-display font-bold text-foreground mb-2">
-            {establishment.name}
-          </h1>
-          <p className="text-muted-foreground">Agende seu horário online</p>
-        </div>
+        <EstablishmentNameHeader
+          name={establishment.name}
+          subtitle="Agende seu horário online"
+        />
+
+        <div className="max-w-2xl mx-auto px-4 py-6 sm:py-8">
 
         {/* Progress Steps */}
         <div className="flex items-center justify-center gap-2 mb-8">
           {[1, 2, 3, 4].map((s) => (
             <div
               key={s}
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all`}
-              style={{
-                backgroundColor: s === step 
-                  ? primaryColor 
-                  : s < step 
-                    ? accentColor 
-                    : undefined,
-                color: s === step || s < step ? 'white' : undefined
-              }}
+              className={`w-10 h-10 rounded-full flex items-center justify-center font-semibold transition-all ${
+                s === step
+                  ? "bg-primary text-primary-foreground"
+                  : s < step
+                    ? "bg-accent text-accent-foreground"
+                    : "bg-muted text-muted-foreground"
+              }`}
             >
               {s < step ? <Check className="h-5 w-5" /> : s}
             </div>
@@ -331,10 +282,10 @@ const BookingPage = () => {
 
         {/* Step 1: Select Service */}
         {step === 1 && (
-          <Card style={{ borderColor: `${primaryColor}33` }}>
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" style={{ color: primaryColor }} />
+                <Calendar className="h-5 w-5 text-primary" />
                 Escolha o Serviço
               </CardTitle>
               <CardDescription>Selecione o serviço que deseja agendar</CardDescription>
@@ -349,11 +300,11 @@ const BookingPage = () => {
                   <div
                     key={service.id}
                     onClick={() => setSelectedService(service)}
-                    className="p-4 rounded-lg border cursor-pointer transition-all"
-                    style={{
-                      borderColor: selectedService?.id === service.id ? primaryColor : undefined,
-                      backgroundColor: selectedService?.id === service.id ? `${primaryColor}0D` : undefined
-                    }}
+                    className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                      selectedService?.id === service.id
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/40"
+                    }`}
                   >
                     <div className="flex justify-between items-start">
                       <div>
@@ -366,7 +317,7 @@ const BookingPage = () => {
                           {service.duration_minutes} min
                         </p>
                       </div>
-                      <p className="font-bold" style={{ color: accentColor }}>
+                      <p className="font-bold text-accent">
                         R$ {Number(service.price).toFixed(2)}
                       </p>
                     </div>
@@ -377,8 +328,6 @@ const BookingPage = () => {
                 <Button
                   onClick={() => setStep(2)}
                   disabled={!selectedService}
-                  style={{ backgroundColor: primaryColor }}
-                  className="text-white hover:opacity-90"
                 >
                   Próximo <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -389,10 +338,10 @@ const BookingPage = () => {
 
         {/* Step 2: Select Professional */}
         {step === 2 && (
-          <Card style={{ borderColor: `${primaryColor}33` }}>
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" style={{ color: primaryColor }} />
+                <User className="h-5 w-5 text-primary" />
                 Escolha o Profissional
               </CardTitle>
               <CardDescription>Selecione o profissional de sua preferência</CardDescription>
@@ -407,19 +356,16 @@ const BookingPage = () => {
                   <div
                     key={professional.id}
                     onClick={() => setSelectedProfessional(professional)}
-                    className="p-4 rounded-lg border cursor-pointer transition-all"
-                    style={{
-                      borderColor: selectedProfessional?.id === professional.id ? primaryColor : undefined,
-                      backgroundColor: selectedProfessional?.id === professional.id ? `${primaryColor}0D` : undefined
-                    }}
+                    className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                      selectedProfessional?.id === professional.id
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/40"
+                    }`}
                   >
                     <div className="flex items-center gap-4">
-                      <Avatar className="h-12 w-12 border-2" style={{ borderColor: `${primaryColor}33` }}>
+                      <Avatar className="h-12 w-12 border-2 border-primary/30">
                         <AvatarImage src={professional.avatar_url || undefined} alt={professional.name} />
-                        <AvatarFallback 
-                          className="text-sm font-semibold"
-                          style={{ backgroundColor: `${primaryColor}1A`, color: primaryColor }}
-                        >
+                        <AvatarFallback className="bg-primary/10 text-primary text-sm font-semibold">
                           {professional.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)}
                         </AvatarFallback>
                       </Avatar>
@@ -442,8 +388,6 @@ const BookingPage = () => {
                 <Button
                   onClick={() => setStep(3)}
                   disabled={!selectedProfessional}
-                  style={{ backgroundColor: primaryColor }}
-                  className="text-white hover:opacity-90"
                 >
                   Próximo <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -452,222 +396,3 @@ const BookingPage = () => {
           </Card>
         )}
 
-        {/* Step 3: Select Date and Time */}
-        {step === 3 && (
-          <Card style={{ borderColor: `${primaryColor}33` }}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" style={{ color: primaryColor }} />
-                Escolha a Data e Horário
-              </CardTitle>
-              <CardDescription>Selecione quando deseja ser atendido</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Date Selection */}
-              <div>
-                <Label className="text-base font-semibold mb-3 block">Data</Label>
-                <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                  {generateDates().map((date) => (
-                    <button
-                      key={date.toISOString()}
-                      onClick={() => setSelectedDate(date)}
-                      className="p-2 rounded-lg border text-center transition-all"
-                      style={{
-                        borderColor: selectedDate?.toDateString() === date.toDateString() ? primaryColor : undefined,
-                        backgroundColor: selectedDate?.toDateString() === date.toDateString() ? primaryColor : undefined,
-                        color: selectedDate?.toDateString() === date.toDateString() ? 'white' : undefined
-                      }}
-                    >
-                      <p className="text-xs uppercase">
-                        {format(date, "EEE", { locale: ptBR })}
-                      </p>
-                      <p className="text-lg font-bold">{format(date, "dd")}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Time Selection */}
-              {selectedDate && (
-                <div>
-                  <Label className="text-base font-semibold mb-3 block">Horário</Label>
-                  <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-                    {generateTimeSlots().map((time) => (
-                      <button
-                        key={time}
-                        onClick={() => setSelectedTime(time)}
-                        className="p-2 rounded-lg border text-center transition-all"
-                        style={{
-                          borderColor: selectedTime === time ? primaryColor : undefined,
-                          backgroundColor: selectedTime === time ? primaryColor : undefined,
-                          color: selectedTime === time ? 'white' : undefined
-                        }}
-                      >
-                        {time}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-between mt-6">
-                <Button variant="outline" onClick={() => setStep(2)}>
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-                </Button>
-                <Button
-                  onClick={() => setStep(4)}
-                  disabled={!selectedDate || !selectedTime}
-                  style={{ backgroundColor: primaryColor }}
-                  className="text-white hover:opacity-90"
-                >
-                  Próximo <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 4: Client Information */}
-        {step === 4 && (
-          <Card style={{ borderColor: `${primaryColor}33` }}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" style={{ color: primaryColor }} />
-                Seus Dados
-              </CardTitle>
-              <CardDescription>Preencha suas informações para confirmar o agendamento</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Summary */}
-              <div 
-                className="p-4 rounded-lg space-y-2"
-                style={{ backgroundColor: `${primaryColor}0D`, border: `1px solid ${primaryColor}33` }}
-              >
-                <p><strong>Serviço:</strong> {selectedService?.name}</p>
-                <p><strong>Profissional:</strong> {selectedProfessional?.name}</p>
-                <p><strong>Data:</strong> {selectedDate && format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
-                <p><strong>Horário:</strong> {selectedTime}</p>
-                <p><strong>Valor:</strong> <span style={{ color: accentColor, fontWeight: 'bold' }}>R$ {Number(selectedService?.price || 0).toFixed(2)}</span></p>
-              </div>
-
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Nome Completo *</Label>
-                  <Input
-                    id="name"
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    placeholder="Seu nome completo"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="cpf">CPF *</Label>
-                  <Input
-                    id="cpf"
-                    value={clientCpf}
-                    onChange={(e) => setClientCpf(formatCpf(e.target.value))}
-                    placeholder="000.000.000-00"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Celular *</Label>
-                  <Input
-                    id="phone"
-                    value={clientPhone}
-                    onChange={(e) => setClientPhone(formatPhone(e.target.value))}
-                    placeholder="(11) 99999-9999"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">E-mail (opcional)</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={clientEmail}
-                    onChange={(e) => setClientEmail(e.target.value)}
-                    placeholder="seu@email.com"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">E-mail (opcional)</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={clientEmail}
-                    onChange={(e) => setClientEmail(e.target.value)}
-                    placeholder="seu@email.com"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="notes">Observações (opcional)</Label>
-                  <Textarea
-                    id="notes"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Alguma observação para o atendimento?"
-                    rows={3}
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-between mt-6">
-                <Button variant="outline" onClick={() => setStep(3)}>
-                  <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
-                </Button>
-                <Button
-                  onClick={handleSubmit}
-                  disabled={submitting || !clientName.trim() || !clientPhone.trim() || !clientCpf.trim()}
-                >
-                  {submitting ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Check className="mr-2 h-4 w-4" />
-                  )}
-                  Confirmar Agendamento
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Step 5: Confirmation */}
-        {step === 5 && (
-          <Card className="border-accent/20">
-            <CardContent className="p-8 text-center">
-              <div className="w-20 h-20 rounded-full bg-accent/20 flex items-center justify-center mx-auto mb-6">
-                <Check className="h-10 w-10 text-accent" />
-              </div>
-              <h2 className="text-2xl font-bold mb-2">Agendamento Confirmado!</h2>
-              <p className="text-muted-foreground mb-6">
-                Seu agendamento foi realizado com sucesso. Você receberá uma confirmação em breve.
-              </p>
-              <div className="bg-muted/50 p-4 rounded-lg text-left space-y-2 mb-6">
-                <p><strong>Serviço:</strong> {selectedService?.name}</p>
-                <p><strong>Profissional:</strong> {selectedProfessional?.name}</p>
-                <p><strong>Data:</strong> {selectedDate && format(selectedDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}</p>
-                <p><strong>Horário:</strong> {selectedTime}</p>
-              </div>
-              <Button onClick={() => navigate("/")}>Voltar ao Início</Button>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-
-      {/* AI Assistant Chat Widget */}
-      {establishment && (
-        <EstablishmentAIChat 
-          establishmentId={establishment.id} 
-          establishmentName={establishment.name}
-          brandColors={{
-            primary: establishment.brand_primary_color,
-            secondary: establishment.brand_secondary_color,
-            accent: establishment.brand_accent_color,
-          }}
-        />
-      )}
-      </div>
-    </>
-  );
-};
-
-export default BookingPage;
