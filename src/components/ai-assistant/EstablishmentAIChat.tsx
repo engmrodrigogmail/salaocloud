@@ -55,12 +55,6 @@ interface PromotionData {
   allPromotions: Promotion[];
 }
 
-interface BrandColors {
-  primary?: string | null;
-  secondary?: string | null;
-  accent?: string | null;
-}
-
 interface ClientData {
   name: string;
   phone: string;
@@ -70,17 +64,15 @@ interface ClientData {
 interface EstablishmentAIChatProps {
   establishmentId: string;
   establishmentName: string;
-  brandColors?: BrandColors;
   clientData?: ClientData | null;
   className?: string;
 }
 
-export function EstablishmentAIChat({ 
-  establishmentId, 
+export function EstablishmentAIChat({
+  establishmentId,
   establishmentName,
-  brandColors,
   clientData,
-  className 
+  className,
 }: EstablishmentAIChatProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
