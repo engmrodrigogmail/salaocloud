@@ -324,6 +324,10 @@ export default function PortalSettings() {
               <CalendarDays className="h-4 w-4" />
               Visualização da Agenda
             </TabsTrigger>
+            <TabsTrigger value="client-portal" className="flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              Portal da Cliente
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="general">
