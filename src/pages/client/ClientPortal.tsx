@@ -56,10 +56,12 @@ const ClientPortal = () => {
   const [loading, setLoading] = useState(true);
   const [authenticating, setAuthenticating] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [checkingCpf, setCheckingCpf] = useState(false);
-  const [cpfChecked, setCpfChecked] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
+  const [emailChecked, setEmailChecked] = useState(false);
   const [clientExists, setClientExists] = useState(false);
-  
+  // Identity stitching: cliente existe na plataforma mas não neste salão
+  const [stitchSourceClient, setStitchSourceClient] = useState<Client | null>(null);
+
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [client, setClient] = useState<Client | null>(null);
   const [services, setServices] = useState<Service[]>([]);
@@ -71,18 +73,20 @@ const ClientPortal = () => {
   const [rewards, setRewards] = useState<LoyaltyReward[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [professionalServices, setProfessionalServices] = useState<{professional_id: string, service_id: string}[]>([]);
-  
-  // CPF check form
-  const [cpfToCheck, setCpfToCheck] = useState("");
-  
+
+  // Email check form
+  const [emailToCheck, setEmailToCheck] = useState("");
+
   // Login form
-  const [cpf, setCpf] = useState("");
-  const [phone, setPhone] = useState("");
-  
+  const [loginPhone, setLoginPhone] = useState("");
+
   // Registration form
   const [registerName, setRegisterName] = useState("");
   const [registerCpf, setRegisterCpf] = useState("");
   const [registerPhone, setRegisterPhone] = useState("");
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [shareHistoryConsent, setShareHistoryConsent] = useState(false);
+  const [showTermsDialog, setShowTermsDialog] = useState(false);
 
   // Booking state
   const [isBooking, setIsBooking] = useState(false);
