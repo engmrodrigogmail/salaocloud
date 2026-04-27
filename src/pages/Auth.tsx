@@ -151,12 +151,22 @@ export default function Auth() {
 
   const handleNativeLogin = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    debug("native_submit", {
+      emailStateLength: loginEmail.length,
+      passwordStateLength: loginPassword.length,
+      activeElementId: document.activeElement instanceof HTMLElement ? document.activeElement.id : null,
+      serviceWorkerController: Boolean(navigator.serviceWorker?.controller),
+    });
+
     const parsed = loginSchema.safeParse({
       email: loginEmail.trim(),
       password: loginPassword,
     });
 
     if (!parsed.success) {
+      debug("native_submit_validation_failed", {
+        issues: parsed.error.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message })),
+      });
       toast({
         variant: "destructive",
         title: "Verifique os dados",
