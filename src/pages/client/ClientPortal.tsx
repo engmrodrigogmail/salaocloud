@@ -70,6 +70,13 @@ const ClientPortal = () => {
   const [clientExists, setClientExists] = useState(false);
   // Identity stitching: cliente existe na plataforma mas não neste salão
   const [stitchSourceClient, setStitchSourceClient] = useState<Client | null>(null);
+  // Senha cadastrada (em qualquer salão da rede) para este e-mail
+  const [hasPassword, setHasPassword] = useState(false);
+  // Senhas (login, criação no 1º acesso, cadastro novo)
+  const [loginPassword, setLoginPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
+  const [requestingReset, setRequestingReset] = useState(false);
 
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [client, setClient] = useState<Client | null>(null);
