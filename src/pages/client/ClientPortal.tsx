@@ -50,8 +50,13 @@ type ScheduleSlot = {
 };
 
 const ClientPortal = () => {
-  const clientDebug = (_event: string, _payload?: Record<string, unknown>) => {
-    // logs de debug removidos
+  const clientDebug = (event: string, payload?: Record<string, unknown>, level: "info" | "warn" | "error" = "info") => {
+    const logPayload = {
+      routeSlug: slug ?? null,
+      timestamp: new Date().toISOString(),
+      ...payload,
+    };
+    console[level](`[ClientPortalDebug] ${event}`, logPayload);
   };
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -233,6 +238,26 @@ const ClientPortal = () => {
   const normalizeOptionalCpf = (value: string) => {
     const numbers = value.replace(/\D/g, "");
     return numbers && !/^(\d)\1{10}$/.test(numbers) ? numbers : null;
+  };
+
+  const getClientErrorMessage = (error: unknown) => {
+    const details = error as { code?: string; message?: string; details?: string; hint?: string };
+    const message = `${details?.message ?? ""} ${details?.details ?? ""} ${details?.hint ?? ""}`.toLowerCase();
+
+    if (details?.code === "23505" || message.includes("duplicate key")) {
+      if (message.includes("cpf")) return "Este CPF já está cadastrado neste salão. Se ele não for obrigatório, deixe o campo em branco.";
+      return "Já existe um cadastro com estes dados neste salão.";
+    }
+
+    if (message.includes("row-level security") || details?.code === "42501") {
+      return "Não foi possível autorizar este cadastro. Tente novamente em alguns instantes.";
+    }
+
+    if (details?.code === "23503") {
+      return "Não localizei o salão para concluir o cadastro. Volte e tente novamente.";
+    }
+
+    return "Erro ao fazer cadastro";
   };
 
   // Step 1: Check if email exists in this establishment OR globally
