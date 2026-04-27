@@ -1544,14 +1544,14 @@ const ClientPortal = () => {
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         <Tabs defaultValue="booking" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className={`grid w-full ${establishment.show_catalog ? "grid-cols-3" : "grid-cols-2"}`}>
             <TabsTrigger value="booking">
               <Calendar className="h-4 w-4 mr-2 hidden sm:inline" />
               Agendar
             </TabsTrigger>
             <TabsTrigger value="appointments">
               <Clock className="h-4 w-4 mr-2 hidden sm:inline" />
-              Meus
+              Agendamentos
             </TabsTrigger>
             {establishment.show_catalog && (
               <TabsTrigger value="services">
@@ -1559,10 +1559,6 @@ const ClientPortal = () => {
                 Serviços
               </TabsTrigger>
             )}
-            <TabsTrigger value="loyalty">
-              <Star className="h-4 w-4 mr-2 hidden sm:inline" />
-              Fidelidade
-            </TabsTrigger>
           </TabsList>
 
           {/* Booking Tab */}
