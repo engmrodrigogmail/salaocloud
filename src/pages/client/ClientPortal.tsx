@@ -230,6 +230,11 @@ const ClientPortal = () => {
     return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
   };
 
+  const normalizeOptionalCpf = (value: string) => {
+    const numbers = value.replace(/\D/g, "");
+    return numbers && !/^(\d)\1{10}$/.test(numbers) ? numbers : null;
+  };
+
   // Step 1: Check if email exists in this establishment OR globally
   const handleCheckEmail = async () => {
     if (!establishment) return;
@@ -342,21 +347,32 @@ const ClientPortal = () => {
     setAuthenticating(true);
     try {
       const email = emailToCheck.trim().toLowerCase();
-      const { data: newClient, error } = await supabase
+      const clientId = crypto.randomUUID();
+      const now = new Date().toISOString();
+      const clientInsert = {
+        id: clientId,
+        establishment_id: establishment.id,
+        name: stitchSourceClient.name,
+        phone: stitchSourceClient.phone,
+        cpf: normalizeOptionalCpf(stitchSourceClient.cpf ?? ""),
+        email,
+        global_identity_email: email,
+        terms_accepted_at: now,
+        shared_history_consent: stitchSourceClient.shared_history_consent ?? false,
+        user_id: null,
+        notes: stitchSourceClient.notes ?? null,
+      };
+      const { error } = await supabase
         .from("clients")
-        .insert({
-          establishment_id: establishment.id,
-          name: stitchSourceClient.name,
-          phone: stitchSourceClient.phone,
-          email,
-          global_identity_email: email,
-          terms_accepted_at: new Date().toISOString(),
-          shared_history_consent: stitchSourceClient.shared_history_consent ?? false,
-        })
-        .select()
-        .single();
+        .insert(clientInsert);
 
       if (error) throw error;
+
+      const newClient = {
+        ...clientInsert,
+        created_at: now,
+        updated_at: now,
+      } as Client;
 
       setClient(newClient);
       setStitchSourceClient(null);
@@ -384,7 +400,7 @@ const ClientPortal = () => {
   const handleRegister = async () => {
     if (!establishment) return;
 
-    const cpfClean = registerCpf.replace(/\D/g, "");
+    const cpfClean = normalizeOptionalCpf(registerCpf);
     const phoneClean = registerPhone.replace(/\D/g, "");
     const email = emailToCheck.trim().toLowerCase();
 
@@ -392,7 +408,7 @@ const ClientPortal = () => {
       establishmentId: establishment.id,
       emailLength: email.length,
       phoneLength: phoneClean.length,
-      cpfLength: cpfClean.length,
+      cpfLength: cpfClean?.length ?? 0,
       acceptedTerms,
       shareHistoryConsent,
     });
@@ -421,20 +437,30 @@ const ClientPortal = () => {
     setAuthenticating(true);
 
     try {
-      const { data: newClient, error } = await supabase
+      const clientId = crypto.randomUUID();
+      const now = new Date().toISOString();
+      const clientInsert = {
+        id: clientId,
+        establishment_id: establishment.id,
+        name: registerName.trim(),
+        cpf: cpfClean,
+        phone: phoneClean,
+        email,
+        global_identity_email: email,
+        terms_accepted_at: now,
+        shared_history_consent: shareHistoryConsent,
+        user_id: null,
+        notes: null,
+      };
+      const { error } = await supabase
         .from("clients")
-        .insert({
-          establishment_id: establishment.id,
-          name: registerName.trim(),
-          cpf: cpfClean || null,
-          phone: phoneClean,
-          email,
-          global_identity_email: email,
-          terms_accepted_at: new Date().toISOString(),
-          shared_history_consent: shareHistoryConsent,
-        })
-        .select()
-        .single();
+        .insert(clientInsert);
+
+      const newClient = {
+        ...clientInsert,
+        created_at: now,
+        updated_at: now,
+      } as Client;
 
       clientDebug("register_insert_result", {
         ok: !error,
