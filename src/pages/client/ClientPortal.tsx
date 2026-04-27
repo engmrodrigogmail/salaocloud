@@ -50,6 +50,9 @@ type ScheduleSlot = {
 };
 
 const ClientPortal = () => {
+  const clientDebug = (event: string, payload?: Record<string, unknown>) => {
+    console.info(`[ClientPortalDebug:${slug ?? "no-slug"}] ${event}`, payload ?? {});
+  };
   const { slug } = useParams();
   const navigate = useNavigate();
   
