@@ -53,9 +53,27 @@ export default function Auth() {
   const { toast } = useToast();
   const { signIn, signUp, user, role, loading } = useAuth();
 
-  const debugEnabled = import.meta.env.DEV;
-  const debug = (...args: unknown[]) => {
-    if (debugEnabled) console.debug("[Auth]", ...args);
+  const debugEnabled = true;
+  const debug = (event: string, payload?: Record<string, unknown>) => {
+    if (!debugEnabled) return;
+    console.info(`[AuthDebug:${AUTH_DEBUG_MARKER}] ${event}`, payload ?? {});
+  };
+
+  const logInputEvent = (field: "email" | "password", eventName: string, target: HTMLInputElement) => {
+    debug(`input_${eventName}`, {
+      field,
+      valueLength: target.value.length,
+      stateLength: field === "email" ? loginEmail.length : loginPassword.length,
+      selectionStart: target.selectionStart,
+      selectionEnd: target.selectionEnd,
+      activeElementId: document.activeElement instanceof HTMLElement ? document.activeElement.id : null,
+      disabled: target.disabled,
+      readOnly: target.readOnly,
+      type: target.type,
+      inputMode: target.inputMode,
+      autoComplete: target.autocomplete,
+      userAgent: navigator.userAgent,
+    });
   };
 
 
