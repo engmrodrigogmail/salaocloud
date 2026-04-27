@@ -264,8 +264,7 @@ export function ProfessionalFormDialog({
               ? formData.leasing_base_date 
               : null,
             avatar_url: formData.avatar_url,
-          })
-          .eq("id", editingProfessional.id);
+            working_hours: workingHours as unknown as Json,
 
         if (error) throw error;
       } else {
@@ -284,8 +283,7 @@ export function ProfessionalFormDialog({
               ? formData.leasing_base_date 
               : null,
             avatar_url: formData.avatar_url,
-          })
-          .select()
+            working_hours: workingHours as unknown as Json,
           .single();
 
         if (error) throw error;
