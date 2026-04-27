@@ -50,8 +50,13 @@ type ScheduleSlot = {
 };
 
 const ClientPortal = () => {
-  const clientDebug = (_event: string, _payload?: Record<string, unknown>) => {
-    // logs de debug removidos
+  const clientDebug = (event: string, payload?: Record<string, unknown>, level: "info" | "warn" | "error" = "info") => {
+    const logPayload = {
+      routeSlug: slug ?? null,
+      timestamp: new Date().toISOString(),
+      ...payload,
+    };
+    console[level](`[ClientPortalDebug] ${event}`, logPayload);
   };
   const { slug } = useParams();
   const navigate = useNavigate();
@@ -235,6 +240,26 @@ const ClientPortal = () => {
     return numbers && !/^(\d)\1{10}$/.test(numbers) ? numbers : null;
   };
 
+  const getClientErrorMessage = (error: unknown) => {
+    const details = error as { code?: string; message?: string; details?: string; hint?: string };
+    const message = `${details?.message ?? ""} ${details?.details ?? ""} ${details?.hint ?? ""}`.toLowerCase();
+
+    if (details?.code === "23505" || message.includes("duplicate key")) {
+      if (message.includes("cpf")) return "Este CPF já está cadastrado neste salão. Se ele não for obrigatório, deixe o campo em branco.";
+      return "Já existe um cadastro com estes dados neste salão.";
+    }
+
+    if (message.includes("row-level security") || details?.code === "42501") {
+      return "Não foi possível autorizar este cadastro. Tente novamente em alguns instantes.";
+    }
+
+    if (details?.code === "23503") {
+      return "Não localizei o salão para concluir o cadastro. Volte e tente novamente.";
+    }
+
+    return "Erro ao fazer cadastro";
+  };
+
   // Step 1: Check if email exists in this establishment OR globally
   const handleCheckEmail = async () => {
     if (!establishment) return;
@@ -400,15 +425,21 @@ const ClientPortal = () => {
   const handleRegister = async () => {
     if (!establishment) return;
 
+    const rawCpfNumbers = registerCpf.replace(/\D/g, "");
     const cpfClean = normalizeOptionalCpf(registerCpf);
     const phoneClean = registerPhone.replace(/\D/g, "");
     const email = emailToCheck.trim().toLowerCase();
 
     clientDebug("register_start", {
       establishmentId: establishment.id,
+      establishmentStatus: establishment.status,
       emailLength: email.length,
       phoneLength: phoneClean.length,
+      phoneLast4: phoneClean.slice(-4),
+      rawCpfLength: rawCpfNumbers.length,
+      rawCpfIsRepeatedDigits: rawCpfNumbers ? /^(\d)\1{10}$/.test(rawCpfNumbers) : false,
       cpfLength: cpfClean?.length ?? 0,
+      cpfStoredAsNull: cpfClean === null,
       acceptedTerms,
       shareHistoryConsent,
     });
@@ -452,6 +483,16 @@ const ClientPortal = () => {
         user_id: null,
         notes: null,
       };
+      clientDebug("register_insert_payload_ready", {
+        clientId,
+        establishmentId: clientInsert.establishment_id,
+        hasCpf: Boolean(clientInsert.cpf),
+        cpfStoredAsNull: clientInsert.cpf === null,
+        hasEmail: Boolean(clientInsert.email),
+        hasPhone: Boolean(clientInsert.phone),
+        userIdIsNull: clientInsert.user_id === null,
+        nameLength: clientInsert.name.length,
+      });
       const { error } = await supabase
         .from("clients")
         .insert(clientInsert);
@@ -470,10 +511,19 @@ const ClientPortal = () => {
 
       if (error) throw error;
 
+      clientDebug("register_insert_success", {
+        clientId: newClient.id,
+        cpfStoredAsNull: newClient.cpf === null,
+      });
+
       setClient(newClient);
       setIsAuthenticated(true);
 
       if (loyaltyProgram) {
+        clientDebug("register_loyalty_points_start", {
+          clientId: newClient.id,
+          loyaltyProgramId: loyaltyProgram.id,
+        });
         const { error: pointsError } = await supabase
           .from("client_loyalty_points")
           .insert({
@@ -482,14 +532,31 @@ const ClientPortal = () => {
             points_balance: 0,
             total_points_earned: 0,
           });
-        clientDebug("register_loyalty_points_result", { error: pointsError?.message ?? null });
+        clientDebug("register_loyalty_points_result", {
+          ok: !pointsError,
+          errorCode: pointsError?.code ?? null,
+          errorMessage: pointsError?.message ?? null,
+          errorDetails: pointsError?.details ?? null,
+          errorHint: pointsError?.hint ?? null,
+        }, pointsError ? "warn" : "info");
       }
 
+      clientDebug("register_fetch_appointments_start", { establishmentId: establishment.id });
       await fetchAllAppointments();
+      clientDebug("register_completed", { clientId: newClient.id });
       toast.success(`Cadastro realizado com sucesso, ${newClient.name}!`, { duration: 2000 });
     } catch (error) {
-      console.error("[ClientPortalDebug] register_exception", error);
-      toast.error("Erro ao fazer cadastro");
+      const details = error as { code?: string; message?: string; details?: string; hint?: string };
+      clientDebug("register_exception", {
+        errorCode: details?.code ?? null,
+        errorMessage: details?.message ?? String(error),
+        errorDetails: details?.details ?? null,
+        errorHint: details?.hint ?? null,
+        establishmentId: establishment.id,
+        cpfStoredAsNull: cpfClean === null,
+        rawCpfLength: rawCpfNumbers.length,
+      }, "error");
+      toast.error(getClientErrorMessage(error));
     } finally {
       setAuthenticating(false);
     }
