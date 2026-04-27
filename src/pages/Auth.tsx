@@ -449,7 +449,18 @@ export default function Auth() {
                   id="login-email"
                   type="email"
                   value={loginEmail}
-                  onChange={(event) => setLoginEmail(event.currentTarget.value)}
+                  onPointerDown={(event) => logInputEvent("email", "pointerdown", event.currentTarget)}
+                  onFocus={(event) => logInputEvent("email", "focus", event.currentTarget)}
+                  onKeyDown={(event) => logInputEvent("email", `keydown_${event.key}`, event.currentTarget)}
+                  onBeforeInput={(event) => logInputEvent("email", "beforeinput", event.currentTarget)}
+                  onInput={(event) => {
+                    setLoginEmail(event.currentTarget.value);
+                    logInputEvent("email", "input", event.currentTarget);
+                  }}
+                  onChange={(event) => {
+                    setLoginEmail(event.currentTarget.value);
+                    logInputEvent("email", "change", event.currentTarget);
+                  }}
                   placeholder="seu@email.com"
                   autoComplete="email"
                   className="relative z-20 pointer-events-auto touch-auto flex h-14 w-full rounded-md border border-input bg-background px-3 py-2 text-lg text-foreground caret-primary ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
