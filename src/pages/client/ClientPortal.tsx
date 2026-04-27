@@ -276,50 +276,29 @@ const ClientPortal = () => {
     setCheckingEmail(true);
 
     try {
-      // Check current establishment
-      const { data: localClient, error: localError } = await supabase
-        .from("clients")
-        .select("*")
-        .eq("establishment_id", establishment.id)
-        .or(`global_identity_email.eq.${email},email.eq.${email}`)
-        .maybeSingle();
-
-      clientDebug("check_email_local_result", {
-        found: Boolean(localClient),
-        clientId: localClient?.id ?? null,
-        error: localError?.message ?? null,
+      const { data, error } = await supabase.functions.invoke("lookup-client-by-email", {
+        body: { establishment_id: establishment.id, email },
       });
 
-      if (localError) throw localError;
+      clientDebug("check_email_lookup_result", {
+        match: data?.match ?? null,
+        hasClient: Boolean(data?.client),
+        error: error?.message ?? null,
+      });
+
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
 
       setEmailChecked(true);
 
-      if (localClient) {
+      if (data?.match === "local" && data.client) {
         setClientExists(true);
-        setClient(localClient);
+        setClient(data.client as Client);
         return;
       }
 
-      // Identity stitching: check if this email exists anywhere on the platform
-      const { data: globalClient, error: globalError } = await supabase
-        .from("clients")
-        .select("*")
-        .eq("global_identity_email", email)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      clientDebug("check_email_global_result", {
-        found: Boolean(globalClient),
-        clientId: globalClient?.id ?? null,
-        error: globalError?.message ?? null,
-      });
-
-      if (globalError) throw globalError;
-
-      if (globalClient) {
-        // Cliente existe em outro salão — fazer stitching
-        setStitchSourceClient(globalClient);
+      if (data?.match === "global" && data.client) {
+        setStitchSourceClient(data.client as Client);
         setClientExists(true);
         return;
       }
