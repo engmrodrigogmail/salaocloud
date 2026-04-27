@@ -70,6 +70,7 @@ const App = () => (
               {/* Public routes */}
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/cliente" element={<ClientLogin />} />
               <Route path="/instalar" element={<Install />} />
               <Route path="/termos" element={<Termos />} />
               <Route path="/privacidade" element={<Privacidade />} />
