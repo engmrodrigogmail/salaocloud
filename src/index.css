@@ -246,6 +246,11 @@
       background-attachment: fixed;
     }
   }
+  /* Garante que o conteúdo dentro do fundo fotográfico permaneça interativo */
+  .salon-photo-bg > * {
+    position: relative;
+    z-index: 10;
+  }
 
   /* Card translúcido sobre fundo fotográfico */
   .premium-card {

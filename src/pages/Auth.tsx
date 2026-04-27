@@ -224,7 +224,7 @@ export default function Auth() {
       style={{ ['--salon-bg-image' as any]: `url(${salonBg})` }}
     >
       {/* Left side - Form */}
-      <div className="flex-1 flex flex-col justify-center px-8 py-12 lg:px-16">
+      <div className="flex-1 flex flex-col justify-center px-8 py-12 lg:px-16 relative z-10">
         <div className="max-w-md w-full mx-auto">
           <Link
             to="/"
@@ -347,7 +347,7 @@ export default function Auth() {
                           <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
                           >
                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                           </button>
@@ -436,7 +436,7 @@ export default function Auth() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
                     aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
