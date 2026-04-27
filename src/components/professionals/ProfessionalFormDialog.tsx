@@ -27,6 +27,13 @@ import { toast } from "sonner";
 import { Briefcase, DollarSign, Building } from "lucide-react";
 import { format } from "date-fns";
 import { AvatarUpload } from "./AvatarUpload";
+import {
+  ProfessionalWorkingHoursSection,
+  DEFAULT_WORKING_HOURS,
+  type WorkingHours,
+} from "./ProfessionalWorkingHoursSection";
+import { ProfessionalBlockedTimesSection } from "./ProfessionalBlockedTimesSection";
+import type { Json } from "@/integrations/supabase/types";
 
 interface Service {
   id: string;
