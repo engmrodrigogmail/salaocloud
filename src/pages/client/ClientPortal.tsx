@@ -544,18 +544,30 @@ const ClientPortal = () => {
 
   const fetchClientData = async (clientId: string) => {
     try {
-      // Fetch client appointments
-      const { data: appointmentsData } = await supabase
-        .from("appointments")
-        .select(`
-          *,
-          services:service_id(name),
-          professionals:professional_id(name)
-        `)
-        .eq("client_id", clientId)
-        .order("scheduled_at", { ascending: false });
-      
-      setAppointments(appointmentsData || []);
+      // Buscar agendamentos via RPC SECURITY DEFINER (portal anônimo, validação por e-mail)
+      const emailForLookup = (emailToCheck || client?.global_identity_email || client?.email || "")
+        .trim()
+        .toLowerCase();
+      clientDebug("fetch_appointments_start", {
+        clientId,
+        hasEmail: Boolean(emailForLookup),
+      });
+      const { data: appointmentsData, error: appointmentsError } = await supabase.rpc(
+        "get_client_appointments",
+        { _client_id: clientId, _email: emailForLookup }
+      );
+      clientDebug("fetch_appointments_result", {
+        ok: !appointmentsError,
+        count: appointmentsData?.length ?? 0,
+        error: appointmentsError?.message ?? null,
+      }, appointmentsError ? "warn" : "info");
+
+      const mapped = (appointmentsData || []).map((a: any) => ({
+        ...a,
+        services: a.service_name ? { name: a.service_name } : null,
+        professionals: a.professional_name ? { name: a.professional_name } : null,
+      }));
+      setAppointments(mapped as Appointment[]);
 
       // Fetch loyalty points if program exists
       if (loyaltyProgram) {
