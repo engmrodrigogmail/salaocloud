@@ -20,7 +20,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/assets/logo-salaocloud-v5.png";
 import salonBg from "@/assets/salon-dark-bg.png";
 
-const AUTH_DEBUG_MARKER = "auth-login-native-v3-2026-04-27T00-56Z";
+
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -53,29 +53,6 @@ export default function Auth() {
   const { toast } = useToast();
   const { signIn, signUp, user, role, loading } = useAuth();
 
-  const debugEnabled = true;
-  const debug = (event: string, payload?: Record<string, unknown>) => {
-    if (!debugEnabled) return;
-    console.info(`[AuthDebug:${AUTH_DEBUG_MARKER}] ${event}`, payload ?? {});
-  };
-
-  const logInputEvent = (field: "email" | "password", eventName: string, target: HTMLInputElement) => {
-    debug(`input_${eventName}`, {
-      field,
-      valueLength: target.value.length,
-      stateLength: field === "email" ? loginEmail.length : loginPassword.length,
-      selectionStart: target.selectionStart,
-      selectionEnd: target.selectionEnd,
-      activeElementId: document.activeElement instanceof HTMLElement ? document.activeElement.id : null,
-      disabled: target.disabled,
-      readOnly: target.readOnly,
-      type: target.type,
-      inputMode: target.inputMode,
-      autoComplete: target.autocomplete,
-      userAgent: navigator.userAgent,
-    });
-  };
-
 
   const signupForm = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
@@ -101,8 +78,6 @@ export default function Auth() {
 
   // Redirect based on role when user is authenticated
   useEffect(() => {
-    debug("state", { isSignup, loading, hasUser: !!user, role });
-
     if (!loading && user && !showPicker) {
       if (role === "super_admin") {
         navigate("/admin");
@@ -116,23 +91,10 @@ export default function Auth() {
     }
   }, [user, role, loading, navigate, isSignup, showPicker]);
 
-  useEffect(() => {
-    debug("mounted", {
-      marker: AUTH_DEBUG_MARKER,
-      href: window.location.href,
-      serviceWorkerController: Boolean(navigator.serviceWorker?.controller),
-      userAgent: navigator.userAgent,
-    });
-  }, []);
-
   const handleLogin = async (data: LoginFormData) => {
-    debug("login_submit", { emailLen: data.email.length });
-
     setIsLoading(true);
     const { error } = await signIn(data.email, data.password);
     setIsLoading(false);
-
-    debug("login_result", { ok: !error, error: error ? error.message : null });
 
     if (error) {
       let message = "Erro ao fazer login. Tente novamente.";
@@ -151,12 +113,6 @@ export default function Auth() {
 
   const handleNativeLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    debug("native_submit", {
-      emailStateLength: loginEmail.length,
-      passwordStateLength: loginPassword.length,
-      activeElementId: document.activeElement instanceof HTMLElement ? document.activeElement.id : null,
-      serviceWorkerController: Boolean(navigator.serviceWorker?.controller),
-    });
 
     const parsed = loginSchema.safeParse({
       email: loginEmail.trim(),
@@ -164,9 +120,6 @@ export default function Auth() {
     });
 
     if (!parsed.success) {
-      debug("native_submit_validation_failed", {
-        issues: parsed.error.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message })),
-      });
       toast({
         variant: "destructive",
         title: "Verifique os dados",
@@ -179,16 +132,9 @@ export default function Auth() {
   };
 
   const handleSignup = async (data: SignupFormData) => {
-    debug("signup_submit", {
-      emailLen: data.email.length,
-      fullNameLen: data.fullName?.length ?? 0,
-    });
-
     setIsLoading(true);
     const { error } = await signUp(data.email, data.password, data.fullName);
     setIsLoading(false);
-
-    debug("signup_result", { ok: !error, error: error ? error.message : null });
 
     if (error) {
       let message = "Erro ao criar conta. Tente novamente.";
