@@ -43,6 +43,8 @@ export default function Auth() {
   const [isSignup, setIsSignup] = useState(searchParams.get("mode") === "signup");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
   const [establishments, setEstablishments] = useState<{ slug: string; name: string }[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const navigate = useNavigate();
@@ -54,10 +56,6 @@ export default function Auth() {
     if (debugEnabled) console.debug("[Auth]", ...args);
   };
 
-  const loginForm = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
-  });
 
   const signupForm = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
@@ -120,6 +118,25 @@ export default function Auth() {
         description: message,
       });
     }
+  };
+
+  const handleNativeLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const parsed = loginSchema.safeParse({
+      email: loginEmail.trim(),
+      password: loginPassword,
+    });
+
+    if (!parsed.success) {
+      toast({
+        variant: "destructive",
+        title: "Verifique os dados",
+        description: parsed.error.issues[0]?.message || "Informe email e senha válidos.",
+      });
+      return;
+    }
+
+    await handleLogin(parsed.data);
   };
 
   const handleSignup = async (data: SignupFormData) => {
@@ -384,74 +401,60 @@ export default function Auth() {
               </form>
             </Form>
           ) : (
-            <Form {...loginForm}>
-              <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-5" key="login-form">
-                <FormField
-                  control={loginForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          id="login-email"
-                          type="email"
-                          placeholder="seu@email.com"
-                          autoComplete="email"
-                          className="h-14 text-lg"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
+            <form onSubmit={handleNativeLogin} className="space-y-5" key="login-form" noValidate>
+              <div className="space-y-2">
+                <label htmlFor="login-email" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Email
+                </label>
+                <input
+                  id="login-email"
+                  type="email"
+                  value={loginEmail}
+                  onChange={(event) => setLoginEmail(event.currentTarget.value)}
+                  placeholder="seu@email.com"
+                  autoComplete="email"
+                  className="relative z-20 pointer-events-auto touch-auto flex h-14 w-full rounded-md border border-input bg-background px-3 py-2 text-lg text-foreground caret-primary ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 />
+              </div>
 
-                <FormField
-                  control={loginForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Senha</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            {...field}
-                            id="login-password"
-                            type={showPassword ? "text" : "password"}
-                            placeholder="••••••••"
-                            autoComplete="current-password"
-                            enterKeyHint="done"
-                            className="h-14 pr-12 text-lg"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
-                            aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                          >
-                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+              <div className="space-y-2">
+                <label htmlFor="login-password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Senha
+                </label>
+                <div className="relative">
+                  <input
+                    id="login-password"
+                    type={showPassword ? "text" : "password"}
+                    value={loginPassword}
+                    onChange={(event) => setLoginPassword(event.currentTarget.value)}
+                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    enterKeyHint="done"
+                    className="relative z-20 pointer-events-auto touch-auto flex h-14 w-full rounded-md border border-input bg-background px-3 py-2 pr-12 text-lg text-foreground caret-primary ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 z-30 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+              </div>
 
-                <Button
-                  type="submit"
-                  className="w-full h-12 bg-gradient-primary hover:opacity-90 font-semibold"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    "Entrar"
-                  )}
-                </Button>
-              </form>
-            </Form>
+              <Button
+                type="submit"
+                className="w-full h-12 bg-gradient-primary hover:opacity-90 font-semibold"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  "Entrar"
+                )}
+              </Button>
+            </form>
           )}
 
           <div className="mt-6 text-center">
