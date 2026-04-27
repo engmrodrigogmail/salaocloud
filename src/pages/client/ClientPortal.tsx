@@ -307,21 +307,29 @@ const ClientPortal = () => {
   // Login (cliente já existe neste salão) — entra direto via e-mail (sem senha, sem CPF)
   const handleLogin = async () => {
     if (!client) return;
+    clientDebug("client_login_start", {
+      clientId: client.id,
+      hasGlobalIdentityEmail: Boolean(client.global_identity_email),
+      emailLength: emailToCheck.trim().length,
+    });
     setAuthenticating(true);
     try {
       // Garantir global_identity_email preenchido
       if (!client.global_identity_email) {
-        await supabase
+        const { error: updateError } = await supabase
           .from("clients")
           .update({ global_identity_email: emailToCheck.trim().toLowerCase() })
           .eq("id", client.id);
+        clientDebug("client_login_global_email_update", { error: updateError?.message ?? null });
+        if (updateError) throw updateError;
       }
       setIsAuthenticated(true);
       await fetchClientData(client.id);
       await fetchAllAppointments();
+      clientDebug("client_login_success", { clientId: client.id });
       toast.success(`Bem-vindo(a), ${client.name}!`, { duration: 2000 });
     } catch (error) {
-      console.error("Error authenticating:", error);
+      console.error("[ClientPortalDebug] client_login_exception", error);
       toast.error("Erro ao fazer login");
     } finally {
       setAuthenticating(false);
