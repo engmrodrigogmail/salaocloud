@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
 
     if (globalClient) {
       return new Response(
-        JSON.stringify({ match: "global", client: globalClient }),
+        JSON.stringify({ match: "global", client: globalClient, has_password: hasPassword }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
