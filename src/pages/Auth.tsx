@@ -422,7 +422,7 @@ export default function Auth() {
               </div>
 
               <div className="space-y-2">
-                <FormLabel htmlFor="login-password">Senha</FormLabel>
+                <label htmlFor="login-password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Senha</label>
                 <div className="relative">
                   <Input
                     id="login-password"
