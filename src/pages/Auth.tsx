@@ -476,7 +476,18 @@ export default function Auth() {
                     id="login-password"
                     type={showPassword ? "text" : "password"}
                     value={loginPassword}
-                    onChange={(event) => setLoginPassword(event.currentTarget.value)}
+                    onPointerDown={(event) => logInputEvent("password", "pointerdown", event.currentTarget)}
+                    onFocus={(event) => logInputEvent("password", "focus", event.currentTarget)}
+                    onKeyDown={(event) => logInputEvent("password", `keydown_${event.key}`, event.currentTarget)}
+                    onBeforeInput={(event) => logInputEvent("password", "beforeinput", event.currentTarget)}
+                    onInput={(event) => {
+                      setLoginPassword(event.currentTarget.value);
+                      logInputEvent("password", "input", event.currentTarget);
+                    }}
+                    onChange={(event) => {
+                      setLoginPassword(event.currentTarget.value);
+                      logInputEvent("password", "change", event.currentTarget);
+                    }}
                     placeholder="••••••••"
                     autoComplete="current-password"
                     enterKeyHint="done"
