@@ -839,6 +839,10 @@ const ClientPortal = () => {
     setRegisterPhone("");
     setAcceptedTerms(false);
     setShareHistoryConsent(false);
+    setHasPassword(false);
+    setLoginPassword("");
+    setNewPassword("");
+    setNewPasswordConfirm("");
     setIsBooking(false);
     setBookingStep(1);
   };
