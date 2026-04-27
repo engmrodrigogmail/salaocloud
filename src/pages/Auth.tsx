@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -120,25 +120,6 @@ export default function Auth() {
         description: message,
       });
     }
-  };
-
-  const handleNativeLogin = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const email = String(formData.get("email") || "").trim();
-    const password = String(formData.get("password") || "");
-    const parsed = loginSchema.safeParse({ email, password });
-
-    if (!parsed.success) {
-      toast({
-        variant: "destructive",
-        title: "Verifique os dados",
-        description: parsed.error.issues[0]?.message || "Informe email e senha válidos.",
-      });
-      return;
-    }
-
-    await handleLogin(parsed.data);
   };
 
   const handleSignup = async (data: SignupFormData) => {
@@ -403,59 +384,74 @@ export default function Auth() {
               </form>
             </Form>
           ) : (
-            <form onSubmit={handleNativeLogin} className="space-y-5">
-              <div className="space-y-2">
-                <label htmlFor="login-email" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Email</label>
-                <Input
-                  id="login-email"
+            <Form {...loginForm}>
+              <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-5" key="login-form">
+                <FormField
+                  control={loginForm.control}
                   name="email"
-                  type="text"
-                  placeholder="seu@email.com"
-                  autoComplete="username email"
-                  inputMode="email"
-                  autoCapitalize="none"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  enterKeyHint="next"
-                  className="h-14 text-lg"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          id="login-email"
+                          type="email"
+                          placeholder="seu@email.com"
+                          autoComplete="email"
+                          className="h-14 text-lg"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
-              </div>
 
-              <div className="space-y-2">
-                <label htmlFor="login-password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Senha</label>
-                <div className="relative">
-                  <Input
-                    id="login-password"
-                    name="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    autoComplete="current-password"
-                    enterKeyHint="done"
-                    className="h-14 pr-12 text-lg"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
-                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                  >
-                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                  </button>
-                </div>
-              </div>
+                <FormField
+                  control={loginForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Senha</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            {...field}
+                            id="login-password"
+                            type={showPassword ? "text" : "password"}
+                            placeholder="••••••••"
+                            autoComplete="current-password"
+                            enterKeyHint="done"
+                            className="h-14 pr-12 text-lg"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
+                            aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                          >
+                            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                          </button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <Button
-                type="submit"
-                className="w-full h-12 bg-gradient-primary hover:opacity-90 font-semibold"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  "Entrar"
-                )}
-              </Button>
-            </form>
+                <Button
+                  type="submit"
+                  className="w-full h-12 bg-gradient-primary hover:opacity-90 font-semibold"
+                  disabled={isLoading}
+                >
+                  {isLoading ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : (
+                    "Entrar"
+                  )}
+                </Button>
+              </form>
+            </Form>
           )}
 
           <div className="mt-6 text-center">
