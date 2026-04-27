@@ -1222,6 +1222,60 @@ const ClientPortal = () => {
                       cadastro a este salão para que você possa agendar.
                     </AlertDescription>
                   </Alert>
+
+                  {hasPassword ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="stitchPwd">Senha</Label>
+                      <Input
+                        id="stitchPwd"
+                        type="password"
+                        autoComplete="current-password"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        placeholder="Sua senha"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRequestReset}
+                        disabled={requestingReset}
+                        className="text-xs text-primary underline hover:opacity-80"
+                      >
+                        Esqueci minha senha
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription className="text-xs">
+                          Este é seu primeiro acesso. Crie uma senha para proteger sua conta.
+                        </AlertDescription>
+                      </Alert>
+                      <div className="space-y-2">
+                        <Label htmlFor="stitchNewPwd">Criar senha</Label>
+                        <Input
+                          id="stitchNewPwd"
+                          type="password"
+                          autoComplete="new-password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Mínimo 6 caracteres"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="stitchNewPwdConfirm">Confirmar senha</Label>
+                        <Input
+                          id="stitchNewPwdConfirm"
+                          type="password"
+                          autoComplete="new-password"
+                          value={newPasswordConfirm}
+                          onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                          placeholder="Repita a senha"
+                        />
+                      </div>
+                    </>
+                  )}
+
                   <Button className="w-full" onClick={handleStitch} disabled={authenticating}>
                     {authenticating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                     Continuar
@@ -1232,6 +1286,9 @@ const ClientPortal = () => {
                     onClick={() => {
                       setEmailChecked(false);
                       setStitchSourceClient(null);
+                      setLoginPassword("");
+                      setNewPassword("");
+                      setNewPasswordConfirm("");
                     }}
                   >
                     <ArrowLeft className="h-4 w-4 mr-2" /> Usar outro e-mail
@@ -1246,10 +1303,70 @@ const ClientPortal = () => {
                       <Input value={emailToCheck} readOnly className="pl-10 bg-muted" />
                     </div>
                   </div>
-                  <Button className="w-full" onClick={handleLogin} disabled={authenticating}>
-                    {authenticating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                    Entrar
-                  </Button>
+
+                  {hasPassword ? (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="loginPwd">Senha</Label>
+                        <Input
+                          id="loginPwd"
+                          type="password"
+                          autoComplete="current-password"
+                          value={loginPassword}
+                          onChange={(e) => setLoginPassword(e.target.value)}
+                          placeholder="Sua senha"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRequestReset}
+                          disabled={requestingReset}
+                          className="text-xs text-primary underline hover:opacity-80"
+                        >
+                          Esqueci minha senha
+                        </button>
+                      </div>
+                      <Button className="w-full" onClick={handleLogin} disabled={authenticating}>
+                        {authenticating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                        Entrar
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription className="text-xs">
+                          Este é seu primeiro acesso. Crie uma senha para proteger sua conta.
+                        </AlertDescription>
+                      </Alert>
+                      <div className="space-y-2">
+                        <Label htmlFor="firstPwd">Criar senha</Label>
+                        <Input
+                          id="firstPwd"
+                          type="password"
+                          autoComplete="new-password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Mínimo 6 caracteres"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="firstPwdConfirm">Confirmar senha</Label>
+                        <Input
+                          id="firstPwdConfirm"
+                          type="password"
+                          autoComplete="new-password"
+                          value={newPasswordConfirm}
+                          onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                          placeholder="Repita a senha"
+                        />
+                      </div>
+                      <Button className="w-full" onClick={handleSetPasswordFirstTime} disabled={authenticating}>
+                        {authenticating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                        Definir senha e entrar
+                      </Button>
+                    </>
+                  )}
+
                   <Button
                     variant="ghost"
                     className="w-full"
@@ -1258,6 +1375,9 @@ const ClientPortal = () => {
                       setEmailToCheck("");
                       setClient(null);
                       setClientExists(false);
+                      setLoginPassword("");
+                      setNewPassword("");
+                      setNewPasswordConfirm("");
                     }}
                   >
                     <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
@@ -1311,6 +1431,29 @@ const ClientPortal = () => {
                     <p className="text-xs text-muted-foreground">
                       Usado apenas para emissão de nota fiscal
                     </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="regPwd">Senha</Label>
+                    <Input
+                      id="regPwd"
+                      type="password"
+                      autoComplete="new-password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="regPwdConfirm">Confirmar senha</Label>
+                    <Input
+                      id="regPwdConfirm"
+                      type="password"
+                      autoComplete="new-password"
+                      value={newPasswordConfirm}
+                      onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                      placeholder="Repita a senha"
+                    />
                   </div>
 
                   <div className="space-y-3 pt-2 border-t">
@@ -1368,6 +1511,8 @@ const ClientPortal = () => {
                     onClick={() => {
                       setEmailChecked(false);
                       setEmailToCheck("");
+                      setNewPassword("");
+                      setNewPasswordConfirm("");
                     }}
                   >
                     <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
