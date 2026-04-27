@@ -392,36 +392,106 @@ const ClientPortal = () => {
     }
   };
 
-  // Login (cliente já existe neste salão) — entra direto via e-mail (sem senha, sem CPF)
+  // Login (cliente já existe neste salão) — autentica via e-mail + senha
   const handleLogin = async () => {
-    if (!client) return;
-    clientDebug("client_login_start", {
-      clientId: client.id,
-      hasGlobalIdentityEmail: Boolean(client.global_identity_email),
-      emailLength: emailToCheck.trim().length,
-    });
+    if (!client || !establishment) return;
+    const email = (emailToCheck || client.global_identity_email || client.email || "").trim().toLowerCase();
+    if (!loginPassword || loginPassword.length < 6) {
+      toast.error("Informe sua senha (mínimo 6 caracteres)");
+      return;
+    }
     setAuthenticating(true);
     try {
-      // Garantir global_identity_email preenchido
-      if (!client.global_identity_email) {
-        const { error: updateError } = await supabase
-          .from("clients")
-          .update({ global_identity_email: emailToCheck.trim().toLowerCase() })
-          .eq("id", client.id);
-        clientDebug("client_login_global_email_update", { error: updateError?.message ?? null });
-        if (updateError) throw updateError;
+      const { data, error } = await supabase.functions.invoke("client-auth-login", {
+        body: { email, password: loginPassword, establishment_id: establishment.id },
+      });
+      if (error) throw error;
+
+      if (data?.status === "password_not_set") {
+        // Migração suave: cliente antigo sem senha — leva para criar senha agora
+        toast.message("Defina sua senha para o primeiro acesso", { duration: 2500 });
+        setHasPassword(false);
+        setLoginPassword("");
+        return;
       }
+      if (data?.status !== "ok" || !data?.client) {
+        toast.error("E-mail ou senha incorretos");
+        return;
+      }
+
+      // Garantir global_identity_email preenchido
+      if (!data.client.global_identity_email) {
+        await supabase
+          .from("clients")
+          .update({ global_identity_email: email })
+          .eq("id", data.client.id);
+      }
+
+      const authedClient = { ...client, ...data.client } as Client;
+      setClient(authedClient);
       setIsAuthenticated(true);
-      persistClientSession(client.global_identity_email ? client : { ...client, global_identity_email: emailToCheck.trim().toLowerCase() } as Client);
-      await fetchClientData(client.id);
+      persistClientSession(authedClient);
+      await fetchClientData(authedClient.id);
       await fetchAllAppointments();
-      clientDebug("client_login_success", { clientId: client.id });
-      toast.success(`Bem-vindo(a), ${client.name}!`, { duration: 2000 });
+      toast.success(`Bem-vindo(a), ${authedClient.name}!`, { duration: 2000 });
     } catch (error) {
       console.error("[ClientPortalDebug] client_login_exception", error);
       toast.error("Erro ao fazer login");
     } finally {
       setAuthenticating(false);
+    }
+  };
+
+  // 1º acesso (migração suave): cliente antigo define senha agora
+  const handleSetPasswordFirstTime = async () => {
+    if (!client) return;
+    const email = (emailToCheck || client.global_identity_email || client.email || "").trim().toLowerCase();
+    if (!newPassword || newPassword.length < 6) {
+      toast.error("A senha deve ter no mínimo 6 caracteres");
+      return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+    setAuthenticating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("client-auth-set-password", {
+        body: { email, password: newPassword, mode: "first_time" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setIsAuthenticated(true);
+      persistClientSession(client);
+      await fetchClientData(client.id);
+      await fetchAllAppointments();
+      toast.success(`Bem-vindo(a), ${client.name}!`, { duration: 2000 });
+    } catch (error) {
+      console.error("[ClientPortalDebug] set_password_exception", error);
+      toast.error("Erro ao definir senha");
+    } finally {
+      setAuthenticating(false);
+    }
+  };
+
+  // Esqueci minha senha — envia link por e-mail
+  const handleRequestReset = async () => {
+    const email = (emailToCheck || client?.global_identity_email || client?.email || "").trim().toLowerCase();
+    if (!email) {
+      toast.error("Informe seu e-mail primeiro");
+      return;
+    }
+    toast.message("O link de redefinição será enviado apenas ao e-mail cadastrado.", { duration: 4000 });
+    setRequestingReset(true);
+    try {
+      await supabase.functions.invoke("client-auth-request-reset", { body: { email } });
+      toast.success("Se houver cadastro, você receberá um e-mail com instruções.", { duration: 4000 });
+    } catch (error) {
+      console.error("[ClientPortalDebug] request_reset_exception", error);
+      toast.error("Erro ao solicitar redefinição");
+    } finally {
+      setRequestingReset(false);
     }
   };
 
