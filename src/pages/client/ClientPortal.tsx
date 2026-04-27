@@ -168,24 +168,39 @@ const ClientPortal = () => {
         const raw = localStorage.getItem(sessionStorageKey);
         if (!raw) return;
         const saved = JSON.parse(raw) as { clientId?: string; email?: string | null; phone?: string | null };
-        if (!saved?.clientId) return;
-        const { data: existing, error } = await supabase
-          .from("clients")
-          .select("*")
-          .eq("id", saved.clientId)
-          .eq("establishment_id", establishment.id)
-          .maybeSingle();
-        if (error || !existing) {
+        if (!saved?.email && !saved?.phone) {
           localStorage.removeItem(sessionStorageKey);
           return;
         }
-        setClient(existing as Client);
+
+        // RLS bloqueia SELECT direto para usuários anônimos.
+        // Usamos a edge function (service role) para revalidar a sessão por e-mail.
+        let existing: Client | null = null;
+
+        if (saved.email) {
+          const { data, error } = await supabase.functions.invoke("lookup-client-by-email", {
+            body: { establishment_id: establishment.id, email: saved.email },
+          });
+          if (!error && data?.client) {
+            existing = data.client as Client;
+          }
+        }
+
+        if (!existing) {
+          localStorage.removeItem(sessionStorageKey);
+          return;
+        }
+
+        setClient(existing);
         setIsAuthenticated(true);
         if (saved.email) setEmailToCheck(saved.email);
+        // Atualiza o storage com o id atual (caso tenha mudado por stitching)
+        persistClientSession(existing);
         await fetchAllAppointments();
         await fetchClientData(existing.id);
       } catch (err) {
         console.warn("[ClientPortalDebug] restore session failed", err);
+        localStorage.removeItem(sessionStorageKey);
       }
     };
     restore();
