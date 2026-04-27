@@ -56,10 +56,6 @@ export default function Auth() {
     if (debugEnabled) console.debug("[Auth]", ...args);
   };
 
-  const loginForm = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
-  });
 
   const signupForm = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
