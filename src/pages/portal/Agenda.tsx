@@ -469,6 +469,8 @@ export default function PortalAgenda() {
           professionals={professionals}
           onSuccess={() => {
             toast.success("Bloqueios salvos com sucesso!");
+            setBlocksRefreshKey((k) => k + 1);
+            setBlockDialogOpen(false);
           }}
         />
 
@@ -476,7 +478,8 @@ export default function PortalAgenda() {
         <BlockedTimesList
           establishmentId={establishment?.id || ""}
           professionals={professionals}
-          onRefresh={() => {}}
+          onRefresh={() => setBlocksRefreshKey((k) => k + 1)}
+          refreshKey={blocksRefreshKey}
         />
 
         {/* Filters - Collapsible on mobile */}
