@@ -405,7 +405,7 @@ export default function Auth() {
           ) : (
             <form onSubmit={handleNativeLogin} className="space-y-5">
               <div className="space-y-2">
-                <FormLabel htmlFor="login-email">Email</FormLabel>
+                <label htmlFor="login-email" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Email</label>
                 <Input
                   id="login-email"
                   name="email"
@@ -422,7 +422,7 @@ export default function Auth() {
               </div>
 
               <div className="space-y-2">
-                <FormLabel htmlFor="login-password">Senha</FormLabel>
+                <label htmlFor="login-password" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">Senha</label>
                 <div className="relative">
                   <Input
                     id="login-password"
