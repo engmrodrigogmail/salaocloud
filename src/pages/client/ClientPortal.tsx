@@ -1553,18 +1553,18 @@ const ClientPortal = () => {
                       selectedDate,
                       selectedProfessional?.id || null,
                       selectedService.duration_minutes
-                    ).map((time) => (
+                    ).filter((slot) => slot.available).map((slot) => (
                       <button
-                        key={time}
+                        key={slot.time}
                         type="button"
-                        onClick={() => setSelectedTime(time)}
+                        onClick={() => setSelectedTime(slot.time)}
                         className={`px-2 py-2 rounded-md border text-sm transition-colors ${
-                          selectedTime === time
+                          selectedTime === slot.time
                             ? "border-primary bg-primary/10"
                             : "border-border hover:border-primary"
                         }`}
                       >
-                        {time}
+                        {slot.time}
                       </button>
                     ))}
                   </div>
@@ -1572,7 +1572,7 @@ const ClientPortal = () => {
                     selectedDate,
                     selectedProfessional?.id || null,
                     selectedService.duration_minutes
-                  ).length === 0 && (
+                  ).filter((slot) => slot.available).length === 0 && (
                     <p className="text-sm text-muted-foreground text-center py-4">
                       Nenhum horário disponível nesta data
                     </p>
