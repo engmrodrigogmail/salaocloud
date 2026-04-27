@@ -44,3 +44,6 @@ verify_jwt = false
 
 [functions.handle-email-suppression]
 verify_jwt = false
+
+[functions.lookup-client-by-email]
+verify_jwt = false
