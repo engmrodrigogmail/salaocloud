@@ -112,14 +112,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
+    authDebug("sign_in_start", { emailLength: email.length, passwordLength: password.length });
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    authDebug("sign_in_result", { ok: !error, error: error?.message ?? null });
     
     if (!error) {
       // Refetch role after sign in
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      authDebug("get_user_after_sign_in", {
+        hasUser: Boolean(user),
+        userId: user?.id ?? null,
+        email: user?.email ?? null,
+        error: userError?.message ?? null,
+      });
       if (user) {
         const userRole = await fetchUserRole(user.id);
         setRole(userRole);
