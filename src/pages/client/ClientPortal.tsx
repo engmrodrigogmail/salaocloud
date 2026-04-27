@@ -17,6 +17,7 @@ import {
   ChevronLeft, ChevronRight, AlertCircle, FileText, Info, MessageCircle
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LGPDTermsDialog } from "@/components/legal/LGPDTermsDialog";
@@ -1402,6 +1403,39 @@ const ClientPortal = () => {
             <DialogDescription>Passo {bookingStep} de 4</DialogDescription>
           </DialogHeader>
 
+          {/* Header de Resumo fixo: aparece a partir do passo 2 quando o serviço foi escolhido */}
+          {bookingStep > 1 && selectedService && (
+            <div className="sticky top-0 z-10 -mx-6 px-6 py-3 bg-muted/40 border-y space-y-2">
+              <div>
+                <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+                  Serviço selecionado
+                </p>
+                <p className="text-sm font-semibold">{selectedService.name}</p>
+              </div>
+              {selectedProfessional && (
+                <div className="flex items-center gap-2 pt-1 border-t border-border/50">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+                      Profissional
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <Avatar className="h-7 w-7">
+                        <AvatarImage
+                          src={selectedProfessional.avatar_url || undefined}
+                          alt={selectedProfessional.name}
+                        />
+                        <AvatarFallback>
+                          <User className="h-3.5 w-3.5" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-sm font-semibold">{selectedProfessional.name}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Step 1: Service */}
           {bookingStep === 1 && (
             <div className="space-y-2">
@@ -1435,74 +1469,93 @@ const ClientPortal = () => {
             </div>
           )}
 
-          {/* Step 2: Professional */}
-          {bookingStep === 2 && selectedService && (
-            <div className="space-y-2">
-              <Card
-                className={`cursor-pointer transition-colors hover:border-primary ${
-                  !selectedProfessional ? "border-primary bg-primary/5" : ""
-                }`}
-                onClick={() => setSelectedProfessional(null)}
-              >
-                <CardContent className="p-4">
-                  <h4 className="font-semibold">Sem preferência</h4>
-                  <p className="text-xs text-muted-foreground">
-                    Atribuir automaticamente o profissional disponível
-                  </p>
-                </CardContent>
-              </Card>
-              {getProfessionalsForService(selectedService.id).map((prof) => (
+          {/* Step 2: Professional - filtrado por disponibilidade do dia se data já estiver escolhida */}
+          {bookingStep === 2 && selectedService && (() => {
+            const allProfs = getProfessionalsForService(selectedService.id);
+            const profsForDay = selectedDate
+              ? allProfs.filter((p) => availability.getWorkingHoursForDay(selectedDate, p.id) !== null)
+              : allProfs;
+
+            return (
+              <div className="space-y-2">
+                {selectedDate && profsForDay.length < allProfs.length && (
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      Mostrando apenas profissionais que trabalham em{" "}
+                      {format(selectedDate, "EEEE", { locale: ptBR })}.
+                    </AlertDescription>
+                  </Alert>
+                )}
                 <Card
-                  key={prof.id}
                   className={`cursor-pointer transition-colors hover:border-primary ${
-                    selectedProfessional?.id === prof.id ? "border-primary bg-primary/5" : ""
+                    !selectedProfessional ? "border-primary bg-primary/5" : ""
                   }`}
-                  onClick={() => setSelectedProfessional(prof)}
+                  onClick={() => setSelectedProfessional(null)}
                 >
-                  <CardContent className="p-4 flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={prof.avatar_url || undefined} />
-                      <AvatarFallback>{prof.name.charAt(0)}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <h4 className="font-semibold">{prof.name}</h4>
-                    </div>
+                  <CardContent className="p-4">
+                    <h4 className="font-semibold">Sem preferência</h4>
+                    <p className="text-xs text-muted-foreground">
+                      Atribuir automaticamente o profissional disponível
+                    </p>
                   </CardContent>
                 </Card>
-              ))}
-            </div>
-          )}
+                {profsForDay.map((prof) => (
+                  <Card
+                    key={prof.id}
+                    className={`cursor-pointer transition-colors hover:border-primary ${
+                      selectedProfessional?.id === prof.id ? "border-primary bg-primary/5" : ""
+                    }`}
+                    onClick={() => setSelectedProfessional(prof)}
+                  >
+                    <CardContent className="p-4 flex items-center gap-3">
+                      <Avatar className="h-10 w-10">
+                        <AvatarImage src={prof.avatar_url || undefined} alt={prof.name} />
+                        <AvatarFallback>
+                          <User className="h-4 w-4" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <h4 className="font-semibold">{prof.name}</h4>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                {profsForDay.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">
+                    Nenhum profissional trabalha nesta data. Volte e escolha outra.
+                  </p>
+                )}
+              </div>
+            );
+          })()}
 
-          {/* Step 3: Date & Time */}
+          {/* Step 3: Date (Calendário Mensal) & Time */}
           {bookingStep === 3 && selectedService && (
             <div className="space-y-4">
               <div>
                 <Label className="mb-2 block">Data</Label>
-                <div className="flex gap-2 overflow-x-auto pb-2">
-                  {generateDates().map((date) => {
-                    const open = isDateOpen(date);
-                    const isSelected = selectedDate && isSameDay(date, selectedDate);
-                    return (
-                      <button
-                        key={date.toISOString()}
-                        type="button"
-                        onClick={() => handleDateSelect(date)}
-                        className={`flex-shrink-0 px-3 py-2 rounded-lg border text-center min-w-[64px] transition-colors ${
-                          isSelected
-                            ? "border-primary bg-primary/10"
-                            : open
-                            ? "border-border hover:border-primary"
-                            : "border-border opacity-50"
-                        }`}
-                      >
-                        <p className="text-xs uppercase">
-                          {format(date, "EEE", { locale: ptBR })}
-                        </p>
-                        <p className="font-bold">{format(date, "dd")}</p>
-                        <p className="text-xs">{format(date, "MMM", { locale: ptBR })}</p>
-                      </button>
-                    );
-                  })}
+                <div className="flex justify-center">
+                  <CalendarPicker
+                    mode="single"
+                    locale={ptBR}
+                    selected={selectedDate ?? undefined}
+                    onSelect={(d) => d && handleDateSelect(d)}
+                    fromDate={startOfDay(new Date())}
+                    toDate={addDays(new Date(), 60)}
+                    disabled={(date) => {
+                      if (isBefore(startOfDay(date), startOfDay(new Date()))) return true;
+                      // Se profissional escolhido, desabilitar dias em que ele não trabalha
+                      if (selectedProfessional) {
+                        if (availability.getWorkingHoursForDay(date, selectedProfessional.id) === null) {
+                          return true;
+                        }
+                      }
+                      // Sempre desabilita dias fechados do estabelecimento
+                      return !availability.isEstablishmentOpen(date);
+                    }}
+                    className="rounded-md border pointer-events-auto"
+                  />
                 </div>
               </div>
 
@@ -1524,40 +1577,42 @@ const ClientPortal = () => {
                 </Alert>
               )}
 
-              {selectedDate && !showClosedMessage && (
-                <div>
-                  <Label className="mb-2 block">Horário</Label>
-                  <div className="grid grid-cols-4 gap-2">
-                    {generateAvailableSlots(
-                      selectedDate,
-                      selectedProfessional?.id || null,
-                      selectedService.duration_minutes
-                    ).filter((slot) => slot.available).map((slot) => (
-                      <button
-                        key={slot.time}
-                        type="button"
-                        onClick={() => setSelectedTime(slot.time)}
-                        className={`px-2 py-2 rounded-md border text-sm transition-colors ${
-                          selectedTime === slot.time
-                            ? "border-primary bg-primary/10"
-                            : "border-border hover:border-primary"
-                        }`}
-                      >
-                        {slot.time}
-                      </button>
-                    ))}
+              {selectedDate && !showClosedMessage && (() => {
+                // Estritamente apenas slots realmente disponíveis (sem sobreposição)
+                const slots = generateAvailableSlots(
+                  selectedDate,
+                  selectedProfessional?.id || null,
+                  selectedService.duration_minutes
+                ).filter((slot) => slot.available === true);
+
+                return (
+                  <div>
+                    <Label className="mb-2 block">Horário</Label>
+                    {slots.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        Nenhum horário disponível nesta data
+                      </p>
+                    ) : (
+                      <div className="grid grid-cols-4 gap-2">
+                        {slots.map((slot) => (
+                          <button
+                            key={slot.time}
+                            type="button"
+                            onClick={() => setSelectedTime(slot.time)}
+                            className={`px-2 py-2 rounded-md border text-sm transition-colors ${
+                              selectedTime === slot.time
+                                ? "border-primary bg-primary/10"
+                                : "border-border hover:border-primary"
+                            }`}
+                          >
+                            {slot.time}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                  {generateAvailableSlots(
-                    selectedDate,
-                    selectedProfessional?.id || null,
-                    selectedService.duration_minutes
-                  ).filter((slot) => slot.available).length === 0 && (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      Nenhum horário disponível nesta data
-                    </p>
-                  )}
-                </div>
-              )}
+                );
+              })()}
             </div>
           )}
 
@@ -1565,16 +1620,29 @@ const ClientPortal = () => {
           {bookingStep === 4 && selectedService && selectedDate && selectedTime && (
             <div className="space-y-3">
               <Card>
-                <CardContent className="p-4 space-y-2 text-sm">
+                <CardContent className="p-4 space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Serviço:</span>
                     <span className="font-semibold">{selectedService.name}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between items-center">
                     <span className="text-muted-foreground">Profissional:</span>
-                    <span className="font-semibold">
-                      {selectedProfessional?.name || "Sem preferência"}
-                    </span>
+                    {selectedProfessional ? (
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarImage
+                            src={selectedProfessional.avatar_url || undefined}
+                            alt={selectedProfessional.name}
+                          />
+                          <AvatarFallback>
+                            <User className="h-3 w-3" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="font-semibold">{selectedProfessional.name}</span>
+                      </div>
+                    ) : (
+                      <span className="font-semibold">Sem preferência</span>
+                    )}
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Data:</span>
