@@ -498,9 +498,44 @@ const ClientPortal = () => {
   // Identity stitching: criar registro local copiando dados do registro global
   const handleStitch = async () => {
     if (!establishment || !stitchSourceClient) return;
+
+    // Validação de senha:
+    //  - Se já existe senha cadastrada na rede para este e-mail, exigimos `loginPassword` (autenticação).
+    //  - Caso contrário, exigimos `newPassword` + confirmação para criar.
+    if (hasPassword) {
+      if (!loginPassword || loginPassword.length < 6) {
+        toast.error("Informe sua senha (mínimo 6 caracteres)");
+        return;
+      }
+    } else {
+      if (!newPassword || newPassword.length < 6) {
+        toast.error("Crie uma senha com no mínimo 6 caracteres");
+        return;
+      }
+      if (newPassword !== newPasswordConfirm) {
+        toast.error("As senhas não coincidem");
+        return;
+      }
+    }
+
     setAuthenticating(true);
     try {
       const email = emailToCheck.trim().toLowerCase();
+
+      // Se a rede já tem senha, valida ANTES de criar o registro local
+      if (hasPassword) {
+        const { data: loginData, error: loginError } = await supabase.functions.invoke(
+          "client-auth-login",
+          { body: { email, password: loginPassword } }
+        );
+        if (loginError) throw loginError;
+        if (loginData?.status !== "ok") {
+          toast.error("Senha incorreta");
+          setAuthenticating(false);
+          return;
+        }
+      }
+
       const clientId = crypto.randomUUID();
       const now = new Date().toISOString();
       const clientInsert = {
