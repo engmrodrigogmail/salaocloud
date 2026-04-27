@@ -265,6 +265,8 @@ export function ProfessionalFormDialog({
               : null,
             avatar_url: formData.avatar_url,
             working_hours: workingHours as unknown as Json,
+          })
+          .eq("id", editingProfessional.id);
 
         if (error) throw error;
       } else {
@@ -284,6 +286,8 @@ export function ProfessionalFormDialog({
               : null,
             avatar_url: formData.avatar_url,
             working_hours: workingHours as unknown as Json,
+          })
+          .select()
           .single();
 
         if (error) throw error;
