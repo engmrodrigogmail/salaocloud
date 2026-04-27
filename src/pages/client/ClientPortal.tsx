@@ -131,11 +131,66 @@ const ClientPortal = () => {
   // Brand colors and logo customization removed — SaaS uses unified design tokens.
 
 
+  const sessionStorageKey = slug ? `client_portal_session:${slug}` : null;
+
+  const persistClientSession = (clientRecord: Client | null) => {
+    if (!sessionStorageKey) return;
+    try {
+      if (!clientRecord) {
+        localStorage.removeItem(sessionStorageKey);
+        return;
+      }
+      localStorage.setItem(
+        sessionStorageKey,
+        JSON.stringify({
+          clientId: clientRecord.id,
+          email: clientRecord.global_identity_email || clientRecord.email || null,
+          phone: clientRecord.phone || null,
+          savedAt: new Date().toISOString(),
+        })
+      );
+    } catch (err) {
+      console.warn("[ClientPortalDebug] persistClientSession failed", err);
+    }
+  };
+
   useEffect(() => {
     if (slug) {
       fetchEstablishment();
     }
   }, [slug]);
+
+  // Restaurar sessão do cliente após o estabelecimento ser carregado
+  useEffect(() => {
+    if (!establishment || isAuthenticated || !sessionStorageKey) return;
+    const restore = async () => {
+      try {
+        const raw = localStorage.getItem(sessionStorageKey);
+        if (!raw) return;
+        const saved = JSON.parse(raw) as { clientId?: string; email?: string | null; phone?: string | null };
+        if (!saved?.clientId) return;
+        const { data: existing, error } = await supabase
+          .from("clients")
+          .select("*")
+          .eq("id", saved.clientId)
+          .eq("establishment_id", establishment.id)
+          .maybeSingle();
+        if (error || !existing) {
+          localStorage.removeItem(sessionStorageKey);
+          return;
+        }
+        setClient(existing as Client);
+        setIsAuthenticated(true);
+        if (saved.email) setEmailToCheck(saved.email);
+        await fetchAllAppointments();
+        await fetchClientData(existing.id);
+      } catch (err) {
+        console.warn("[ClientPortalDebug] restore session failed", err);
+      }
+    };
+    restore();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [establishment]);
 
   const fetchEstablishment = async () => {
     try {
