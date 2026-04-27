@@ -420,6 +420,20 @@ export function ProfessionalFormDialog({
 
             <Separator />
 
+            {/* Working Hours */}
+            <ProfessionalWorkingHoursSection
+              establishmentId={establishmentId}
+              workingHours={workingHours}
+              onChange={setWorkingHours}
+            />
+
+            <Separator />
+
+            {/* Blocked Times / Unavailability */}
+            <ProfessionalBlockedTimesSection professionalId={editingProfessional?.id ?? null} />
+
+            <Separator />
+
             {/* Professional-Level Leasing */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
