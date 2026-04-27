@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Clock, Save, Loader2, Users, Settings, CalendarDays, Eye } from "lucide-react";
 import type { Tables, Json } from "@/integrations/supabase/types";
-import { ProfessionalWorkingHoursCard } from "@/components/settings/ProfessionalWorkingHoursCard";
+
 import { QRCodeCard } from "@/components/booking/QRCodeCard";
 
 type Establishment = Tables<"establishments"> & {
@@ -202,7 +202,6 @@ export default function PortalSettings() {
 
   const SECTIONS = [
     { value: "working-hours", label: "Horário de Funcionamento", icon: Clock },
-    { value: "professional-hours", label: "Jornada dos Profissionais", icon: Users },
     { value: "agenda-settings", label: "Visualização da Agenda", icon: CalendarDays },
     { value: "client-portal", label: "Portal da Cliente", icon: Eye },
   ];
@@ -328,12 +327,6 @@ export default function PortalSettings() {
                 </div>
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="professional-hours">
-            {establishment && (
-              <ProfessionalWorkingHoursCard establishmentId={establishment.id} />
-            )}
           </TabsContent>
 
           <TabsContent value="agenda-settings">
