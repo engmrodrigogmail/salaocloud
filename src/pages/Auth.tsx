@@ -224,7 +224,7 @@ export default function Auth() {
       style={{ ['--salon-bg-image' as any]: `url(${salonBg})` }}
     >
       {/* Left side - Form */}
-      <div className="flex-1 flex flex-col justify-center px-8 py-12 lg:px-16">
+      <div className="flex-1 flex flex-col justify-center px-8 py-12 lg:px-16 relative z-10">
         <div className="max-w-md w-full mx-auto">
           <Link
             to="/"
