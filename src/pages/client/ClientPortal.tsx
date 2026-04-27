@@ -400,7 +400,7 @@ const ClientPortal = () => {
   const handleRegister = async () => {
     if (!establishment) return;
 
-    const cpfClean = registerCpf.replace(/\D/g, "");
+    const cpfClean = normalizeOptionalCpf(registerCpf);
     const phoneClean = registerPhone.replace(/\D/g, "");
     const email = emailToCheck.trim().toLowerCase();
 
@@ -408,7 +408,7 @@ const ClientPortal = () => {
       establishmentId: establishment.id,
       emailLength: email.length,
       phoneLength: phoneClean.length,
-      cpfLength: cpfClean.length,
+      cpfLength: cpfClean?.length ?? 0,
       acceptedTerms,
       shareHistoryConsent,
     });
@@ -437,20 +437,30 @@ const ClientPortal = () => {
     setAuthenticating(true);
 
     try {
-      const { data: newClient, error } = await supabase
+      const clientId = crypto.randomUUID();
+      const now = new Date().toISOString();
+      const clientInsert = {
+        id: clientId,
+        establishment_id: establishment.id,
+        name: registerName.trim(),
+        cpf: cpfClean,
+        phone: phoneClean,
+        email,
+        global_identity_email: email,
+        terms_accepted_at: now,
+        shared_history_consent: shareHistoryConsent,
+        user_id: null,
+        notes: null,
+      };
+      const { error } = await supabase
         .from("clients")
-        .insert({
-          establishment_id: establishment.id,
-          name: registerName.trim(),
-          cpf: cpfClean || null,
-          phone: phoneClean,
-          email,
-          global_identity_email: email,
-          terms_accepted_at: new Date().toISOString(),
-          shared_history_consent: shareHistoryConsent,
-        })
-        .select()
-        .single();
+        .insert(clientInsert);
+
+      const newClient = {
+        ...clientInsert,
+        created_at: now,
+        updated_at: now,
+      } as Client;
 
       clientDebug("register_insert_result", {
         ok: !error,
