@@ -1487,9 +1487,6 @@ const ClientPortal = () => {
                     </Avatar>
                     <div>
                       <h4 className="font-semibold">{prof.name}</h4>
-                      {prof.specialty && (
-                        <p className="text-xs text-muted-foreground">{prof.specialty}</p>
-                      )}
                     </div>
                   </CardContent>
                 </Card>
