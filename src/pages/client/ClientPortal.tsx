@@ -643,6 +643,14 @@ const ClientPortal = () => {
       toast.error("Você precisa aceitar os Termos de Uso para continuar");
       return;
     }
+    if (!newPassword || newPassword.length < 6) {
+      toast.error("A senha deve ter no mínimo 6 caracteres");
+      return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
 
     setAuthenticating(true);
 
