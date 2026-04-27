@@ -438,6 +438,7 @@ const ClientPortal = () => {
       setClient(newClient);
       setStitchSourceClient(null);
       setIsAuthenticated(true);
+      persistClientSession(newClient);
 
       if (loyaltyProgram) {
         await supabase.from("client_loyalty_points").insert({
