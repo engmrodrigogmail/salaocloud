@@ -548,13 +548,15 @@ const ClientPortal = () => {
       const emailForLookup = (emailToCheck || client?.global_identity_email || client?.email || "")
         .trim()
         .toLowerCase();
+      const phoneForLookup = (client?.phone || loginPhone || "").replace(/\D/g, "");
       clientDebug("fetch_appointments_start", {
         clientId,
         hasEmail: Boolean(emailForLookup),
+        hasPhone: Boolean(phoneForLookup),
       });
       const { data: appointmentsData, error: appointmentsError } = await supabase.rpc(
         "get_client_appointments",
-        { _client_id: clientId, _email: emailForLookup }
+        { _client_id: clientId, _email: emailForLookup, _phone: phoneForLookup }
       );
       clientDebug("fetch_appointments_result", {
         ok: !appointmentsError,
