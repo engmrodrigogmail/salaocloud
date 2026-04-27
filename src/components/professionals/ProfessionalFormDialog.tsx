@@ -140,6 +140,16 @@ export function ProfessionalFormDialog({
       });
     }
 
+    // Load working hours
+    if (fullProfessional?.working_hours && typeof fullProfessional.working_hours === "object") {
+      setWorkingHours({
+        ...DEFAULT_WORKING_HOURS,
+        ...(fullProfessional.working_hours as unknown as WorkingHours),
+      });
+    } else {
+      setWorkingHours(DEFAULT_WORKING_HOURS);
+    }
+
     // Fetch existing professional_services
     const { data: psData } = await supabase
       .from("professional_services")
