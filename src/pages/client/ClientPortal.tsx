@@ -70,6 +70,13 @@ const ClientPortal = () => {
   const [clientExists, setClientExists] = useState(false);
   // Identity stitching: cliente existe na plataforma mas não neste salão
   const [stitchSourceClient, setStitchSourceClient] = useState<Client | null>(null);
+  // Senha cadastrada (em qualquer salão da rede) para este e-mail
+  const [hasPassword, setHasPassword] = useState(false);
+  // Senhas (login, criação no 1º acesso, cadastro novo)
+  const [loginPassword, setLoginPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [newPasswordConfirm, setNewPasswordConfirm] = useState("");
+  const [requestingReset, setRequestingReset] = useState(false);
 
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [client, setClient] = useState<Client | null>(null);
@@ -361,6 +368,7 @@ const ClientPortal = () => {
       if (data?.error) throw new Error(data.error);
 
       setEmailChecked(true);
+      setHasPassword(Boolean(data?.has_password));
 
       if (data?.match === "local" && data.client) {
         setClientExists(true);
@@ -384,31 +392,48 @@ const ClientPortal = () => {
     }
   };
 
-  // Login (cliente já existe neste salão) — entra direto via e-mail (sem senha, sem CPF)
+  // Login (cliente já existe neste salão) — autentica via e-mail + senha
   const handleLogin = async () => {
-    if (!client) return;
-    clientDebug("client_login_start", {
-      clientId: client.id,
-      hasGlobalIdentityEmail: Boolean(client.global_identity_email),
-      emailLength: emailToCheck.trim().length,
-    });
+    if (!client || !establishment) return;
+    const email = (emailToCheck || client.global_identity_email || client.email || "").trim().toLowerCase();
+    if (!loginPassword || loginPassword.length < 6) {
+      toast.error("Informe sua senha (mínimo 6 caracteres)");
+      return;
+    }
     setAuthenticating(true);
     try {
-      // Garantir global_identity_email preenchido
-      if (!client.global_identity_email) {
-        const { error: updateError } = await supabase
-          .from("clients")
-          .update({ global_identity_email: emailToCheck.trim().toLowerCase() })
-          .eq("id", client.id);
-        clientDebug("client_login_global_email_update", { error: updateError?.message ?? null });
-        if (updateError) throw updateError;
+      const { data, error } = await supabase.functions.invoke("client-auth-login", {
+        body: { email, password: loginPassword, establishment_id: establishment.id },
+      });
+      if (error) throw error;
+
+      if (data?.status === "password_not_set") {
+        // Migração suave: cliente antigo sem senha — leva para criar senha agora
+        toast.message("Defina sua senha para o primeiro acesso", { duration: 2500 });
+        setHasPassword(false);
+        setLoginPassword("");
+        return;
       }
+      if (data?.status !== "ok" || !data?.client) {
+        toast.error("E-mail ou senha incorretos");
+        return;
+      }
+
+      // Garantir global_identity_email preenchido
+      if (!data.client.global_identity_email) {
+        await supabase
+          .from("clients")
+          .update({ global_identity_email: email })
+          .eq("id", data.client.id);
+      }
+
+      const authedClient = { ...client, ...data.client } as Client;
+      setClient(authedClient);
       setIsAuthenticated(true);
-      persistClientSession(client.global_identity_email ? client : { ...client, global_identity_email: emailToCheck.trim().toLowerCase() } as Client);
-      await fetchClientData(client.id);
+      persistClientSession(authedClient);
+      await fetchClientData(authedClient.id);
       await fetchAllAppointments();
-      clientDebug("client_login_success", { clientId: client.id });
-      toast.success(`Bem-vindo(a), ${client.name}!`, { duration: 2000 });
+      toast.success(`Bem-vindo(a), ${authedClient.name}!`, { duration: 2000 });
     } catch (error) {
       console.error("[ClientPortalDebug] client_login_exception", error);
       toast.error("Erro ao fazer login");
@@ -417,12 +442,100 @@ const ClientPortal = () => {
     }
   };
 
+  // 1º acesso (migração suave): cliente antigo define senha agora
+  const handleSetPasswordFirstTime = async () => {
+    if (!client) return;
+    const email = (emailToCheck || client.global_identity_email || client.email || "").trim().toLowerCase();
+    if (!newPassword || newPassword.length < 6) {
+      toast.error("A senha deve ter no mínimo 6 caracteres");
+      return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+    setAuthenticating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("client-auth-set-password", {
+        body: { email, password: newPassword, mode: "first_time" },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setIsAuthenticated(true);
+      persistClientSession(client);
+      await fetchClientData(client.id);
+      await fetchAllAppointments();
+      toast.success(`Bem-vindo(a), ${client.name}!`, { duration: 2000 });
+    } catch (error) {
+      console.error("[ClientPortalDebug] set_password_exception", error);
+      toast.error("Erro ao definir senha");
+    } finally {
+      setAuthenticating(false);
+    }
+  };
+
+  // Esqueci minha senha — envia link por e-mail
+  const handleRequestReset = async () => {
+    const email = (emailToCheck || client?.global_identity_email || client?.email || "").trim().toLowerCase();
+    if (!email) {
+      toast.error("Informe seu e-mail primeiro");
+      return;
+    }
+    toast.message("O link de redefinição será enviado apenas ao e-mail cadastrado.", { duration: 4000 });
+    setRequestingReset(true);
+    try {
+      await supabase.functions.invoke("client-auth-request-reset", { body: { email } });
+      toast.success("Se houver cadastro, você receberá um e-mail com instruções.", { duration: 4000 });
+    } catch (error) {
+      console.error("[ClientPortalDebug] request_reset_exception", error);
+      toast.error("Erro ao solicitar redefinição");
+    } finally {
+      setRequestingReset(false);
+    }
+  };
+
   // Identity stitching: criar registro local copiando dados do registro global
   const handleStitch = async () => {
     if (!establishment || !stitchSourceClient) return;
+
+    // Validação de senha:
+    //  - Se já existe senha cadastrada na rede para este e-mail, exigimos `loginPassword` (autenticação).
+    //  - Caso contrário, exigimos `newPassword` + confirmação para criar.
+    if (hasPassword) {
+      if (!loginPassword || loginPassword.length < 6) {
+        toast.error("Informe sua senha (mínimo 6 caracteres)");
+        return;
+      }
+    } else {
+      if (!newPassword || newPassword.length < 6) {
+        toast.error("Crie uma senha com no mínimo 6 caracteres");
+        return;
+      }
+      if (newPassword !== newPasswordConfirm) {
+        toast.error("As senhas não coincidem");
+        return;
+      }
+    }
+
     setAuthenticating(true);
     try {
       const email = emailToCheck.trim().toLowerCase();
+
+      // Se a rede já tem senha, valida ANTES de criar o registro local
+      if (hasPassword) {
+        const { data: loginData, error: loginError } = await supabase.functions.invoke(
+          "client-auth-login",
+          { body: { email, password: loginPassword } }
+        );
+        if (loginError) throw loginError;
+        if (loginData?.status !== "ok") {
+          toast.error("Senha incorreta");
+          setAuthenticating(false);
+          return;
+        }
+      }
+
       const clientId = crypto.randomUUID();
       const now = new Date().toISOString();
       const clientInsert = {
@@ -449,6 +562,19 @@ const ClientPortal = () => {
         created_at: now,
         updated_at: now,
       } as Client;
+
+      // Se a rede ainda não tem senha, definimos agora (aplica a todos os registros do e-mail)
+      if (!hasPassword) {
+        const { error: setPwdError } = await supabase.functions.invoke("client-auth-set-password", {
+          body: { email, password: newPassword, mode: "first_time" },
+        });
+        if (setPwdError) {
+          console.error("[ClientPortalDebug] stitch_set_password_error", setPwdError);
+          toast.error("Erro ao definir senha");
+          setAuthenticating(false);
+          return;
+        }
+      }
 
       setClient(newClient);
       setStitchSourceClient(null);
@@ -517,6 +643,14 @@ const ClientPortal = () => {
       toast.error("Você precisa aceitar os Termos de Uso para continuar");
       return;
     }
+    if (!newPassword || newPassword.length < 6) {
+      toast.error("A senha deve ter no mínimo 6 caracteres");
+      return;
+    }
+    if (newPassword !== newPasswordConfirm) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
 
     setAuthenticating(true);
 
@@ -568,6 +702,15 @@ const ClientPortal = () => {
         clientId: newClient.id,
         cpfStoredAsNull: newClient.cpf === null,
       });
+
+      // Definir senha (compartilhada entre todos os salões com o mesmo e-mail)
+      const { error: setPwdError } = await supabase.functions.invoke("client-auth-set-password", {
+        body: { email, password: newPassword, mode: "register", client_id: newClient.id },
+      });
+      if (setPwdError) {
+        console.error("[ClientPortalDebug] register_set_password_error", setPwdError);
+        toast.error("Cadastro criado, mas houve erro ao definir a senha. Use 'Esqueci minha senha' para configurar.");
+      }
 
       setClient(newClient);
       setIsAuthenticated(true);
@@ -696,6 +839,10 @@ const ClientPortal = () => {
     setRegisterPhone("");
     setAcceptedTerms(false);
     setShareHistoryConsent(false);
+    setHasPassword(false);
+    setLoginPassword("");
+    setNewPassword("");
+    setNewPasswordConfirm("");
     setIsBooking(false);
     setBookingStep(1);
   };
@@ -1075,6 +1222,60 @@ const ClientPortal = () => {
                       cadastro a este salão para que você possa agendar.
                     </AlertDescription>
                   </Alert>
+
+                  {hasPassword ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="stitchPwd">Senha</Label>
+                      <Input
+                        id="stitchPwd"
+                        type="password"
+                        autoComplete="current-password"
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        placeholder="Sua senha"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleRequestReset}
+                        disabled={requestingReset}
+                        className="text-xs text-primary underline hover:opacity-80"
+                      >
+                        Esqueci minha senha
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription className="text-xs">
+                          Este é seu primeiro acesso. Crie uma senha para proteger sua conta.
+                        </AlertDescription>
+                      </Alert>
+                      <div className="space-y-2">
+                        <Label htmlFor="stitchNewPwd">Criar senha</Label>
+                        <Input
+                          id="stitchNewPwd"
+                          type="password"
+                          autoComplete="new-password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Mínimo 6 caracteres"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="stitchNewPwdConfirm">Confirmar senha</Label>
+                        <Input
+                          id="stitchNewPwdConfirm"
+                          type="password"
+                          autoComplete="new-password"
+                          value={newPasswordConfirm}
+                          onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                          placeholder="Repita a senha"
+                        />
+                      </div>
+                    </>
+                  )}
+
                   <Button className="w-full" onClick={handleStitch} disabled={authenticating}>
                     {authenticating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                     Continuar
@@ -1085,6 +1286,9 @@ const ClientPortal = () => {
                     onClick={() => {
                       setEmailChecked(false);
                       setStitchSourceClient(null);
+                      setLoginPassword("");
+                      setNewPassword("");
+                      setNewPasswordConfirm("");
                     }}
                   >
                     <ArrowLeft className="h-4 w-4 mr-2" /> Usar outro e-mail
@@ -1099,10 +1303,70 @@ const ClientPortal = () => {
                       <Input value={emailToCheck} readOnly className="pl-10 bg-muted" />
                     </div>
                   </div>
-                  <Button className="w-full" onClick={handleLogin} disabled={authenticating}>
-                    {authenticating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                    Entrar
-                  </Button>
+
+                  {hasPassword ? (
+                    <>
+                      <div className="space-y-2">
+                        <Label htmlFor="loginPwd">Senha</Label>
+                        <Input
+                          id="loginPwd"
+                          type="password"
+                          autoComplete="current-password"
+                          value={loginPassword}
+                          onChange={(e) => setLoginPassword(e.target.value)}
+                          placeholder="Sua senha"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRequestReset}
+                          disabled={requestingReset}
+                          className="text-xs text-primary underline hover:opacity-80"
+                        >
+                          Esqueci minha senha
+                        </button>
+                      </div>
+                      <Button className="w-full" onClick={handleLogin} disabled={authenticating}>
+                        {authenticating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                        Entrar
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription className="text-xs">
+                          Este é seu primeiro acesso. Crie uma senha para proteger sua conta.
+                        </AlertDescription>
+                      </Alert>
+                      <div className="space-y-2">
+                        <Label htmlFor="firstPwd">Criar senha</Label>
+                        <Input
+                          id="firstPwd"
+                          type="password"
+                          autoComplete="new-password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          placeholder="Mínimo 6 caracteres"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="firstPwdConfirm">Confirmar senha</Label>
+                        <Input
+                          id="firstPwdConfirm"
+                          type="password"
+                          autoComplete="new-password"
+                          value={newPasswordConfirm}
+                          onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                          placeholder="Repita a senha"
+                        />
+                      </div>
+                      <Button className="w-full" onClick={handleSetPasswordFirstTime} disabled={authenticating}>
+                        {authenticating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                        Definir senha e entrar
+                      </Button>
+                    </>
+                  )}
+
                   <Button
                     variant="ghost"
                     className="w-full"
@@ -1111,6 +1375,9 @@ const ClientPortal = () => {
                       setEmailToCheck("");
                       setClient(null);
                       setClientExists(false);
+                      setLoginPassword("");
+                      setNewPassword("");
+                      setNewPasswordConfirm("");
                     }}
                   >
                     <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
@@ -1164,6 +1431,29 @@ const ClientPortal = () => {
                     <p className="text-xs text-muted-foreground">
                       Usado apenas para emissão de nota fiscal
                     </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="regPwd">Senha</Label>
+                    <Input
+                      id="regPwd"
+                      type="password"
+                      autoComplete="new-password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Mínimo 6 caracteres"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="regPwdConfirm">Confirmar senha</Label>
+                    <Input
+                      id="regPwdConfirm"
+                      type="password"
+                      autoComplete="new-password"
+                      value={newPasswordConfirm}
+                      onChange={(e) => setNewPasswordConfirm(e.target.value)}
+                      placeholder="Repita a senha"
+                    />
                   </div>
 
                   <div className="space-y-3 pt-2 border-t">
@@ -1221,6 +1511,8 @@ const ClientPortal = () => {
                     onClick={() => {
                       setEmailChecked(false);
                       setEmailToCheck("");
+                      setNewPassword("");
+                      setNewPasswordConfirm("");
                     }}
                   >
                     <ArrowLeft className="h-4 w-4 mr-2" /> Voltar
