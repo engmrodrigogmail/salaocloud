@@ -181,6 +181,7 @@ export function ProfessionalFormDialog({
     });
     setSelectedServices(new Set());
     setServiceCommissions({});
+    setWorkingHours(DEFAULT_WORKING_HOURS);
   };
 
   const toggleService = (serviceId: string) => {
