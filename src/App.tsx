@@ -15,6 +15,7 @@ import NotFound from "./pages/NotFound";
 import Install from "./pages/Install";
 import ClientPortal from "./pages/client/ClientPortal";
 import ClientLogin from "./pages/ClientLogin";
+import ClientResetPassword from "./pages/ClientResetPassword";
 import Termos from "./pages/Termos";
 import Privacidade from "./pages/Privacidade";
 
@@ -71,6 +72,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/cliente" element={<ClientLogin />} />
+              <Route path="/cliente/redefinir-senha" element={<ClientResetPassword />} />
               <Route path="/instalar" element={<Install />} />
               <Route path="/termos" element={<Termos />} />
               <Route path="/privacidade" element={<Privacidade />} />
