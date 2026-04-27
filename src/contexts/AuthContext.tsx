@@ -22,8 +22,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
 
+  const authDebug = (event: string, payload?: Record<string, unknown>) => {
+    console.info(`[AuthContextDebug] ${event}`, payload ?? {});
+  };
+
   const fetchUserRole = async (userId: string) => {
     try {
+      authDebug("fetch_role_start", { userId });
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
@@ -31,12 +36,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (error) {
-        console.error("Error fetching role:", error);
+        console.error("[AuthContextDebug] fetch_role_error", error);
         return null;
       }
+      authDebug("fetch_role_result", { role: data?.role ?? null });
       return data?.role as UserRole;
     } catch (err) {
-      console.error("Error in fetchUserRole:", err);
+      console.error("[AuthContextDebug] fetch_role_exception", err);
       return null;
     }
   };
@@ -45,6 +51,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        authDebug("state_change", {
+          event,
+          hasSession: Boolean(session),
+          userId: session?.user?.id ?? null,
+          email: session?.user?.email ?? null,
+        });
         setSession(session);
         setUser(session?.user ?? null);
 
@@ -60,7 +72,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      authDebug("get_session_result", {
+        hasSession: Boolean(session),
+        userId: session?.user?.id ?? null,
+        email: session?.user?.email ?? null,
+        error: error?.message ?? null,
+      });
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -94,14 +112,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
+    authDebug("sign_in_start", { emailLength: email.length, passwordLength: password.length });
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    authDebug("sign_in_result", { ok: !error, error: error?.message ?? null });
     
     if (!error) {
       // Refetch role after sign in
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      authDebug("get_user_after_sign_in", {
+        hasUser: Boolean(user),
+        userId: user?.id ?? null,
+        email: user?.email ?? null,
+        error: userError?.message ?? null,
+      });
       if (user) {
         const userRole = await fetchUserRole(user.id);
         setRole(userRole);

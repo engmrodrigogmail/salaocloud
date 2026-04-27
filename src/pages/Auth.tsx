@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,6 +19,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/assets/logo-salaocloud-v5.png";
 import salonBg from "@/assets/salon-dark-bg.png";
+
+const AUTH_DEBUG_MARKER = "auth-login-native-v3-2026-04-27T00-56Z";
 
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -51,9 +53,27 @@ export default function Auth() {
   const { toast } = useToast();
   const { signIn, signUp, user, role, loading } = useAuth();
 
-  const debugEnabled = import.meta.env.DEV;
-  const debug = (...args: unknown[]) => {
-    if (debugEnabled) console.debug("[Auth]", ...args);
+  const debugEnabled = true;
+  const debug = (event: string, payload?: Record<string, unknown>) => {
+    if (!debugEnabled) return;
+    console.info(`[AuthDebug:${AUTH_DEBUG_MARKER}] ${event}`, payload ?? {});
+  };
+
+  const logInputEvent = (field: "email" | "password", eventName: string, target: HTMLInputElement) => {
+    debug(`input_${eventName}`, {
+      field,
+      valueLength: target.value.length,
+      stateLength: field === "email" ? loginEmail.length : loginPassword.length,
+      selectionStart: target.selectionStart,
+      selectionEnd: target.selectionEnd,
+      activeElementId: document.activeElement instanceof HTMLElement ? document.activeElement.id : null,
+      disabled: target.disabled,
+      readOnly: target.readOnly,
+      type: target.type,
+      inputMode: target.inputMode,
+      autoComplete: target.autocomplete,
+      userAgent: navigator.userAgent,
+    });
   };
 
 
@@ -96,6 +116,15 @@ export default function Auth() {
     }
   }, [user, role, loading, navigate, isSignup, showPicker]);
 
+  useEffect(() => {
+    debug("mounted", {
+      marker: AUTH_DEBUG_MARKER,
+      href: window.location.href,
+      serviceWorkerController: Boolean(navigator.serviceWorker?.controller),
+      userAgent: navigator.userAgent,
+    });
+  }, []);
+
   const handleLogin = async (data: LoginFormData) => {
     debug("login_submit", { emailLen: data.email.length });
 
@@ -120,14 +149,24 @@ export default function Auth() {
     }
   };
 
-  const handleNativeLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleNativeLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    debug("native_submit", {
+      emailStateLength: loginEmail.length,
+      passwordStateLength: loginPassword.length,
+      activeElementId: document.activeElement instanceof HTMLElement ? document.activeElement.id : null,
+      serviceWorkerController: Boolean(navigator.serviceWorker?.controller),
+    });
+
     const parsed = loginSchema.safeParse({
       email: loginEmail.trim(),
       password: loginPassword,
     });
 
     if (!parsed.success) {
+      debug("native_submit_validation_failed", {
+        issues: parsed.error.issues.map((issue) => ({ path: issue.path.join("."), message: issue.message })),
+      });
       toast({
         variant: "destructive",
         title: "Verifique os dados",
@@ -410,7 +449,18 @@ export default function Auth() {
                   id="login-email"
                   type="email"
                   value={loginEmail}
-                  onChange={(event) => setLoginEmail(event.currentTarget.value)}
+                  onPointerDown={(event) => logInputEvent("email", "pointerdown", event.currentTarget)}
+                  onFocus={(event) => logInputEvent("email", "focus", event.currentTarget)}
+                  onKeyDown={(event) => logInputEvent("email", `keydown_${event.key}`, event.currentTarget)}
+                  onBeforeInput={(event) => logInputEvent("email", "beforeinput", event.currentTarget)}
+                  onInput={(event) => {
+                    setLoginEmail(event.currentTarget.value);
+                    logInputEvent("email", "input", event.currentTarget);
+                  }}
+                  onChange={(event) => {
+                    setLoginEmail(event.currentTarget.value);
+                    logInputEvent("email", "change", event.currentTarget);
+                  }}
                   placeholder="seu@email.com"
                   autoComplete="email"
                   className="relative z-20 pointer-events-auto touch-auto flex h-14 w-full rounded-md border border-input bg-background px-3 py-2 text-lg text-foreground caret-primary ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -426,7 +476,18 @@ export default function Auth() {
                     id="login-password"
                     type={showPassword ? "text" : "password"}
                     value={loginPassword}
-                    onChange={(event) => setLoginPassword(event.currentTarget.value)}
+                    onPointerDown={(event) => logInputEvent("password", "pointerdown", event.currentTarget)}
+                    onFocus={(event) => logInputEvent("password", "focus", event.currentTarget)}
+                    onKeyDown={(event) => logInputEvent("password", `keydown_${event.key}`, event.currentTarget)}
+                    onBeforeInput={(event) => logInputEvent("password", "beforeinput", event.currentTarget)}
+                    onInput={(event) => {
+                      setLoginPassword(event.currentTarget.value);
+                      logInputEvent("password", "input", event.currentTarget);
+                    }}
+                    onChange={(event) => {
+                      setLoginPassword(event.currentTarget.value);
+                      logInputEvent("password", "change", event.currentTarget);
+                    }}
                     placeholder="••••••••"
                     autoComplete="current-password"
                     enterKeyHint="done"

@@ -50,6 +50,9 @@ type ScheduleSlot = {
 };
 
 const ClientPortal = () => {
+  const clientDebug = (event: string, payload?: Record<string, unknown>) => {
+    console.info(`[ClientPortalDebug:${slug ?? "no-slug"}] ${event}`, payload ?? {});
+  };
   const { slug } = useParams();
   const navigate = useNavigate();
   
@@ -232,7 +235,10 @@ const ClientPortal = () => {
     if (!establishment) return;
 
     const email = emailToCheck.trim().toLowerCase();
+    clientDebug("check_email_start", { emailLength: email.length, establishmentId: establishment.id });
+
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      clientDebug("check_email_invalid", { email });
       toast.error("E-mail inválido");
       return;
     }
@@ -248,6 +254,12 @@ const ClientPortal = () => {
         .or(`global_identity_email.eq.${email},email.eq.${email}`)
         .maybeSingle();
 
+      clientDebug("check_email_local_result", {
+        found: Boolean(localClient),
+        clientId: localClient?.id ?? null,
+        error: localError?.message ?? null,
+      });
+
       if (localError) throw localError;
 
       setEmailChecked(true);
@@ -259,13 +271,21 @@ const ClientPortal = () => {
       }
 
       // Identity stitching: check if this email exists anywhere on the platform
-      const { data: globalClient } = await supabase
+      const { data: globalClient, error: globalError } = await supabase
         .from("clients")
         .select("*")
         .eq("global_identity_email", email)
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      clientDebug("check_email_global_result", {
+        found: Boolean(globalClient),
+        clientId: globalClient?.id ?? null,
+        error: globalError?.message ?? null,
+      });
+
+      if (globalError) throw globalError;
 
       if (globalClient) {
         // Cliente existe em outro salão — fazer stitching
@@ -277,7 +297,7 @@ const ClientPortal = () => {
       // Novo cadastro
       setClientExists(false);
     } catch (error) {
-      console.error("Error checking email:", error);
+      console.error("[ClientPortalDebug] check_email_exception", error);
       toast.error("Erro ao verificar e-mail");
     } finally {
       setCheckingEmail(false);
@@ -287,21 +307,29 @@ const ClientPortal = () => {
   // Login (cliente já existe neste salão) — entra direto via e-mail (sem senha, sem CPF)
   const handleLogin = async () => {
     if (!client) return;
+    clientDebug("client_login_start", {
+      clientId: client.id,
+      hasGlobalIdentityEmail: Boolean(client.global_identity_email),
+      emailLength: emailToCheck.trim().length,
+    });
     setAuthenticating(true);
     try {
       // Garantir global_identity_email preenchido
       if (!client.global_identity_email) {
-        await supabase
+        const { error: updateError } = await supabase
           .from("clients")
           .update({ global_identity_email: emailToCheck.trim().toLowerCase() })
           .eq("id", client.id);
+        clientDebug("client_login_global_email_update", { error: updateError?.message ?? null });
+        if (updateError) throw updateError;
       }
       setIsAuthenticated(true);
       await fetchClientData(client.id);
       await fetchAllAppointments();
+      clientDebug("client_login_success", { clientId: client.id });
       toast.success(`Bem-vindo(a), ${client.name}!`, { duration: 2000 });
     } catch (error) {
-      console.error("Error authenticating:", error);
+      console.error("[ClientPortalDebug] client_login_exception", error);
       toast.error("Erro ao fazer login");
     } finally {
       setAuthenticating(false);
@@ -360,19 +388,32 @@ const ClientPortal = () => {
     const phoneClean = registerPhone.replace(/\D/g, "");
     const email = emailToCheck.trim().toLowerCase();
 
+    clientDebug("register_start", {
+      establishmentId: establishment.id,
+      emailLength: email.length,
+      phoneLength: phoneClean.length,
+      cpfLength: cpfClean.length,
+      acceptedTerms,
+      shareHistoryConsent,
+    });
+
     if (!registerName.trim()) {
+      clientDebug("register_validation_failed", { reason: "missing_name" });
       toast.error("Nome é obrigatório");
       return;
     }
     if (phoneClean.length < 10) {
+      clientDebug("register_validation_failed", { reason: "invalid_phone", phoneLength: phoneClean.length });
       toast.error("Celular inválido");
       return;
     }
     if (cpfClean && cpfClean.length !== 11) {
+      clientDebug("register_validation_failed", { reason: "invalid_cpf", cpfLength: cpfClean.length });
       toast.error("CPF inválido");
       return;
     }
     if (!acceptedTerms) {
+      clientDebug("register_validation_failed", { reason: "terms_not_accepted" });
       toast.error("Você precisa aceitar os Termos de Uso para continuar");
       return;
     }
@@ -395,13 +436,19 @@ const ClientPortal = () => {
         .select()
         .single();
 
+      clientDebug("register_insert_result", {
+        ok: !error,
+        clientId: newClient?.id ?? null,
+        error: error?.message ?? null,
+      });
+
       if (error) throw error;
 
       setClient(newClient);
       setIsAuthenticated(true);
 
       if (loyaltyProgram) {
-        await supabase
+        const { error: pointsError } = await supabase
           .from("client_loyalty_points")
           .insert({
             client_id: newClient.id,
@@ -409,12 +456,13 @@ const ClientPortal = () => {
             points_balance: 0,
             total_points_earned: 0,
           });
+        clientDebug("register_loyalty_points_result", { error: pointsError?.message ?? null });
       }
 
       await fetchAllAppointments();
       toast.success(`Cadastro realizado com sucesso, ${newClient.name}!`, { duration: 2000 });
     } catch (error) {
-      console.error("Error registering:", error);
+      console.error("[ClientPortalDebug] register_exception", error);
       toast.error("Erro ao fazer cadastro");
     } finally {
       setAuthenticating(false);
