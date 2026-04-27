@@ -47,3 +47,18 @@ verify_jwt = false
 
 [functions.lookup-client-by-email]
 verify_jwt = false
+
+[functions.client-auth-login]
+verify_jwt = false
+
+[functions.client-auth-set-password]
+verify_jwt = false
+
+[functions.client-auth-request-reset]
+verify_jwt = false
+
+[functions.client-auth-reset-password]
+verify_jwt = false
+
+[functions.list-client-establishments]
+verify_jwt = false
