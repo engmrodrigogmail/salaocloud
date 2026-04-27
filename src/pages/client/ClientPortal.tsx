@@ -1544,14 +1544,14 @@ const ClientPortal = () => {
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         <Tabs defaultValue="booking" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className={`grid w-full ${establishment.show_catalog ? "grid-cols-3" : "grid-cols-2"}`}>
             <TabsTrigger value="booking">
               <Calendar className="h-4 w-4 mr-2 hidden sm:inline" />
               Agendar
             </TabsTrigger>
             <TabsTrigger value="appointments">
               <Clock className="h-4 w-4 mr-2 hidden sm:inline" />
-              Meus
+              Agendamentos
             </TabsTrigger>
             {establishment.show_catalog && (
               <TabsTrigger value="services">
@@ -1559,10 +1559,6 @@ const ClientPortal = () => {
                 Serviços
               </TabsTrigger>
             )}
-            <TabsTrigger value="loyalty">
-              <Star className="h-4 w-4 mr-2 hidden sm:inline" />
-              Fidelidade
-            </TabsTrigger>
           </TabsList>
 
           {/* Booking Tab */}
@@ -1685,80 +1681,6 @@ const ClientPortal = () => {
               )}
             </TabsContent>
           )}
-
-          {/* Loyalty Tab */}
-          <TabsContent value="loyalty" className="space-y-4">
-            <h2 className="text-lg font-semibold">Programa de Fidelidade</h2>
-            
-            {!loyaltyProgram ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="text-muted-foreground">
-                    Este estabelecimento ainda não possui programa de fidelidade
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
-              <>
-                {/* Points Card */}
-                <Card className="bg-gradient-to-r from-primary/10 to-accent/10 border-primary/30">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-muted-foreground">Seus pontos</p>
-                        <p className="text-4xl font-bold text-primary">
-                          {loyaltyPoints?.points_balance || 0}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Total acumulado: {loyaltyPoints?.total_points_earned || 0} pontos
-                        </p>
-                      </div>
-                      <Star className="h-16 w-16 text-primary/20" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Rewards */}
-                <h3 className="font-semibold mt-6">Recompensas Disponíveis</h3>
-                {rewards.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">Nenhuma recompensa cadastrada</p>
-                ) : (
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {rewards.map((reward) => (
-                      <Card 
-                        key={reward.id}
-                        className={loyaltyPoints && loyaltyPoints.points_balance >= reward.points_required 
-                          ? "border-accent" 
-                          : ""
-                        }
-                      >
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="font-semibold">{reward.name}</h4>
-                              {reward.description && (
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {reward.description}
-                                </p>
-                              )}
-                            </div>
-                            <Badge variant={
-                              loyaltyPoints && loyaltyPoints.points_balance >= reward.points_required 
-                                ? "default" 
-                                : "secondary"
-                            }>
-                              {reward.points_required} pts
-                            </Badge>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </>
-            )}
-          </TabsContent>
         </Tabs>
       </main>
 
