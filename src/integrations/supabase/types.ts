@@ -2692,27 +2692,49 @@ export type Database = {
         Returns: number
       }
       format_cpf: { Args: { cpf_raw: string }; Returns: string }
-      get_client_appointments: {
-        Args: { _client_id: string; _email: string }
-        Returns: {
-          client_id: string
-          client_name: string
-          client_phone: string
-          created_at: string
-          duration_minutes: number
-          establishment_id: string
-          id: string
-          notes: string
-          price: number
-          professional_id: string
-          professional_name: string
-          scheduled_at: string
-          service_id: string
-          service_name: string
-          status: string
-          updated_at: string
-        }[]
-      }
+      get_client_appointments:
+        | {
+            Args: { _client_id: string; _email: string }
+            Returns: {
+              client_id: string
+              client_name: string
+              client_phone: string
+              created_at: string
+              duration_minutes: number
+              establishment_id: string
+              id: string
+              notes: string
+              price: number
+              professional_id: string
+              professional_name: string
+              scheduled_at: string
+              service_id: string
+              service_name: string
+              status: string
+              updated_at: string
+            }[]
+          }
+        | {
+            Args: { _client_id: string; _email?: string; _phone?: string }
+            Returns: {
+              client_id: string
+              client_name: string
+              client_phone: string
+              created_at: string
+              duration_minutes: number
+              establishment_id: string
+              id: string
+              notes: string
+              price: number
+              professional_id: string
+              professional_name: string
+              scheduled_at: string
+              service_id: string
+              service_name: string
+              status: string
+              updated_at: string
+            }[]
+          }
       get_professional_establishment_id: {
         Args: { _user_id: string }
         Returns: string
