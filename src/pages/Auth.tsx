@@ -20,6 +20,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import logo from "@/assets/logo-salaocloud-v5.png";
 import salonBg from "@/assets/salon-dark-bg.png";
 
+const AUTH_DEBUG_MARKER = "auth-login-native-v3-2026-04-27T00-56Z";
+
 const loginSchema = z.object({
   email: z.string().email("Email inválido"),
   password: z.string().min(6, "A senha deve ter pelo menos 6 caracteres"),
