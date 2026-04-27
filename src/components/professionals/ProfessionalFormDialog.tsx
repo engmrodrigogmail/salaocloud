@@ -78,7 +78,8 @@ export function ProfessionalFormDialog({
   const [services, setServices] = useState<Service[]>([]);
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
   const [serviceCommissions, setServiceCommissions] = useState<Record<string, ServiceCommission>>({});
-  
+  const [workingHours, setWorkingHours] = useState<WorkingHours>(DEFAULT_WORKING_HOURS);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
