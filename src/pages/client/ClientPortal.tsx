@@ -393,6 +393,7 @@ const ClientPortal = () => {
       }
 
       await fetchAllAppointments();
+      await fetchClientData(newClient.id);
       toast.success(`Bem-vindo(a) de volta, ${newClient.name}!`, { duration: 2500 });
     } catch (error) {
       console.error("Error stitching identity:", error);
@@ -523,6 +524,7 @@ const ClientPortal = () => {
 
       clientDebug("register_fetch_appointments_start", { establishmentId: establishment.id });
       await fetchAllAppointments();
+      await fetchClientData(newClient.id);
       clientDebug("register_completed", { clientId: newClient.id });
       toast.success(`Cadastro realizado com sucesso, ${newClient.name}!`, { duration: 2000 });
     } catch (error) {
@@ -770,6 +772,7 @@ const ClientPortal = () => {
         price: selectedService.price,
         client_name: client.name,
         client_phone: client.phone,
+        client_email: client.global_identity_email || client.email || emailToCheck.trim().toLowerCase() || null,
         client_id: client.id,
         status: "pending",
       });
