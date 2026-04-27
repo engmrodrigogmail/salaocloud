@@ -22,8 +22,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
 
+  const authDebug = (event: string, payload?: Record<string, unknown>) => {
+    console.info(`[AuthContextDebug] ${event}`, payload ?? {});
+  };
+
   const fetchUserRole = async (userId: string) => {
     try {
+      authDebug("fetch_role_start", { userId });
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
@@ -31,12 +36,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .maybeSingle();
 
       if (error) {
-        console.error("Error fetching role:", error);
+        console.error("[AuthContextDebug] fetch_role_error", error);
         return null;
       }
+      authDebug("fetch_role_result", { role: data?.role ?? null });
       return data?.role as UserRole;
     } catch (err) {
-      console.error("Error in fetchUserRole:", err);
+      console.error("[AuthContextDebug] fetch_role_exception", err);
       return null;
     }
   };
