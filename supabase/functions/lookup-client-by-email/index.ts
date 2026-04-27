@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
 
     if (localClient) {
       return new Response(
-        JSON.stringify({ match: "local", client: localClient }),
+        JSON.stringify({ match: "local", client: localClient, has_password: hasPassword }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
