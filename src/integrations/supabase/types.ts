@@ -775,6 +775,33 @@ export type Database = {
           },
         ]
       }
+      client_password_reset_tokens: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          token_hash: string
+          used_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          token_hash: string
+          used_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          token_hash?: string
+          used_at?: string | null
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           cpf: string | null
@@ -785,6 +812,8 @@ export type Database = {
           id: string
           name: string
           notes: string | null
+          password_hash: string | null
+          password_set_at: string | null
           phone: string
           shared_history_consent: boolean
           terms_accepted_at: string | null
@@ -800,6 +829,8 @@ export type Database = {
           id?: string
           name: string
           notes?: string | null
+          password_hash?: string | null
+          password_set_at?: string | null
           phone: string
           shared_history_consent?: boolean
           terms_accepted_at?: string | null
@@ -815,6 +846,8 @@ export type Database = {
           id?: string
           name?: string
           notes?: string | null
+          password_hash?: string | null
+          password_set_at?: string | null
           phone?: string
           shared_history_consent?: boolean
           terms_accepted_at?: string | null
