@@ -62,7 +62,7 @@ export function BlockedTimesList({
 
   useEffect(() => {
     fetchData();
-  }, [establishmentId]);
+  }, [establishmentId, refreshKey]);
 
   const fetchData = async () => {
     setLoading(true);
