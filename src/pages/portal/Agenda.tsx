@@ -77,6 +77,7 @@ export default function PortalAgenda() {
   const [editMode, setEditMode] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
+  const [blocksRefreshKey, setBlocksRefreshKey] = useState(0);
   
   // Edit form state
   const [editDate, setEditDate] = useState("");
@@ -468,6 +469,8 @@ export default function PortalAgenda() {
           professionals={professionals}
           onSuccess={() => {
             toast.success("Bloqueios salvos com sucesso!");
+            setBlocksRefreshKey((k) => k + 1);
+            setBlockDialogOpen(false);
           }}
         />
 
@@ -475,7 +478,8 @@ export default function PortalAgenda() {
         <BlockedTimesList
           establishmentId={establishment?.id || ""}
           professionals={professionals}
-          onRefresh={() => {}}
+          onRefresh={() => setBlocksRefreshKey((k) => k + 1)}
+          refreshKey={blocksRefreshKey}
         />
 
         {/* Filters - Collapsible on mobile */}
