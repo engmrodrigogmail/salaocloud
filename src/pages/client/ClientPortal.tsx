@@ -556,6 +556,7 @@ const ClientPortal = () => {
 
       setClient(newClient);
       setIsAuthenticated(true);
+      persistClientSession(newClient);
 
       if (loyaltyProgram) {
         clientDebug("register_loyalty_points_start", {
