@@ -389,6 +389,7 @@ const ClientPortal = () => {
         if (updateError) throw updateError;
       }
       setIsAuthenticated(true);
+      persistClientSession(client.global_identity_email ? client : { ...client, global_identity_email: emailToCheck.trim().toLowerCase() } as Client);
       await fetchClientData(client.id);
       await fetchAllAppointments();
       clientDebug("client_login_success", { clientId: client.id });
