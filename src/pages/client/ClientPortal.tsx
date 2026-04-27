@@ -1399,6 +1399,281 @@ const ClientPortal = () => {
         </Tabs>
       </main>
 
+      {/* Booking Dialog */}
+      <Dialog open={isBooking} onOpenChange={(open) => {
+        setIsBooking(open);
+        if (!open) {
+          setBookingStep(1);
+          setSelectedService(null);
+          setSelectedProfessional(null);
+          setSelectedDate(null);
+          setSelectedTime(null);
+          setPolicyAccepted(false);
+          setShowClosedMessage(false);
+        }
+      }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {bookingStep === 1 && "Escolha o serviço"}
+              {bookingStep === 2 && "Escolha o profissional"}
+              {bookingStep === 3 && "Escolha data e horário"}
+              {bookingStep === 4 && "Confirmar agendamento"}
+            </DialogTitle>
+            <DialogDescription>Passo {bookingStep} de 4</DialogDescription>
+          </DialogHeader>
+
+          {/* Step 1: Service */}
+          {bookingStep === 1 && (
+            <div className="space-y-2">
+              {services.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  Nenhum serviço disponível
+                </p>
+              )}
+              {services.map((service) => (
+                <Card
+                  key={service.id}
+                  className={`cursor-pointer transition-colors hover:border-primary ${
+                    selectedService?.id === service.id ? "border-primary bg-primary/5" : ""
+                  }`}
+                  onClick={() => setSelectedService(service)}
+                >
+                  <CardContent className="p-4 flex justify-between items-center">
+                    <div>
+                      <h4 className="font-semibold">{service.name}</h4>
+                      <p className="text-xs text-muted-foreground">
+                        <Clock className="h-3 w-3 inline mr-1" />
+                        {service.duration_minutes} min
+                      </p>
+                    </div>
+                    <p className="font-bold text-accent">
+                      R$ {Number(service.price).toFixed(2)}
+                    </p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Step 2: Professional */}
+          {bookingStep === 2 && selectedService && (
+            <div className="space-y-2">
+              <Card
+                className={`cursor-pointer transition-colors hover:border-primary ${
+                  !selectedProfessional ? "border-primary bg-primary/5" : ""
+                }`}
+                onClick={() => setSelectedProfessional(null)}
+              >
+                <CardContent className="p-4">
+                  <h4 className="font-semibold">Sem preferência</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Atribuir automaticamente o profissional disponível
+                  </p>
+                </CardContent>
+              </Card>
+              {getProfessionalsForService(selectedService.id).map((prof) => (
+                <Card
+                  key={prof.id}
+                  className={`cursor-pointer transition-colors hover:border-primary ${
+                    selectedProfessional?.id === prof.id ? "border-primary bg-primary/5" : ""
+                  }`}
+                  onClick={() => setSelectedProfessional(prof)}
+                >
+                  <CardContent className="p-4 flex items-center gap-3">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={prof.avatar_url || undefined} />
+                      <AvatarFallback>{prof.name.charAt(0)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h4 className="font-semibold">{prof.name}</h4>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Step 3: Date & Time */}
+          {bookingStep === 3 && selectedService && (
+            <div className="space-y-4">
+              <div>
+                <Label className="mb-2 block">Data</Label>
+                <div className="flex gap-2 overflow-x-auto pb-2">
+                  {generateDates().map((date) => {
+                    const open = isDateOpen(date);
+                    const isSelected = selectedDate && isSameDay(date, selectedDate);
+                    return (
+                      <button
+                        key={date.toISOString()}
+                        type="button"
+                        onClick={() => handleDateSelect(date)}
+                        className={`flex-shrink-0 px-3 py-2 rounded-lg border text-center min-w-[64px] transition-colors ${
+                          isSelected
+                            ? "border-primary bg-primary/10"
+                            : open
+                            ? "border-border hover:border-primary"
+                            : "border-border opacity-50"
+                        }`}
+                      >
+                        <p className="text-xs uppercase">
+                          {format(date, "EEE", { locale: ptBR })}
+                        </p>
+                        <p className="font-bold">{format(date, "dd")}</p>
+                        <p className="text-xs">{format(date, "MMM", { locale: ptBR })}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {showClosedMessage && (
+                <Alert>
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    Estabelecimento fechado nesta data.
+                    {nextAvailableSlot && (
+                      <Button
+                        variant="link"
+                        className="px-1 h-auto"
+                        onClick={handleAcceptSuggestedSlot}
+                      >
+                        Ver próximo horário disponível
+                      </Button>
+                    )}
+                  </AlertDescription>
+                </Alert>
+              )}
+
+              {selectedDate && !showClosedMessage && (
+                <div>
+                  <Label className="mb-2 block">Horário</Label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {generateAvailableSlots(
+                      selectedDate,
+                      selectedProfessional?.id || null,
+                      selectedService.duration_minutes
+                    ).filter((slot) => slot.available).map((slot) => (
+                      <button
+                        key={slot.time}
+                        type="button"
+                        onClick={() => setSelectedTime(slot.time)}
+                        className={`px-2 py-2 rounded-md border text-sm transition-colors ${
+                          selectedTime === slot.time
+                            ? "border-primary bg-primary/10"
+                            : "border-border hover:border-primary"
+                        }`}
+                      >
+                        {slot.time}
+                      </button>
+                    ))}
+                  </div>
+                  {generateAvailableSlots(
+                    selectedDate,
+                    selectedProfessional?.id || null,
+                    selectedService.duration_minutes
+                  ).filter((slot) => slot.available).length === 0 && (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Nenhum horário disponível nesta data
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Step 4: Confirm */}
+          {bookingStep === 4 && selectedService && selectedDate && selectedTime && (
+            <div className="space-y-3">
+              <Card>
+                <CardContent className="p-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Serviço:</span>
+                    <span className="font-semibold">{selectedService.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Profissional:</span>
+                    <span className="font-semibold">
+                      {selectedProfessional?.name || "Sem preferência"}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Data:</span>
+                    <span className="font-semibold">
+                      {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Horário:</span>
+                    <span className="font-semibold">{selectedTime}</span>
+                  </div>
+                  <div className="flex justify-between border-t pt-2 mt-2">
+                    <span className="text-muted-foreground">Valor:</span>
+                    <span className="font-bold text-accent">
+                      R$ {Number(selectedService.price).toFixed(2)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {establishment.cancellation_policy && (
+                <div className="space-y-2">
+                  <Alert>
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="text-xs whitespace-pre-wrap">
+                      {establishment.cancellation_policy}
+                    </AlertDescription>
+                  </Alert>
+                  <div className="flex items-start gap-2">
+                    <Checkbox
+                      id="policy"
+                      checked={policyAccepted}
+                      onCheckedChange={(checked) => setPolicyAccepted(checked === true)}
+                    />
+                    <Label htmlFor="policy" className="text-xs leading-tight">
+                      Li e aceito a política de cancelamento
+                    </Label>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter className="flex-row justify-between gap-2 sm:justify-between">
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (bookingStep === 1) {
+                  setIsBooking(false);
+                } else {
+                  setBookingStep(bookingStep - 1);
+                }
+              }}
+              disabled={confirming}
+            >
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              {bookingStep === 1 ? "Cancelar" : "Voltar"}
+            </Button>
+            {bookingStep < 4 ? (
+              <Button
+                onClick={() => setBookingStep(bookingStep + 1)}
+                disabled={
+                  (bookingStep === 1 && !selectedService) ||
+                  (bookingStep === 3 && (!selectedDate || !selectedTime))
+                }
+              >
+                Continuar
+              </Button>
+            ) : (
+              <Button onClick={handleBookingSubmit} disabled={confirming}>
+                {confirming && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                Confirmar
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* AI Assistant Chat */}
       <EstablishmentAIChat
         establishmentId={establishment.id}
