@@ -27,6 +27,13 @@ import { toast } from "sonner";
 import { Briefcase, DollarSign, Building } from "lucide-react";
 import { format } from "date-fns";
 import { AvatarUpload } from "./AvatarUpload";
+import {
+  ProfessionalWorkingHoursSection,
+  DEFAULT_WORKING_HOURS,
+  type WorkingHours,
+} from "./ProfessionalWorkingHoursSection";
+import { ProfessionalBlockedTimesSection } from "./ProfessionalBlockedTimesSection";
+import type { Json } from "@/integrations/supabase/types";
 
 interface Service {
   id: string;
@@ -71,7 +78,8 @@ export function ProfessionalFormDialog({
   const [services, setServices] = useState<Service[]>([]);
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
   const [serviceCommissions, setServiceCommissions] = useState<Record<string, ServiceCommission>>({});
-  
+  const [workingHours, setWorkingHours] = useState<WorkingHours>(DEFAULT_WORKING_HOURS);
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -132,6 +140,16 @@ export function ProfessionalFormDialog({
       });
     }
 
+    // Load working hours
+    if (fullProfessional?.working_hours && typeof fullProfessional.working_hours === "object") {
+      setWorkingHours({
+        ...DEFAULT_WORKING_HOURS,
+        ...(fullProfessional.working_hours as unknown as WorkingHours),
+      });
+    } else {
+      setWorkingHours(DEFAULT_WORKING_HOURS);
+    }
+
     // Fetch existing professional_services
     const { data: psData } = await supabase
       .from("professional_services")
@@ -173,6 +191,7 @@ export function ProfessionalFormDialog({
     });
     setSelectedServices(new Set());
     setServiceCommissions({});
+    setWorkingHours(DEFAULT_WORKING_HOURS);
   };
 
   const toggleService = (serviceId: string) => {
@@ -245,6 +264,7 @@ export function ProfessionalFormDialog({
               ? formData.leasing_base_date 
               : null,
             avatar_url: formData.avatar_url,
+            working_hours: workingHours as unknown as Json,
           })
           .eq("id", editingProfessional.id);
 
@@ -265,6 +285,7 @@ export function ProfessionalFormDialog({
               ? formData.leasing_base_date 
               : null,
             avatar_url: formData.avatar_url,
+            working_hours: workingHours as unknown as Json,
           })
           .select()
           .single();
@@ -396,6 +417,20 @@ export function ProfessionalFormDialog({
                 />
               </div>
             </div>
+
+            <Separator />
+
+            {/* Working Hours */}
+            <ProfessionalWorkingHoursSection
+              establishmentId={establishmentId}
+              workingHours={workingHours}
+              onChange={setWorkingHours}
+            />
+
+            <Separator />
+
+            {/* Blocked Times / Unavailability */}
+            <ProfessionalBlockedTimesSection professionalId={editingProfessional?.id ?? null} />
 
             <Separator />
 
