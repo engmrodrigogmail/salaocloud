@@ -149,7 +149,7 @@ export default function Auth() {
     }
   };
 
-  const handleNativeLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleNativeLogin = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     debug("native_submit", {
       emailStateLength: loginEmail.length,
