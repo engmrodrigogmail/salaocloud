@@ -703,6 +703,15 @@ const ClientPortal = () => {
         cpfStoredAsNull: newClient.cpf === null,
       });
 
+      // Definir senha (compartilhada entre todos os salões com o mesmo e-mail)
+      const { error: setPwdError } = await supabase.functions.invoke("client-auth-set-password", {
+        body: { email, password: newPassword, mode: "register", client_id: newClient.id },
+      });
+      if (setPwdError) {
+        console.error("[ClientPortalDebug] register_set_password_error", setPwdError);
+        toast.error("Cadastro criado, mas houve erro ao definir a senha. Use 'Esqueci minha senha' para configurar.");
+      }
+
       setClient(newClient);
       setIsAuthenticated(true);
       persistClientSession(newClient);
