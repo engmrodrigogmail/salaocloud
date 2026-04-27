@@ -17,6 +17,7 @@ import {
   ChevronLeft, ChevronRight, AlertCircle, FileText, Info, MessageCircle
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
 import { LGPDTermsDialog } from "@/components/legal/LGPDTermsDialog";
