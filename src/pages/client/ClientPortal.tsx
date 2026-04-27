@@ -666,6 +666,7 @@ const ClientPortal = () => {
   };
 
   const handleLogout = () => {
+    persistClientSession(null);
     setClient(null);
     setIsAuthenticated(false);
     setAppointments([]);
