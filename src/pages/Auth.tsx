@@ -229,11 +229,6 @@ export default function Auth() {
                 : "Entre para acessar seu painel"}
             </p>
           </div>
-
-          <div className="mb-4 rounded-md border border-dashed border-primary/40 bg-primary/5 px-3 py-2 text-[11px] font-mono text-primary/80">
-            build: {AUTH_DEBUG_MARKER}
-          </div>
-
           {isSignup ? (
             <Form {...signupForm}>
               <form
