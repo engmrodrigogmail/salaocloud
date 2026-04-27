@@ -64,7 +64,7 @@ export function HeroSection() {
               className="border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-transparent font-semibold uppercase tracking-premium px-7 h-12 rounded-sm text-xs"
               asChild
             >
-              <Link to="/auth">Sou Cliente do Salão</Link>
+              <Link to="/cliente">Sou Cliente do Salão</Link>
             </Button>
           </div>
 
