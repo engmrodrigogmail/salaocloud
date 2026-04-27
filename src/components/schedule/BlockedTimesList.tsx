@@ -45,12 +45,14 @@ interface BlockedTimesListProps {
   establishmentId: string;
   professionals: Professional[];
   onRefresh: () => void;
+  refreshKey?: number;
 }
 
 export function BlockedTimesList({
   establishmentId,
   professionals,
   onRefresh,
+  refreshKey = 0,
 }: BlockedTimesListProps) {
   const [blockedTimes, setBlockedTimes] = useState<BlockedTime[]>([]);
   const [closures, setClosures] = useState<Closure[]>([]);
