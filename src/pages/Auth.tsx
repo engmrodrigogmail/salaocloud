@@ -116,6 +116,15 @@ export default function Auth() {
     }
   }, [user, role, loading, navigate, isSignup, showPicker]);
 
+  useEffect(() => {
+    debug("mounted", {
+      marker: AUTH_DEBUG_MARKER,
+      href: window.location.href,
+      serviceWorkerController: Boolean(navigator.serviceWorker?.controller),
+      userAgent: navigator.userAgent,
+    });
+  }, []);
+
   const handleLogin = async (data: LoginFormData) => {
     debug("login_submit", { emailLen: data.email.length });
 
