@@ -563,6 +563,19 @@ const ClientPortal = () => {
         updated_at: now,
       } as Client;
 
+      // Se a rede ainda não tem senha, definimos agora (aplica a todos os registros do e-mail)
+      if (!hasPassword) {
+        const { error: setPwdError } = await supabase.functions.invoke("client-auth-set-password", {
+          body: { email, password: newPassword, mode: "first_time" },
+        });
+        if (setPwdError) {
+          console.error("[ClientPortalDebug] stitch_set_password_error", setPwdError);
+          toast.error("Erro ao definir senha");
+          setAuthenticating(false);
+          return;
+        }
+      }
+
       setClient(newClient);
       setStitchSourceClient(null);
       setIsAuthenticated(true);
