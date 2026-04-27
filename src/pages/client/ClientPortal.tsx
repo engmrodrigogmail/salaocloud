@@ -235,7 +235,10 @@ const ClientPortal = () => {
     if (!establishment) return;
 
     const email = emailToCheck.trim().toLowerCase();
+    clientDebug("check_email_start", { emailLength: email.length, establishmentId: establishment.id });
+
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      clientDebug("check_email_invalid", { email });
       toast.error("E-mail inválido");
       return;
     }
@@ -251,6 +254,12 @@ const ClientPortal = () => {
         .or(`global_identity_email.eq.${email},email.eq.${email}`)
         .maybeSingle();
 
+      clientDebug("check_email_local_result", {
+        found: Boolean(localClient),
+        clientId: localClient?.id ?? null,
+        error: localError?.message ?? null,
+      });
+
       if (localError) throw localError;
 
       setEmailChecked(true);
@@ -262,13 +271,21 @@ const ClientPortal = () => {
       }
 
       // Identity stitching: check if this email exists anywhere on the platform
-      const { data: globalClient } = await supabase
+      const { data: globalClient, error: globalError } = await supabase
         .from("clients")
         .select("*")
         .eq("global_identity_email", email)
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+
+      clientDebug("check_email_global_result", {
+        found: Boolean(globalClient),
+        clientId: globalClient?.id ?? null,
+        error: globalError?.message ?? null,
+      });
+
+      if (globalError) throw globalError;
 
       if (globalClient) {
         // Cliente existe em outro salão — fazer stitching
@@ -280,7 +297,7 @@ const ClientPortal = () => {
       // Novo cadastro
       setClientExists(false);
     } catch (error) {
-      console.error("Error checking email:", error);
+      console.error("[ClientPortalDebug] check_email_exception", error);
       toast.error("Erro ao verificar e-mail");
     } finally {
       setCheckingEmail(false);
