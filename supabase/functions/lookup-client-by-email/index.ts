@@ -37,6 +37,16 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
+    // Check whether ANY row sharing this email already has a password set.
+    // (Senha é compartilhada entre todos os salões em que o e-mail está cadastrado.)
+    const { data: anyWithPassword } = await supabase
+      .from("clients")
+      .select("id")
+      .or(`email.eq.${normalizedEmail},global_identity_email.eq.${normalizedEmail}`)
+      .not("password_hash", "is", null)
+      .limit(1);
+    const hasPassword = Array.isArray(anyWithPassword) && anyWithPassword.length > 0;
+
     // 1) Check this establishment for either email or global_identity_email
     const { data: localClient, error: localError } = await supabase
       .from("clients")
