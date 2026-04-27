@@ -368,6 +368,7 @@ const ClientPortal = () => {
       if (data?.error) throw new Error(data.error);
 
       setEmailChecked(true);
+      setHasPassword(Boolean(data?.has_password));
 
       if (data?.match === "local" && data.client) {
         setClientExists(true);
