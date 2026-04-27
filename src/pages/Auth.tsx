@@ -253,18 +253,6 @@ export default function Auth() {
                           type="email"
                           placeholder="seu@email.com"
                           autoComplete="email"
-                          onPointerDown={() => debug("pointer", { field: "signup.email" })}
-                          onFocus={(e) =>
-                            debug("focus", {
-                              field: "signup.email",
-                              disabled: e.currentTarget.disabled,
-                              readOnly: e.currentTarget.readOnly,
-                            })
-                          }
-                          onChange={(e) => {
-                            debug("change", { field: "signup.email", len: e.target.value.length });
-                            field.onChange(e);
-                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -286,18 +274,6 @@ export default function Auth() {
                           autoComplete="name"
                           autoCapitalize="words"
                           inputMode="text"
-                          onPointerDown={() => debug("pointer", { field: "signup.fullName" })}
-                          onFocus={(e) =>
-                            debug("focus", {
-                              field: "signup.fullName",
-                              disabled: e.currentTarget.disabled,
-                              readOnly: e.currentTarget.readOnly,
-                            })
-                          }
-                          onChange={(e) => {
-                            debug("change", { field: "signup.fullName", len: e.target.value.length });
-                            field.onChange(e);
-                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -318,18 +294,6 @@ export default function Auth() {
                             type={showPassword ? "text" : "password"}
                             placeholder="••••••••"
                             autoComplete="new-password"
-                            onPointerDown={() => debug("pointer", { field: "signup.password" })}
-                            onFocus={(e) =>
-                              debug("focus", {
-                                field: "signup.password",
-                                disabled: e.currentTarget.disabled,
-                                readOnly: e.currentTarget.readOnly,
-                              })
-                            }
-                            onChange={(e) => {
-                              debug("change", { field: "signup.password", len: e.target.value.length });
-                              field.onChange(e);
-                            }}
                           />
                           <button
                             type="button"
@@ -357,18 +321,6 @@ export default function Auth() {
                           type={showPassword ? "text" : "password"}
                           placeholder="••••••••"
                           autoComplete="new-password"
-                          onPointerDown={() => debug("pointer", { field: "signup.confirmPassword" })}
-                          onFocus={(e) =>
-                            debug("focus", {
-                              field: "signup.confirmPassword",
-                              disabled: e.currentTarget.disabled,
-                              readOnly: e.currentTarget.readOnly,
-                            })
-                          }
-                          onChange={(e) => {
-                            debug("change", { field: "signup.confirmPassword", len: e.target.value.length });
-                            field.onChange(e);
-                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -399,18 +351,7 @@ export default function Auth() {
                   id="login-email"
                   type="email"
                   value={loginEmail}
-                  onPointerDown={(event) => logInputEvent("email", "pointerdown", event.currentTarget)}
-                  onFocus={(event) => logInputEvent("email", "focus", event.currentTarget)}
-                  onKeyDown={(event) => logInputEvent("email", `keydown_${event.key}`, event.currentTarget)}
-                  onBeforeInput={(event) => logInputEvent("email", "beforeinput", event.currentTarget)}
-                  onInput={(event) => {
-                    setLoginEmail(event.currentTarget.value);
-                    logInputEvent("email", "input", event.currentTarget);
-                  }}
-                  onChange={(event) => {
-                    setLoginEmail(event.currentTarget.value);
-                    logInputEvent("email", "change", event.currentTarget);
-                  }}
+                  onChange={(event) => setLoginEmail(event.currentTarget.value)}
                   placeholder="seu@email.com"
                   autoComplete="email"
                   className="relative z-20 pointer-events-auto touch-auto flex h-14 w-full rounded-md border border-input bg-background px-3 py-2 text-lg text-foreground caret-primary ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
@@ -426,18 +367,7 @@ export default function Auth() {
                     id="login-password"
                     type={showPassword ? "text" : "password"}
                     value={loginPassword}
-                    onPointerDown={(event) => logInputEvent("password", "pointerdown", event.currentTarget)}
-                    onFocus={(event) => logInputEvent("password", "focus", event.currentTarget)}
-                    onKeyDown={(event) => logInputEvent("password", `keydown_${event.key}`, event.currentTarget)}
-                    onBeforeInput={(event) => logInputEvent("password", "beforeinput", event.currentTarget)}
-                    onInput={(event) => {
-                      setLoginPassword(event.currentTarget.value);
-                      logInputEvent("password", "input", event.currentTarget);
-                    }}
-                    onChange={(event) => {
-                      setLoginPassword(event.currentTarget.value);
-                      logInputEvent("password", "change", event.currentTarget);
-                    }}
+                    onChange={(event) => setLoginPassword(event.currentTarget.value)}
                     placeholder="••••••••"
                     autoComplete="current-password"
                     enterKeyHint="done"
