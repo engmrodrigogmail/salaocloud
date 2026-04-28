@@ -132,6 +132,7 @@ export function AgendaTimeSlots({
     const variants: Record<string, { label: string; className: string }> = {
       pending: { label: "Pend.", className: "bg-amber-200 text-amber-900 text-[10px] px-1" },
       confirmed: { label: "Conf.", className: "bg-blue-200 text-blue-900 text-[10px] px-1" },
+      in_service: { label: "Atend.", className: "bg-violet-200 text-violet-900 text-[10px] px-1" },
       completed: { label: "Conc.", className: "bg-green-200 text-green-900 text-[10px] px-1" },
     };
     const config = variants[status] || { label: status, className: "" };
