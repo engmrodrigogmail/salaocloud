@@ -234,7 +234,102 @@ export default function PortalClients() {
     return { total: appointments.length, completed: completedAppointments.length, totalSpent };
   };
 
-  return (
+  // ----- Selection helpers -----
+  const toggleSelectClient = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const allOnPageSelected =
+    paginatedClients.length > 0 &&
+    paginatedClients.every((c) => selectedIds.has(c.id));
+
+  const togglePageSelection = (checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      paginatedClients.forEach((c) => {
+        if (checked) next.add(c.id);
+        else next.delete(c.id);
+      });
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  // ----- Appointment count check (protection rule) -----
+  const fetchAppointmentCounts = async (ids: string[]) => {
+    if (!establishmentId || ids.length === 0) return {} as Record<string, number>;
+    const counts: Record<string, number> = {};
+    ids.forEach((id) => (counts[id] = 0));
+    // Query in chunks to stay under URL limits
+    const CHUNK = 200;
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      const slice = ids.slice(i, i + CHUNK);
+      const { data, error } = await supabase
+        .from("appointments")
+        .select("client_id")
+        .eq("establishment_id", establishmentId)
+        .in("client_id", slice);
+      if (error) throw error;
+      (data || []).forEach((row: any) => {
+        if (row.client_id) counts[row.client_id] = (counts[row.client_id] || 0) + 1;
+      });
+    }
+    setAppointmentCounts((prev) => ({ ...prev, ...counts }));
+    return counts;
+  };
+
+  const openDeleteDialog = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    try {
+      const counts = await fetchAppointmentCounts(ids);
+      const withAppointments = ids.filter((id) => (counts[id] || 0) > 0).length;
+      setDeleteTarget({ ids, withAppointments });
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao verificar agendamentos vinculados");
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget || !establishmentId) return;
+    setDeleting(true);
+    try {
+      const { ids } = deleteTarget;
+      // Delete in chunks
+      const CHUNK = 200;
+      let deleted = 0;
+      for (let i = 0; i < ids.length; i += CHUNK) {
+        const slice = ids.slice(i, i + CHUNK);
+        const { error } = await supabase
+          .from("clients")
+          .delete()
+          .eq("establishment_id", establishmentId)
+          .in("id", slice);
+        if (error) throw error;
+        deleted += slice.length;
+      }
+      toast.success(`${deleted} cliente${deleted > 1 ? "s excluídos" : " excluído"} com sucesso`);
+      setClients((prev) => prev.filter((c) => !ids.includes(c.id)));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
+      setDeleteTarget(null);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Erro ao excluir clientes");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
     <PortalLayout>
       <div className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
