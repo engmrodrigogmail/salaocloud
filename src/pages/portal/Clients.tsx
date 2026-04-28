@@ -189,12 +189,27 @@ export default function PortalClients() {
     }).format(value);
   };
 
-  const filteredClients = clients.filter(
-    (c) =>
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.phone.includes(searchQuery) ||
-      (c.cpf && c.cpf.includes(searchQuery.replace(/\D/g, "")))
+  const filteredClients = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return clients;
+    const qDigits = q.replace(/\D/g, "");
+    return clients.filter((c) => {
+      if (c.name.toLowerCase().includes(q)) return true;
+      if (c.email && c.email.toLowerCase().includes(q)) return true;
+      if (qDigits && c.phone && c.phone.replace(/\D/g, "").includes(qDigits)) return true;
+      if (qDigits && c.cpf && c.cpf.replace(/\D/g, "").includes(qDigits)) return true;
+      return false;
+    });
+  }, [clients, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredClients.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedClients = useMemo(
+    () => filteredClients.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [filteredClients, safePage, pageSize]
   );
+  const startIndex = filteredClients.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const endIndex = Math.min(safePage * pageSize, filteredClients.length);
 
   const getClientStats = (clientId: string) => {
     const appointments = clientAppointments[clientId] || [];
