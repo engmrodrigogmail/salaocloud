@@ -1,10 +1,17 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PortalLayout } from "@/components/layouts/PortalLayout";
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Package, Tag } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Package, Tag, FolderTree } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -23,6 +30,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ProductFormDialog } from "@/components/products/ProductFormDialog";
+import { CategoryManagerDialog } from "@/components/categories/CategoryManagerDialog";
 
 interface Product {
   id: string;
@@ -35,16 +43,24 @@ interface Product {
   is_active: boolean;
 }
 
+interface ProductCategory {
+  id: string;
+  name: string;
+}
+
 export default function PortalProducts() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
-  
+
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
 
@@ -55,11 +71,11 @@ export default function PortalProducts() {
     }
 
     if (slug && user) {
-      fetchEstablishmentAndProducts();
+      fetchAll();
     }
   }, [slug, user, authLoading]);
 
-  const fetchEstablishmentAndProducts = async () => {
+  const fetchAll = async () => {
     try {
       const { data: est, error: estError } = await supabase
         .from("establishments")
@@ -74,19 +90,37 @@ export default function PortalProducts() {
 
       setEstablishmentId(est.id);
 
-      const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .eq("establishment_id", est.id)
-        .order("name");
+      const [{ data: prodData, error: prodError }, { data: catData }] = await Promise.all([
+        supabase.from("products").select("*").eq("establishment_id", est.id).order("name"),
+        supabase
+          .from("product_categories")
+          .select("id, name")
+          .eq("establishment_id", est.id)
+          .order("name"),
+      ]);
 
-      if (error) throw error;
-      setProducts(data || []);
+      if (prodError) throw prodError;
+      setProducts(prodData || []);
+      setCategories(catData || []);
     } catch (error) {
       console.error("Error fetching products:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const refetchAfterCategoryChange = async () => {
+    if (!establishmentId) return;
+    const [{ data: prodData }, { data: catData }] = await Promise.all([
+      supabase.from("products").select("*").eq("establishment_id", establishmentId).order("name"),
+      supabase
+        .from("product_categories")
+        .select("id, name")
+        .eq("establishment_id", establishmentId)
+        .order("name"),
+    ]);
+    setProducts(prodData || []);
+    setCategories(catData || []);
   };
 
   const handleDelete = async (id: string) => {
@@ -97,7 +131,7 @@ export default function PortalProducts() {
         .eq("id", id);
       if (error) throw error;
       toast({ title: "Produto removido!" });
-      fetchEstablishmentAndProducts();
+      fetchAll();
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -119,10 +153,15 @@ export default function PortalProducts() {
     }).format(value);
   };
 
-  const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (p.category && p.category.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const filteredProducts = products.filter((p) => {
+    const matchesQuery =
+      p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (p.category && p.category.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesCategory =
+      categoryFilter === "all" ||
+      (categoryFilter === "none" ? !p.category : p.category === categoryFilter);
+    return matchesQuery && matchesCategory;
+  });
 
   return (
     <PortalLayout>
@@ -134,39 +173,70 @@ export default function PortalProducts() {
               Gerencie os produtos para venda no seu estabelecimento
             </p>
           </div>
-          <Button 
-            className="bg-gradient-primary hover:opacity-90"
-            onClick={() => {
-              setEditingProduct(null);
-              setIsDialogOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Novo Produto
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setIsCategoryDialogOpen(true)}>
+              <FolderTree className="h-4 w-4 mr-2" />
+              Categorias
+            </Button>
+            <Button
+              className="bg-gradient-primary hover:opacity-90"
+              onClick={() => {
+                setEditingProduct(null);
+                setIsDialogOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Novo Produto
+            </Button>
+          </div>
         </div>
 
         {establishmentId && (
-          <ProductFormDialog
-            open={isDialogOpen}
-            onOpenChange={(open) => {
-              setIsDialogOpen(open);
-              if (!open) setEditingProduct(null);
-            }}
-            establishmentId={establishmentId}
-            editingProduct={editingProduct}
-            onSuccess={fetchEstablishmentAndProducts}
-          />
+          <>
+            <ProductFormDialog
+              open={isDialogOpen}
+              onOpenChange={(open) => {
+                setIsDialogOpen(open);
+                if (!open) setEditingProduct(null);
+              }}
+              establishmentId={establishmentId}
+              editingProduct={editingProduct}
+              onSuccess={fetchAll}
+            />
+            <CategoryManagerDialog
+              open={isCategoryDialogOpen}
+              onOpenChange={setIsCategoryDialogOpen}
+              establishmentId={establishmentId}
+              kind="product"
+              onChanged={refetchAfterCategoryChange}
+            />
+          </>
         )}
 
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar produto ou categoria..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar produto ou categoria..."
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-full sm:w-56">
+              <SelectValue placeholder="Filtrar por categoria" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todas as categorias</SelectItem>
+              <SelectItem value="none">Sem categoria</SelectItem>
+              {categories.map((cat) => (
+                <SelectItem key={cat.id} value={cat.name}>
+                  {cat.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="bg-card rounded-xl border border-border overflow-hidden">
