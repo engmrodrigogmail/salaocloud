@@ -64,6 +64,14 @@ export function AgendaTimeSlots({
   viewMode,
 }: AgendaTimeSlotsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+
+  const goToClient = (e: React.MouseEvent, clientId: string | null) => {
+    if (!clientId || !slug) return;
+    e.stopPropagation();
+    navigate(`/portal/${slug}/clientes/${clientId}`);
+  };
 
   // Mapear profissionais para cores
   const professionalColorMap = useMemo(() => {
