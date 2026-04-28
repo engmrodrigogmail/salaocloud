@@ -719,7 +719,16 @@ export default function PortalAgenda() {
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Cliente:</span>
-                    <span className="font-medium">{selectedAppointment.client_name}</span>
+                    {selectedAppointment.client_id ? (
+                      <button
+                        onClick={() => navigate(`/portal/${slug}/clientes/${selectedAppointment.client_id}`)}
+                        className="font-medium text-primary hover:underline text-right"
+                      >
+                        {selectedAppointment.client_name}
+                      </button>
+                    ) : (
+                      <span className="font-medium">{selectedAppointment.client_name}</span>
+                    )}
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Telefone:</span>
