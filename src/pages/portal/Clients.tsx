@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PortalLayout } from "@/components/layouts/PortalLayout";
-import { Search, UserCircle, ChevronDown, ChevronUp, Calendar, Scissors } from "lucide-react";
+import { Search, UserCircle, ChevronDown, ChevronUp, Calendar, Scissors, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -16,6 +16,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ImportContactsDialog } from "@/components/clients/ImportContactsDialog";
 
@@ -49,6 +51,13 @@ export default function PortalClients() {
   const [clientAppointments, setClientAppointments] = useState<Record<string, Appointment[]>>({});
   const [loadingAppointments, setLoadingAppointments] = useState<string | null>(null);
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  // Reset to first page whenever the search query or page size changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, pageSize]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -180,12 +189,27 @@ export default function PortalClients() {
     }).format(value);
   };
 
-  const filteredClients = clients.filter(
-    (c) =>
-      c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      c.phone.includes(searchQuery) ||
-      (c.cpf && c.cpf.includes(searchQuery.replace(/\D/g, "")))
+  const filteredClients = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return clients;
+    const qDigits = q.replace(/\D/g, "");
+    return clients.filter((c) => {
+      if (c.name.toLowerCase().includes(q)) return true;
+      if (c.email && c.email.toLowerCase().includes(q)) return true;
+      if (qDigits && c.phone && c.phone.replace(/\D/g, "").includes(qDigits)) return true;
+      if (qDigits && c.cpf && c.cpf.replace(/\D/g, "").includes(qDigits)) return true;
+      return false;
+    });
+  }, [clients, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredClients.length / pageSize));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedClients = useMemo(
+    () => filteredClients.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [filteredClients, safePage, pageSize]
   );
+  const startIndex = filteredClients.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const endIndex = Math.min(safePage * pageSize, filteredClients.length);
 
   const getClientStats = (clientId: string) => {
     const appointments = clientAppointments[clientId] || [];
@@ -215,7 +239,7 @@ export default function PortalClients() {
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome, telefone ou CPF..."
+            placeholder="Buscar por nome, telefone, e-mail ou CPF..."
             className="pl-10"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -256,7 +280,7 @@ export default function PortalClients() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredClients.map((client) => (
+                paginatedClients.map((client) => (
                   <Collapsible
                     key={client.id}
                     open={expandedClient === client.id}
@@ -367,6 +391,54 @@ export default function PortalClients() {
             </TableBody>
           </Table>
         </div>
+
+        {!loading && filteredClients.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
+            <div className="text-muted-foreground">
+              Mostrando <span className="font-medium text-foreground">{startIndex}–{endIndex}</span> de{" "}
+              <span className="font-medium text-foreground">{filteredClients.length}</span>
+              {searchQuery && ` (filtrados de ${clients.length})`}
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Por página:</span>
+                <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                  <SelectTrigger className="h-8 w-[80px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                    <SelectItem value="200">200</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="px-2 text-muted-foreground">
+                  Página <span className="font-medium text-foreground">{safePage}</span> de{" "}
+                  <span className="font-medium text-foreground">{totalPages}</span>
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safePage >= totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </PortalLayout>
   );
