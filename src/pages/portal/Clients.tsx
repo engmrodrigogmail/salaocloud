@@ -63,6 +63,10 @@ export default function PortalClients() {
   const [clientAppointments, setClientAppointments] = useState<Record<string, Appointment[]>>({});
   const [loadingAppointments, setLoadingAppointments] = useState<string | null>(null);
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [appointmentCounts, setAppointmentCounts] = useState<Record<string, number>>({});
+  const [deleteTarget, setDeleteTarget] = useState<{ ids: string[]; withAppointments: number } | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
