@@ -499,13 +499,13 @@ export default function PortalClients() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12">
+                  <TableCell colSpan={selectionMode ? 8 : 7} className="text-center py-12">
                     Carregando...
                   </TableCell>
                 </TableRow>
               ) : filteredClients.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12">
+                  <TableCell colSpan={selectionMode ? 8 : 7} className="text-center py-12">
                     <UserCircle className="h-12 w-12 mx-auto mb-4 opacity-30" />
                     <p className="text-muted-foreground">
                       {searchQuery
@@ -528,13 +528,15 @@ export default function PortalClients() {
                     <>
                       <CollapsibleTrigger asChild>
                         <TableRow className="cursor-pointer hover:bg-muted/50">
-                          <TableCell onClick={(e) => e.stopPropagation()}>
-                            <Checkbox
-                              checked={selectedIds.has(client.id)}
-                              onCheckedChange={(v) => toggleSelectClient(client.id, Boolean(v))}
-                              aria-label={`Selecionar ${client.name}`}
-                            />
-                          </TableCell>
+                          {selectionMode && (
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={selectedIds.has(client.id)}
+                                onCheckedChange={(v) => toggleSelectClient(client.id, Boolean(v))}
+                                aria-label={`Selecionar ${client.name}`}
+                              />
+                            </TableCell>
+                          )}
                           <TableCell>
                             {expandedClient === client.id ? (
                               <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -544,31 +546,35 @@ export default function PortalClients() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-3">
-                              {/* Checkbox inline visível em mobile (a coluna dedicada some na rolagem) */}
-                              <div className="md:hidden" onClick={(e) => e.stopPropagation()}>
-                                <Checkbox
-                                  checked={selectedIds.has(client.id)}
-                                  onCheckedChange={(v) => toggleSelectClient(client.id, Boolean(v))}
-                                  aria-label={`Selecionar ${client.name}`}
-                                />
-                              </div>
+                              {/* Checkbox inline visível em mobile no modo seleção */}
+                              {selectionMode && (
+                                <div className="md:hidden" onClick={(e) => e.stopPropagation()}>
+                                  <Checkbox
+                                    checked={selectedIds.has(client.id)}
+                                    onCheckedChange={(v) => toggleSelectClient(client.id, Boolean(v))}
+                                    aria-label={`Selecionar ${client.name}`}
+                                  />
+                                </div>
+                              )}
                               <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium shrink-0">
                                 {client.name.charAt(0)}
                               </div>
                               <div className="font-medium flex-1 min-w-0 break-words">{client.name}</div>
-                              {/* Botão excluir inline visível em mobile */}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="md:hidden h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openDeleteDialog([client.id]);
-                                }}
-                                aria-label={`Excluir ${client.name}`}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {/* Botão editar inline visível em mobile */}
+                              {!selectionMode && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="md:hidden h-8 w-8 shrink-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openEditDialog(client);
+                                  }}
+                                  aria-label={`Editar ${client.name}`}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>{client.phone}</TableCell>
@@ -587,18 +593,19 @@ export default function PortalClients() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => openDeleteDialog([client.id])}
-                              aria-label={`Excluir ${client.name}`}
+                              className="h-8 w-8"
+                              onClick={() => openEditDialog(client)}
+                              aria-label={`Editar ${client.name}`}
+                              disabled={selectionMode}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Pencil className="h-4 w-4" />
                             </Button>
                           </TableCell>
                         </TableRow>
                       </CollapsibleTrigger>
                       <CollapsibleContent asChild>
                         <TableRow className="bg-muted/30 hover:bg-muted/30">
-                          <TableCell colSpan={8} className="p-0">
+                          <TableCell colSpan={selectionMode ? 8 : 7} className="p-0">
                             <div className="p-4 space-y-4">
                               <div className="flex items-center justify-between">
                                 <h4 className="font-semibold flex items-center gap-2">
