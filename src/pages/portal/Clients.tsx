@@ -391,6 +391,54 @@ export default function PortalClients() {
             </TableBody>
           </Table>
         </div>
+
+        {!loading && filteredClients.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm">
+            <div className="text-muted-foreground">
+              Mostrando <span className="font-medium text-foreground">{startIndex}–{endIndex}</span> de{" "}
+              <span className="font-medium text-foreground">{filteredClients.length}</span>
+              {searchQuery && ` (filtrados de ${clients.length})`}
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground">Por página:</span>
+                <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
+                  <SelectTrigger className="h-8 w-[80px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="25">25</SelectItem>
+                    <SelectItem value="50">50</SelectItem>
+                    <SelectItem value="100">100</SelectItem>
+                    <SelectItem value="200">200</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={safePage <= 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="px-2 text-muted-foreground">
+                  Página <span className="font-medium text-foreground">{safePage}</span> de{" "}
+                  <span className="font-medium text-foreground">{totalPages}</span>
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={safePage >= totalPages}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </PortalLayout>
   );
