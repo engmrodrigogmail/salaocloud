@@ -51,6 +51,13 @@ export default function PortalClients() {
   const [clientAppointments, setClientAppointments] = useState<Record<string, Appointment[]>>({});
   const [loadingAppointments, setLoadingAppointments] = useState<string | null>(null);
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25);
+
+  // Reset to first page whenever the search query or page size changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, pageSize]);
 
   useEffect(() => {
     if (!authLoading && !user) {
