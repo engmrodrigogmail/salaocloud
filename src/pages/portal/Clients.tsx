@@ -408,7 +408,7 @@ export default function PortalClients() {
                 </TableRow>
               ) : filteredClients.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12">
+                  <TableCell colSpan={8} className="text-center py-12">
                     <UserCircle className="h-12 w-12 mx-auto mb-4 opacity-30" />
                     <p className="text-muted-foreground">
                       {searchQuery
@@ -462,7 +462,7 @@ export default function PortalClients() {
                       </CollapsibleTrigger>
                       <CollapsibleContent asChild>
                         <TableRow className="bg-muted/30 hover:bg-muted/30">
-                          <TableCell colSpan={6} className="p-0">
+                          <TableCell colSpan={8} className="p-0">
                             <div className="p-4 space-y-4">
                               <div className="flex items-center justify-between">
                                 <h4 className="font-semibold flex items-center gap-2">
