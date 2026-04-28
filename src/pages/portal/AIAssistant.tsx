@@ -72,7 +72,7 @@ const DAYS = [
 
 const DEFAULT_CONFIG: AIAssistantConfig = {
   is_enabled: false,
-  assistant_name: 'Assistente',
+  assistant_name: 'Silvia',
   language_style: 'casual',
   availability_mode: '24h_with_message',
   working_hours: {
@@ -405,19 +405,6 @@ export default function AIAssistant() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="assistant_name">Nome da Assistente</Label>
-                    <Input
-                      id="assistant_name"
-                      value={config.assistant_name}
-                      onChange={(e) => setConfig(prev => ({ ...prev, assistant_name: e.target.value }))}
-                      placeholder="Ex: Ana, Sofia, Assistente..."
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Este nome será usado nas conversas com os clientes
-                    </p>
-                  </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="language_style">Estilo de Linguagem</Label>
                     <Select
