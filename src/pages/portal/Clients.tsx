@@ -336,6 +336,57 @@ export default function PortalClients() {
     }
   };
 
+  const openEditDialog = (client: Client) => {
+    setEditTarget(client);
+    setEditForm({
+      name: client.name || "",
+      phone: client.phone || "",
+      email: client.email || "",
+      cpf: client.cpf || "",
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editTarget || !establishmentId) return;
+    if (!editForm.name.trim() || !editForm.phone.trim()) {
+      toast.error("Nome e telefone são obrigatórios");
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      const { error } = await supabase
+        .from("clients")
+        .update({
+          name: editForm.name.trim(),
+          phone: editForm.phone.trim(),
+          email: editForm.email.trim() || null,
+          cpf: editForm.cpf.trim() || null,
+        })
+        .eq("id", editTarget.id)
+        .eq("establishment_id", establishmentId);
+      if (error) throw error;
+      setClients((prev) =>
+        prev.map((c) =>
+          c.id === editTarget.id
+            ? { ...c, name: editForm.name.trim(), phone: editForm.phone.trim(), email: editForm.email.trim() || null, cpf: editForm.cpf.trim() || null }
+            : c
+        )
+      );
+      toast.success("Cliente atualizado");
+      setEditTarget(null);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Erro ao atualizar cliente");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    clearSelection();
+  };
+
   return (
     <PortalLayout>
       <div className="space-y-6">
