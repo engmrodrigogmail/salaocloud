@@ -76,14 +76,25 @@ export default function PortalClients() {
 
       setEstablishmentId(est.id);
 
-      const { data, error } = await supabase
-        .from("clients")
-        .select("*")
-        .eq("establishment_id", est.id)
-        .order("name");
+      // Paginated fetch to bypass Supabase's default 1000-row limit
+      const PAGE_SIZE = 1000;
+      let allClients: Client[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("clients")
+          .select("*")
+          .eq("establishment_id", est.id)
+          .order("name")
+          .range(from, from + PAGE_SIZE - 1);
 
-      if (error) throw error;
-      setClients(data || []);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        allClients = allClients.concat(data as Client[]);
+        if (data.length < PAGE_SIZE) break;
+        from += PAGE_SIZE;
+      }
+      setClients(allClients);
     } catch (error) {
       console.error("Error fetching clients:", error);
     } finally {
