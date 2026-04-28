@@ -28,6 +28,9 @@ interface EstablishmentData {
   description: string | null;
   working_hours: any;
   cancellation_policy: string | null;
+  show_prices: boolean;
+  show_service_duration: boolean;
+  show_professional_names: boolean;
   services: Array<{ id: string; name: string; price: number; duration_minutes: number; description: string | null }>;
   professionals: Array<{ id: string; name: string; specialties: string[]; working_hours: any }>;
   promotions: Array<{ name: string; description: string; discount_value: number; discount_type: string; start_date: string; end_date: string }>;
@@ -525,7 +528,7 @@ async function getEstablishmentData(establishmentId: string): Promise<Establishm
   ] = await Promise.all([
     supabase
       .from('establishments')
-      .select('id, name, phone, address, city, state, description, working_hours, cancellation_policy')
+      .select('id, name, phone, address, city, state, description, working_hours, cancellation_policy, show_prices, show_service_duration, show_professional_names')
       .eq('id', establishmentId)
       .single(),
     supabase
@@ -572,6 +575,9 @@ async function getEstablishmentData(establishmentId: string): Promise<Establishm
 
   return {
     ...establishment,
+    show_prices: (establishment as any).show_prices ?? true,
+    show_service_duration: (establishment as any).show_service_duration ?? true,
+    show_professional_names: (establishment as any).show_professional_names ?? true,
     services: servicesResult.data || [],
     professionals: professionalsResult.data || [],
     promotions: promotionsResult.data || [],
