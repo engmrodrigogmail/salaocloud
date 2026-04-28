@@ -1,7 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PortalLayout } from "@/components/layouts/PortalLayout";
-import { Search, UserCircle, ChevronDown, ChevronUp, Calendar, Scissors, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Loader2 } from "lucide-react";
+import { Search, UserCircle, ChevronDown, ChevronUp, Calendar, Scissors, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Loader2, Pencil, X, CheckSquare } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -69,6 +71,10 @@ export default function PortalClients() {
   const [deleting, setDeleting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [editTarget, setEditTarget] = useState<Client | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", phone: "", email: "", cpf: "" });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Reset to first page whenever the search query or page size changes
   useEffect(() => {
@@ -330,6 +336,57 @@ export default function PortalClients() {
     }
   };
 
+  const openEditDialog = (client: Client) => {
+    setEditTarget(client);
+    setEditForm({
+      name: client.name || "",
+      phone: client.phone || "",
+      email: client.email || "",
+      cpf: client.cpf || "",
+    });
+  };
+
+  const saveEdit = async () => {
+    if (!editTarget || !establishmentId) return;
+    if (!editForm.name.trim() || !editForm.phone.trim()) {
+      toast.error("Nome e telefone são obrigatórios");
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      const { error } = await supabase
+        .from("clients")
+        .update({
+          name: editForm.name.trim(),
+          phone: editForm.phone.trim(),
+          email: editForm.email.trim() || null,
+          cpf: editForm.cpf.trim() || null,
+        })
+        .eq("id", editTarget.id)
+        .eq("establishment_id", establishmentId);
+      if (error) throw error;
+      setClients((prev) =>
+        prev.map((c) =>
+          c.id === editTarget.id
+            ? { ...c, name: editForm.name.trim(), phone: editForm.phone.trim(), email: editForm.email.trim() || null, cpf: editForm.cpf.trim() || null }
+            : c
+        )
+      );
+      toast.success("Cliente atualizado");
+      setEditTarget(null);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Erro ao atualizar cliente");
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const exitSelectionMode = () => {
+    setSelectionMode(false);
+    clearSelection();
+  };
+
   return (
     <PortalLayout>
       <div className="space-y-6">
@@ -348,19 +405,43 @@ export default function PortalClients() {
           )}
         </div>
 
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome, telefone, e-mail ou CPF..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome, telefone, e-mail ou CPF..."
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          {/* Botão lixeira: ativa modo de seleção */}
+          {!selectionMode ? (
+            <Button
+              variant="outline"
+              size="icon"
+              className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+              onClick={() => setSelectionMode(true)}
+              aria-label="Ativar exclusão de contatos"
+              title="Excluir contatos"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={exitSelectionMode}
+              className="shrink-0"
+            >
+              <X className="h-4 w-4 mr-1" /> Cancelar exclusão
+            </Button>
+          )}
         </div>
 
-        {/* Barra de seleção/ações em massa — sempre visível quando há clientes */}
-        {!loading && filteredClients.length > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-muted/40 border border-border">
+        {/* Barra de ações em massa — visível apenas no modo de seleção */}
+        {selectionMode && !loading && filteredClients.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
             <div className="flex items-center gap-2">
               <Checkbox
                 checked={allOnPageSelected}
@@ -370,14 +451,14 @@ export default function PortalClients() {
               />
               <label htmlFor="select-all-page" className="text-sm cursor-pointer">
                 {selectedIds.size > 0
-                  ? `${selectedIds.size} selecionado${selectedIds.size > 1 ? "s" : ""}`
-                  : "Selecionar todos da página"}
+                  ? `${selectedIds.size} contato${selectedIds.size > 1 ? "s" : ""} marcado${selectedIds.size > 1 ? "s" : ""}`
+                  : `Marque os contatos para excluir (${filteredClients.length} ${searchQuery ? "filtrados" : "no total"})`}
               </label>
             </div>
             <div className="flex gap-2">
               {selectedIds.size > 0 && (
                 <Button variant="outline" size="sm" onClick={clearSelection}>
-                  Limpar
+                  Limpar marcação
                 </Button>
               )}
               <Button
@@ -387,7 +468,7 @@ export default function PortalClients() {
                 onClick={() => openDeleteDialog(Array.from(selectedIds))}
               >
                 <Trash2 className="h-4 w-4 mr-1" />
-                Excluir selecionados
+                Confirmar exclusão
               </Button>
             </div>
           </div>
@@ -397,13 +478,15 @@ export default function PortalClients() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-10">
-                  <Checkbox
-                    checked={allOnPageSelected}
-                    onCheckedChange={(v) => togglePageSelection(Boolean(v))}
-                    aria-label="Selecionar página"
-                  />
-                </TableHead>
+                {selectionMode && (
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={allOnPageSelected}
+                      onCheckedChange={(v) => togglePageSelection(Boolean(v))}
+                      aria-label="Selecionar página"
+                    />
+                  </TableHead>
+                )}
                 <TableHead className="w-10"></TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Telefone</TableHead>
@@ -416,13 +499,13 @@ export default function PortalClients() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12">
+                  <TableCell colSpan={selectionMode ? 8 : 7} className="text-center py-12">
                     Carregando...
                   </TableCell>
                 </TableRow>
               ) : filteredClients.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12">
+                  <TableCell colSpan={selectionMode ? 8 : 7} className="text-center py-12">
                     <UserCircle className="h-12 w-12 mx-auto mb-4 opacity-30" />
                     <p className="text-muted-foreground">
                       {searchQuery
@@ -445,13 +528,15 @@ export default function PortalClients() {
                     <>
                       <CollapsibleTrigger asChild>
                         <TableRow className="cursor-pointer hover:bg-muted/50">
-                          <TableCell onClick={(e) => e.stopPropagation()}>
-                            <Checkbox
-                              checked={selectedIds.has(client.id)}
-                              onCheckedChange={(v) => toggleSelectClient(client.id, Boolean(v))}
-                              aria-label={`Selecionar ${client.name}`}
-                            />
-                          </TableCell>
+                          {selectionMode && (
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <Checkbox
+                                checked={selectedIds.has(client.id)}
+                                onCheckedChange={(v) => toggleSelectClient(client.id, Boolean(v))}
+                                aria-label={`Selecionar ${client.name}`}
+                              />
+                            </TableCell>
+                          )}
                           <TableCell>
                             {expandedClient === client.id ? (
                               <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -461,31 +546,35 @@ export default function PortalClients() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-3">
-                              {/* Checkbox inline visível em mobile (a coluna dedicada some na rolagem) */}
-                              <div className="md:hidden" onClick={(e) => e.stopPropagation()}>
-                                <Checkbox
-                                  checked={selectedIds.has(client.id)}
-                                  onCheckedChange={(v) => toggleSelectClient(client.id, Boolean(v))}
-                                  aria-label={`Selecionar ${client.name}`}
-                                />
-                              </div>
+                              {/* Checkbox inline visível em mobile no modo seleção */}
+                              {selectionMode && (
+                                <div className="md:hidden" onClick={(e) => e.stopPropagation()}>
+                                  <Checkbox
+                                    checked={selectedIds.has(client.id)}
+                                    onCheckedChange={(v) => toggleSelectClient(client.id, Boolean(v))}
+                                    aria-label={`Selecionar ${client.name}`}
+                                  />
+                                </div>
+                              )}
                               <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium shrink-0">
                                 {client.name.charAt(0)}
                               </div>
                               <div className="font-medium flex-1 min-w-0 break-words">{client.name}</div>
-                              {/* Botão excluir inline visível em mobile */}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="md:hidden h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  openDeleteDialog([client.id]);
-                                }}
-                                aria-label={`Excluir ${client.name}`}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              {/* Botão editar inline visível em mobile */}
+                              {!selectionMode && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="md:hidden h-8 w-8 shrink-0"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    openEditDialog(client);
+                                  }}
+                                  aria-label={`Editar ${client.name}`}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell>{client.phone}</TableCell>
@@ -504,18 +593,19 @@ export default function PortalClients() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
-                              onClick={() => openDeleteDialog([client.id])}
-                              aria-label={`Excluir ${client.name}`}
+                              className="h-8 w-8"
+                              onClick={() => openEditDialog(client)}
+                              aria-label={`Editar ${client.name}`}
+                              disabled={selectionMode}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Pencil className="h-4 w-4" />
                             </Button>
                           </TableCell>
                         </TableRow>
                       </CollapsibleTrigger>
                       <CollapsibleContent asChild>
                         <TableRow className="bg-muted/30 hover:bg-muted/30">
-                          <TableCell colSpan={8} className="p-0">
+                          <TableCell colSpan={selectionMode ? 8 : 7} className="p-0">
                             <div className="p-4 space-y-4">
                               <div className="flex items-center justify-between">
                                 <h4 className="font-semibold flex items-center gap-2">
@@ -692,6 +782,69 @@ export default function PortalClients() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!editTarget} onOpenChange={(open) => !open && !savingEdit && setEditTarget(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5" />
+              Editar cliente
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Nome *</Label>
+              <Input
+                id="edit-name"
+                value={editForm.name}
+                onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone">Telefone *</Label>
+              <Input
+                id="edit-phone"
+                value={editForm.phone}
+                onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
+                inputMode="tel"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">E-mail</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-cpf">CPF</Label>
+              <Input
+                id="edit-cpf"
+                value={editForm.cpf}
+                onChange={(e) => setEditForm((f) => ({ ...f, cpf: e.target.value }))}
+                inputMode="numeric"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTarget(null)} disabled={savingEdit}>
+              Cancelar
+            </Button>
+            <Button onClick={saveEdit} disabled={savingEdit}>
+              {savingEdit ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                "Salvar alterações"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PortalLayout>
   );
 }
