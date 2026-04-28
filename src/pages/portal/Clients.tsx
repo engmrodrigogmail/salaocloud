@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PortalLayout } from "@/components/layouts/PortalLayout";
-import { Search, UserCircle, ChevronDown, ChevronUp, Calendar, Scissors } from "lucide-react";
+import { Search, UserCircle, ChevronDown, ChevronUp, Calendar, Scissors, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -16,6 +16,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ImportContactsDialog } from "@/components/clients/ImportContactsDialog";
 
