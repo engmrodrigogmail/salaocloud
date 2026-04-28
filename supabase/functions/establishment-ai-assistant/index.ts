@@ -1246,10 +1246,18 @@ function buildSystemPrompt(config: AssistantConfig, establishment: Establishment
     ? 'Use linguagem formal e profissional. Trate o cliente por "senhor(a)".'
     : 'Use linguagem amigável e casual, mas sempre profissional. Pode usar emojis moderadamente.';
 
-  const servicesInfo = establishment.services.map(s => 
-    `- ${s.name}: R$ ${s.price.toFixed(2)} (${s.duration_minutes} min)${s.description ? ` - ${s.description}` : ''}`
-  ).join('\n');
+  const showPrices = establishment.show_prices !== false;
+  const showDuration = establishment.show_service_duration !== false;
+  const showProfNames = establishment.show_professional_names !== false;
 
+  const servicesInfo = establishment.services.map(s => {
+    const priceStr = showPrices ? `R$ ${s.price.toFixed(2)}` : 'Preço sob consulta';
+    const durStr = showDuration ? ` (${s.duration_minutes} min)` : '';
+    return `- ${s.name}: ${priceStr}${durStr}${s.description ? ` - ${s.description}` : ''}`;
+  }).join('\n');
+
+  // Lista interna de profissionais — sempre disponível para a IA escolher nos bastidores,
+  // mas a IA NÃO deve revelar nomes ao cliente quando showProfNames === false.
   const professionalsInfo = establishment.professionals.map(p =>
     `- ${p.name}${p.specialties?.length ? ` (especialidades: ${p.specialties.join(', ')})` : ''}`
   ).join('\n');
