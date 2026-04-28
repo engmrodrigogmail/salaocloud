@@ -219,6 +219,8 @@ export function ServiceFormDialog({
     try {
       let serviceId = editingService?.id;
 
+      const categoryIdValue = formData.category_id && formData.category_id !== "none" ? formData.category_id : null;
+
       if (editingService) {
         const { error } = await supabase
           .from("services")
@@ -228,6 +230,7 @@ export function ServiceFormDialog({
             duration_minutes: parseInt(formData.duration_minutes) || 30,
             price: parseFloat(formData.price) || 0,
             is_active: formData.is_active,
+            category_id: categoryIdValue,
           })
           .eq("id", editingService.id);
 
@@ -242,6 +245,7 @@ export function ServiceFormDialog({
             duration_minutes: parseInt(formData.duration_minutes) || 30,
             price: parseFloat(formData.price) || 0,
             is_active: formData.is_active,
+            category_id: categoryIdValue,
           })
           .select()
           .single();
