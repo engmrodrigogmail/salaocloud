@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PortalLayout } from "@/components/layouts/PortalLayout";
-import { Search, UserCircle, ChevronDown, ChevronUp, Calendar, Scissors, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, UserCircle, ChevronDown, ChevronUp, Calendar, Scissors, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -17,8 +17,20 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 import { ImportContactsDialog } from "@/components/clients/ImportContactsDialog";
 
 interface Client {
@@ -51,6 +63,10 @@ export default function PortalClients() {
   const [clientAppointments, setClientAppointments] = useState<Record<string, Appointment[]>>({});
   const [loadingAppointments, setLoadingAppointments] = useState<string | null>(null);
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [appointmentCounts, setAppointmentCounts] = useState<Record<string, number>>({});
+  const [deleteTarget, setDeleteTarget] = useState<{ ids: string[]; withAppointments: number } | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
 
@@ -218,6 +234,102 @@ export default function PortalClients() {
     return { total: appointments.length, completed: completedAppointments.length, totalSpent };
   };
 
+  // ----- Selection helpers -----
+  const toggleSelectClient = (id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const allOnPageSelected =
+    paginatedClients.length > 0 &&
+    paginatedClients.every((c) => selectedIds.has(c.id));
+
+  const togglePageSelection = (checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      paginatedClients.forEach((c) => {
+        if (checked) next.add(c.id);
+        else next.delete(c.id);
+      });
+      return next;
+    });
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  // ----- Appointment count check (protection rule) -----
+  const fetchAppointmentCounts = async (ids: string[]) => {
+    if (!establishmentId || ids.length === 0) return {} as Record<string, number>;
+    const counts: Record<string, number> = {};
+    ids.forEach((id) => (counts[id] = 0));
+    // Query in chunks to stay under URL limits
+    const CHUNK = 200;
+    for (let i = 0; i < ids.length; i += CHUNK) {
+      const slice = ids.slice(i, i + CHUNK);
+      const { data, error } = await supabase
+        .from("appointments")
+        .select("client_id")
+        .eq("establishment_id", establishmentId)
+        .in("client_id", slice);
+      if (error) throw error;
+      (data || []).forEach((row: any) => {
+        if (row.client_id) counts[row.client_id] = (counts[row.client_id] || 0) + 1;
+      });
+    }
+    setAppointmentCounts((prev) => ({ ...prev, ...counts }));
+    return counts;
+  };
+
+  const openDeleteDialog = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    try {
+      const counts = await fetchAppointmentCounts(ids);
+      const withAppointments = ids.filter((id) => (counts[id] || 0) > 0).length;
+      setDeleteTarget({ ids, withAppointments });
+    } catch (e) {
+      console.error(e);
+      toast.error("Erro ao verificar agendamentos vinculados");
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget || !establishmentId) return;
+    setDeleting(true);
+    try {
+      const { ids } = deleteTarget;
+      // Delete in chunks
+      const CHUNK = 200;
+      let deleted = 0;
+      for (let i = 0; i < ids.length; i += CHUNK) {
+        const slice = ids.slice(i, i + CHUNK);
+        const { error } = await supabase
+          .from("clients")
+          .delete()
+          .eq("establishment_id", establishmentId)
+          .in("id", slice);
+        if (error) throw error;
+        deleted += slice.length;
+      }
+      toast.success(`${deleted} cliente${deleted > 1 ? "s excluídos" : " excluído"} com sucesso`);
+      setClients((prev) => prev.filter((c) => !ids.includes(c.id)));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        ids.forEach((id) => next.delete(id));
+        return next;
+      });
+      setDeleteTarget(null);
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.message || "Erro ao excluir clientes");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <PortalLayout>
       <div className="space-y-6">
@@ -246,28 +358,57 @@ export default function PortalClients() {
           />
         </div>
 
+        {selectedIds.size > 0 && (
+          <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
+            <span className="text-sm font-medium">
+              {selectedIds.size} cliente{selectedIds.size > 1 ? "s" : ""} selecionado{selectedIds.size > 1 ? "s" : ""}
+            </span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={clearSelection}>
+                Limpar
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => openDeleteDialog(Array.from(selectedIds))}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Excluir selecionados
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="bg-card rounded-xl border border-border overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={allOnPageSelected}
+                    onCheckedChange={(v) => togglePageSelection(Boolean(v))}
+                    aria-label="Selecionar página"
+                  />
+                </TableHead>
                 <TableHead className="w-10"></TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>CPF</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Cliente desde</TableHead>
+                <TableHead className="w-12 text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12">
+                  <TableCell colSpan={8} className="text-center py-12">
                     Carregando...
                   </TableCell>
                 </TableRow>
               ) : filteredClients.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12">
+                  <TableCell colSpan={8} className="text-center py-12">
                     <UserCircle className="h-12 w-12 mx-auto mb-4 opacity-30" />
                     <p className="text-muted-foreground">
                       {searchQuery
@@ -290,6 +431,13 @@ export default function PortalClients() {
                     <>
                       <CollapsibleTrigger asChild>
                         <TableRow className="cursor-pointer hover:bg-muted/50">
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedIds.has(client.id)}
+                              onCheckedChange={(v) => toggleSelectClient(client.id, Boolean(v))}
+                              aria-label={`Selecionar ${client.name}`}
+                            />
+                          </TableCell>
                           <TableCell>
                             {expandedClient === client.id ? (
                               <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -317,11 +465,22 @@ export default function PortalClients() {
                               locale: ptBR,
                             })}
                           </TableCell>
+                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => openDeleteDialog([client.id])}
+                              aria-label={`Excluir ${client.name}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       </CollapsibleTrigger>
                       <CollapsibleContent asChild>
                         <TableRow className="bg-muted/30 hover:bg-muted/30">
-                          <TableCell colSpan={6} className="p-0">
+                          <TableCell colSpan={8} className="p-0">
                             <div className="p-4 space-y-4">
                               <div className="flex items-center justify-between">
                                 <h4 className="font-semibold flex items-center gap-2">
@@ -440,6 +599,64 @@ export default function PortalClients() {
           </div>
         )}
       </div>
+
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && !deleting && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-destructive" />
+              {deleteTarget && deleteTarget.ids.length > 1
+                ? `Excluir ${deleteTarget.ids.length} clientes?`
+                : "Excluir cliente?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Esta ação é permanente e não pode ser desfeita. Os dados de cadastro
+                  serão removidos da sua base.
+                </p>
+                {deleteTarget && deleteTarget.withAppointments > 0 && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive">
+                    <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <div className="text-sm">
+                      <strong>
+                        {deleteTarget.withAppointments} cliente
+                        {deleteTarget.withAppointments > 1 ? "s possuem" : " possui"} agendamentos vinculados.
+                      </strong>{" "}
+                      O histórico de atendimentos do salão será preservado, mas os
+                      agendamentos passarão a aparecer sem o vínculo de cadastro
+                      (apenas com nome/telefone registrados no momento do agendamento).
+                    </div>
+                  </div>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                confirmDelete();
+              }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Excluindo...
+                </>
+              ) : (
+                "Confirmar exclusão"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PortalLayout>
   );
 }
