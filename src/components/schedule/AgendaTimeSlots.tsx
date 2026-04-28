@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { format, parseISO, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -63,6 +64,14 @@ export function AgendaTimeSlots({
   viewMode,
 }: AgendaTimeSlotsProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+
+  const goToClient = (e: React.MouseEvent, clientId: string | null) => {
+    if (!clientId || !slug) return;
+    e.stopPropagation();
+    navigate(`/portal/${slug}/clientes/${clientId}`);
+  };
 
   // Mapear profissionais para cores
   const professionalColorMap = useMemo(() => {
@@ -132,6 +141,7 @@ export function AgendaTimeSlots({
     const variants: Record<string, { label: string; className: string }> = {
       pending: { label: "Pend.", className: "bg-amber-200 text-amber-900 text-[10px] px-1" },
       confirmed: { label: "Conf.", className: "bg-blue-200 text-blue-900 text-[10px] px-1" },
+      in_service: { label: "Atend.", className: "bg-violet-200 text-violet-900 text-[10px] px-1" },
       completed: { label: "Conc.", className: "bg-green-200 text-green-900 text-[10px] px-1" },
     };
     const config = variants[status] || { label: status, className: "" };
@@ -218,7 +228,10 @@ export function AgendaTimeSlots({
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-1.5 min-w-0">
                                   <ConfirmedIndicator isConfirmed={!!apt.confirmed_at} />
-                                  <span className={`font-medium truncate text-sm ${colors.text}`}>
+                                  <span
+                                    onClick={(e) => goToClient(e, apt.client_id)}
+                                    className={`font-medium truncate text-sm ${colors.text} ${apt.client_id ? "hover:underline cursor-pointer" : ""}`}
+                                  >
                                     {apt.client_name}
                                   </span>
                                 </div>
@@ -273,7 +286,12 @@ export function AgendaTimeSlots({
                   {format(parseISO(apt.scheduled_at), "HH:mm")}
                 </span>
               </div>
-              <div className={`truncate ${colors.text}`}>{apt.client_name}</div>
+              <div
+                onClick={(e) => goToClient(e, apt.client_id)}
+                className={`truncate ${colors.text} ${apt.client_id ? "hover:underline cursor-pointer" : ""}`}
+              >
+                {apt.client_name}
+              </div>
               <div className={`truncate opacity-70 ${colors.text}`}>{apt.professionals?.name}</div>
             </div>
           );
