@@ -34,6 +34,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { ImportContactsDialog } from "@/components/clients/ImportContactsDialog";
+import { NewClientDialog } from "@/components/clients/NewClientDialog";
+import { UserPlus } from "lucide-react";
 
 interface Client {
   id: string;
@@ -75,6 +77,7 @@ export default function PortalClients() {
   const [editTarget, setEditTarget] = useState<Client | null>(null);
   const [editForm, setEditForm] = useState({ name: "", phone: "", email: "", cpf: "" });
   const [savingEdit, setSavingEdit] = useState(false);
+  const [newClientOpen, setNewClientOpen] = useState(false);
 
   // Reset to first page whenever the search query or page size changes
   useEffect(() => {
@@ -398,10 +401,16 @@ export default function PortalClients() {
             </p>
           </div>
           {establishmentId && (
-            <ImportContactsDialog
-              establishmentId={establishmentId}
-              onImportComplete={fetchClients}
-            />
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => setNewClientOpen(true)} className="shrink-0">
+                <UserPlus className="h-4 w-4 mr-2" />
+                Novo cliente
+              </Button>
+              <ImportContactsDialog
+                establishmentId={establishmentId}
+                onImportComplete={fetchClients}
+              />
+            </div>
           )}
         </div>
 
@@ -845,6 +854,15 @@ export default function PortalClients() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {establishmentId && (
+        <NewClientDialog
+          open={newClientOpen}
+          onOpenChange={setNewClientOpen}
+          establishmentId={establishmentId}
+          onCreated={fetchClients}
+        />
+      )}
     </PortalLayout>
   );
 }
