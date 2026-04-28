@@ -42,7 +42,6 @@ interface ProductFormDialogProps {
   onSuccess: () => void;
 }
 
-const DEFAULT_CATEGORIES = ["Cabelo", "Unhas", "Pele", "Bebidas"];
 const DEFAULT_UNITS = [
   { name: "Unidade", abbr: "un" },
   { name: "Quilograma", abbr: "kg" },
@@ -66,7 +65,7 @@ export function ProductFormDialog({
   const [isActive, setIsActive] = useState(true);
 
   // Custom categories and units
-  const [categories, setCategories] = useState<string[]>(DEFAULT_CATEGORIES);
+  const [categories, setCategories] = useState<string[]>([]);
   const [units, setUnits] = useState<{ name: string; abbr: string }[]>(DEFAULT_UNITS);
   const [newCategory, setNewCategory] = useState("");
   const [newUnitName, setNewUnitName] = useState("");
@@ -108,7 +107,7 @@ export function ProductFormDialog({
       const customCategories = catData?.map((c) => c.name) || [];
       const customUnits = unitData?.map((u) => ({ name: u.name, abbr: u.abbreviation })) || [];
 
-      setCategories([...DEFAULT_CATEGORIES, ...customCategories]);
+      setCategories(customCategories);
       setUnits([...DEFAULT_UNITS, ...customUnits]);
     } catch (error) {
       console.error("Error fetching categories/units:", error);
