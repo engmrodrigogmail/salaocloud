@@ -38,6 +38,12 @@ interface Service {
   duration_minutes: number;
   price: number;
   is_active: boolean;
+  category_id?: string | null;
+}
+
+interface ServiceCategory {
+  id: string;
+  name: string;
 }
 
 interface ProfessionalCommission {
@@ -66,6 +72,7 @@ export function ServiceFormDialog({
 }: ServiceFormDialogProps) {
   const [loading, setLoading] = useState(false);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [selectedProfessionals, setSelectedProfessionals] = useState<Set<string>>(new Set());
   const [professionalCommissions, setProfessionalCommissions] = useState<Record<string, ProfessionalCommission>>({});
 
@@ -75,11 +82,13 @@ export function ServiceFormDialog({
     duration_minutes: "30",
     price: "",
     is_active: true,
+    category_id: "none" as string,
   });
 
   useEffect(() => {
     if (open) {
       fetchProfessionals();
+      fetchCategories();
       if (editingService) {
         loadServiceData();
       } else {
@@ -101,6 +110,15 @@ export function ServiceFormDialog({
     }
   };
 
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from("service_categories")
+      .select("id, name")
+      .eq("establishment_id", establishmentId)
+      .order("name");
+    if (!error && data) setCategories(data);
+  };
+
   const loadServiceData = async () => {
     if (!editingService) return;
 
@@ -110,6 +128,7 @@ export function ServiceFormDialog({
       duration_minutes: String(editingService.duration_minutes),
       price: String(editingService.price),
       is_active: editingService.is_active,
+      category_id: editingService.category_id || "none",
     });
 
     // Fetch existing professional_services
@@ -146,6 +165,7 @@ export function ServiceFormDialog({
       duration_minutes: "30",
       price: "",
       is_active: true,
+      category_id: "none",
     });
     setSelectedProfessionals(new Set());
     setProfessionalCommissions({});
