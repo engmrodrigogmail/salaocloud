@@ -71,6 +71,10 @@ export default function PortalClients() {
   const [deleting, setDeleting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [editTarget, setEditTarget] = useState<Client | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", phone: "", email: "", cpf: "" });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Reset to first page whenever the search query or page size changes
   useEffect(() => {
