@@ -358,7 +358,26 @@ export default function PortalClients() {
           />
         </div>
 
-        <div className="bg-card rounded-xl border border-border overflow-hidden">
+        {selectedIds.size > 0 && (
+          <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
+            <span className="text-sm font-medium">
+              {selectedIds.size} cliente{selectedIds.size > 1 ? "s" : ""} selecionado{selectedIds.size > 1 ? "s" : ""}
+            </span>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={clearSelection}>
+                Limpar
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => openDeleteDialog(Array.from(selectedIds))}
+              >
+                <Trash2 className="h-4 w-4 mr-1" />
+                Excluir selecionados
+              </Button>
+            </div>
+          </div>
+        )}
           <Table>
             <TableHeader>
               <TableRow>
