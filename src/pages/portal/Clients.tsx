@@ -280,7 +280,7 @@ export default function PortalClients() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredClients.map((client) => (
+                paginatedClients.map((client) => (
                   <Collapsible
                     key={client.id}
                     open={expandedClient === client.id}
