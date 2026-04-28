@@ -431,6 +431,13 @@ export default function PortalClients() {
                     <>
                       <CollapsibleTrigger asChild>
                         <TableRow className="cursor-pointer hover:bg-muted/50">
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Checkbox
+                              checked={selectedIds.has(client.id)}
+                              onCheckedChange={(v) => toggleSelectClient(client.id, Boolean(v))}
+                              aria-label={`Selecionar ${client.name}`}
+                            />
+                          </TableCell>
                           <TableCell>
                             {expandedClient === client.id ? (
                               <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -457,6 +464,17 @@ export default function PortalClients() {
                             {format(new Date(client.created_at), "dd MMM yyyy", {
                               locale: ptBR,
                             })}
+                          </TableCell>
+                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                              onClick={() => openDeleteDialog([client.id])}
+                              aria-label={`Excluir ${client.name}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       </CollapsibleTrigger>
