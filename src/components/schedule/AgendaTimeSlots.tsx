@@ -228,7 +228,10 @@ export function AgendaTimeSlots({
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-1.5 min-w-0">
                                   <ConfirmedIndicator isConfirmed={!!apt.confirmed_at} />
-                                  <span className={`font-medium truncate text-sm ${colors.text}`}>
+                                  <span
+                                    onClick={(e) => goToClient(e, apt.client_id)}
+                                    className={`font-medium truncate text-sm ${colors.text} ${apt.client_id ? "hover:underline cursor-pointer" : ""}`}
+                                  >
                                     {apt.client_name}
                                   </span>
                                 </div>
@@ -283,7 +286,12 @@ export function AgendaTimeSlots({
                   {format(parseISO(apt.scheduled_at), "HH:mm")}
                 </span>
               </div>
-              <div className={`truncate ${colors.text}`}>{apt.client_name}</div>
+              <div
+                onClick={(e) => goToClient(e, apt.client_id)}
+                className={`truncate ${colors.text} ${apt.client_id ? "hover:underline cursor-pointer" : ""}`}
+              >
+                {apt.client_name}
+              </div>
               <div className={`truncate opacity-70 ${colors.text}`}>{apt.professionals?.name}</div>
             </div>
           );
