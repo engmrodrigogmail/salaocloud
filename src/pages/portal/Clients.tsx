@@ -405,19 +405,43 @@ export default function PortalClients() {
           )}
         </div>
 
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome, telefone, e-mail ou CPF..."
-            className="pl-10"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome, telefone, e-mail ou CPF..."
+              className="pl-10"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          {/* Botão lixeira: ativa modo de seleção */}
+          {!selectionMode ? (
+            <Button
+              variant="outline"
+              size="icon"
+              className="text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+              onClick={() => setSelectionMode(true)}
+              aria-label="Ativar exclusão de contatos"
+              title="Excluir contatos"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={exitSelectionMode}
+              className="shrink-0"
+            >
+              <X className="h-4 w-4 mr-1" /> Cancelar exclusão
+            </Button>
+          )}
         </div>
 
-        {/* Barra de seleção/ações em massa — sempre visível quando há clientes */}
-        {!loading && filteredClients.length > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-muted/40 border border-border">
+        {/* Barra de ações em massa — visível apenas no modo de seleção */}
+        {selectionMode && !loading && filteredClients.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
             <div className="flex items-center gap-2">
               <Checkbox
                 checked={allOnPageSelected}
@@ -427,14 +451,14 @@ export default function PortalClients() {
               />
               <label htmlFor="select-all-page" className="text-sm cursor-pointer">
                 {selectedIds.size > 0
-                  ? `${selectedIds.size} selecionado${selectedIds.size > 1 ? "s" : ""}`
-                  : "Selecionar todos da página"}
+                  ? `${selectedIds.size} contato${selectedIds.size > 1 ? "s" : ""} marcado${selectedIds.size > 1 ? "s" : ""}`
+                  : `Marque os contatos para excluir (${filteredClients.length} ${searchQuery ? "filtrados" : "no total"})`}
               </label>
             </div>
             <div className="flex gap-2">
               {selectedIds.size > 0 && (
                 <Button variant="outline" size="sm" onClick={clearSelection}>
-                  Limpar
+                  Limpar marcação
                 </Button>
               )}
               <Button
@@ -444,7 +468,7 @@ export default function PortalClients() {
                 onClick={() => openDeleteDialog(Array.from(selectedIds))}
               >
                 <Trash2 className="h-4 w-4 mr-1" />
-                Excluir selecionados
+                Confirmar exclusão
               </Button>
             </div>
           </div>
@@ -454,13 +478,15 @@ export default function PortalClients() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-10">
-                  <Checkbox
-                    checked={allOnPageSelected}
-                    onCheckedChange={(v) => togglePageSelection(Boolean(v))}
-                    aria-label="Selecionar página"
-                  />
-                </TableHead>
+                {selectionMode && (
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={allOnPageSelected}
+                      onCheckedChange={(v) => togglePageSelection(Boolean(v))}
+                      aria-label="Selecionar página"
+                    />
+                  </TableHead>
+                )}
                 <TableHead className="w-10"></TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Telefone</TableHead>
