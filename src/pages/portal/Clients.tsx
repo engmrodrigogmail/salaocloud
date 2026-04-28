@@ -378,21 +378,31 @@ export default function PortalClients() {
             </div>
           </div>
         )}
+
+        <div className="bg-card rounded-xl border border-border overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={allOnPageSelected}
+                    onCheckedChange={(v) => togglePageSelection(Boolean(v))}
+                    aria-label="Selecionar página"
+                  />
+                </TableHead>
                 <TableHead className="w-10"></TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>CPF</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Cliente desde</TableHead>
+                <TableHead className="w-12 text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-12">
+                  <TableCell colSpan={8} className="text-center py-12">
                     Carregando...
                   </TableCell>
                 </TableRow>
