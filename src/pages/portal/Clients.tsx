@@ -239,7 +239,7 @@ export default function PortalClients() {
         <div className="relative max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nome, telefone ou CPF..."
+            placeholder="Buscar por nome, telefone, e-mail ou CPF..."
             className="pl-10"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
