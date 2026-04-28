@@ -461,10 +461,31 @@ export default function PortalClients() {
                           </TableCell>
                           <TableCell>
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium">
+                              {/* Checkbox inline visível em mobile (a coluna dedicada some na rolagem) */}
+                              <div className="md:hidden" onClick={(e) => e.stopPropagation()}>
+                                <Checkbox
+                                  checked={selectedIds.has(client.id)}
+                                  onCheckedChange={(v) => toggleSelectClient(client.id, Boolean(v))}
+                                  aria-label={`Selecionar ${client.name}`}
+                                />
+                              </div>
+                              <div className="w-10 h-10 rounded-full bg-gradient-primary flex items-center justify-center text-white font-medium shrink-0">
                                 {client.name.charAt(0)}
                               </div>
-                              <div className="font-medium">{client.name}</div>
+                              <div className="font-medium flex-1 min-w-0 break-words">{client.name}</div>
+                              {/* Botão excluir inline visível em mobile */}
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="md:hidden h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 shrink-0"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  openDeleteDialog([client.id]);
+                                }}
+                                aria-label={`Excluir ${client.name}`}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
                             </div>
                           </TableCell>
                           <TableCell>{client.phone}</TableCell>
