@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { PortalLayout } from "@/components/layouts/PortalLayout";
-import { Search, UserCircle, ChevronDown, ChevronUp, Calendar, Scissors, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, UserCircle, ChevronDown, ChevronUp, Calendar, Scissors, ChevronLeft, ChevronRight, Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -17,8 +17,20 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 import { ImportContactsDialog } from "@/components/clients/ImportContactsDialog";
 
 interface Client {
