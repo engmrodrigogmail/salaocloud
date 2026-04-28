@@ -599,6 +599,64 @@ export default function PortalClients() {
           </div>
         )}
       </div>
+
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && !deleting && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="h-5 w-5 text-destructive" />
+              {deleteTarget && deleteTarget.ids.length > 1
+                ? `Excluir ${deleteTarget.ids.length} clientes?`
+                : "Excluir cliente?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Esta ação é permanente e não pode ser desfeita. Os dados de cadastro
+                  serão removidos da sua base.
+                </p>
+                {deleteTarget && deleteTarget.withAppointments > 0 && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/30 text-destructive">
+                    <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <div className="text-sm">
+                      <strong>
+                        {deleteTarget.withAppointments} cliente
+                        {deleteTarget.withAppointments > 1 ? "s possuem" : " possui"} agendamentos vinculados.
+                      </strong>{" "}
+                      O histórico de atendimentos do salão será preservado, mas os
+                      agendamentos passarão a aparecer sem o vínculo de cadastro
+                      (apenas com nome/telefone registrados no momento do agendamento).
+                    </div>
+                  </div>
+                )}
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                confirmDelete();
+              }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Excluindo...
+                </>
+              ) : (
+                "Confirmar exclusão"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PortalLayout>
   );
 }
