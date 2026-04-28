@@ -358,18 +358,32 @@ export default function PortalClients() {
           />
         </div>
 
-        {selectedIds.size > 0 && (
-          <div className="flex items-center justify-between gap-3 p-3 rounded-lg bg-destructive/10 border border-destructive/30">
-            <span className="text-sm font-medium">
-              {selectedIds.size} cliente{selectedIds.size > 1 ? "s" : ""} selecionado{selectedIds.size > 1 ? "s" : ""}
-            </span>
+        {/* Barra de seleção/ações em massa — sempre visível quando há clientes */}
+        {!loading && filteredClients.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg bg-muted/40 border border-border">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                checked={allOnPageSelected}
+                onCheckedChange={(v) => togglePageSelection(Boolean(v))}
+                aria-label="Selecionar todos da página"
+                id="select-all-page"
+              />
+              <label htmlFor="select-all-page" className="text-sm cursor-pointer">
+                {selectedIds.size > 0
+                  ? `${selectedIds.size} selecionado${selectedIds.size > 1 ? "s" : ""}`
+                  : "Selecionar todos da página"}
+              </label>
+            </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={clearSelection}>
-                Limpar
-              </Button>
+              {selectedIds.size > 0 && (
+                <Button variant="outline" size="sm" onClick={clearSelection}>
+                  Limpar
+                </Button>
+              )}
               <Button
                 variant="destructive"
                 size="sm"
+                disabled={selectedIds.size === 0}
                 onClick={() => openDeleteDialog(Array.from(selectedIds))}
               >
                 <Trash2 className="h-4 w-4 mr-1" />
