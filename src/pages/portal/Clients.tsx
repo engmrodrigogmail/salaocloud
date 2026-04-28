@@ -782,6 +782,69 @@ export default function PortalClients() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!editTarget} onOpenChange={(open) => !open && !savingEdit && setEditTarget(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5" />
+              Editar cliente
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Nome *</Label>
+              <Input
+                id="edit-name"
+                value={editForm.name}
+                onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone">Telefone *</Label>
+              <Input
+                id="edit-phone"
+                value={editForm.phone}
+                onChange={(e) => setEditForm((f) => ({ ...f, phone: e.target.value }))}
+                inputMode="tel"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">E-mail</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-cpf">CPF</Label>
+              <Input
+                id="edit-cpf"
+                value={editForm.cpf}
+                onChange={(e) => setEditForm((f) => ({ ...f, cpf: e.target.value }))}
+                inputMode="numeric"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTarget(null)} disabled={savingEdit}>
+              Cancelar
+            </Button>
+            <Button onClick={saveEdit} disabled={savingEdit}>
+              {savingEdit ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                "Salvar alterações"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PortalLayout>
   );
 }
