@@ -225,7 +225,7 @@ export default function PortalAgenda() {
     });
   }, [appointments, filterService, filterProfessional, filterSearch]);
 
-  const updateAppointmentStatus = async (appointmentId: string, status: "pending" | "confirmed" | "completed" | "cancelled") => {
+  const updateAppointmentStatus = async (appointmentId: string, status: "pending" | "confirmed" | "completed" | "cancelled" | "no_show") => {
     try {
       const { error } = await supabase
         .from("appointments")
@@ -355,6 +355,7 @@ export default function PortalAgenda() {
       in_service: { label: "Em atendimento", variant: "default", className: "bg-violet-100 text-violet-800 border-violet-300" },
       completed: { label: "Concluído", variant: "outline", className: "bg-green-100 text-green-800 border-green-300" },
       cancelled: { label: "Cancelado", variant: "destructive" },
+      no_show: { label: "Não compareceu", variant: "outline", className: "bg-orange-100 text-orange-800 border-orange-300" },
     };
     const { label, variant, className } = variants[status] || { label: status, variant: "outline" as const };
     return <Badge variant={variant} className={className}>{label}</Badge>;
@@ -837,6 +838,11 @@ export default function PortalAgenda() {
                 {selectedAppointment?.status === "confirmed" && (
                   <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "completed")}>
                     <Check className="h-4 w-4 mr-1" /> Concluir
+                  </Button>
+                )}
+                {(selectedAppointment?.status === "pending" || selectedAppointment?.status === "confirmed") && (
+                  <Button size="sm" variant="outline" className="border-orange-300 text-orange-700 hover:bg-orange-50" onClick={() => updateAppointmentStatus(selectedAppointment.id, "no_show")}>
+                    <X className="h-4 w-4 mr-1" /> Marcou falta
                   </Button>
                 )}
                 <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
