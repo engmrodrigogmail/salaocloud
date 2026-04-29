@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
   Calendar, Clock, User, Phone, ChevronLeft, ChevronRight, 
-  Check, X, Loader2, Search, Edit, Trash2, RefreshCw, Plus, Filter
+  Check, X, Loader2, Search, Edit, Trash2, RefreshCw, Plus, Filter, Receipt
 } from "lucide-react";
 import { 
   format, addDays, addMonths, addYears, startOfWeek, endOfWeek, 
