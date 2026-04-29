@@ -815,7 +815,7 @@ const ClientPortal = () => {
         .from("appointments")
         .select("id, scheduled_at, duration_minutes, professional_id, service_id, status")
         .eq("establishment_id", establishment.id)
-        .in("status", ["pending", "confirmed"]);
+        .in("status", ["pending", "confirmed", "in_service"]);
       
       setAllAppointments(data || []);
     } catch (error) {
@@ -871,6 +871,7 @@ const ClientPortal = () => {
     const variants: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
       pending: { label: "Pendente", variant: "secondary" },
       confirmed: { label: "Confirmado", variant: "default" },
+      in_service: { label: "Em atendimento", variant: "default" },
       completed: { label: "Concluído", variant: "outline" },
       cancelled: { label: "Cancelado", variant: "destructive" },
     };

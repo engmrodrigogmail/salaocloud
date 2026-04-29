@@ -10,6 +10,7 @@ import type { Tables } from "@/integrations/supabase/types";
 
 type Client = Tables<"clients">;
 type Professional = Tables<"professionals">;
+type Service = Tables<"services">;
 
 interface NewTabDialogProps {
   open: boolean;
@@ -18,10 +19,12 @@ interface NewTabDialogProps {
     client_name: string;
     client_id?: string;
     professional_id?: string;
+    service_id?: string;
     notes?: string;
   }) => Promise<void>;
   clients: Client[];
   professionals: Professional[];
+  services?: Service[];
   loading?: boolean;
 }
 
@@ -31,15 +34,17 @@ export function NewTabDialog({
   onSubmit,
   clients,
   professionals,
+  services = [],
   loading = false,
 }: NewTabDialogProps) {
   const [clientName, setClientName] = useState("");
   const [clientId, setClientId] = useState<string>("");
   const [professionalId, setProfessionalId] = useState<string>("");
+  const [serviceId, setServiceId] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [searchClient, setSearchClient] = useState("");
 
-  const filteredClients = clients.filter(c => 
+  const filteredClients = clients.filter(c =>
     c.name.toLowerCase().includes(searchClient.toLowerCase()) ||
     c.phone.includes(searchClient)
   );
@@ -47,9 +52,7 @@ export function NewTabDialog({
   const handleClientSelect = (id: string) => {
     setClientId(id);
     const client = clients.find(c => c.id === id);
-    if (client) {
-      setClientName(client.name);
-    }
+    if (client) setClientName(client.name);
   };
 
   const handleSubmit = async () => {
@@ -57,22 +60,17 @@ export function NewTabDialog({
       client_name: clientName,
       client_id: clientId || undefined,
       professional_id: professionalId || undefined,
+      service_id: serviceId || undefined,
       notes: notes || undefined,
     });
-    
-    // Reset form
-    setClientName("");
-    setClientId("");
-    setProfessionalId("");
-    setNotes("");
-    setSearchClient("");
+    setClientName(""); setClientId(""); setProfessionalId(""); setServiceId(""); setNotes(""); setSearchClient("");
   };
 
   const isValid = clientName.trim().length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Abrir Nova Comanda</DialogTitle>
           <DialogDescription>
@@ -95,10 +93,7 @@ export function NewTabDialog({
                     key={client.id}
                     type="button"
                     className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
-                    onClick={() => {
-                      handleClientSelect(client.id);
-                      setSearchClient("");
-                    }}
+                    onClick={() => { handleClientSelect(client.id); setSearchClient(""); }}
                   >
                     <span className="font-medium">{client.name}</span>
                     <span className="text-muted-foreground ml-2">{client.phone}</span>
@@ -125,15 +120,33 @@ export function NewTabDialog({
                 <SelectValue placeholder="Selecionar profissional" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Nenhum</SelectItem>
                 {professionals.map(prof => (
-                  <SelectItem key={prof.id} value={prof.id}>
-                    {prof.name}
-                  </SelectItem>
+                  <SelectItem key={prof.id} value={prof.id}>{prof.name}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
+
+          {services.length > 0 && (
+            <div className="space-y-2">
+              <Label>Serviço inicial (opcional)</Label>
+              <Select value={serviceId} onValueChange={setServiceId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecionar serviço" />
+                </SelectTrigger>
+                <SelectContent>
+                  {services.map(s => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.name} ({s.duration_minutes}min)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Selecione para bloquear automaticamente a agenda do profissional durante o atendimento.
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="notes">Observações</Label>
