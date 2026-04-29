@@ -93,7 +93,7 @@ export default function InternoComandas() {
     setProfessionals(data || []);
   };
 
-  const handleCreateTab = async (data: { client_name: string; client_id?: string; professional_id?: string; notes?: string }) => {
+  const handleCreateTab = async (data: { client_name: string; client_id?: string; professional_id?: string; service_id?: string; notes?: string }) => {
     const tab = await createTab(data);
     if (tab) { setNewTabOpen(false); setSelectedTab(tab as TabWithDetails); }
   };
@@ -240,7 +240,7 @@ export default function InternoComandas() {
           />
         )}
 
-        <NewTabDialog open={newTabOpen} onOpenChange={setNewTabOpen} onSubmit={handleCreateTab} clients={clients} professionals={professionals} />
+        <NewTabDialog open={newTabOpen} onOpenChange={setNewTabOpen} onSubmit={handleCreateTab} clients={clients} professionals={professionals} services={services} />
         <AddItemDialog open={addItemOpen} onOpenChange={setAddItemOpen} onAddItem={handleAddItem} products={products} services={services} professionals={professionals} />
         <CheckoutDialog open={checkoutOpen} onOpenChange={setCheckoutOpen} tab={selectedTab} items={items} paymentMethods={paymentMethods} onConfirm={handleCheckout} establishmentId={establishmentId || undefined} />
       </div>
