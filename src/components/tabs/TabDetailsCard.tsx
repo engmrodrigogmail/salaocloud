@@ -46,8 +46,20 @@ export function TabDetailsCard({
   onCheckout,
   onBack,
   onCancel,
+  onUndoOpening,
   onRecalculate,
 }: TabDetailsCardProps) {
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [confirmUndoOpen, setConfirmUndoOpen] = useState(false);
+
+  // Eligibility for "Desfazer Abertura": tab created < 5 min ago AND no items.
+  const ageMs = Date.now() - new Date(tab.opened_at).getTime();
+  const canUndo =
+    !!onUndoOpening &&
+    tab.status === "open" &&
+    ageMs <= 5 * 60 * 1000 &&
+    items.length === 0;
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
