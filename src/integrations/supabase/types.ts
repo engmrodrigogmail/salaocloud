@@ -2807,6 +2807,7 @@ export type Database = {
         | "in_service"
         | "completed"
         | "cancelled"
+        | "no_show"
       establishment_status: "pending" | "active" | "suspended"
       subscription_plan: "basic" | "professional" | "premium" | "trial"
     }
@@ -2943,6 +2944,7 @@ export const Constants = {
         "in_service",
         "completed",
         "cancelled",
+        "no_show",
       ],
       establishment_status: ["pending", "active", "suspended"],
       subscription_plan: ["basic", "professional", "premium", "trial"],
