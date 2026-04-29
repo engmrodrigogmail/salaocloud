@@ -812,16 +812,19 @@ export default function InternoAgenda() {
                     <Check className="h-4 w-4 mr-1" /> Confirmar
                   </Button>
                 )}
+                {(selectedAppointment?.status === "pending" || selectedAppointment?.status === "confirmed") && (
+                  <Button size="sm" variant="secondary" onClick={handleOpenTabFromAppointment}>
+                    <Receipt className="h-4 w-4 mr-1" /> Abrir comanda
+                  </Button>
+                )}
                 {selectedAppointment?.status === "confirmed" && (
                   <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "completed")}>
                     <Check className="h-4 w-4 mr-1" /> Concluir
                   </Button>
                 )}
-                {selectedAppointment?.status !== "cancelled" && (
-                  <Button variant="outline" size="sm" onClick={() => updateAppointmentStatus(selectedAppointment!.id, "cancelled")}>
-                    <X className="h-4 w-4 mr-1" /> Cancelar
-                  </Button>
-                )}
+                <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
+                  <X className="h-4 w-4 mr-1" /> Fechar
+                </Button>
               </>
             )}
           </DialogFooter>
