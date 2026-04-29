@@ -335,6 +335,7 @@ export default function InternoAgenda() {
     const variants: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; className?: string }> = {
       pending: { label: "Pendente", variant: "secondary", className: "bg-amber-100 text-amber-800 border-amber-300" },
       confirmed: { label: "Confirmado", variant: "default", className: "bg-blue-100 text-blue-800 border-blue-300" },
+      in_service: { label: "Em atendimento", variant: "default", className: "bg-violet-100 text-violet-800 border-violet-300" },
       completed: { label: "Concluído", variant: "outline", className: "bg-green-100 text-green-800 border-green-300" },
       cancelled: { label: "Cancelado", variant: "destructive" },
     };
