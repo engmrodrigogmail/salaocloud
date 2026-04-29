@@ -65,3 +65,6 @@ verify_jwt = false
 
 [functions.list-client-establishments-by-phone]
 verify_jwt = false
+
+[functions.auto-mark-no-shows]
+verify_jwt = false

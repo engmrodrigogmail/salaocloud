@@ -63,6 +63,8 @@ export default function PortalSettings() {
   const [workingHours, setWorkingHours] = useState<WorkingHours>(DEFAULT_WORKING_HOURS);
   const [agendaSlotInterval, setAgendaSlotInterval] = useState(30);
   const [agendaExpandHours, setAgendaExpandHours] = useState(1);
+  const [noShowAutoDetect, setNoShowAutoDetect] = useState(true);
+  const [noShowToleranceMinutes, setNoShowToleranceMinutes] = useState(30);
   const [showProfessionalNames, setShowProfessionalNames] = useState(true);
   const [showPrices, setShowPrices] = useState(true);
   const [showServiceDuration, setShowServiceDuration] = useState(true);
@@ -98,6 +100,9 @@ export default function PortalSettings() {
       // Set agenda settings
       if (data.agenda_slot_interval) setAgendaSlotInterval(data.agenda_slot_interval);
       if (data.agenda_expand_hours) setAgendaExpandHours(data.agenda_expand_hours);
+      const anyData = data as any;
+      if (typeof anyData.no_show_auto_detect === "boolean") setNoShowAutoDetect(anyData.no_show_auto_detect);
+      if (typeof anyData.no_show_tolerance_minutes === "number") setNoShowToleranceMinutes(anyData.no_show_tolerance_minutes);
 
       // Portal display toggles (default to true if not set)
       const portalData = data as Establishment;
@@ -152,8 +157,10 @@ export default function PortalSettings() {
         .from("establishments")
         .update({ 
           agenda_slot_interval: agendaSlotInterval,
-          agenda_expand_hours: agendaExpandHours 
-        })
+          agenda_expand_hours: agendaExpandHours,
+          no_show_auto_detect: noShowAutoDetect,
+          no_show_tolerance_minutes: noShowToleranceMinutes,
+        } as any)
         .eq("id", establishment.id);
 
       if (error) throw error;
@@ -374,6 +381,43 @@ export default function PortalSettings() {
                     </Select>
                     <p className="text-xs text-muted-foreground">
                       Horas antes/depois do expediente ao expandir a agenda
+                    </p>
+                  </div>
+                </div>
+
+                <div className="border-t pt-6 space-y-4">
+                  <div>
+                    <h3 className="text-sm font-semibold mb-1">Detecção automática de "Não compareceu"</h3>
+                    <p className="text-xs text-muted-foreground">
+                      Marca automaticamente como falta agendamentos cuja hora de início + tolerância já passou.
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="no-show-auto" className="cursor-pointer">Ativar detecção automática</Label>
+                    <Switch id="no-show-auto" checked={noShowAutoDetect} onCheckedChange={setNoShowAutoDetect} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="no-show-tolerance">Tolerância (minutos após o horário)</Label>
+                    <Select
+                      value={noShowToleranceMinutes.toString()}
+                      onValueChange={(v) => setNoShowToleranceMinutes(parseInt(v))}
+                      disabled={!noShowAutoDetect}
+                    >
+                      <SelectTrigger id="no-show-tolerance">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="10">10 minutos</SelectItem>
+                        <SelectItem value="15">15 minutos</SelectItem>
+                        <SelectItem value="30">30 minutos</SelectItem>
+                        <SelectItem value="45">45 minutos</SelectItem>
+                        <SelectItem value="60">1 hora</SelectItem>
+                        <SelectItem value="90">1h30</SelectItem>
+                        <SelectItem value="120">2 horas</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Após esse tempo sem ser concluído ou em atendimento, o sistema marca como "Não compareceu".
                     </p>
                   </div>
                 </div>

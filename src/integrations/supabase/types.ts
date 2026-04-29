@@ -56,6 +56,13 @@ export type Database = {
             foreignKeyName: "ai_assistant_conversations_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "client_no_show_stats"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "ai_assistant_conversations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
@@ -200,6 +207,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "ai_assistant_waitlist_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_no_show_stats"
+            referencedColumns: ["client_id"]
+          },
           {
             foreignKeyName: "ai_assistant_waitlist_client_id_fkey"
             columns: ["client_id"]
@@ -394,6 +408,13 @@ export type Database = {
             foreignKeyName: "appointments_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "client_no_show_stats"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "appointments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
@@ -520,6 +541,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "broadcast_campaigns"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_logs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_no_show_stats"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "broadcast_logs_client_id_fkey"
@@ -711,6 +739,13 @@ export type Database = {
             foreignKeyName: "client_ai_preferences_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "client_no_show_stats"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_ai_preferences_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
@@ -759,6 +794,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "client_loyalty_points_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_no_show_stats"
+            referencedColumns: ["client_id"]
+          },
           {
             foreignKeyName: "client_loyalty_points_client_id_fkey"
             columns: ["client_id"]
@@ -1017,6 +1059,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "appointments"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_usage_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_no_show_stats"
+            referencedColumns: ["client_id"]
           },
           {
             foreignKeyName: "coupon_usage_client_id_fkey"
@@ -1424,6 +1473,8 @@ export type Database = {
           id: string
           logo_url: string | null
           name: string
+          no_show_auto_detect: boolean
+          no_show_tolerance_minutes: number
           owner_id: string
           phone: string | null
           show_catalog: boolean
@@ -1456,6 +1507,8 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name: string
+          no_show_auto_detect?: boolean
+          no_show_tolerance_minutes?: number
           owner_id: string
           phone?: string | null
           show_catalog?: boolean
@@ -1488,6 +1541,8 @@ export type Database = {
           id?: string
           logo_url?: string | null
           name?: string
+          no_show_auto_detect?: boolean
+          no_show_tolerance_minutes?: number
           owner_id?: string
           phone?: string | null
           show_catalog?: boolean
@@ -2653,6 +2708,13 @@ export type Database = {
             foreignKeyName: "tabs_client_id_fkey"
             columns: ["client_id"]
             isOneToOne: false
+            referencedRelation: "client_no_show_stats"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "tabs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
             referencedRelation: "clients"
             referencedColumns: ["id"]
           },
@@ -2695,6 +2757,27 @@ export type Database = {
       }
     }
     Views: {
+      client_no_show_stats: {
+        Row: {
+          client_id: string | null
+          client_name: string | null
+          client_phone: string | null
+          establishment_id: string | null
+          last_no_show_at: string | null
+          no_show_count: number | null
+          no_show_rate_percent: number | null
+          total_finalized: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vw_shared_client_history: {
         Row: {
           closed_at: string | null
@@ -2716,6 +2799,12 @@ export type Database = {
       }
     }
     Functions: {
+      auto_mark_no_shows: {
+        Args: never
+        Returns: {
+          marked_count: number
+        }[]
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -2807,6 +2896,7 @@ export type Database = {
         | "in_service"
         | "completed"
         | "cancelled"
+        | "no_show"
       establishment_status: "pending" | "active" | "suspended"
       subscription_plan: "basic" | "professional" | "premium" | "trial"
     }
@@ -2943,6 +3033,7 @@ export const Constants = {
         "in_service",
         "completed",
         "cancelled",
+        "no_show",
       ],
       establishment_status: ["pending", "active", "suspended"],
       subscription_plan: ["basic", "professional", "premium", "trial"],
