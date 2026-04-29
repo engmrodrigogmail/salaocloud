@@ -66,10 +66,15 @@ export function NewTabDialog({
     setClientName(""); setClientId(""); setProfessionalId(""); setServiceId(""); setNotes(""); setSearchClient("");
   };
 
-  // Service is required when a professional is selected (to know how long to block the agenda)
-  const requiresService = professionalId.length > 0;
+  // "Avulsa" mode: no registered client selected. In this mode, both professional and service
+  // are mandatory to ensure the agenda is properly blocked and the operation is auditable.
+  const isAvulsa = !clientId;
+  // Service is also required whenever a professional is selected (to know how long to block the agenda).
+  const requiresService = professionalId.length > 0 || isAvulsa;
+  const requiresProfessional = isAvulsa;
   const isValid =
     clientName.trim().length > 0 &&
+    (!requiresProfessional || professionalId.length > 0) &&
     (!requiresService || serviceId.length > 0);
 
   return (
