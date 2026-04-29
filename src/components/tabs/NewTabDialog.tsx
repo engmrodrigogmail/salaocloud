@@ -66,7 +66,11 @@ export function NewTabDialog({
     setClientName(""); setClientId(""); setProfessionalId(""); setServiceId(""); setNotes(""); setSearchClient("");
   };
 
-  const isValid = clientName.trim().length > 0;
+  // Service is required when a professional is selected (to know how long to block the agenda)
+  const requiresService = professionalId.length > 0;
+  const isValid =
+    clientName.trim().length > 0 &&
+    (!requiresService || serviceId.length > 0);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -129,7 +133,9 @@ export function NewTabDialog({
 
           {services.length > 0 && (
             <div className="space-y-2">
-              <Label>Serviço inicial (opcional)</Label>
+              <Label>
+                Serviço inicial {requiresService ? "*" : "(opcional)"}
+              </Label>
               <Select value={serviceId} onValueChange={setServiceId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecionar serviço" />
@@ -143,7 +149,9 @@ export function NewTabDialog({
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">
-                Selecione para bloquear automaticamente a agenda do profissional durante o atendimento.
+                {requiresService
+                  ? "Obrigatório quando há profissional selecionado — define a duração do bloqueio na agenda."
+                  : "Selecione para bloquear automaticamente a agenda do profissional durante o atendimento."}
               </p>
             </div>
           )}
