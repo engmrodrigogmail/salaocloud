@@ -6,9 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Plus, Trash2, User, Clock, Package, Scissors, PenLine, 
-  CreditCard, Receipt, ArrowLeft, Minus
+  CreditCard, Receipt, ArrowLeft, Minus, Undo2
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -23,6 +33,7 @@ interface TabDetailsCardProps {
   onCheckout: () => void;
   onBack: () => void;
   onCancel: () => void;
+  onUndoOpening?: () => Promise<void> | void;
   onRecalculate: () => Promise<void>;
 }
 
@@ -35,8 +46,20 @@ export function TabDetailsCard({
   onCheckout,
   onBack,
   onCancel,
+  onUndoOpening,
   onRecalculate,
 }: TabDetailsCardProps) {
+  const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
+  const [confirmUndoOpen, setConfirmUndoOpen] = useState(false);
+
+  // Eligibility for "Desfazer Abertura": tab created < 5 min ago AND no items.
+  const ageMs = Date.now() - new Date(tab.opened_at).getTime();
+  const canUndo =
+    !!onUndoOpening &&
+    tab.status === "open" &&
+    ageMs <= 5 * 60 * 1000 &&
+    items.length === 0;
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -264,24 +287,87 @@ export function TabDetailsCard({
 
       {/* Actions */}
       {tab.status === "open" && (
-        <div className="flex flex-col sm:flex-row gap-2">
-          <Button 
-            variant="destructive" 
-            className="flex-1"
-            onClick={onCancel}
-          >
-            Cancelar Comanda
-          </Button>
-          <Button 
-            className="flex-1"
-            onClick={onCheckout}
-            disabled={items.length === 0}
-          >
-            <CreditCard className="h-4 w-4 mr-2" />
-            Finalizar e Cobrar
-          </Button>
+        <div className="flex flex-col gap-2">
+          {canUndo && (
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setConfirmUndoOpen(true)}
+            >
+              <Undo2 className="h-4 w-4 mr-2" />
+              Desfazer Abertura
+            </Button>
+          )}
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Button
+              variant="destructive"
+              className="flex-1"
+              onClick={() => setConfirmCancelOpen(true)}
+            >
+              Cancelar Comanda
+            </Button>
+            <Button
+              className="flex-1"
+              onClick={onCheckout}
+              disabled={items.length === 0}
+            >
+              <CreditCard className="h-4 w-4 mr-2" />
+              Finalizar e Cobrar
+            </Button>
+          </div>
         </div>
       )}
+
+      {/* Confirm Cancel */}
+      <AlertDialog open={confirmCancelOpen} onOpenChange={setConfirmCancelOpen}>
+        <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancelar esta comanda?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A comanda será marcada como <b>cancelada</b> e o agendamento vinculado
+              também será cancelado, liberando a profissional na agenda.
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConfirmCancelOpen(false);
+                onCancel();
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Sim, cancelar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm Undo */}
+      <AlertDialog open={confirmUndoOpen} onOpenChange={setConfirmUndoOpen}>
+        <AlertDialogContent className="max-h-[90vh] overflow-y-auto">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Desfazer abertura da comanda?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A comanda será <b>excluída</b> e o agendamento voltará para o status
+              "confirmado" na agenda. Use esta opção quando a comanda foi aberta por
+              engano (sem itens lançados, há menos de 5 minutos).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setConfirmUndoOpen(false);
+                if (onUndoOpening) await onUndoOpening();
+              }}
+            >
+              Sim, desfazer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

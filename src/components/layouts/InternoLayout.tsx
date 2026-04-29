@@ -8,6 +8,7 @@ import {
   X,
   ChevronDown,
   Receipt,
+  Coins,
   HelpCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -67,6 +68,7 @@ export function InternoLayout({ children }: InternoLayoutProps) {
     { href: `/interno/${slug}`, label: "Painel", icon: LayoutDashboard },
     { href: `/interno/${slug}/agenda`, label: "Agenda", icon: Calendar },
     { href: `/interno/${slug}/comandas`, label: "Comandas", icon: Receipt },
+    { href: `/interno/${slug}/comissoes`, label: "Minhas Comissões", icon: Coins },
   ];
 
   const handleSignOut = async () => {

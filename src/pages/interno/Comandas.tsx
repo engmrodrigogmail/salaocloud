@@ -41,7 +41,7 @@ export default function InternoComandas() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [activeView, setActiveView] = useState<"open" | "history">("open");
 
-  const { tabs, fetchTabs, createTab, closeTab, cancelTab, recalculateTotal } = useTabs(establishmentId);
+  const { tabs, fetchTabs, createTab, closeTab, cancelTab, undoTabOpening, recalculateTotal } = useTabs(establishmentId);
   const { items, fetchItems, addItem, updateItem, removeItem } = useTabItems(selectedTab?.id || null);
   const { paymentMethods } = usePaymentMethods(establishmentId);
   const { products } = useProducts(establishmentId);
@@ -152,10 +152,14 @@ export default function InternoComandas() {
 
   const handleCancelTab = async () => {
     if (!selectedTab) return;
-    if (confirm("Tem certeza que deseja cancelar esta comanda?")) {
-      await cancelTab(selectedTab.id);
-      setSelectedTab(null);
-    }
+    await cancelTab(selectedTab.id);
+    setSelectedTab(null);
+  };
+
+  const handleUndoOpening = async () => {
+    if (!selectedTab) return;
+    const ok = await undoTabOpening(selectedTab.id);
+    if (ok) setSelectedTab(null);
   };
 
   if (authLoading || loading) {
@@ -236,6 +240,7 @@ export default function InternoComandas() {
             onCheckout={() => setCheckoutOpen(true)}
             onBack={() => setSelectedTab(null)}
             onCancel={handleCancelTab}
+            onUndoOpening={handleUndoOpening}
             onRecalculate={async () => { await recalculateTotal(selectedTab.id); }}
           />
         )}

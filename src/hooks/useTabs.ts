@@ -272,6 +272,73 @@ export function useTabs(establishmentId: string | null) {
     }
   };
 
+  /**
+   * Undo a tab opening: deletes the tab and reverts the linked appointment to "confirmed".
+   * Allowed only when the tab was created less than 5 minutes ago AND has no items.
+   * Returns true on success, false if not eligible or on error.
+   */
+  const undoTabOpening = async (tabId: string) => {
+    try {
+      const { data: tab, error: fetchError } = await supabase
+        .from("tabs")
+        .select("id, status, opened_at, appointment_id, establishment_id")
+        .eq("id", tabId)
+        .single();
+
+      if (fetchError || !tab) throw fetchError || new Error("Comanda não encontrada");
+
+      if (tab.status !== "open") {
+        toast.error("Só é possível desfazer comandas abertas.");
+        return false;
+      }
+
+      // Check 5-minute window
+      const openedAt = new Date(tab.opened_at).getTime();
+      const ageMs = Date.now() - openedAt;
+      if (ageMs > 5 * 60 * 1000) {
+        toast.error("Janela de 5 minutos para desfazer expirou. Use 'Cancelar Comanda'.");
+        return false;
+      }
+
+      // Check no items
+      const { count: itemCount, error: countError } = await supabase
+        .from("tab_items")
+        .select("id", { count: "exact", head: true })
+        .eq("tab_id", tabId);
+
+      if (countError) throw countError;
+      if ((itemCount ?? 0) > 0) {
+        toast.error("Comanda já tem itens lançados. Use 'Cancelar Comanda'.");
+        return false;
+      }
+
+      // Delete tab (cascades to tab_items / tab_payments if FKs are set)
+      const { error: deleteError } = await supabase
+        .from("tabs")
+        .delete()
+        .eq("id", tabId);
+
+      if (deleteError) throw deleteError;
+
+      // Revert appointment back to "confirmed" so it returns to the agenda as pending
+      if (tab.appointment_id) {
+        await supabase
+          .from("appointments")
+          .update({ status: "confirmed" })
+          .eq("id", tab.appointment_id)
+          .eq("status", "in_service");
+      }
+
+      toast.success("Abertura desfeita. Agendamento devolvido à agenda.");
+      await fetchTabs("open");
+      return true;
+    } catch (error) {
+      console.error("Error undoing tab opening:", error);
+      toast.error("Erro ao desfazer abertura da comanda");
+      return false;
+    }
+  };
+
   const recalculateTotal = async (tabId: string) => {
     try {
       const { data: items } = await supabase
@@ -324,6 +391,7 @@ export function useTabs(establishmentId: string | null) {
     updateTab,
     closeTab,
     cancelTab,
+    undoTabOpening,
     recalculateTotal,
   };
 }
