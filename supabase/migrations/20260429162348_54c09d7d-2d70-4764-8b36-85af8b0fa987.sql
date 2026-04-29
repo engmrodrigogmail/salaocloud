@@ -1,0 +1,1 @@
+ALTER VIEW public.client_no_show_stats SET (security_invoker = true);
