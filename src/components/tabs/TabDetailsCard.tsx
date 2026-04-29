@@ -6,9 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Plus, Trash2, User, Clock, Package, Scissors, PenLine, 
-  CreditCard, Receipt, ArrowLeft, Minus
+  CreditCard, Receipt, ArrowLeft, Minus, Undo2
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -23,6 +33,7 @@ interface TabDetailsCardProps {
   onCheckout: () => void;
   onBack: () => void;
   onCancel: () => void;
+  onUndoOpening?: () => Promise<void> | void;
   onRecalculate: () => Promise<void>;
 }
 
