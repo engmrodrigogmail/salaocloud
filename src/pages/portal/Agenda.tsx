@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
   Calendar, Clock, ChevronLeft, ChevronRight, 
-  Check, X, Loader2, Search, Edit, Trash2, Ban
+  Check, X, Loader2, Search, Edit, Trash2, Ban, Receipt
 } from "lucide-react";
 import { BlockScheduleDialog } from "@/components/schedule/BlockScheduleDialog";
 import { BlockedTimesList } from "@/components/schedule/BlockedTimesList";
@@ -269,6 +269,45 @@ export default function PortalAgenda() {
     } catch (error) {
       console.error("Error updating appointment:", error);
       toast.error("Erro ao atualizar agendamento");
+    }
+  };
+
+  const handleOpenTabFromAppointment = async () => {
+    if (!selectedAppointment || !establishment) return;
+    try {
+      // Create blank tab linked to this appointment + client
+      const { data: tab, error: tabError } = await supabase
+        .from("tabs")
+        .insert({
+          establishment_id: establishment.id,
+          client_name: selectedAppointment.client_name,
+          client_id: selectedAppointment.client_id ?? null,
+          appointment_id: selectedAppointment.id,
+          professional_id: selectedAppointment.professional_id,
+          status: "open",
+          subtotal: 0,
+          total: 0,
+        })
+        .select("id")
+        .single();
+
+      if (tabError || !tab) throw tabError;
+
+      // Mark appointment as in_service so the agenda stays blocked until the tab is closed
+      const { error: updError } = await supabase
+        .from("appointments")
+        .update({ status: "in_service" })
+        .eq("id", selectedAppointment.id);
+
+      if (updError) throw updError;
+
+      toast.success("Comanda aberta. Agenda bloqueada até o fechamento.");
+      setDialogOpen(false);
+      fetchAppointments();
+      navigate(`/portal/${slug}/comandas`);
+    } catch (error) {
+      console.error("Error opening tab from appointment:", error);
+      toast.error("Erro ao abrir comanda");
     }
   };
 
@@ -790,16 +829,19 @@ export default function PortalAgenda() {
                     <Check className="h-4 w-4 mr-1" /> Confirmar
                   </Button>
                 )}
+                {(selectedAppointment?.status === "pending" || selectedAppointment?.status === "confirmed") && (
+                  <Button size="sm" variant="secondary" onClick={handleOpenTabFromAppointment}>
+                    <Receipt className="h-4 w-4 mr-1" /> Abrir comanda
+                  </Button>
+                )}
                 {selectedAppointment?.status === "confirmed" && (
                   <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "completed")}>
                     <Check className="h-4 w-4 mr-1" /> Concluir
                   </Button>
                 )}
-                {selectedAppointment?.status !== "cancelled" && (
-                  <Button variant="outline" size="sm" onClick={() => updateAppointmentStatus(selectedAppointment!.id, "cancelled")}>
-                    <X className="h-4 w-4 mr-1" /> Cancelar
-                  </Button>
-                )}
+                <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
+                  <X className="h-4 w-4 mr-1" /> Fechar
+                </Button>
               </>
             )}
           </DialogFooter>
