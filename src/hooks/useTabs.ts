@@ -338,6 +338,8 @@ export function useTabs(establishmentId: string | null) {
       return false;
     }
   };
+
+  const recalculateTotal = async (tabId: string) => {
     try {
       const { data: items } = await supabase
         .from("tab_items")
@@ -389,6 +391,7 @@ export function useTabs(establishmentId: string | null) {
     updateTab,
     closeTab,
     cancelTab,
+    undoTabOpening,
     recalculateTotal,
   };
 }
