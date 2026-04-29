@@ -16,7 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
   Calendar, Clock, ChevronLeft, ChevronRight, 
-  Check, X, Loader2, Search, Edit, Trash2, Ban
+  Check, X, Loader2, Search, Edit, Trash2, Ban, Receipt
 } from "lucide-react";
 import { BlockScheduleDialog } from "@/components/schedule/BlockScheduleDialog";
 import { BlockedTimesList } from "@/components/schedule/BlockedTimesList";
