@@ -20,6 +20,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { NoShowReportCard } from "@/components/agenda/NoShowReportCard";
 
 interface Establishment {
   id: string;
@@ -283,6 +284,13 @@ export default function PortalDashboard() {
             </Card>
           </div>
         </div>
+
+        {/* No-Show Report */}
+        {establishment && (
+          <div>
+            <NoShowReportCard establishmentId={establishment.id} />
+          </div>
+        )}
       </div>
     </PortalLayout>
   );
