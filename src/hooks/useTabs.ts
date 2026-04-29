@@ -44,18 +44,54 @@ export function useTabs(establishmentId: string | null) {
     client_id?: string;
     appointment_id?: string;
     professional_id?: string;
+    service_id?: string;
     notes?: string;
   }) => {
     if (!establishmentId) return null;
 
     try {
+      let appointmentId = tabData.appointment_id;
+
+      // Auto-create an "in_service" appointment to block the professional's agenda
+      // when the tab is opened with a professional and a service selected.
+      if (!appointmentId && tabData.professional_id && tabData.service_id) {
+        const { data: svc } = await supabase
+          .from("services")
+          .select("duration_minutes, price")
+          .eq("id", tabData.service_id)
+          .single();
+
+        const { data: appt, error: apptError } = await supabase
+          .from("appointments")
+          .insert({
+            establishment_id: establishmentId,
+            client_id: tabData.client_id ?? null,
+            client_name: tabData.client_name,
+            client_phone: "",
+            service_id: tabData.service_id,
+            professional_id: tabData.professional_id,
+            scheduled_at: new Date().toISOString(),
+            duration_minutes: svc?.duration_minutes ?? 60,
+            price: svc?.price ?? 0,
+            status: "in_service",
+          })
+          .select("id")
+          .single();
+
+        if (apptError) {
+          console.error("Error creating linked appointment:", apptError);
+        } else if (appt) {
+          appointmentId = appt.id;
+        }
+      }
+
       const { data, error } = await supabase
         .from("tabs")
         .insert({
           establishment_id: establishmentId,
           client_name: tabData.client_name,
           client_id: tabData.client_id,
-          appointment_id: tabData.appointment_id,
+          appointment_id: appointmentId,
           professional_id: tabData.professional_id,
           notes: tabData.notes,
           status: "open",
