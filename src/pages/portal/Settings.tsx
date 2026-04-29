@@ -422,6 +422,7 @@ export default function PortalSettings() {
                   </div>
                 </div>
 
+                <div className="flex justify-end pt-4">
                   <Button onClick={handleSaveAgendaSettings} disabled={savingAgenda}>
                     {savingAgenda ? (
                       <Loader2 className="h-4 w-4 animate-spin mr-2" />
