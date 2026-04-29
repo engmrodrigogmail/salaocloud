@@ -272,6 +272,45 @@ export default function PortalAgenda() {
     }
   };
 
+  const handleOpenTabFromAppointment = async () => {
+    if (!selectedAppointment || !establishment) return;
+    try {
+      // Create blank tab linked to this appointment + client
+      const { data: tab, error: tabError } = await supabase
+        .from("tabs")
+        .insert({
+          establishment_id: establishment.id,
+          client_name: selectedAppointment.client_name,
+          client_id: selectedAppointment.client_id ?? null,
+          appointment_id: selectedAppointment.id,
+          professional_id: selectedAppointment.professional_id,
+          status: "open",
+          subtotal: 0,
+          total: 0,
+        })
+        .select("id")
+        .single();
+
+      if (tabError || !tab) throw tabError;
+
+      // Mark appointment as in_service so the agenda stays blocked until the tab is closed
+      const { error: updError } = await supabase
+        .from("appointments")
+        .update({ status: "in_service" })
+        .eq("id", selectedAppointment.id);
+
+      if (updError) throw updError;
+
+      toast.success("Comanda aberta. Agenda bloqueada até o fechamento.");
+      setDialogOpen(false);
+      fetchAppointments();
+      navigate(`/portal/${slug}/comandas`);
+    } catch (error) {
+      console.error("Error opening tab from appointment:", error);
+      toast.error("Erro ao abrir comanda");
+    }
+  };
+
   const handleDeleteAppointment = async () => {
     if (!selectedAppointment) return;
 
