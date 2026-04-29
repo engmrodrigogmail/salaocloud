@@ -123,7 +123,9 @@ export function NewTabDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Profissional Responsável</Label>
+            <Label>
+              Profissional Responsável {requiresProfessional ? "*" : ""}
+            </Label>
             <Select value={professionalId} onValueChange={setProfessionalId}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecionar profissional" />
@@ -134,6 +136,11 @@ export function NewTabDialog({
                 ))}
               </SelectContent>
             </Select>
+            {requiresProfessional && (
+              <p className="text-xs text-muted-foreground">
+                Obrigatório em comanda avulsa (sem cliente cadastrado).
+              </p>
+            )}
           </div>
 
           {services.length > 0 && (
