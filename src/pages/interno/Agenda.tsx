@@ -294,6 +294,43 @@ export default function InternoAgenda() {
     }
   };
 
+  const handleOpenTabFromAppointment = async () => {
+    if (!selectedAppointment || !establishment) return;
+    try {
+      const { data: tab, error: tabError } = await supabase
+        .from("tabs")
+        .insert({
+          establishment_id: establishment.id,
+          client_name: selectedAppointment.client_name,
+          client_id: selectedAppointment.client_id ?? null,
+          appointment_id: selectedAppointment.id,
+          professional_id: selectedAppointment.professional_id,
+          status: "open",
+          subtotal: 0,
+          total: 0,
+        })
+        .select("id")
+        .single();
+
+      if (tabError || !tab) throw tabError;
+
+      const { error: updError } = await supabase
+        .from("appointments")
+        .update({ status: "in_service" })
+        .eq("id", selectedAppointment.id);
+
+      if (updError) throw updError;
+
+      toast.success("Comanda aberta. Agenda bloqueada até o fechamento.");
+      setDialogOpen(false);
+      fetchAppointments();
+      navigate(`/interno/${slug}/comandas`);
+    } catch (error) {
+      console.error("Error opening tab from appointment:", error);
+      toast.error("Erro ao abrir comanda");
+    }
+  };
+
   const handleDeleteAppointment = async () => {
     if (!selectedAppointment) return;
 
