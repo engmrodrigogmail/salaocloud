@@ -224,7 +224,7 @@ async function checkAvailability(
     .from('appointments')
     .select('id, scheduled_at, duration_minutes, professional_id, professionals:professional_id (name)')
     .eq('establishment_id', establishmentId)
-    .in('status', ['pending', 'confirmed'])
+    .in('status', ['pending', 'confirmed', 'in_service'])
     .gte('scheduled_at', `${date}T00:00:00`)
     .lt('scheduled_at', `${date}T23:59:59`);
   
@@ -464,7 +464,7 @@ async function getAvailableSlots(
     .from('appointments')
     .select('scheduled_at, duration_minutes')
     .eq('establishment_id', establishmentId)
-    .in('status', ['pending', 'confirmed'])
+    .in('status', ['pending', 'confirmed', 'in_service'])
     .gte('scheduled_at', `${date}T00:00:00`)
     .lt('scheduled_at', `${date}T23:59:59`);
   
