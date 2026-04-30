@@ -259,6 +259,8 @@ export default function InternoComandas() {
           discountPinThreshold={discountPinThreshold}
           onTabRefresh={async () => {
             if (!selectedTab) return;
+            // Recalc total first so close_tab_atomic validates against fresh value
+            await recalculateTotal(selectedTab.id);
             const { data } = await supabase.from("tabs").select("*").eq("id", selectedTab.id).single();
             if (data) setSelectedTab({ ...selectedTab, ...data, status: data.status as TabWithDetails['status'] });
           }}
