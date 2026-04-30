@@ -31,6 +31,8 @@ interface CheckoutDialogProps {
   onConfirm: (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[], couponInfo?: CouponInfo) => Promise<void>;
   loading?: boolean;
   establishmentId?: string;
+  discountPinThreshold?: number;
+  onTabRefresh?: () => Promise<void> | void;
 }
 
 interface PaymentEntry {
@@ -65,11 +67,14 @@ export function CheckoutDialog({
   onConfirm,
   loading = false,
   establishmentId,
+  discountPinThreshold = 10,
+  onTabRefresh,
 }: CheckoutDialogProps) {
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
   const [selectedMethod, setSelectedMethod] = useState<string>("");
   const [paymentAmount, setPaymentAmount] = useState<string>("");
   const [installments, setInstallments] = useState<number>(1);
+  const [manualDiscountOpen, setManualDiscountOpen] = useState(false);
   
   // Coupon states
   const [couponCode, setCouponCode] = useState("");
