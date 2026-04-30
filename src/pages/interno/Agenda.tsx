@@ -823,6 +823,11 @@ export default function InternoAgenda() {
                     <Check className="h-4 w-4 mr-1" /> Concluir
                   </Button>
                 )}
+                {selectedAppointment?.status === "in_service" && (
+                  <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "completed")}>
+                    <Check className="h-4 w-4 mr-1" /> Finalizar Atendimento
+                  </Button>
+                )}
                 {(selectedAppointment?.status === "pending" || selectedAppointment?.status === "confirmed") && (
                   <Button size="sm" variant="outline" className="border-orange-300 text-orange-700 hover:bg-orange-50" onClick={() => updateAppointmentStatus(selectedAppointment.id, "no_show")}>
                     <X className="h-4 w-4 mr-1" /> Marcou falta
