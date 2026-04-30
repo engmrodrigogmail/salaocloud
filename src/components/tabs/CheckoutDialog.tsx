@@ -335,7 +335,13 @@ export function CheckoutDialog({
       applicableProductIds: appliedCoupon.applicable_product_ids,
     } : undefined;
 
-    await onConfirm(paymentData, couponInfo);
+    const flags: CommissionDiscountFlags = {
+      commission_discount_on_manual: flagManual,
+      commission_discount_on_coupon: flagCoupon,
+      commission_discount_on_loyalty: flagLoyalty,
+    };
+
+    await onConfirm(paymentData, couponInfo, flags);
   };
 
   const selectedPaymentMethod = paymentMethods.find(m => m.id === selectedMethod);
