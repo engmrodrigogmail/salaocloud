@@ -146,6 +146,8 @@ export default function InternoComandas() {
         .from("tabs")
         .update({
           discount_amount: currentDiscount + couponInfo.discount,
+          // Tag the discount as coupon so the commission calculator picks the right flag
+          discount_type: selectedTab.discount_type || "coupon",
           total: newTotal,
         })
         .eq("id", selectedTab.id);
