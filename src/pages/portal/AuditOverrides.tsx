@@ -191,7 +191,7 @@ export default function AuditOverrides() {
                         </span>
                       </div>
                       <span className="text-xs text-muted-foreground">
-                        {formatBrazilianDateTime(r.created_at)}
+                        {formatDateTime(r.created_at)}
                       </span>
                     </div>
                     <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-muted-foreground">
