@@ -137,21 +137,9 @@ export default function InternoComandas() {
   ) => {
     if (!selectedTab) return;
 
-    // Update discount if coupon was applied (kept here for backward compat — apply_coupon_to_tab
-    // RPC is the recommended atomic path, but legacy UI still tracks this here).
-    if (couponInfo && couponInfo.discount > 0) {
-      const currentDiscount = selectedTab.discount_amount || 0;
-      const newTotal = selectedTab.total - couponInfo.discount;
-      await supabase
-        .from("tabs")
-        .update({
-          discount_amount: currentDiscount + couponInfo.discount,
-          // Tag the discount as coupon so the commission calculator picks the right flag
-          discount_type: selectedTab.discount_type || "coupon",
-          total: newTotal,
-        })
-        .eq("id", selectedTab.id);
-    }
+    // Coupon application is fully handled by RPC `apply_coupon_to_tab` (which already
+    // updates tabs.discount_amount/total) and the closing flow uses `close_tab_atomic`.
+    // No manual subtotal/discount mutation here — avoids double-discount bugs.
 
     const success = await closeTab(selectedTab.id, payments, items, flags);
     if (success) { setCheckoutOpen(false); setSelectedTab(null); }
