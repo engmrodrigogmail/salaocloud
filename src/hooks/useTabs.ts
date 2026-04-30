@@ -489,25 +489,34 @@ export function useTabItems(tabId: string | null) {
     service_id?: string;
     professional_id?: string;
     description?: string;
+    original_unit_price?: number | null;
+    price_override_by?: string | null;
+    price_override_reason?: string | null;
   }) => {
     if (!tabId) return null;
 
     try {
       const total_price = itemData.unit_price * itemData.quantity;
+      const insertPayload: any = {
+        tab_id: tabId,
+        name: itemData.name,
+        unit_price: itemData.unit_price,
+        quantity: itemData.quantity,
+        total_price,
+        item_type: itemData.item_type,
+        product_id: itemData.product_id,
+        service_id: itemData.service_id,
+        professional_id: itemData.professional_id,
+        description: itemData.description,
+      };
+      if (itemData.original_unit_price != null) {
+        insertPayload.original_unit_price = itemData.original_unit_price;
+        insertPayload.price_override_by = itemData.price_override_by ?? null;
+        insertPayload.price_override_reason = itemData.price_override_reason ?? null;
+      }
       const { data, error } = await supabase
         .from("tab_items")
-        .insert({
-          tab_id: tabId,
-          name: itemData.name,
-          unit_price: itemData.unit_price,
-          quantity: itemData.quantity,
-          total_price,
-          item_type: itemData.item_type,
-          product_id: itemData.product_id,
-          service_id: itemData.service_id,
-          professional_id: itemData.professional_id,
-          description: itemData.description,
-        })
+        .insert(insertPayload)
         .select()
         .single();
 

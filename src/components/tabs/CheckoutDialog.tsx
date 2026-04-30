@@ -8,10 +8,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Trash2, CreditCard, Check, AlertCircle, Tag, X, Percent, DollarSign } from "lucide-react";
+import { Loader2, Plus, Trash2, CreditCard, Check, AlertCircle, Tag, X, Percent, DollarSign, Pencil } from "lucide-react";
 import type { TabWithDetails, TabItem, PaymentMethod, TabPayment } from "@/types/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ManualDiscountDialog } from "./ManualDiscountDialog";
 
 export interface CouponInfo {
   discount: number;
@@ -30,6 +31,8 @@ interface CheckoutDialogProps {
   onConfirm: (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[], couponInfo?: CouponInfo) => Promise<void>;
   loading?: boolean;
   establishmentId?: string;
+  discountPinThreshold?: number;
+  onTabRefresh?: () => Promise<void> | void;
 }
 
 interface PaymentEntry {
@@ -64,11 +67,14 @@ export function CheckoutDialog({
   onConfirm,
   loading = false,
   establishmentId,
+  discountPinThreshold = 10,
+  onTabRefresh,
 }: CheckoutDialogProps) {
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
   const [selectedMethod, setSelectedMethod] = useState<string>("");
   const [paymentAmount, setPaymentAmount] = useState<string>("");
   const [installments, setInstallments] = useState<number>(1);
+  const [manualDiscountOpen, setManualDiscountOpen] = useState(false);
   
   // Coupon states
   const [couponCode, setCouponCode] = useState("");
@@ -394,10 +400,36 @@ export function CheckoutDialog({
                     <span>{formatCurrency(subtotal)}</span>
                   </div>
                   {existingDiscount > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>Desconto</span>
+                    <div className="flex justify-between text-green-600 items-center">
+                      <span className="flex items-center gap-1">
+                        Desconto manual
+                        {(tab as any)?.discount_reduces_commission && (
+                          <span className="text-[10px] text-muted-foreground">(abate comissão)</span>
+                        )}
+                        {establishmentId && tab && (
+                          <button
+                            type="button"
+                            onClick={() => setManualDiscountOpen(true)}
+                            className="text-muted-foreground hover:text-foreground"
+                            aria-label="Editar desconto manual"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </button>
+                        )}
+                      </span>
                       <span>-{formatCurrency(existingDiscount)}</span>
                     </div>
+                  )}
+                  {existingDiscount === 0 && tab?.status === "open" && establishmentId && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-muted-foreground hover:text-foreground -mx-2"
+                      onClick={() => setManualDiscountOpen(true)}
+                    >
+                      <Tag className="h-4 w-4 mr-2" />
+                      Aplicar desconto manual
+                    </Button>
                   )}
                   {couponDiscount > 0 && (
                     <div className="flex justify-between text-green-600">
@@ -554,6 +586,22 @@ export function CheckoutDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {establishmentId && tab && (
+        <ManualDiscountDialog
+          open={manualDiscountOpen}
+          onOpenChange={setManualDiscountOpen}
+          establishmentId={establishmentId}
+          tabId={tab.id}
+          subtotal={subtotal}
+          currentDiscount={existingDiscount}
+          currentReducesCommission={(tab as any).discount_reduces_commission === true}
+          pinThresholdPercent={discountPinThreshold}
+          onApplied={async () => {
+            if (onTabRefresh) await onTabRefresh();
+          }}
+        />
+      )}
     </Dialog>
   );
 }

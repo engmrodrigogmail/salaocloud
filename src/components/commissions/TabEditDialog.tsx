@@ -31,10 +31,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Trash2, History, Save } from "lucide-react";
+import { Plus, Trash2, History, Save, Pencil, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ManagerPinDialog, logManagerOverride } from "@/components/security/ManagerPinDialog";
 
 interface TabItem {
   id: string;
@@ -104,7 +105,20 @@ export function TabEditDialog({
   const [showHistory, setShowHistory] = useState(false);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [commissions, setCommissions] = useState<TabCommission[]>([]);
-  
+
+  // PIN gating
+  type PendingAction =
+    | { type: "add" }
+    | { type: "delete"; commissionId: string }
+    | { type: "edit"; commissionId: string; newAmount: number; oldAmount: number };
+  const [pinOpen, setPinOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+
+  // Edit value flow
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string>("");
+  const [editJustification, setEditJustification] = useState<string>("");
+
   // New commission form
   const [showAddForm, setShowAddForm] = useState(false);
   const [newCommission, setNewCommission] = useState({
@@ -144,19 +158,54 @@ export function TabEditDialog({
     }).format(value);
   };
 
-  const handleAddCommission = async () => {
+  const requestAdd = () => {
     if (!newCommission.professional_id || !newCommission.justification) {
       toast.error("Preencha o profissional e a justificativa");
       return;
     }
+    setPendingAction({ type: "add" });
+    setPinOpen(true);
+  };
 
+  const requestDelete = (commissionId: string) => {
+    setPendingAction({ type: "delete", commissionId });
+    setPinOpen(true);
+  };
+
+  const startEdit = (commission: TabCommission) => {
+    setEditingId(commission.id);
+    setEditValue(Number(commission.commission_amount).toFixed(2));
+    setEditJustification("");
+  };
+
+  const requestEdit = () => {
+    if (!editingId) return;
+    const newAmount = parseFloat((editValue || "0").replace(",", "."));
+    if (isNaN(newAmount) || newAmount < 0) {
+      toast.error("Informe um valor válido");
+      return;
+    }
+    if (!editJustification.trim()) {
+      toast.error("Informe a justificativa");
+      return;
+    }
+    const cur = commissions.find((c) => c.id === editingId);
+    if (!cur) return;
+    setPendingAction({
+      type: "edit",
+      commissionId: editingId,
+      newAmount,
+      oldAmount: Number(cur.commission_amount),
+    });
+    setPinOpen(true);
+  };
+
+  const performAdd = async (managerProfessionalId: string) => {
     setLoading(true);
     try {
       let commissionAmount = newCommission.commission_value;
-
-      // If percentage and reference item selected, calculate from item
       if (newCommission.commission_type === "percentage" && newCommission.reference_item_id) {
-        const item = tab?.tab_items.find(i => i.id === newCommission.reference_item_id);
+        const item = tab?.tab_items.find((i) => i.id === newCommission.reference_item_id);
         if (item) {
           commissionAmount = (Number(item.total_price) * newCommission.commission_value) / 100;
         }
@@ -169,8 +218,8 @@ export function TabEditDialog({
           professional_id: newCommission.professional_id,
           tab_id: tab?.id,
           commission_amount: commissionAmount,
-          reference_value: newCommission.reference_item_id 
-            ? Number(tab?.tab_items.find(i => i.id === newCommission.reference_item_id)?.total_price || 0)
+          reference_value: newCommission.reference_item_id
+            ? Number(tab?.tab_items.find((i) => i.id === newCommission.reference_item_id)?.total_price || 0)
             : 0,
           description: newCommission.justification,
           is_manual: true,
@@ -190,7 +239,6 @@ export function TabEditDialog({
 
       if (error) throw error;
 
-      // Add audit log
       await supabase.from("commission_audit_log").insert({
         commission_id: data.id,
         user_id: user?.id,
@@ -203,7 +251,18 @@ export function TabEditDialog({
         justification: newCommission.justification,
       });
 
-      setCommissions([...commissions, data]);
+      await logManagerOverride({
+        establishmentId,
+        managerProfessionalId,
+        actionType: "commission_create_manual",
+        targetType: "professional_commission",
+        targetId: data.id,
+        tabId: tab?.id,
+        newValue: { amount: commissionAmount, professional_id: newCommission.professional_id },
+        reason: newCommission.justification,
+      });
+
+      setCommissions([...commissions, data as TabCommission]);
       setShowAddForm(false);
       setNewCommission({
         professional_id: "",
@@ -223,15 +282,10 @@ export function TabEditDialog({
     }
   };
 
-  const handleDeleteCommission = async (commissionId: string) => {
-    const commission = commissions.find(c => c.id === commissionId);
-    if (!commission?.is_manual) {
-      toast.error("Apenas comissões manuais podem ser removidas");
-      return;
-    }
-
+  const performDelete = async (commissionId: string, managerProfessionalId: string) => {
+    const commission = commissions.find((c) => c.id === commissionId);
+    if (!commission) return;
     try {
-      // First add audit log before deletion
       await supabase.from("commission_audit_log").insert({
         commission_id: commissionId,
         user_id: user?.id,
@@ -240,7 +294,7 @@ export function TabEditDialog({
           amount: commission.commission_amount,
           description: commission.description,
         },
-        justification: "Comissão manual removida",
+        justification: "Comissão removida (autorizado por gerente)",
       });
 
       const { error } = await supabase
@@ -250,12 +304,87 @@ export function TabEditDialog({
 
       if (error) throw error;
 
-      setCommissions(commissions.filter(c => c.id !== commissionId));
+      await logManagerOverride({
+        establishmentId,
+        managerProfessionalId,
+        actionType: "commission_delete",
+        targetType: "professional_commission",
+        targetId: commissionId,
+        tabId: tab?.id,
+        oldValue: { amount: commission.commission_amount },
+        reason: "Comissão removida via TabEditDialog",
+      });
+
+      setCommissions(commissions.filter((c) => c.id !== commissionId));
       toast.success("Comissão removida!");
     } catch (error) {
       console.error("Error deleting commission:", error);
       toast.error("Erro ao remover comissão");
     }
+  };
+
+  const performEdit = async (
+    commissionId: string,
+    newAmount: number,
+    oldAmount: number,
+    managerProfessionalId: string,
+  ) => {
+    try {
+      const { error } = await supabase
+        .from("professional_commissions")
+        .update({ commission_amount: newAmount })
+        .eq("id", commissionId);
+      if (error) throw error;
+
+      await supabase.from("commission_audit_log").insert({
+        commission_id: commissionId,
+        user_id: user?.id,
+        action: "updated",
+        old_values: { amount: oldAmount },
+        new_values: { amount: newAmount },
+        justification: editJustification,
+      });
+
+      await logManagerOverride({
+        establishmentId,
+        managerProfessionalId,
+        actionType: "commission_amount_override",
+        targetType: "professional_commission",
+        targetId: commissionId,
+        tabId: tab?.id,
+        oldValue: { amount: oldAmount },
+        newValue: { amount: newAmount },
+        reason: editJustification,
+      });
+
+      setCommissions(
+        commissions.map((c) =>
+          c.id === commissionId ? { ...c, commission_amount: newAmount } : c,
+        ),
+      );
+      setEditingId(null);
+      setEditValue("");
+      setEditJustification("");
+      toast.success("Valor da comissão atualizado");
+      fetchAuditLogs();
+    } catch (e) {
+      console.error("Error updating commission:", e);
+      toast.error("Erro ao atualizar comissão");
+    }
+  };
+
+  const runPendingAction = async (managerProfessionalId: string) => {
+    if (!pendingAction) return;
+    if (pendingAction.type === "add") await performAdd(managerProfessionalId);
+    else if (pendingAction.type === "delete") await performDelete(pendingAction.commissionId, managerProfessionalId);
+    else if (pendingAction.type === "edit")
+      await performEdit(
+        pendingAction.commissionId,
+        pendingAction.newAmount,
+        pendingAction.oldAmount,
+        managerProfessionalId,
+      );
+    setPendingAction(null);
   };
 
   if (!tab) return null;
@@ -453,7 +582,7 @@ export function TabEditDialog({
                       <Button variant="outline" onClick={() => setShowAddForm(false)}>
                         Cancelar
                       </Button>
-                      <Button onClick={handleAddCommission} disabled={loading}>
+                      <Button onClick={requestAdd} disabled={loading}>
                         <Save className="h-4 w-4 mr-1" />
                         Salvar Comissão
                       </Button>
@@ -468,39 +597,97 @@ export function TabEditDialog({
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    {commissions.map((commission) => (
-                      <div
-                        key={commission.id}
-                        className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
-                      >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{commission.professionals?.name}</span>
-                            {commission.is_manual && (
-                              <Badge variant="outline" className="text-xs">Manual</Badge>
-                            )}
+                    {commissions.map((commission) => {
+                      const isEditing = editingId === commission.id;
+                      return (
+                        <div
+                          key={commission.id}
+                          className="flex flex-col gap-2 p-3 bg-muted/30 rounded-lg"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{commission.professionals?.name}</span>
+                                {commission.is_manual && (
+                                  <Badge variant="outline" className="text-xs">Manual</Badge>
+                                )}
+                              </div>
+                              {commission.description && (
+                                <p className="text-sm text-muted-foreground">{commission.description}</p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-green-600">
+                                {formatCurrency(Number(commission.commission_amount))}
+                              </span>
+                              {!isEditing && (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8"
+                                  title="Ajustar valor (PIN do gerente)"
+                                  onClick={() => startEdit(commission)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {commission.is_manual && (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-destructive"
+                                  onClick={() => requestDelete(commission.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                          {commission.description && (
-                            <p className="text-sm text-muted-foreground">{commission.description}</p>
+                          {isEditing && (
+                            <div className="grid grid-cols-1 sm:grid-cols-[1fr_2fr_auto] gap-2 items-end">
+                              <div className="space-y-1">
+                                <Label className="text-xs">Novo valor (R$)</Label>
+                                <Input
+                                  type="text"
+                                  inputMode="decimal"
+                                  value={editValue}
+                                  onChange={(e) =>
+                                    setEditValue(
+                                      e.target.value.replace(/[^0-9.,]/g, "").replace(",", "."),
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Justificativa *</Label>
+                                <Input
+                                  value={editJustification}
+                                  onChange={(e) => setEditJustification(e.target.value)}
+                                  placeholder="Motivo do ajuste"
+                                />
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingId(null);
+                                    setEditValue("");
+                                    setEditJustification("");
+                                  }}
+                                >
+                                  Cancelar
+                                </Button>
+                                <Button size="sm" onClick={requestEdit}>
+                                  <ShieldAlert className="h-4 w-4 mr-1" />
+                                  Autorizar
+                                </Button>
+                              </div>
+                            </div>
                           )}
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="font-semibold text-green-600">
-                            {formatCurrency(Number(commission.commission_amount))}
-                          </span>
-                          {commission.is_manual && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 text-destructive"
-                              onClick={() => handleDeleteCommission(commission.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
@@ -569,6 +756,27 @@ export function TabEditDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <ManagerPinDialog
+        open={pinOpen}
+        onOpenChange={(o) => {
+          setPinOpen(o);
+          if (!o) setPendingAction(null);
+        }}
+        establishmentId={establishmentId}
+        reason={
+          pendingAction?.type === "add"
+            ? "Criar comissão manual"
+            : pendingAction?.type === "delete"
+              ? "Remover comissão"
+              : pendingAction?.type === "edit"
+                ? `Ajustar comissão de ${formatCurrency(pendingAction.oldAmount)} para ${formatCurrency(pendingAction.newAmount)}`
+                : "Autorizar alteração de comissão"
+        }
+        onAuthorized={async ({ managerProfessionalId }) => {
+          await runPendingAction(managerProfessionalId);
+        }}
+      />
     </Dialog>
   );
 }
