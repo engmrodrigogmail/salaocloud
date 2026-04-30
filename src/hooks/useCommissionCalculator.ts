@@ -142,6 +142,42 @@ export function useCommissionCalculator(establishmentId: string | null) {
       .map(item => item.professional_id!)
     )];
 
+    // Fetch tab to know if discount should reduce commission
+    const { data: tab } = await supabase
+      .from("tabs")
+      .select("discount_amount, discount_reduces_commission, subtotal, coupon_id")
+      .eq("id", tabId)
+      .maybeSingle();
+
+    // If a coupon was applied, look up its
+    // calculate_commission_after_discount flag (defaults to true).
+    let couponReducesCommission = true;
+    if (tab?.coupon_id) {
+      const { data: coupon } = await supabase
+        .from("discount_coupons")
+        .select("calculate_commission_after_discount")
+        .eq("id", tab.coupon_id)
+        .maybeSingle();
+      if (coupon && coupon.calculate_commission_after_discount === false) {
+        couponReducesCommission = false;
+      }
+    }
+
+    // Effective discount that should pro-rata reduce commission base.
+    // For manual discounts the operator chose explicitly via
+    // `discount_reduces_commission`. For coupon-based discounts the coupon
+    // configuration controls it. We collapse both into a single "should we
+    // shrink the base?" boolean per tab.
+    const totalDiscount = Number(tab?.discount_amount) || 0;
+    const itemsSubtotal = items.reduce((s, it) => s + Number(it.total_price), 0);
+    const reduces =
+      totalDiscount > 0 &&
+      itemsSubtotal > 0 &&
+      ((tab as any)?.discount_reduces_commission === true || (tab?.coupon_id && couponReducesCommission));
+    const discountFactor = reduces
+      ? Math.max(0, 1 - totalDiscount / itemsSubtotal)
+      : 1;
+
     // Fetch both commission rules and professional-specific commissions in parallel
     const [rules, psCommissions] = await Promise.all([
       fetchActiveRules(),
@@ -154,7 +190,8 @@ export function useCommissionCalculator(establishmentId: string | null) {
       // Only calculate for items with a professional
       if (!item.professional_id) continue;
 
-      const referenceValue = item.total_price;
+      const fullPrice = Number(item.total_price);
+      const referenceValue = +(fullPrice * discountFactor).toFixed(2);
       let commissionAmount = 0;
       let description = "";
       let ruleId: string | null = null;
@@ -196,7 +233,9 @@ export function useCommissionCalculator(establishmentId: string | null) {
           tab_item_id: item.id,
           reference_value: referenceValue,
           commission_amount: commissionAmount,
-          description,
+          description: reduces
+            ? `${description} — base após desconto`
+            : description,
         });
       }
     }
