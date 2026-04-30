@@ -356,6 +356,9 @@ export type Database = {
           establishment_id: string
           id: string
           notes: string | null
+          previous_status:
+            | Database["public"]["Enums"]["appointment_status"]
+            | null
           price: number
           professional_id: string
           scheduled_at: string
@@ -376,6 +379,9 @@ export type Database = {
           establishment_id: string
           id?: string
           notes?: string | null
+          previous_status?:
+            | Database["public"]["Enums"]["appointment_status"]
+            | null
           price: number
           professional_id: string
           scheduled_at: string
@@ -396,6 +402,9 @@ export type Database = {
           establishment_id?: string
           id?: string
           notes?: string | null
+          previous_status?:
+            | Database["public"]["Enums"]["appointment_status"]
+            | null
           price?: number
           professional_id?: string
           scheduled_at?: string
@@ -1467,6 +1476,9 @@ export type Database = {
           brand_secondary_color: string | null
           cancellation_policy: string | null
           city: string | null
+          commission_discount_policy_coupon: Database["public"]["Enums"]["commission_discount_policy"]
+          commission_discount_policy_loyalty: Database["public"]["Enums"]["commission_discount_policy"]
+          commission_discount_policy_manual: Database["public"]["Enums"]["commission_discount_policy"]
           created_at: string
           description: string | null
           discount_pin_threshold_percent: number
@@ -1502,6 +1514,9 @@ export type Database = {
           brand_secondary_color?: string | null
           cancellation_policy?: string | null
           city?: string | null
+          commission_discount_policy_coupon?: Database["public"]["Enums"]["commission_discount_policy"]
+          commission_discount_policy_loyalty?: Database["public"]["Enums"]["commission_discount_policy"]
+          commission_discount_policy_manual?: Database["public"]["Enums"]["commission_discount_policy"]
           created_at?: string
           description?: string | null
           discount_pin_threshold_percent?: number
@@ -1537,6 +1552,9 @@ export type Database = {
           brand_secondary_color?: string | null
           cancellation_policy?: string | null
           city?: string | null
+          commission_discount_policy_coupon?: Database["public"]["Enums"]["commission_discount_policy"]
+          commission_discount_policy_loyalty?: Database["public"]["Enums"]["commission_discount_policy"]
+          commission_discount_policy_manual?: Database["public"]["Enums"]["commission_discount_policy"]
           created_at?: string
           description?: string | null
           discount_pin_threshold_percent?: number
@@ -2717,11 +2735,14 @@ export type Database = {
           client_name: string
           closed_at: string | null
           closed_by: string | null
+          commission_discount_on_coupon: boolean
+          commission_discount_on_loyalty: boolean
+          commission_discount_on_manual: boolean
           coupon_id: string | null
           created_at: string
           created_by: string | null
           discount_amount: number | null
-          discount_reduces_commission: boolean | null
+          discount_authorized_by: string | null
           discount_type: string | null
           establishment_id: string
           id: string
@@ -2744,11 +2765,14 @@ export type Database = {
           client_name: string
           closed_at?: string | null
           closed_by?: string | null
+          commission_discount_on_coupon?: boolean
+          commission_discount_on_loyalty?: boolean
+          commission_discount_on_manual?: boolean
           coupon_id?: string | null
           created_at?: string
           created_by?: string | null
           discount_amount?: number | null
-          discount_reduces_commission?: boolean | null
+          discount_authorized_by?: string | null
           discount_type?: string | null
           establishment_id: string
           id?: string
@@ -2771,11 +2795,14 @@ export type Database = {
           client_name?: string
           closed_at?: string | null
           closed_by?: string | null
+          commission_discount_on_coupon?: boolean
+          commission_discount_on_loyalty?: boolean
+          commission_discount_on_manual?: boolean
           coupon_id?: string | null
           created_at?: string
           created_by?: string | null
           discount_amount?: number | null
-          discount_reduces_commission?: boolean | null
+          discount_authorized_by?: string | null
           discount_type?: string | null
           establishment_id?: string
           id?: string
@@ -2909,6 +2936,15 @@ export type Database = {
           marked_count: number
         }[]
       }
+      close_tab_atomic: {
+        Args: {
+          _commissions: Json
+          _flags: Json
+          _payments: Json
+          _tab_id: string
+        }
+        Returns: Json
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -3005,6 +3041,7 @@ export type Database = {
         | "completed"
         | "cancelled"
         | "no_show"
+      commission_discount_policy: "always" | "never" | "ask"
       establishment_status: "pending" | "active" | "suspended"
       subscription_plan: "basic" | "professional" | "premium" | "trial"
     }
@@ -3143,6 +3180,7 @@ export const Constants = {
         "cancelled",
         "no_show",
       ],
+      commission_discount_policy: ["always", "never", "ask"],
       establishment_status: ["pending", "active", "suspended"],
       subscription_plan: ["basic", "professional", "premium", "trial"],
     },

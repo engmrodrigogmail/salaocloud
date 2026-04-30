@@ -120,7 +120,8 @@ export function ManualDiscountDialog({
         .update({
           discount_amount: amount,
           discount_type: amount > 0 ? "manual" : null,
-          discount_reduces_commission: reducesFlag,
+          commission_discount_on_manual: reducesFlag,
+          discount_authorized_by: managerProfessionalId,
           total: newTotal,
         } as never)
         .eq("id", tabId);

@@ -293,10 +293,10 @@ export default function PortalAgenda() {
 
       if (tabError || !tab) throw tabError;
 
-      // Mark appointment as in_service so the agenda stays blocked until the tab is closed
+      // Mark appointment as in_service, saving previous status for undo
       const { error: updError } = await supabase
         .from("appointments")
-        .update({ status: "in_service" })
+        .update({ status: "in_service", previous_status: selectedAppointment.status } as never)
         .eq("id", selectedAppointment.id);
 
       if (updError) throw updError;

@@ -316,7 +316,7 @@ export default function InternoAgenda() {
 
       const { error: updError } = await supabase
         .from("appointments")
-        .update({ status: "in_service" })
+        .update({ status: "in_service", previous_status: selectedAppointment.status } as never)
         .eq("id", selectedAppointment.id);
 
       if (updError) throw updError;

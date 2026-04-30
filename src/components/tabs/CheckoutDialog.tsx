@@ -403,7 +403,7 @@ export function CheckoutDialog({
                     <div className="flex justify-between text-green-600 items-center">
                       <span className="flex items-center gap-1">
                         Desconto manual
-                        {(tab as any)?.discount_reduces_commission && (
+                        {(tab as any)?.commission_discount_on_manual && (
                           <span className="text-[10px] text-muted-foreground">(abate comissão)</span>
                         )}
                         {establishmentId && tab && (
@@ -595,7 +595,7 @@ export function CheckoutDialog({
           tabId={tab.id}
           subtotal={subtotal}
           currentDiscount={existingDiscount}
-          currentReducesCommission={(tab as any).discount_reduces_commission === true}
+          currentReducesCommission={(tab as any).commission_discount_on_manual === true}
           pinThresholdPercent={discountPinThreshold}
           onApplied={async () => {
             if (onTabRefresh) await onTabRefresh();

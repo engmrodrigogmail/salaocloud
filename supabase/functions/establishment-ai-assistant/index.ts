@@ -706,7 +706,7 @@ async function getClientFutureAppointments(establishmentId: string, clientId?: s
       professional:professionals(id, name)
     `)
     .eq('establishment_id', establishmentId)
-    .in('status', ['pending', 'confirmed'])
+    .in('status', ['pending', 'confirmed', 'in_service'])
     .gte('scheduled_at', now)
     .order('scheduled_at', { ascending: true });
 
@@ -779,7 +779,7 @@ async function checkSchedulingConflict(
       .select('id, scheduled_at, duration_minutes, client_name')
       .eq('establishment_id', establishmentId)
       .eq('professional_id', professionalId)
-      .in('status', ['pending', 'confirmed'])
+      .in('status', ['pending', 'confirmed', 'in_service'])
       .gte('scheduled_at', windowStart)
       .lte('scheduled_at', windowEnd)
       .limit(20);
@@ -872,7 +872,7 @@ async function getAvailabilityInfo(
       .from('appointments')
       .select('id, professional_id, scheduled_at, duration_minutes, status')
       .eq('establishment_id', establishmentId)
-      .in('status', ['pending', 'confirmed'])
+      .in('status', ['pending', 'confirmed', 'in_service'])
       .gte('scheduled_at', startUTC.toISOString())
       .lte('scheduled_at', endUTC.toISOString())
       .order('scheduled_at', { ascending: true });
