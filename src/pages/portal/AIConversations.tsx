@@ -403,6 +403,16 @@ export default function AIConversations() {
     return 0;
   };
 
+  if (guard) {
+    return (
+      <PortalLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      </PortalLayout>
+    );
+  }
+
   return (
     <PortalLayout>
       <div className="space-y-6">

@@ -181,7 +181,7 @@ export default function PortalSubscription() {
   const isCurrentPlan = (planSlug: string) => establishment?.subscription_plan === planSlug;
   const hasActiveSubscription = !!establishment?.stripe_subscription_id;
 
-  if (loading) {
+  if (guard || loading) {
     return (
       <PortalLayout>
         <div className="space-y-6">

@@ -88,6 +88,7 @@ interface CouponUsage {
 export default function PortalCoupons() {
   const { slug } = useParams<{ slug: string }>();
   const { user } = useAuth();
+  const { guard } = useOwnerEstablishment(slug);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [usages, setUsages] = useState<CouponUsage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -356,6 +357,16 @@ export default function PortalCoupons() {
     activeCoupons: coupons.filter((c) => c.is_active).length,
     totalUses: coupons.reduce((acc, c) => acc + c.current_uses, 0),
   };
+
+  if (guard) {
+    return (
+      <PortalLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      </PortalLayout>
+    );
+  }
 
   return (
     <PortalLayout>
