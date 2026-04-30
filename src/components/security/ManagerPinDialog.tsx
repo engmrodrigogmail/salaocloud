@@ -190,22 +190,24 @@ export function ManagerPinDialog({
 export async function logManagerOverride(params: {
   establishmentId: string;
   managerProfessionalId: string;
-  action: string;
+  actionType: string;
   targetType?: string;
   targetId?: string;
-  oldValues?: Record<string, unknown>;
-  newValues?: Record<string, unknown>;
+  tabId?: string;
+  oldValue?: unknown;
+  newValue?: unknown;
   reason?: string;
 }) {
   try {
     await supabase.from("manager_pin_audit").insert({
       establishment_id: params.establishmentId,
       manager_professional_id: params.managerProfessionalId,
-      action: params.action,
+      action_type: params.actionType,
       target_type: params.targetType ?? null,
       target_id: params.targetId ?? null,
-      old_values: (params.oldValues ?? null) as any,
-      new_values: (params.newValues ?? null) as any,
+      tab_id: params.tabId ?? null,
+      old_value: (params.oldValue ?? null) as any,
+      new_value: (params.newValue ?? null) as any,
       reason: params.reason ?? null,
     });
   } catch (e) {
