@@ -2074,10 +2074,15 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          discount_applied: number
           establishment_id: string
           id: string
           is_manual: boolean | null
           justification: string | null
+          original_commission_amount: number | null
+          override_at: string | null
+          override_by: string | null
+          override_reason: string | null
           paid_at: string | null
           period_end: string | null
           period_start: string | null
@@ -2096,10 +2101,15 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          discount_applied?: number
           establishment_id: string
           id?: string
           is_manual?: boolean | null
           justification?: string | null
+          original_commission_amount?: number | null
+          override_at?: string | null
+          override_by?: string | null
+          override_reason?: string | null
           paid_at?: string | null
           period_end?: string | null
           period_start?: string | null
@@ -2118,10 +2128,15 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          discount_applied?: number
           establishment_id?: string
           id?: string
           is_manual?: boolean | null
           justification?: string | null
+          original_commission_amount?: number | null
+          override_at?: string | null
+          override_by?: string | null
+          override_reason?: string | null
           paid_at?: string | null
           period_end?: string | null
           period_start?: string | null
@@ -2557,6 +2572,10 @@ export type Database = {
           id: string
           item_type: string
           name: string
+          original_unit_price: number | null
+          price_override_at: string | null
+          price_override_by: string | null
+          price_override_reason: string | null
           product_id: string | null
           professional_id: string | null
           quantity: number
@@ -2572,6 +2591,10 @@ export type Database = {
           id?: string
           item_type?: string
           name: string
+          original_unit_price?: number | null
+          price_override_at?: string | null
+          price_override_by?: string | null
+          price_override_reason?: string | null
           product_id?: string | null
           professional_id?: string | null
           quantity?: number
@@ -2587,6 +2610,10 @@ export type Database = {
           id?: string
           item_type?: string
           name?: string
+          original_unit_price?: number | null
+          price_override_at?: string | null
+          price_override_by?: string | null
+          price_override_reason?: string | null
           product_id?: string | null
           professional_id?: string | null
           quantity?: number
@@ -2687,12 +2714,17 @@ export type Database = {
           client_name: string
           closed_at: string | null
           closed_by: string | null
+          coupon_id: string | null
           created_at: string
           created_by: string | null
           discount_amount: number | null
+          discount_reduces_commission: boolean | null
           discount_type: string | null
           establishment_id: string
           id: string
+          loyalty_redemption_id: string | null
+          manager_pin_used: boolean
+          manager_professional_id: string | null
           notes: string | null
           opened_at: string
           professional_id: string | null
@@ -2709,12 +2741,17 @@ export type Database = {
           client_name: string
           closed_at?: string | null
           closed_by?: string | null
+          coupon_id?: string | null
           created_at?: string
           created_by?: string | null
           discount_amount?: number | null
+          discount_reduces_commission?: boolean | null
           discount_type?: string | null
           establishment_id: string
           id?: string
+          loyalty_redemption_id?: string | null
+          manager_pin_used?: boolean
+          manager_professional_id?: string | null
           notes?: string | null
           opened_at?: string
           professional_id?: string | null
@@ -2731,12 +2768,17 @@ export type Database = {
           client_name?: string
           closed_at?: string | null
           closed_by?: string | null
+          coupon_id?: string | null
           created_at?: string
           created_by?: string | null
           discount_amount?: number | null
+          discount_reduces_commission?: boolean | null
           discount_type?: string | null
           establishment_id?: string
           id?: string
+          loyalty_redemption_id?: string | null
+          manager_pin_used?: boolean
+          manager_professional_id?: string | null
           notes?: string | null
           opened_at?: string
           professional_id?: string | null
@@ -2850,6 +2892,14 @@ export type Database = {
       }
     }
     Functions: {
+      apply_coupon_to_tab: {
+        Args: {
+          _coupon_code: string
+          _reduces_commission: boolean
+          _tab_id: string
+        }
+        Returns: Json
+      }
       auto_mark_no_shows: {
         Args: never
         Returns: {
