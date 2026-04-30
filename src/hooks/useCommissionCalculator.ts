@@ -219,7 +219,9 @@ export function useCommissionCalculator(establishmentId: string | null) {
       if (!item.professional_id) continue;
 
       const fullPrice = Number(item.total_price);
-      const referenceValue = +(fullPrice * discountFactor).toFixed(2);
+      const inScope = dType === 'coupon' ? itemInCouponScope(item) : true;
+      const itemFactor = (reducesByType && inScope) ? discountFactorScoped : 1;
+      const referenceValue = +(fullPrice * itemFactor).toFixed(2);
       let commissionAmount = 0;
       let description = "";
       let ruleId: string | null = null;
