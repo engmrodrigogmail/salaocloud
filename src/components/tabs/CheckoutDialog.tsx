@@ -400,10 +400,36 @@ export function CheckoutDialog({
                     <span>{formatCurrency(subtotal)}</span>
                   </div>
                   {existingDiscount > 0 && (
-                    <div className="flex justify-between text-green-600">
-                      <span>Desconto</span>
+                    <div className="flex justify-between text-green-600 items-center">
+                      <span className="flex items-center gap-1">
+                        Desconto manual
+                        {(tab as any)?.discount_reduces_commission && (
+                          <span className="text-[10px] text-muted-foreground">(abate comissão)</span>
+                        )}
+                        {establishmentId && tab && (
+                          <button
+                            type="button"
+                            onClick={() => setManualDiscountOpen(true)}
+                            className="text-muted-foreground hover:text-foreground"
+                            aria-label="Editar desconto manual"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </button>
+                        )}
+                      </span>
                       <span>-{formatCurrency(existingDiscount)}</span>
                     </div>
+                  )}
+                  {existingDiscount === 0 && tab?.status === "open" && establishmentId && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-start text-muted-foreground hover:text-foreground -mx-2"
+                      onClick={() => setManualDiscountOpen(true)}
+                    >
+                      <Tag className="h-4 w-4 mr-2" />
+                      Aplicar desconto manual
+                    </Button>
                   )}
                   {couponDiscount > 0 && (
                     <div className="flex justify-between text-green-600">
