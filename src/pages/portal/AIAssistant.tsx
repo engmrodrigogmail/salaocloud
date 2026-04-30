@@ -27,6 +27,9 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOwnerEstablishment } from "@/hooks/useOwnerEstablishment";
+import { Loader2 } from "lucide-react";
+import { PortalLayout } from "@/components/layouts/PortalLayout";
 
 interface WorkingHours {
   [key: string]: {
