@@ -368,7 +368,7 @@ export function TabDetailsCard({
               className="flex-1"
               onClick={() => setConfirmCancelOpen(true)}
             >
-              Cancelar Comanda
+              Cancelar Atendimento + Agendamento
             </Button>
             <Button
               className="flex-1"
