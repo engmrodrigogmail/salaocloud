@@ -2285,6 +2285,7 @@ export type Database = {
           leasing_value: number | null
           manager_pin_hash: string | null
           manager_pin_set_at: string | null
+          must_change_password: boolean
           name: string
           phone: string | null
           specialties: string[] | null
@@ -2305,6 +2306,7 @@ export type Database = {
           leasing_value?: number | null
           manager_pin_hash?: string | null
           manager_pin_set_at?: string | null
+          must_change_password?: boolean
           name: string
           phone?: string | null
           specialties?: string[] | null
@@ -2325,6 +2327,7 @@ export type Database = {
           leasing_value?: number | null
           manager_pin_hash?: string | null
           manager_pin_set_at?: string | null
+          must_change_password?: boolean
           name?: string
           phone?: string | null
           specialties?: string[] | null
@@ -3011,8 +3014,25 @@ export type Database = {
         Args: { _user_id: string }
         Returns: string
       }
+      get_user_access_targets: {
+        Args: { _user_id: string }
+        Returns: {
+          establishment_id: string
+          establishment_name: string
+          establishment_slug: string
+          is_manager: boolean
+          kind: string
+          must_change_password: boolean
+        }[]
+      }
       get_user_establishment_id: { Args: { _user_id: string }; Returns: string }
       get_user_professional_id: { Args: { _user_id: string }; Returns: string }
+      get_user_roles: {
+        Args: { _user_id: string }
+        Returns: {
+          role: Database["public"]["Enums"]["app_role"]
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -3037,6 +3057,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      update_professional_pin: { Args: { _pin_hash: string }; Returns: Json }
       verify_manager_pin: {
         Args: { _pin_hash: string; _professional_id: string }
         Returns: boolean
