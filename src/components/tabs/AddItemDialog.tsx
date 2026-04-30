@@ -84,6 +84,13 @@ export function AddItemDialog({
     if (selectedService) setOverridePrice(selectedService.price.toString());
   }, [selectedService?.id]);
 
+  // Pre-fill professional when dialog opens (from tab.professional_id)
+  useEffect(() => {
+    if (open && defaultProfessionalId && !selectedProfessional) {
+      setSelectedProfessional(defaultProfessionalId);
+    }
+  }, [open, defaultProfessionalId]);
+
   const filteredProducts = products.filter((p) =>
     p.name.toLowerCase().includes(searchProduct.toLowerCase())
   );
