@@ -40,6 +40,8 @@ interface AddItemDialogProps {
   loading?: boolean;
   /** Required to open the manager PIN dialog when overriding catalog price */
   establishmentId?: string;
+  /** Pre-fill professional from the tab (e.g. tab.professional_id) */
+  defaultProfessionalId?: string | null;
 }
 
 export function AddItemDialog({
@@ -51,6 +53,7 @@ export function AddItemDialog({
   professionals,
   loading = false,
   establishmentId,
+  defaultProfessionalId,
 }: AddItemDialogProps) {
   const [activeTab, setActiveTab] = useState<string>("products");
   const [quantity, setQuantity] = useState("1");
@@ -80,6 +83,13 @@ export function AddItemDialog({
   useEffect(() => {
     if (selectedService) setOverridePrice(selectedService.price.toString());
   }, [selectedService?.id]);
+
+  // Pre-fill professional when dialog opens (from tab.professional_id)
+  useEffect(() => {
+    if (open && defaultProfessionalId && !selectedProfessional) {
+      setSelectedProfessional(defaultProfessionalId);
+    }
+  }, [open, defaultProfessionalId]);
 
   const filteredProducts = products.filter((p) =>
     p.name.toLowerCase().includes(searchProduct.toLowerCase())

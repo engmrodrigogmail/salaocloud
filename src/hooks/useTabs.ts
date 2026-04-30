@@ -6,7 +6,7 @@ import { useCommissionCalculator } from "./useCommissionCalculator";
 import { getBrazilNow } from "@/lib/dateUtils";
 
 export function useTabs(establishmentId: string | null) {
-  const { processTabCommissions } = useCommissionCalculator(establishmentId);
+  const { calculateCommissionsForTab } = useCommissionCalculator(establishmentId);
   const [tabs, setTabs] = useState<TabWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -194,52 +194,58 @@ export function useTabs(establishmentId: string | null) {
     }
   };
 
-  const closeTab = async (tabId: string, payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[], items: TabItem[] = []) => {
+  const closeTab = async (
+    tabId: string,
+    payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[],
+    items: TabItem[] = [],
+    flags?: { commission_discount_on_manual?: boolean; commission_discount_on_coupon?: boolean; commission_discount_on_loyalty?: boolean }
+  ) => {
     try {
-      // Insert payments
-      if (payments.length > 0) {
-        const { error: paymentsError } = await supabase
-          .from("tab_payments")
-          .insert(payments.map(p => ({ ...p, tab_id: tabId })));
-        if (paymentsError) throw paymentsError;
-      }
-
-      // Calculate and save commissions automatically
-      if (items.length > 0) {
-        const result = await processTabCommissions(tabId, items);
-        if (result.count > 0) {
-          console.log(`Generated ${result.count} commission(s) totaling R$ ${result.total.toFixed(2)}`);
-        }
-      }
-
-      // Close tab
-      const { data: closedTab, error } = await supabase
-        .from("tabs")
-        .update({ 
-          status: "closed",
-          closed_at: new Date().toISOString()
-        })
-        .eq("id", tabId)
-        .select("appointment_id")
-        .single();
-
-      if (error) throw error;
-
-      // App-layer sync: mark linked appointment as completed (only if not already cancelled)
-      if (closedTab?.appointment_id) {
+      // 1) Persist flags BEFORE calculating commissions, so the calculator reads the correct values
+      if (flags) {
         await supabase
-          .from("appointments")
-          .update({ status: "completed" })
-          .eq("id", closedTab.appointment_id)
-          .neq("status", "cancelled");
+          .from("tabs")
+          .update({
+            commission_discount_on_manual: flags.commission_discount_on_manual ?? false,
+            commission_discount_on_coupon: flags.commission_discount_on_coupon ?? false,
+            commission_discount_on_loyalty: flags.commission_discount_on_loyalty ?? false,
+          } as never)
+          .eq("id", tabId);
+      }
+
+      // 2) Calculate commissions on the frontend (uses granular flags + scoped pro-rata)
+      let commissionsPayload: Array<{ professional_id: string; tab_item_id: string; amount: number; status: string }> = [];
+      if (items.length > 0) {
+        const calculated = await calculateCommissionsForTab(tabId, items);
+        commissionsPayload = calculated.map(c => ({
+          professional_id: c.professional_id,
+          tab_item_id: c.tab_item_id,
+          amount: c.commission_amount,
+          status: "pending",
+        }));
+      }
+
+      // 3) Atomic close: validates payments == total, inserts payments + commissions, closes tab
+      const { data: rpcData, error: rpcError } = await supabase.rpc("close_tab_atomic", {
+        _tab_id: tabId,
+        _payments: payments as any,
+        _commissions: commissionsPayload as any,
+        _flags: (flags ?? {}) as any,
+      });
+
+      if (rpcError) throw rpcError;
+      const result = rpcData as any;
+      if (!result?.success) {
+        toast.error(result?.error || "Erro ao finalizar comanda");
+        return false;
       }
 
       toast.success("Comanda finalizada com sucesso");
       await fetchTabs("open");
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error closing tab:", error);
-      toast.error("Erro ao finalizar comanda");
+      toast.error(error?.message || "Erro ao finalizar comanda");
       return false;
     }
   };

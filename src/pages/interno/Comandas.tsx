@@ -16,7 +16,7 @@ import { NewTabDialog } from "@/components/tabs/NewTabDialog";
 import { AddItemDialog } from "@/components/tabs/AddItemDialog";
 import { TabDetailsCard } from "@/components/tabs/TabDetailsCard";
 import { TabListCard } from "@/components/tabs/TabListCard";
-import { CheckoutDialog, type CouponInfo } from "@/components/tabs/CheckoutDialog";
+import { CheckoutDialog, type CouponInfo, type CommissionDiscountFlags } from "@/components/tabs/CheckoutDialog";
 import type { TabWithDetails, TabPayment } from "@/types/tabs";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -130,26 +130,30 @@ export default function InternoComandas() {
     }
   };
 
-  const handleCheckout = async (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[], couponInfo?: CouponInfo) => {
+  const handleCheckout = async (
+    payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[],
+    couponInfo?: CouponInfo,
+    flags?: CommissionDiscountFlags,
+  ) => {
     if (!selectedTab) return;
-    
-    // Update discount if coupon was applied
+
+    // Update discount if coupon was applied (kept here for backward compat — apply_coupon_to_tab
+    // RPC is the recommended atomic path, but legacy UI still tracks this here).
     if (couponInfo && couponInfo.discount > 0) {
       const currentDiscount = selectedTab.discount_amount || 0;
       const newTotal = selectedTab.total - couponInfo.discount;
       await supabase
         .from("tabs")
-        .update({ 
+        .update({
           discount_amount: currentDiscount + couponInfo.discount,
-          total: newTotal
+          // Tag the discount as coupon so the commission calculator picks the right flag
+          discount_type: selectedTab.discount_type || "coupon",
+          total: newTotal,
         })
         .eq("id", selectedTab.id);
-      
-      // TODO: Commission calculation can use couponInfo.calculateCommissionAfterDiscount
-      // to determine whether to calculate commission on original or discounted value
     }
-    
-    const success = await closeTab(selectedTab.id, payments, items);
+
+    const success = await closeTab(selectedTab.id, payments, items, flags);
     if (success) { setCheckoutOpen(false); setSelectedTab(null); }
   };
 
@@ -255,7 +259,7 @@ export default function InternoComandas() {
         )}
 
         <NewTabDialog open={newTabOpen} onOpenChange={setNewTabOpen} onSubmit={handleCreateTab} clients={clients} professionals={professionals} services={services} />
-        <AddItemDialog open={addItemOpen} onOpenChange={setAddItemOpen} onAddItem={handleAddItem} products={products} services={services} professionals={professionals} establishmentId={establishmentId || undefined} />
+        <AddItemDialog open={addItemOpen} onOpenChange={setAddItemOpen} onAddItem={handleAddItem} products={products} services={services} professionals={professionals} establishmentId={establishmentId || undefined} defaultProfessionalId={selectedTab?.professional_id || null} />
         <CheckoutDialog
           open={checkoutOpen}
           onOpenChange={setCheckoutOpen}

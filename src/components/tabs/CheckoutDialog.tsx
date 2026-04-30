@@ -22,13 +22,21 @@ export interface CouponInfo {
   applicableProductIds: string[];
 }
 
+export interface CommissionDiscountFlags {
+  commission_discount_on_manual: boolean;
+  commission_discount_on_coupon: boolean;
+  commission_discount_on_loyalty: boolean;
+}
+
+type Policy = 'always' | 'never' | 'ask';
+
 interface CheckoutDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tab: TabWithDetails | null;
   items: TabItem[];
   paymentMethods: PaymentMethod[];
-  onConfirm: (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[], couponInfo?: CouponInfo) => Promise<void>;
+  onConfirm: (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[], couponInfo?: CouponInfo, flags?: CommissionDiscountFlags) => Promise<void>;
   loading?: boolean;
   establishmentId?: string;
   discountPinThreshold?: number;
@@ -81,6 +89,14 @@ export function CheckoutDialog({
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<ValidatedCoupon | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
+
+  // Commission discount policies (from establishment) + per-checkout flags
+  const [policyManual, setPolicyManual] = useState<Policy>('ask');
+  const [policyCoupon, setPolicyCoupon] = useState<Policy>('ask');
+  const [policyLoyalty, setPolicyLoyalty] = useState<Policy>('ask');
+  const [flagManual, setFlagManual] = useState<boolean>(false);
+  const [flagCoupon, setFlagCoupon] = useState<boolean>(false);
+  const [flagLoyalty, setFlagLoyalty] = useState<boolean>(false);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -154,6 +170,30 @@ export function CheckoutDialog({
       setPaymentAmount(total.toFixed(2));
     }
   }, [total, open, payments.length]);
+
+  // Fetch establishment commission policies + initialize per-checkout flags from tab
+  useEffect(() => {
+    if (!open || !establishmentId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("establishments")
+        .select("commission_discount_policy_manual, commission_discount_policy_coupon, commission_discount_policy_loyalty")
+        .eq("id", establishmentId)
+        .maybeSingle();
+      const pm = ((data as any)?.commission_discount_policy_manual ?? 'ask') as Policy;
+      const pc = ((data as any)?.commission_discount_policy_coupon ?? 'ask') as Policy;
+      const pl = ((data as any)?.commission_discount_policy_loyalty ?? 'ask') as Policy;
+      setPolicyManual(pm);
+      setPolicyCoupon(pc);
+      setPolicyLoyalty(pl);
+
+      // Initial flag values: 'always' => true, 'never' => false, 'ask' => current tab value (or false)
+      const tabAny = tab as any;
+      setFlagManual(pm === 'always' ? true : pm === 'never' ? false : (tabAny?.commission_discount_on_manual === true));
+      setFlagCoupon(pc === 'always' ? true : pc === 'never' ? false : (tabAny?.commission_discount_on_coupon === true));
+      setFlagLoyalty(pl === 'always' ? true : pl === 'never' ? false : (tabAny?.commission_discount_on_loyalty === true));
+    })();
+  }, [open, establishmentId, tab?.id]);
 
   const validateCoupon = async () => {
     if (!couponCode.trim() || !establishmentId) return;
@@ -295,7 +335,13 @@ export function CheckoutDialog({
       applicableProductIds: appliedCoupon.applicable_product_ids,
     } : undefined;
 
-    await onConfirm(paymentData, couponInfo);
+    const flags: CommissionDiscountFlags = {
+      commission_discount_on_manual: flagManual,
+      commission_discount_on_coupon: flagCoupon,
+      commission_discount_on_loyalty: flagLoyalty,
+    };
+
+    await onConfirm(paymentData, couponInfo, flags);
   };
 
   const selectedPaymentMethod = paymentMethods.find(m => m.id === selectedMethod);
@@ -446,7 +492,56 @@ export function CheckoutDialog({
               </CardContent>
             </Card>
 
-            {/* Payments Added */}
+            {/* Commission discount policy panel */}
+            {(existingDiscount > 0 || couponDiscount > 0) && (
+              <Card>
+                <CardContent className="pt-4 space-y-2">
+                  <Label className="text-sm font-medium">Abater desconto da comissão?</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Define se a comissão será calculada sobre o valor com desconto.
+                  </p>
+                  {existingDiscount > 0 && (
+                    <label className="flex items-start gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={flagManual}
+                        disabled={policyManual !== 'ask'}
+                        onChange={(e) => setFlagManual(e.target.checked)}
+                      />
+                      <span className="flex-1">
+                        Desconto manual abate comissão
+                        {policyManual !== 'ask' && (
+                          <span className="text-[10px] text-muted-foreground ml-1">
+                            (definido pela política: {policyManual === 'always' ? 'sempre' : 'nunca'})
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                  )}
+                  {couponDiscount > 0 && (
+                    <label className="flex items-start gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={flagCoupon}
+                        disabled={policyCoupon !== 'ask'}
+                        onChange={(e) => setFlagCoupon(e.target.checked)}
+                      />
+                      <span className="flex-1">
+                        Cupom abate comissão
+                        {policyCoupon !== 'ask' && (
+                          <span className="text-[10px] text-muted-foreground ml-1">
+                            (definido pela política: {policyCoupon === 'always' ? 'sempre' : 'nunca'})
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {payments.length > 0 && (
               <div className="space-y-2">
                 <Label>Pagamentos Registrados</Label>
