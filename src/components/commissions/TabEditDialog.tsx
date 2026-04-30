@@ -582,7 +582,7 @@ export function TabEditDialog({
                       <Button variant="outline" onClick={() => setShowAddForm(false)}>
                         Cancelar
                       </Button>
-                      <Button onClick={handleAddCommission} disabled={loading}>
+                      <Button onClick={requestAdd} disabled={loading}>
                         <Save className="h-4 w-4 mr-1" />
                         Salvar Comissão
                       </Button>
@@ -597,39 +597,97 @@ export function TabEditDialog({
                   </p>
                 ) : (
                   <div className="space-y-2">
-                    {commissions.map((commission) => (
-                      <div
-                        key={commission.id}
-                        className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
-                      >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{commission.professionals?.name}</span>
-                            {commission.is_manual && (
-                              <Badge variant="outline" className="text-xs">Manual</Badge>
-                            )}
+                    {commissions.map((commission) => {
+                      const isEditing = editingId === commission.id;
+                      return (
+                        <div
+                          key={commission.id}
+                          className="flex flex-col gap-2 p-3 bg-muted/30 rounded-lg"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{commission.professionals?.name}</span>
+                                {commission.is_manual && (
+                                  <Badge variant="outline" className="text-xs">Manual</Badge>
+                                )}
+                              </div>
+                              {commission.description && (
+                                <p className="text-sm text-muted-foreground">{commission.description}</p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-green-600">
+                                {formatCurrency(Number(commission.commission_amount))}
+                              </span>
+                              {!isEditing && (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8"
+                                  title="Ajustar valor (PIN do gerente)"
+                                  onClick={() => startEdit(commission)}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              )}
+                              {commission.is_manual && (
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-8 w-8 text-destructive"
+                                  onClick={() => requestDelete(commission.id)}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
                           </div>
-                          {commission.description && (
-                            <p className="text-sm text-muted-foreground">{commission.description}</p>
+                          {isEditing && (
+                            <div className="grid grid-cols-1 sm:grid-cols-[1fr_2fr_auto] gap-2 items-end">
+                              <div className="space-y-1">
+                                <Label className="text-xs">Novo valor (R$)</Label>
+                                <Input
+                                  type="text"
+                                  inputMode="decimal"
+                                  value={editValue}
+                                  onChange={(e) =>
+                                    setEditValue(
+                                      e.target.value.replace(/[^0-9.,]/g, "").replace(",", "."),
+                                    )
+                                  }
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Justificativa *</Label>
+                                <Input
+                                  value={editJustification}
+                                  onChange={(e) => setEditJustification(e.target.value)}
+                                  placeholder="Motivo do ajuste"
+                                />
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setEditingId(null);
+                                    setEditValue("");
+                                    setEditJustification("");
+                                  }}
+                                >
+                                  Cancelar
+                                </Button>
+                                <Button size="sm" onClick={requestEdit}>
+                                  <ShieldAlert className="h-4 w-4 mr-1" />
+                                  Autorizar
+                                </Button>
+                              </div>
+                            </div>
                           )}
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="font-semibold text-green-600">
-                            {formatCurrency(Number(commission.commission_amount))}
-                          </span>
-                          {commission.is_manual && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 text-destructive"
-                              onClick={() => handleDeleteCommission(commission.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>
