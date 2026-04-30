@@ -492,7 +492,56 @@ export function CheckoutDialog({
               </CardContent>
             </Card>
 
-            {/* Payments Added */}
+            {/* Commission discount policy panel */}
+            {(existingDiscount > 0 || couponDiscount > 0) && (
+              <Card>
+                <CardContent className="pt-4 space-y-2">
+                  <Label className="text-sm font-medium">Abater desconto da comissão?</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Define se a comissão será calculada sobre o valor com desconto.
+                  </p>
+                  {existingDiscount > 0 && (
+                    <label className="flex items-start gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={flagManual}
+                        disabled={policyManual !== 'ask'}
+                        onChange={(e) => setFlagManual(e.target.checked)}
+                      />
+                      <span className="flex-1">
+                        Desconto manual abate comissão
+                        {policyManual !== 'ask' && (
+                          <span className="text-[10px] text-muted-foreground ml-1">
+                            (definido pela política: {policyManual === 'always' ? 'sempre' : 'nunca'})
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                  )}
+                  {couponDiscount > 0 && (
+                    <label className="flex items-start gap-2 text-sm cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="mt-1"
+                        checked={flagCoupon}
+                        disabled={policyCoupon !== 'ask'}
+                        onChange={(e) => setFlagCoupon(e.target.checked)}
+                      />
+                      <span className="flex-1">
+                        Cupom abate comissão
+                        {policyCoupon !== 'ask' && (
+                          <span className="text-[10px] text-muted-foreground ml-1">
+                            (definido pela política: {policyCoupon === 'always' ? 'sempre' : 'nunca'})
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {payments.length > 0 && (
               <div className="space-y-2">
                 <Label>Pagamentos Registrados</Label>
