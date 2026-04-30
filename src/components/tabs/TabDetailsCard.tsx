@@ -18,15 +18,18 @@ import {
 } from "@/components/ui/alert-dialog";
 import { 
   Plus, Trash2, User, Clock, Package, Scissors, PenLine, 
-  CreditCard, Receipt, ArrowLeft, Minus, Undo2
+  CreditCard, Receipt, ArrowLeft, Minus, Undo2, Tag
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { TabWithDetails, TabItem, PaymentMethod } from "@/types/tabs";
+import { ManualDiscountDialog } from "./ManualDiscountDialog";
 
 interface TabDetailsCardProps {
   tab: TabWithDetails;
   items: TabItem[];
+  establishmentId: string;
+  discountPinThreshold: number;
   onAddItem: () => void;
   onRemoveItem: (itemId: string) => Promise<void>;
   onUpdateQuantity: (itemId: string, quantity: number) => Promise<void>;
@@ -35,11 +38,14 @@ interface TabDetailsCardProps {
   onCancel: () => void;
   onUndoOpening?: () => Promise<void> | void;
   onRecalculate: () => Promise<void>;
+  onDiscountChanged?: () => Promise<void> | void;
 }
 
 export function TabDetailsCard({
   tab,
   items,
+  establishmentId,
+  discountPinThreshold,
   onAddItem,
   onRemoveItem,
   onUpdateQuantity,
@@ -48,9 +54,11 @@ export function TabDetailsCard({
   onCancel,
   onUndoOpening,
   onRecalculate,
+  onDiscountChanged,
 }: TabDetailsCardProps) {
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [confirmUndoOpen, setConfirmUndoOpen] = useState(false);
+  const [discountOpen, setDiscountOpen] = useState(false);
 
   // Eligibility for "Desfazer Abertura": tab created < 5 min ago AND no items.
   const ageMs = Date.now() - new Date(tab.opened_at).getTime();
