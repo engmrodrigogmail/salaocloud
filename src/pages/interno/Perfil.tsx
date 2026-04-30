@@ -99,15 +99,15 @@ export default function InternoPerfil() {
     try {
       const hash = await hashManagerPin(newPin);
 
-      const { error: uErr } = await supabase
-        .from("professionals")
-        .update({
-          manager_pin_hash: hash,
-          manager_pin_set_at: new Date().toISOString(),
-        })
-        .eq("id", prof.id);
+      const { data: rpcData, error: uErr } = await supabase.rpc("update_professional_pin" as never, {
+        _pin_hash: hash,
+      } as never);
 
       if (uErr) throw uErr;
+      const result = rpcData as { success: boolean; error?: string } | null;
+      if (!result?.success) {
+        throw new Error(result?.error || "Falha ao salvar PIN");
+      }
 
       toast.success("PIN salvo com sucesso");
       setNewPin("");

@@ -1,10 +1,20 @@
 import { useParams } from "react-router-dom";
 import { PortalLayout } from "@/components/layouts/PortalLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Construction } from "lucide-react";
+import { Construction, Loader2 } from "lucide-react";
+import { useOwnerEstablishment } from "@/hooks/useOwnerEstablishment";
 
 export default function PortalPromotions() {
   const { slug } = useParams<{ slug: string }>();
+  const { guard } = useOwnerEstablishment(slug);
+
+  if (guard) {
+    return (
+      <PortalLayout>
+        <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>
+      </PortalLayout>
+    );
+  }
 
   return (
     <PortalLayout>
