@@ -756,6 +756,27 @@ export function TabEditDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <ManagerPinDialog
+        open={pinOpen}
+        onOpenChange={(o) => {
+          setPinOpen(o);
+          if (!o) setPendingAction(null);
+        }}
+        establishmentId={establishmentId}
+        reason={
+          pendingAction?.type === "add"
+            ? "Criar comissão manual"
+            : pendingAction?.type === "delete"
+              ? "Remover comissão"
+              : pendingAction?.type === "edit"
+                ? `Ajustar comissão de ${formatCurrency(pendingAction.oldAmount)} para ${formatCurrency(pendingAction.newAmount)}`
+                : "Autorizar alteração de comissão"
+        }
+        onAuthorized={async ({ managerProfessionalId }) => {
+          await runPendingAction(managerProfessionalId);
+        }}
+      />
     </Dialog>
   );
 }
