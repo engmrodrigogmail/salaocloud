@@ -18,8 +18,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { 
   Plus, Trash2, User, Clock, Package, Scissors, PenLine, 
-  CreditCard, Receipt, ArrowLeft, Minus, Undo2, Tag
+  CreditCard, Receipt, ArrowLeft, Minus, Undo2, Tag, AlertCircle
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { TabWithDetails, TabItem, PaymentMethod } from "@/types/tabs";
@@ -116,8 +117,29 @@ export function TabDetailsCard({
         {groupItems.map((item) => (
           <div key={item.id} className="flex items-start justify-between p-3 bg-muted/30 rounded-lg ml-2">
             <div className="flex-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-medium">{item.name}</span>
+                {(item as any).original_unit_price != null && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="text-[10px] gap-1 border-amber-500 text-amber-700 dark:text-amber-400">
+                          <AlertCircle className="h-3 w-3" />
+                          Preço alterado
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <div className="text-xs">
+                          <div>Tabela: {formatCurrency(Number((item as any).original_unit_price))}</div>
+                          <div>Aplicado: {formatCurrency(item.unit_price)}</div>
+                          {(item as any).price_override_reason && (
+                            <div className="italic mt-1 max-w-[200px]">{(item as any).price_override_reason}</div>
+                          )}
+                        </div>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
               </div>
               <div className="text-sm text-muted-foreground mt-1">
                 {formatCurrency(item.unit_price)} x {item.quantity} = {formatCurrency(item.total_price)}

@@ -44,6 +44,7 @@ import PortalCoupons from "./pages/portal/Coupons";
 import PortalSettings from "./pages/portal/Settings";
 import PortalCommissions from "./pages/portal/Commissions";
 import PortalSubscription from "./pages/portal/Subscription";
+import PortalAuditOverrides from "./pages/portal/AuditOverrides";
 // Interno Pages (Establishment Internal - operations)
 import InternoDashboard from "./pages/interno/Dashboard";
 import InternoAgenda from "./pages/interno/Agenda";
@@ -194,7 +195,8 @@ const App = () => (
               <Route path="/portal/:slug/cupons" element={<PortalCoupons />} />
               <Route path="/portal/:slug/configuracoes" element={<PortalSettings />} />
               <Route path="/portal/:slug/comissoes" element={<PortalCommissions />} />
-              <Route path="/portal/:slug/assinatura" element={<PortalSubscription />} />
+             <Route path="/portal/:slug/assinatura" element={<PortalSubscription />} />
+             <Route path="/portal/:slug/auditoria" element={<PortalAuditOverrides />} />
               <Route path="/portal/:slug/assistente-ia" element={<PortalAIAssistant />} />
               <Route path="/portal/:slug/conversas-ia" element={<PortalAIConversations />} />
               <Route path="/portal/:slug/aprendizados-ia" element={<PortalAILearnings />} />

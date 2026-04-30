@@ -23,6 +23,7 @@ import {
   Package,
   Brain,
   Tag,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -94,6 +95,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
     { href: `/portal/${slug}/conversas-ia`, label: "Conversas IA", icon: MessageCircle },
     { href: `/portal/${slug}/aprendizados-ia`, label: "Aprendizados IA", icon: Brain },
     { href: `/portal/${slug}/assinatura`, label: "Assinatura", icon: Crown },
+    { href: `/portal/${slug}/auditoria`, label: "Auditoria", icon: ShieldCheck },
     { href: `/portal/${slug}/configuracoes`, label: "Configurações", icon: Settings },
   ];
 
