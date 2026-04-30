@@ -16,7 +16,7 @@ import { NewTabDialog } from "@/components/tabs/NewTabDialog";
 import { AddItemDialog } from "@/components/tabs/AddItemDialog";
 import { TabDetailsCard } from "@/components/tabs/TabDetailsCard";
 import { TabListCard } from "@/components/tabs/TabListCard";
-import { CheckoutDialog, type CouponInfo } from "@/components/tabs/CheckoutDialog";
+import { CheckoutDialog, type CouponInfo, type CommissionDiscountFlags } from "@/components/tabs/CheckoutDialog";
 import type { TabWithDetails, TabPayment } from "@/types/tabs";
 import type { Tables } from "@/integrations/supabase/types";
 
