@@ -36,7 +36,7 @@ interface CheckoutDialogProps {
   tab: TabWithDetails | null;
   items: TabItem[];
   paymentMethods: PaymentMethod[];
-  onConfirm: (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[], couponInfo?: CouponInfo) => Promise<void>;
+  onConfirm: (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[], couponInfo?: CouponInfo, flags?: CommissionDiscountFlags) => Promise<void>;
   loading?: boolean;
   establishmentId?: string;
   discountPinThreshold?: number;
