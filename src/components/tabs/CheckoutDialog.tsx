@@ -8,10 +8,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Trash2, CreditCard, Check, AlertCircle, Tag, X, Percent, DollarSign } from "lucide-react";
+import { Loader2, Plus, Trash2, CreditCard, Check, AlertCircle, Tag, X, Percent, DollarSign, Pencil } from "lucide-react";
 import type { TabWithDetails, TabItem, PaymentMethod, TabPayment } from "@/types/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { ManualDiscountDialog } from "./ManualDiscountDialog";
 
 export interface CouponInfo {
   discount: number;
