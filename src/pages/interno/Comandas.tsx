@@ -256,7 +256,21 @@ export default function InternoComandas() {
 
         <NewTabDialog open={newTabOpen} onOpenChange={setNewTabOpen} onSubmit={handleCreateTab} clients={clients} professionals={professionals} services={services} />
         <AddItemDialog open={addItemOpen} onOpenChange={setAddItemOpen} onAddItem={handleAddItem} products={products} services={services} professionals={professionals} />
-        <CheckoutDialog open={checkoutOpen} onOpenChange={setCheckoutOpen} tab={selectedTab} items={items} paymentMethods={paymentMethods} onConfirm={handleCheckout} establishmentId={establishmentId || undefined} />
+        <CheckoutDialog
+          open={checkoutOpen}
+          onOpenChange={setCheckoutOpen}
+          tab={selectedTab}
+          items={items}
+          paymentMethods={paymentMethods}
+          onConfirm={handleCheckout}
+          establishmentId={establishmentId || undefined}
+          discountPinThreshold={discountPinThreshold}
+          onTabRefresh={async () => {
+            if (!selectedTab) return;
+            const { data } = await supabase.from("tabs").select("*").eq("id", selectedTab.id).single();
+            if (data) setSelectedTab({ ...selectedTab, ...data, status: data.status as TabWithDetails['status'] });
+          }}
+        />
       </div>
     </InternoLayout>
   );
