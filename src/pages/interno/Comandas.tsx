@@ -255,7 +255,7 @@ export default function InternoComandas() {
         )}
 
         <NewTabDialog open={newTabOpen} onOpenChange={setNewTabOpen} onSubmit={handleCreateTab} clients={clients} professionals={professionals} services={services} />
-        <AddItemDialog open={addItemOpen} onOpenChange={setAddItemOpen} onAddItem={handleAddItem} products={products} services={services} professionals={professionals} />
+        <AddItemDialog open={addItemOpen} onOpenChange={setAddItemOpen} onAddItem={handleAddItem} products={products} services={services} professionals={professionals} establishmentId={establishmentId || undefined} />
         <CheckoutDialog
           open={checkoutOpen}
           onOpenChange={setCheckoutOpen}
