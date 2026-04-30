@@ -532,6 +532,54 @@ export default function PortalSettings() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="checkout" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-primary" />
+                  Limite de desconto sem PIN
+                </CardTitle>
+                <CardDescription>
+                  Descontos manuais aplicados na comanda ou no caixa até este percentual
+                  do total não pedem autorização. Acima disso, será exigido o PIN de um
+                  gerente. Cupons e fidelidade não passam por essa regra (já são
+                  pré-aprovados).
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 max-w-sm">
+                <div className="space-y-2">
+                  <Label htmlFor="discount-pin-threshold">Percentual livre (%)</Label>
+                  <Input
+                    id="discount-pin-threshold"
+                    type="text"
+                    inputMode="decimal"
+                    value={discountPinThreshold}
+                    onChange={(e) =>
+                      setDiscountPinThreshold(
+                        e.target.value.replace(/[^0-9.,]/g, "").replace(",", "."),
+                      )
+                    }
+                    placeholder="10"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Ex.: 10 = qualquer desconto manual de até 10% é aplicado direto.
+                    Acima disso, exige PIN. Use 0 para exigir PIN em todo desconto manual.
+                  </p>
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveCheckoutSettings} disabled={savingCheckout}>
+                    {savingCheckout ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-2" />
+                    )}
+                    Salvar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </div>
     </PortalLayout>
