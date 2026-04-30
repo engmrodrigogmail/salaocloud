@@ -90,6 +90,14 @@ export function CheckoutDialog({
   const [appliedCoupon, setAppliedCoupon] = useState<ValidatedCoupon | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
 
+  // Commission discount policies (from establishment) + per-checkout flags
+  const [policyManual, setPolicyManual] = useState<Policy>('ask');
+  const [policyCoupon, setPolicyCoupon] = useState<Policy>('ask');
+  const [policyLoyalty, setPolicyLoyalty] = useState<Policy>('ask');
+  const [flagManual, setFlagManual] = useState<boolean>(false);
+  const [flagCoupon, setFlagCoupon] = useState<boolean>(false);
+  const [flagLoyalty, setFlagLoyalty] = useState<boolean>(false);
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
