@@ -15,7 +15,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShieldCheck, Filter } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { formatBrazilianDateTime } from "@/lib/dateUtils";
+import { formatDateTime } from "@/lib/dateUtils";
 
 interface AuditRow {
   id: string;
