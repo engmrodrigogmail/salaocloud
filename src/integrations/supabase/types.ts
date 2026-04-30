@@ -1045,6 +1045,7 @@ export type Database = {
           client_id: string | null
           coupon_id: string
           id: string
+          tab_id: string | null
           used_at: string
         }
         Insert: {
@@ -1052,6 +1053,7 @@ export type Database = {
           client_id?: string | null
           coupon_id: string
           id?: string
+          tab_id?: string | null
           used_at?: string
         }
         Update: {
@@ -1059,6 +1061,7 @@ export type Database = {
           client_id?: string | null
           coupon_id?: string
           id?: string
+          tab_id?: string | null
           used_at?: string
         }
         Relationships: [
@@ -1088,6 +1091,13 @@ export type Database = {
             columns: ["coupon_id"]
             isOneToOne: false
             referencedRelation: "discount_coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coupon_usage_tab_id_fkey"
+            columns: ["tab_id"]
+            isOneToOne: false
+            referencedRelation: "tabs"
             referencedColumns: ["id"]
           },
         ]
