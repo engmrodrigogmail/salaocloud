@@ -40,6 +40,15 @@ const signupSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 type SignupFormData = z.infer<typeof signupSchema>;
 
+interface AccessTarget {
+  kind: "owner" | "professional";
+  establishment_id: string;
+  establishment_name: string;
+  establishment_slug: string;
+  is_manager: boolean;
+  must_change_password: boolean;
+}
+
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const [isSignup, setIsSignup] = useState(searchParams.get("mode") === "signup");
@@ -47,11 +56,11 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [establishments, setEstablishments] = useState<{ slug: string; name: string }[]>([]);
+  const [targets, setTargets] = useState<AccessTarget[]>([]);
   const [showPicker, setShowPicker] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, signUp, user, role, loading } = useAuth();
+  const { signIn, signUp, user, role, roles, loading } = useAuth();
 
 
   const signupForm = useForm<SignupFormData>({
@@ -59,37 +68,54 @@ export default function Auth() {
     defaultValues: { fullName: "", email: "", password: "", confirmPassword: "" },
   });
 
-  const redirectToEstablishment = (userId: string) => {
-    supabase
-      .from("establishments")
-      .select("slug, name")
-      .eq("owner_id", userId)
-      .then(({ data }) => {
-        if (!data || data.length === 0) {
-          navigate("/onboarding");
-        } else if (data.length === 1) {
-          navigate(`/portal/${data[0].slug}`);
-        } else {
-          setEstablishments(data as { slug: string; name: string }[]);
-          setShowPicker(true);
-        }
-      });
+  const routeAuthenticatedUser = async (userId: string) => {
+    // Super admin sempre vai para /admin
+    if (role === "super_admin") {
+      navigate("/admin");
+      return;
+    }
+
+    // Busca todos os destinos (dono + profissional) via RPC unificada
+    const { data, error } = await supabase.rpc("get_user_access_targets" as never, {
+      _user_id: userId,
+    } as never);
+
+    if (error) {
+      console.error("get_user_access_targets failed", error);
+    }
+
+    const list = ((data as AccessTarget[] | null) ?? []);
+
+    // Cliente puro (sem ownership e sem vínculo de profissional)
+    if (list.length === 0) {
+      if (roles.includes("client")) {
+        navigate("/meus-agendamentos");
+      } else {
+        navigate("/onboarding");
+      }
+      return;
+    }
+
+    // Único destino → redireciona direto
+    if (list.length === 1) {
+      const t = list[0];
+      if (t.kind === "owner") navigate(`/portal/${t.establishment_slug}`);
+      else navigate(`/interno/${t.establishment_slug}`);
+      return;
+    }
+
+    // Múltiplos destinos (dono+profissional ou múltiplos salões) → seletor
+    setTargets(list);
+    setShowPicker(true);
   };
 
   // Redirect based on role when user is authenticated
   useEffect(() => {
     if (!loading && user && !showPicker) {
-      if (role === "super_admin") {
-        navigate("/admin");
-      } else if (role === "establishment") {
-        redirectToEstablishment(user.id);
-      } else if (role === "client") {
-        navigate("/meus-agendamentos");
-      } else {
-        redirectToEstablishment(user.id);
-      }
+      routeAuthenticatedUser(user.id);
     }
-  }, [user, role, loading, navigate, isSignup, showPicker]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, role, roles, loading, showPicker]);
 
   const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true);
@@ -174,27 +200,33 @@ export default function Auth() {
         <div className="max-w-md w-full premium-card p-6 sm:p-8">
           <img src={logo} alt="Salão Cloud" className="h-12 w-auto mb-8 mx-auto" />
           <h1 className="font-display text-2xl font-bold text-center mb-2">
-            Qual estabelecimento deseja acessar?
+            Onde você quer acessar?
           </h1>
           <p className="text-muted-foreground text-center mb-8">
-            Você possui {establishments.length} estabelecimentos cadastrados
+            Você tem {targets.length} formas de acesso disponíveis
           </p>
           <div className="space-y-3">
-            {establishments.map((est) => (
-              <button
-                key={est.slug}
-                onClick={() => navigate(`/portal/${est.slug}`)}
-                className="w-full flex items-center gap-4 p-4 rounded-xl border bg-card hover:border-primary hover:shadow-md transition-all text-left"
-              >
-                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <Building2 className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <div className="font-semibold">{est.name}</div>
-                  <div className="text-sm text-muted-foreground">/{est.slug}</div>
-                </div>
-              </button>
-            ))}
+            {targets.map((t) => {
+              const path = t.kind === "owner"
+                ? `/portal/${t.establishment_slug}`
+                : `/interno/${t.establishment_slug}`;
+              const label = t.kind === "owner" ? "Painel do dono" : (t.is_manager ? "Interno (Gerente)" : "Interno");
+              return (
+                <button
+                  key={`${t.kind}-${t.establishment_id}`}
+                  onClick={() => navigate(path)}
+                  className="w-full flex items-center gap-4 p-4 rounded-xl border bg-card hover:border-primary hover:shadow-md transition-all text-left"
+                >
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                    <Building2 className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <div className="font-semibold">{t.establishment_name}</div>
+                    <div className="text-sm text-muted-foreground">{label}</div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

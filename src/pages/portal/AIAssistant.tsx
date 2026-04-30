@@ -27,6 +27,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOwnerEstablishment } from "@/hooks/useOwnerEstablishment";
 
 interface WorkingHours {
   [key: string]: {
@@ -93,6 +94,7 @@ const DEFAULT_CONFIG: AIAssistantConfig = {
 export default function AIAssistant() {
   const { slug } = useParams<{ slug: string }>();
   const { user } = useAuth();
+  const { guard, establishmentId: ownerEstId } = useOwnerEstablishment(slug);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [config, setConfig] = useState<AIAssistantConfig>(DEFAULT_CONFIG);
@@ -253,7 +255,7 @@ export default function AIAssistant() {
     }));
   };
 
-  if (isLoading) {
+  if (guard || isLoading) {
     return (
       <PortalLayout>
         <div className="flex items-center justify-center h-64">

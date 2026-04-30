@@ -13,8 +13,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShieldCheck, Filter } from "lucide-react";
+import { ShieldCheck, Filter, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useOwnerEstablishment } from "@/hooks/useOwnerEstablishment";
 import { formatDateTime } from "@/lib/dateUtils";
 
 interface AuditRow {
@@ -39,6 +40,7 @@ const ACTION_LABELS: Record<string, string> = {
 
 export default function AuditOverrides() {
   const { slug } = useParams<{ slug: string }>();
+  const { guard } = useOwnerEstablishment(slug);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<AuditRow[]>([]);
   const [managers, setManagers] = useState<Record<string, string>>({});
@@ -107,6 +109,16 @@ export default function AuditOverrides() {
     }
     return String(v);
   };
+
+  if (guard) {
+    return (
+      <PortalLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      </PortalLayout>
+    );
+  }
 
   return (
     <PortalLayout>

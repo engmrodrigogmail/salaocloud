@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useOwnerEstablishment } from "@/hooks/useOwnerEstablishment";
 import { useAuth } from "@/contexts/AuthContext";
 import { Check, CreditCard, Loader2, Crown, Sparkles, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -37,6 +38,7 @@ interface Establishment {
 export default function PortalSubscription() {
   const { slug } = useParams<{ slug: string }>();
   const { user } = useAuth();
+  const { guard } = useOwnerEstablishment(slug);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [loading, setLoading] = useState(true);
@@ -179,7 +181,7 @@ export default function PortalSubscription() {
   const isCurrentPlan = (planSlug: string) => establishment?.subscription_plan === planSlug;
   const hasActiveSubscription = !!establishment?.stripe_subscription_id;
 
-  if (loading) {
+  if (guard || loading) {
     return (
       <PortalLayout>
         <div className="space-y-6">

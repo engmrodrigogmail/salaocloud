@@ -2,12 +2,15 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
-type UserRole = "super_admin" | "establishment" | "client" | "professional" | null;
+type UserRole = "super_admin" | "establishment" | "client" | "professional";
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  role: UserRole;
+  /** Papel principal (mais privilegiado) — mantido por retrocompatibilidade. */
+  role: UserRole | null;
+  /** Todos os papéis ativos do usuário. */
+  roles: UserRole[];
   loading: boolean;
   signUp: (email: string, password: string, fullName?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -16,57 +19,78 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const ROLE_PRIORITY: UserRole[] = ["super_admin", "establishment", "professional", "client"];
+
+function pickPrimaryRole(roles: UserRole[]): UserRole | null {
+  for (const r of ROLE_PRIORITY) {
+    if (roles.includes(r)) return r;
+  }
+  return null;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [role, setRole] = useState<UserRole>(null);
+  const [roles, setRoles] = useState<UserRole[]>([]);
+  const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchUserRole = async (userId: string) => {
+  const fetchUserRoles = async (userId: string): Promise<UserRole[]> => {
     try {
       const { data, error } = await supabase
         .from("user_roles")
         .select("role")
-        .eq("user_id", userId)
-        .maybeSingle();
+        .eq("user_id", userId);
 
       if (error) {
-        console.error("Erro ao buscar papel do usuário", error);
-        return null;
+        console.error("Erro ao buscar papéis do usuário", error);
+        return [];
       }
-      return data?.role as UserRole;
+      const list = (data ?? []).map((r: any) => r.role as UserRole);
+      // Inferir 'establishment' se for dono de algum salão (mesmo sem linha em user_roles)
+      const { data: ownEst } = await supabase
+        .from("establishments")
+        .select("id")
+        .eq("owner_id", userId)
+        .limit(1);
+      if (ownEst && ownEst.length > 0 && !list.includes("establishment")) {
+        list.push("establishment");
+      }
+      return list;
     } catch (err) {
-      console.error("Exceção ao buscar papel do usuário", err);
-      return null;
+      console.error("Exceção ao buscar papéis", err);
+      return [];
     }
   };
 
+  const applyRoles = (list: UserRole[]) => {
+    setRoles(list);
+    setRole(pickPrimaryRole(list));
+  };
+
   useEffect(() => {
-    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
 
-        // Defer role fetching with setTimeout to avoid deadlock
         if (session?.user) {
           setTimeout(() => {
-            fetchUserRole(session.user.id).then(setRole);
+            fetchUserRoles(session.user.id).then(applyRoles);
           }, 0);
         } else {
-          setRole(null);
+          applyRoles([]);
         }
       }
     );
 
-    // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
 
       if (session?.user) {
-        fetchUserRole(session.user.id).then((r) => {
-          setRole(r);
+        fetchUserRoles(session.user.id).then((list) => {
+          applyRoles(list);
           setLoading(false);
         });
       } else {
@@ -79,44 +103,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName?: string) => {
     const redirectUrl = `${window.location.origin}/`;
-    
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         emailRedirectTo: redirectUrl,
-        data: {
-          full_name: fullName,
-        },
+        data: { full_name: fullName },
       },
     });
     return { error };
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (!error) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const userRole = await fetchUserRole(user.id);
-        setRole(userRole);
+        const list = await fetchUserRoles(user.id);
+        applyRoles(list);
       }
     }
-
     return { error };
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setRole(null);
+    applyRoles([]);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, role, roles, loading, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

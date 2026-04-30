@@ -39,9 +39,10 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Copy, Tag, Users, TrendingUp, Ticket } from "lucide-react";
+import { Plus, Edit, Trash2, Copy, Tag, Users, TrendingUp, Ticket, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOwnerEstablishment } from "@/hooks/useOwnerEstablishment";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -87,6 +88,7 @@ interface CouponUsage {
 export default function PortalCoupons() {
   const { slug } = useParams<{ slug: string }>();
   const { user } = useAuth();
+  const { guard } = useOwnerEstablishment(slug);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [usages, setUsages] = useState<CouponUsage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -355,6 +357,16 @@ export default function PortalCoupons() {
     activeCoupons: coupons.filter((c) => c.is_active).length,
     totalUses: coupons.reduce((acc, c) => acc + c.current_uses, 0),
   };
+
+  if (guard) {
+    return (
+      <PortalLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      </PortalLayout>
+    );
+  }
 
   return (
     <PortalLayout>

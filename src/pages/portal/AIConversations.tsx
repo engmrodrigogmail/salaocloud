@@ -58,6 +58,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useOwnerEstablishment } from "@/hooks/useOwnerEstablishment";
 import { toast } from "sonner";
 import { format, formatDistanceToNow, subDays, subMonths, isAfter, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -88,6 +89,7 @@ const CONVERSATIONS_PER_PAGE = 10;
 
 export default function AIConversations() {
   const { slug } = useParams<{ slug: string }>();
+  const { guard } = useOwnerEstablishment(slug);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -400,6 +402,16 @@ export default function AIConversations() {
     }
     return 0;
   };
+
+  if (guard) {
+    return (
+      <PortalLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      </PortalLayout>
+    );
+  }
 
   return (
     <PortalLayout>

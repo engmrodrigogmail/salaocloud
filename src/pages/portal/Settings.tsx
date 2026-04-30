@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useOwnerEstablishment } from "@/hooks/useOwnerEstablishment";
 import { useAuth } from "@/contexts/AuthContext";
 import { Clock, Save, Loader2, Users, Settings, CalendarDays, Eye, ShieldCheck } from "lucide-react";
 import type { Tables, Json } from "@/integrations/supabase/types";
@@ -56,6 +57,7 @@ const DAY_NAMES: Record<string, string> = {
 export default function PortalSettings() {
   const { slug } = useParams<{ slug: string }>();
   const { user, loading: authLoading } = useAuth();
+  const { guard } = useOwnerEstablishment(slug);
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -245,6 +247,16 @@ export default function PortalSettings() {
     { value: "checkout", label: "Caixa & Comandas", icon: ShieldCheck },
   ];
 
+
+  if (guard) {
+    return (
+      <PortalLayout>
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        </div>
+      </PortalLayout>
+    );
+  }
 
   return (
     <PortalLayout>
