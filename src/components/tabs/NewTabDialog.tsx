@@ -140,7 +140,9 @@ export function NewTabDialog({
             </Select>
             {requiresProfessional && (
               <p className="text-xs text-muted-foreground">
-                Obrigatório em comanda avulsa (sem cliente cadastrado).
+                {isAvulsa
+                  ? "Obrigatório em comanda avulsa (sem cliente cadastrado)."
+                  : "Obrigatório quando há serviço inicial — necessário para bloquear a agenda."}
               </p>
             )}
           </div>
