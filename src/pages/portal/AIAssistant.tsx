@@ -93,6 +93,7 @@ const DEFAULT_CONFIG: AIAssistantConfig = {
 export default function AIAssistant() {
   const { slug } = useParams<{ slug: string }>();
   const { user } = useAuth();
+  const { guard, establishmentId: ownerEstId } = useOwnerEstablishment(slug);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [config, setConfig] = useState<AIAssistantConfig>(DEFAULT_CONFIG);
