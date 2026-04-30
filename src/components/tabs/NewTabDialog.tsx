@@ -71,7 +71,9 @@ export function NewTabDialog({
   const isAvulsa = !clientId;
   // Service is also required whenever a professional is selected (to know how long to block the agenda).
   const requiresService = professionalId.length > 0 || isAvulsa;
-  const requiresProfessional = isAvulsa;
+  // Professional is required whenever there is an initial service (otherwise we can't block the agenda)
+  // or in "avulsa" mode.
+  const requiresProfessional = isAvulsa || serviceId.length > 0;
   const isValid =
     clientName.trim().length > 0 &&
     (!requiresProfessional || professionalId.length > 0) &&
