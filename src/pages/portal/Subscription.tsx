@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useOwnerEstablishment } from "@/hooks/useOwnerEstablishment";
 import { useAuth } from "@/contexts/AuthContext";
 import { Check, CreditCard, Loader2, Crown, Sparkles, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";

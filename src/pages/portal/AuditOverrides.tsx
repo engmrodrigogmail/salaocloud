@@ -15,6 +15,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShieldCheck, Filter } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useOwnerEstablishment } from "@/hooks/useOwnerEstablishment";
 import { formatDateTime } from "@/lib/dateUtils";
 
 interface AuditRow {

@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useOwnerEstablishment } from "@/hooks/useOwnerEstablishment";
 import { useAuth } from "@/contexts/AuthContext";
 import { Clock, Save, Loader2, Users, Settings, CalendarDays, Eye, ShieldCheck } from "lucide-react";
 import type { Tables, Json } from "@/integrations/supabase/types";
