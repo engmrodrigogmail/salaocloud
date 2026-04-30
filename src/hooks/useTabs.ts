@@ -322,11 +322,18 @@ export function useTabs(establishmentId: string | null) {
 
       if (deleteError) throw deleteError;
 
-      // Revert appointment back to "confirmed" so it returns to the agenda as pending
+      // Restore appointment to its original status (saved as previous_status when it became in_service)
       if (tab.appointment_id) {
+        const { data: appt } = await supabase
+          .from("appointments")
+          .select("previous_status, confirmed_at")
+          .eq("id", tab.appointment_id)
+          .maybeSingle() as any;
+        const restoreStatus = appt?.previous_status
+          || (appt?.confirmed_at ? "confirmed" : "pending");
         await supabase
           .from("appointments")
-          .update({ status: "confirmed" })
+          .update({ status: restoreStatus, previous_status: null } as never)
           .eq("id", tab.appointment_id)
           .eq("status", "in_service");
       }
