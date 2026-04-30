@@ -1469,6 +1469,7 @@ export type Database = {
           city: string | null
           created_at: string
           description: string | null
+          discount_pin_threshold_percent: number
           email: string | null
           id: string
           logo_url: string | null
@@ -1503,6 +1504,7 @@ export type Database = {
           city?: string | null
           created_at?: string
           description?: string | null
+          discount_pin_threshold_percent?: number
           email?: string | null
           id?: string
           logo_url?: string | null
@@ -1537,6 +1539,7 @@ export type Database = {
           city?: string | null
           created_at?: string
           description?: string | null
+          discount_pin_threshold_percent?: number
           email?: string | null
           id?: string
           logo_url?: string | null
