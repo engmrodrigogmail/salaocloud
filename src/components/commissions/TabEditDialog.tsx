@@ -158,19 +158,54 @@ export function TabEditDialog({
     }).format(value);
   };
 
-  const handleAddCommission = async () => {
+  const requestAdd = () => {
     if (!newCommission.professional_id || !newCommission.justification) {
       toast.error("Preencha o profissional e a justificativa");
       return;
     }
+    setPendingAction({ type: "add" });
+    setPinOpen(true);
+  };
 
+  const requestDelete = (commissionId: string) => {
+    setPendingAction({ type: "delete", commissionId });
+    setPinOpen(true);
+  };
+
+  const startEdit = (commission: TabCommission) => {
+    setEditingId(commission.id);
+    setEditValue(Number(commission.commission_amount).toFixed(2));
+    setEditJustification("");
+  };
+
+  const requestEdit = () => {
+    if (!editingId) return;
+    const newAmount = parseFloat((editValue || "0").replace(",", "."));
+    if (isNaN(newAmount) || newAmount < 0) {
+      toast.error("Informe um valor válido");
+      return;
+    }
+    if (!editJustification.trim()) {
+      toast.error("Informe a justificativa");
+      return;
+    }
+    const cur = commissions.find((c) => c.id === editingId);
+    if (!cur) return;
+    setPendingAction({
+      type: "edit",
+      commissionId: editingId,
+      newAmount,
+      oldAmount: Number(cur.commission_amount),
+    });
+    setPinOpen(true);
+  };
+
+  const performAdd = async (managerProfessionalId: string) => {
     setLoading(true);
     try {
       let commissionAmount = newCommission.commission_value;
-
-      // If percentage and reference item selected, calculate from item
       if (newCommission.commission_type === "percentage" && newCommission.reference_item_id) {
-        const item = tab?.tab_items.find(i => i.id === newCommission.reference_item_id);
+        const item = tab?.tab_items.find((i) => i.id === newCommission.reference_item_id);
         if (item) {
           commissionAmount = (Number(item.total_price) * newCommission.commission_value) / 100;
         }
@@ -183,8 +218,8 @@ export function TabEditDialog({
           professional_id: newCommission.professional_id,
           tab_id: tab?.id,
           commission_amount: commissionAmount,
-          reference_value: newCommission.reference_item_id 
-            ? Number(tab?.tab_items.find(i => i.id === newCommission.reference_item_id)?.total_price || 0)
+          reference_value: newCommission.reference_item_id
+            ? Number(tab?.tab_items.find((i) => i.id === newCommission.reference_item_id)?.total_price || 0)
             : 0,
           description: newCommission.justification,
           is_manual: true,
@@ -204,7 +239,6 @@ export function TabEditDialog({
 
       if (error) throw error;
 
-      // Add audit log
       await supabase.from("commission_audit_log").insert({
         commission_id: data.id,
         user_id: user?.id,
@@ -217,7 +251,18 @@ export function TabEditDialog({
         justification: newCommission.justification,
       });
 
-      setCommissions([...commissions, data]);
+      await logManagerOverride({
+        establishmentId,
+        managerProfessionalId,
+        actionType: "commission_create_manual",
+        targetType: "professional_commission",
+        targetId: data.id,
+        tabId: tab?.id,
+        newValue: { amount: commissionAmount, professional_id: newCommission.professional_id },
+        reason: newCommission.justification,
+      });
+
+      setCommissions([...commissions, data as TabCommission]);
       setShowAddForm(false);
       setNewCommission({
         professional_id: "",
@@ -237,15 +282,10 @@ export function TabEditDialog({
     }
   };
 
-  const handleDeleteCommission = async (commissionId: string) => {
-    const commission = commissions.find(c => c.id === commissionId);
-    if (!commission?.is_manual) {
-      toast.error("Apenas comissões manuais podem ser removidas");
-      return;
-    }
-
+  const performDelete = async (commissionId: string, managerProfessionalId: string) => {
+    const commission = commissions.find((c) => c.id === commissionId);
+    if (!commission) return;
     try {
-      // First add audit log before deletion
       await supabase.from("commission_audit_log").insert({
         commission_id: commissionId,
         user_id: user?.id,
@@ -254,7 +294,7 @@ export function TabEditDialog({
           amount: commission.commission_amount,
           description: commission.description,
         },
-        justification: "Comissão manual removida",
+        justification: "Comissão removida (autorizado por gerente)",
       });
 
       const { error } = await supabase
@@ -264,12 +304,87 @@ export function TabEditDialog({
 
       if (error) throw error;
 
-      setCommissions(commissions.filter(c => c.id !== commissionId));
+      await logManagerOverride({
+        establishmentId,
+        managerProfessionalId,
+        actionType: "commission_delete",
+        targetType: "professional_commission",
+        targetId: commissionId,
+        tabId: tab?.id,
+        oldValue: { amount: commission.commission_amount },
+        reason: "Comissão removida via TabEditDialog",
+      });
+
+      setCommissions(commissions.filter((c) => c.id !== commissionId));
       toast.success("Comissão removida!");
     } catch (error) {
       console.error("Error deleting commission:", error);
       toast.error("Erro ao remover comissão");
     }
+  };
+
+  const performEdit = async (
+    commissionId: string,
+    newAmount: number,
+    oldAmount: number,
+    managerProfessionalId: string,
+  ) => {
+    try {
+      const { error } = await supabase
+        .from("professional_commissions")
+        .update({ commission_amount: newAmount })
+        .eq("id", commissionId);
+      if (error) throw error;
+
+      await supabase.from("commission_audit_log").insert({
+        commission_id: commissionId,
+        user_id: user?.id,
+        action: "updated",
+        old_values: { amount: oldAmount },
+        new_values: { amount: newAmount },
+        justification: editJustification,
+      });
+
+      await logManagerOverride({
+        establishmentId,
+        managerProfessionalId,
+        actionType: "commission_amount_override",
+        targetType: "professional_commission",
+        targetId: commissionId,
+        tabId: tab?.id,
+        oldValue: { amount: oldAmount },
+        newValue: { amount: newAmount },
+        reason: editJustification,
+      });
+
+      setCommissions(
+        commissions.map((c) =>
+          c.id === commissionId ? { ...c, commission_amount: newAmount } : c,
+        ),
+      );
+      setEditingId(null);
+      setEditValue("");
+      setEditJustification("");
+      toast.success("Valor da comissão atualizado");
+      fetchAuditLogs();
+    } catch (e) {
+      console.error("Error updating commission:", e);
+      toast.error("Erro ao atualizar comissão");
+    }
+  };
+
+  const runPendingAction = async (managerProfessionalId: string) => {
+    if (!pendingAction) return;
+    if (pendingAction.type === "add") await performAdd(managerProfessionalId);
+    else if (pendingAction.type === "delete") await performDelete(pendingAction.commissionId, managerProfessionalId);
+    else if (pendingAction.type === "edit")
+      await performEdit(
+        pendingAction.commissionId,
+        pendingAction.newAmount,
+        pendingAction.oldAmount,
+        managerProfessionalId,
+      );
+    setPendingAction(null);
   };
 
   if (!tab) return null;
