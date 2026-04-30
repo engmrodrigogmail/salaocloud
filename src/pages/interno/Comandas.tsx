@@ -185,7 +185,7 @@ export default function InternoComandas() {
               </Button>
             </div>
 
-            <Tabs value={activeView} onValueChange={(v) => { setActiveView(v as "open" | "history"); fetchTabs(v === "open" ? "open" : "closed"); }}>
+            <Tabs value={activeView} onValueChange={(v) => { setActiveView(v as "open" | "history"); fetchTabs(v === "open" ? "open" : "history"); }}>
               <TabsList>
                 <TabsTrigger value="open" className="flex items-center gap-2">
                   <Receipt className="h-4 w-4" />
