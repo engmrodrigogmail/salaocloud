@@ -49,6 +49,7 @@ import InternoDashboard from "./pages/interno/Dashboard";
 import InternoAgenda from "./pages/interno/Agenda";
 import InternoComandas from "./pages/interno/Comandas";
 import InternoComissoes from "./pages/interno/Comissoes";
+import InternoPerfil from "./pages/interno/Perfil";
 
 // Portal Agenda & AI
 import PortalAgenda from "./pages/portal/Agenda";
@@ -203,6 +204,7 @@ const App = () => (
               <Route path="/interno/:slug/agenda" element={<InternoAgenda />} />
               <Route path="/interno/:slug/comandas" element={<InternoComandas />} />
               <Route path="/interno/:slug/comissoes" element={<InternoComissoes />} />
+              <Route path="/interno/:slug/perfil" element={<InternoPerfil />} />
 
               {/* Public client portal - /{slug} opens client booking page */}
               <Route path="/:slug" element={<ClientPortal />} />
