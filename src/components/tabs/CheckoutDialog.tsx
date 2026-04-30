@@ -586,6 +586,22 @@ export function CheckoutDialog({
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {establishmentId && tab && (
+        <ManualDiscountDialog
+          open={manualDiscountOpen}
+          onOpenChange={setManualDiscountOpen}
+          establishmentId={establishmentId}
+          tabId={tab.id}
+          subtotal={subtotal}
+          currentDiscount={existingDiscount}
+          currentReducesCommission={(tab as any).discount_reduces_commission === true}
+          pinThresholdPercent={discountPinThreshold}
+          onApplied={async () => {
+            if (onTabRefresh) await onTabRefresh();
+          }}
+        />
+      )}
     </Dialog>
   );
 }
