@@ -263,7 +263,7 @@ export function useCommissionCalculator(establishmentId: string | null) {
           tab_item_id: item.id,
           reference_value: referenceValue,
           commission_amount: commissionAmount,
-          description: reduces
+          description: reducesByType
             ? `${description} — base após desconto`
             : description,
         });
