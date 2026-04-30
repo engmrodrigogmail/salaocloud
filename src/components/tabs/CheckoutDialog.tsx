@@ -171,6 +171,30 @@ export function CheckoutDialog({
     }
   }, [total, open, payments.length]);
 
+  // Fetch establishment commission policies + initialize per-checkout flags from tab
+  useEffect(() => {
+    if (!open || !establishmentId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("establishments")
+        .select("commission_discount_policy_manual, commission_discount_policy_coupon, commission_discount_policy_loyalty")
+        .eq("id", establishmentId)
+        .maybeSingle();
+      const pm = ((data as any)?.commission_discount_policy_manual ?? 'ask') as Policy;
+      const pc = ((data as any)?.commission_discount_policy_coupon ?? 'ask') as Policy;
+      const pl = ((data as any)?.commission_discount_policy_loyalty ?? 'ask') as Policy;
+      setPolicyManual(pm);
+      setPolicyCoupon(pc);
+      setPolicyLoyalty(pl);
+
+      // Initial flag values: 'always' => true, 'never' => false, 'ask' => current tab value (or false)
+      const tabAny = tab as any;
+      setFlagManual(pm === 'always' ? true : pm === 'never' ? false : (tabAny?.commission_discount_on_manual === true));
+      setFlagCoupon(pc === 'always' ? true : pc === 'never' ? false : (tabAny?.commission_discount_on_coupon === true));
+      setFlagLoyalty(pl === 'always' ? true : pl === 'never' ? false : (tabAny?.commission_discount_on_loyalty === true));
+    })();
+  }, [open, establishmentId, tab?.id]);
+
   const validateCoupon = async () => {
     if (!couponCode.trim() || !establishmentId) return;
     
