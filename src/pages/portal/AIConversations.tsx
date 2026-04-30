@@ -88,6 +88,7 @@ const CONVERSATIONS_PER_PAGE = 10;
 
 export default function AIConversations() {
   const { slug } = useParams<{ slug: string }>();
+  const { guard } = useOwnerEstablishment(slug);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);

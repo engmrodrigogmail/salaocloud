@@ -37,6 +37,7 @@ interface Establishment {
 export default function PortalSubscription() {
   const { slug } = useParams<{ slug: string }>();
   const { user } = useAuth();
+  const { guard } = useOwnerEstablishment(slug);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [loading, setLoading] = useState(true);

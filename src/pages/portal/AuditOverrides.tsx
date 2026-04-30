@@ -39,6 +39,7 @@ const ACTION_LABELS: Record<string, string> = {
 
 export default function AuditOverrides() {
   const { slug } = useParams<{ slug: string }>();
+  const { guard } = useOwnerEstablishment(slug);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<AuditRow[]>([]);
   const [managers, setManagers] = useState<Record<string, string>>({});

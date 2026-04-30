@@ -39,9 +39,10 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
-import { Plus, Edit, Trash2, Copy, Tag, Users, TrendingUp, Ticket } from "lucide-react";
+import { Plus, Edit, Trash2, Copy, Tag, Users, TrendingUp, Ticket, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useOwnerEstablishment } from "@/hooks/useOwnerEstablishment";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";

@@ -56,6 +56,7 @@ const DAY_NAMES: Record<string, string> = {
 export default function PortalSettings() {
   const { slug } = useParams<{ slug: string }>();
   const { user, loading: authLoading } = useAuth();
+  const { guard } = useOwnerEstablishment(slug);
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
