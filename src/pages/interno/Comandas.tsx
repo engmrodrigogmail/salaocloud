@@ -130,26 +130,28 @@ export default function InternoComandas() {
     }
   };
 
-  const handleCheckout = async (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[], couponInfo?: CouponInfo) => {
+  const handleCheckout = async (
+    payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[],
+    couponInfo?: CouponInfo,
+    flags?: CommissionDiscountFlags,
+  ) => {
     if (!selectedTab) return;
-    
-    // Update discount if coupon was applied
+
+    // Update discount if coupon was applied (kept here for backward compat — apply_coupon_to_tab
+    // RPC is the recommended atomic path, but legacy UI still tracks this here).
     if (couponInfo && couponInfo.discount > 0) {
       const currentDiscount = selectedTab.discount_amount || 0;
       const newTotal = selectedTab.total - couponInfo.discount;
       await supabase
         .from("tabs")
-        .update({ 
+        .update({
           discount_amount: currentDiscount + couponInfo.discount,
-          total: newTotal
+          total: newTotal,
         })
         .eq("id", selectedTab.id);
-      
-      // TODO: Commission calculation can use couponInfo.calculateCommissionAfterDiscount
-      // to determine whether to calculate commission on original or discounted value
     }
-    
-    const success = await closeTab(selectedTab.id, payments, items);
+
+    const success = await closeTab(selectedTab.id, payments, items, flags);
     if (success) { setCheckoutOpen(false); setSelectedTab(null); }
   };
 
