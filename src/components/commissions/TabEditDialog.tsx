@@ -31,10 +31,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Trash2, History, Save } from "lucide-react";
+import { Plus, Trash2, History, Save, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ManagerPinDialog, logManagerOverride } from "@/components/security/ManagerPinDialog";
 
 interface TabItem {
   id: string;
@@ -104,7 +105,20 @@ export function TabEditDialog({
   const [showHistory, setShowHistory] = useState(false);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [commissions, setCommissions] = useState<TabCommission[]>([]);
-  
+
+  // PIN gating
+  type PendingAction =
+    | { type: "add" }
+    | { type: "delete"; commissionId: string }
+    | { type: "edit"; commissionId: string; newAmount: number; oldAmount: number };
+  const [pinOpen, setPinOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+
+  // Edit value flow
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string>("");
+  const [editJustification, setEditJustification] = useState<string>("");
+
   // New commission form
   const [showAddForm, setShowAddForm] = useState(false);
   const [newCommission, setNewCommission] = useState({
