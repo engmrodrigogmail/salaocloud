@@ -304,7 +304,7 @@ export function TabDetailsCard({
               <div className="flex justify-between text-sm text-green-600">
                 <span>
                   Desconto
-                  {(tab as any).discount_reduces_commission && (
+                  {((tab as any).commission_discount_on_manual || (tab as any).commission_discount_on_coupon || (tab as any).commission_discount_on_loyalty) && (
                     <span className="text-[10px] ml-1 text-muted-foreground">
                       (abate comissão)
                     </span>
