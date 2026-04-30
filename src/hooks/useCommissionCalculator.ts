@@ -142,40 +142,68 @@ export function useCommissionCalculator(establishmentId: string | null) {
       .map(item => item.professional_id!)
     )];
 
-    // Fetch tab to know if discount should reduce commission
+    // Fetch tab with new granular flags
     const { data: tab } = await supabase
       .from("tabs")
-      .select("discount_amount, discount_reduces_commission, subtotal, coupon_id")
+      .select("discount_amount, discount_type, subtotal, coupon_id, commission_discount_on_manual, commission_discount_on_coupon, commission_discount_on_loyalty")
       .eq("id", tabId)
       .maybeSingle();
 
-    // If a coupon was applied, look up its
-    // calculate_commission_after_discount flag (defaults to true).
-    let couponReducesCommission = true;
-    if (tab?.coupon_id) {
+    // Coupon scope (target + ids) drives pro-rata base
+    let couponTarget: 'total' | 'services' | 'products' = 'total';
+    let couponServiceIds: string[] = [];
+    let couponProductIds: string[] = [];
+    if ((tab as any)?.coupon_id) {
       const { data: coupon } = await supabase
         .from("discount_coupons")
-        .select("calculate_commission_after_discount")
-        .eq("id", tab.coupon_id)
+        .select("discount_target, applicable_service_ids, applicable_product_ids")
+        .eq("id", (tab as any).coupon_id)
         .maybeSingle();
-      if (coupon && coupon.calculate_commission_after_discount === false) {
-        couponReducesCommission = false;
+      if (coupon) {
+        couponTarget = (coupon.discount_target as any) || 'total';
+        couponServiceIds = coupon.applicable_service_ids || [];
+        couponProductIds = coupon.applicable_product_ids || [];
       }
     }
 
-    // Effective discount that should pro-rata reduce commission base.
-    // For manual discounts the operator chose explicitly via
-    // `discount_reduces_commission`. For coupon-based discounts the coupon
-    // configuration controls it. We collapse both into a single "should we
-    // shrink the base?" boolean per tab.
-    const totalDiscount = Number(tab?.discount_amount) || 0;
-    const itemsSubtotal = items.reduce((s, it) => s + Number(it.total_price), 0);
-    const reduces =
-      totalDiscount > 0 &&
-      itemsSubtotal > 0 &&
-      ((tab as any)?.discount_reduces_commission === true || (tab?.coupon_id && couponReducesCommission));
-    const discountFactor = reduces
-      ? Math.max(0, 1 - totalDiscount / itemsSubtotal)
+    const totalDiscount = Number((tab as any)?.discount_amount) || 0;
+    const dType: string | null = (tab as any)?.discount_type || null;
+
+    // Decide if this discount type reduces commission, using granular flags
+    const reducesByType = (() => {
+      if (totalDiscount <= 0) return false;
+      if (dType === 'manual') return (tab as any)?.commission_discount_on_manual === true;
+      if (dType === 'coupon') return (tab as any)?.commission_discount_on_coupon === true;
+      if (dType === 'loyalty') return (tab as any)?.commission_discount_on_loyalty === true;
+      // fallback (mixed/unknown): conservative true if any flag enabled
+      return (tab as any)?.commission_discount_on_manual === true
+          || (tab as any)?.commission_discount_on_coupon === true
+          || (tab as any)?.commission_discount_on_loyalty === true;
+    })();
+
+    // Helper: is item in coupon scope?
+    const itemInCouponScope = (item: TabItem): boolean => {
+      if (couponTarget === 'total') return true;
+      if (couponTarget === 'services') {
+        if (!item.service_id) return false;
+        return couponServiceIds.length === 0 || couponServiceIds.includes(item.service_id);
+      }
+      if (couponTarget === 'products') {
+        if (!item.product_id) return false;
+        return couponProductIds.length === 0 || couponProductIds.includes(item.product_id);
+      }
+      return true;
+    };
+
+    // Compute the eligible base for the discount (pro-rata over scope only)
+    const eligibleBase = items.reduce((s, it) => {
+      // Manual/loyalty discounts always apply on full subtotal (no scope)
+      const inScope = dType === 'coupon' ? itemInCouponScope(it) : true;
+      return s + (inScope ? Number(it.total_price) : 0);
+    }, 0);
+
+    const discountFactorScoped = reducesByType && eligibleBase > 0
+      ? Math.max(0, 1 - totalDiscount / eligibleBase)
       : 1;
 
     // Fetch both commission rules and professional-specific commissions in parallel
