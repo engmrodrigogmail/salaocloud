@@ -255,7 +255,7 @@ export default function AIAssistant() {
     }));
   };
 
-  if (isLoading) {
+  if (guard || isLoading) {
     return (
       <PortalLayout>
         <div className="flex items-center justify-center h-64">
