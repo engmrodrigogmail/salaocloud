@@ -280,9 +280,27 @@ export function TabDetailsCard({
             </div>
             {discount > 0 && (
               <div className="flex justify-between text-sm text-green-600">
-                <span>Desconto</span>
+                <span>
+                  Desconto
+                  {(tab as any).discount_reduces_commission && (
+                    <span className="text-[10px] ml-1 text-muted-foreground">
+                      (abate comissão)
+                    </span>
+                  )}
+                </span>
                 <span>-{formatCurrency(discount)}</span>
               </div>
+            )}
+            {tab.status === "open" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-muted-foreground hover:text-foreground"
+                onClick={() => setDiscountOpen(true)}
+              >
+                <Tag className="h-4 w-4 mr-2" />
+                {discount > 0 ? "Editar desconto manual" : "Aplicar desconto manual"}
+              </Button>
             )}
             <Separator />
             <div className="flex justify-between font-bold text-lg">
@@ -292,6 +310,22 @@ export function TabDetailsCard({
           </div>
         </CardContent>
       </Card>
+
+      {establishmentId && (
+        <ManualDiscountDialog
+          open={discountOpen}
+          onOpenChange={setDiscountOpen}
+          establishmentId={establishmentId}
+          tabId={tab.id}
+          subtotal={subtotal}
+          currentDiscount={discount}
+          currentReducesCommission={(tab as any).discount_reduces_commission === true}
+          pinThresholdPercent={discountPinThreshold}
+          onApplied={async () => {
+            if (onDiscountChanged) await onDiscountChanged();
+          }}
+        />
+      )}
 
       {/* Actions */}
       {tab.status === "open" && (
