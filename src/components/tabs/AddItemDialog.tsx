@@ -40,6 +40,8 @@ interface AddItemDialogProps {
   loading?: boolean;
   /** Required to open the manager PIN dialog when overriding catalog price */
   establishmentId?: string;
+  /** Pre-fill professional from the tab (e.g. tab.professional_id) */
+  defaultProfessionalId?: string | null;
 }
 
 export function AddItemDialog({
@@ -51,6 +53,7 @@ export function AddItemDialog({
   professionals,
   loading = false,
   establishmentId,
+  defaultProfessionalId,
 }: AddItemDialogProps) {
   const [activeTab, setActiveTab] = useState<string>("products");
   const [quantity, setQuantity] = useState("1");
