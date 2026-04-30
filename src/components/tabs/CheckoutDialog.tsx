@@ -22,6 +22,14 @@ export interface CouponInfo {
   applicableProductIds: string[];
 }
 
+export interface CommissionDiscountFlags {
+  commission_discount_on_manual: boolean;
+  commission_discount_on_coupon: boolean;
+  commission_discount_on_loyalty: boolean;
+}
+
+type Policy = 'always' | 'never' | 'ask';
+
 interface CheckoutDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
