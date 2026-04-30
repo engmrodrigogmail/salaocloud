@@ -303,6 +303,9 @@ export function CheckoutDialog({
   };
 
   const handleConfirm = async () => {
+    // Ensure tab total is fresh before validation in close_tab_atomic
+    if (onTabRefresh) await onTabRefresh();
+
     const paymentData = payments.map(p => ({
       payment_method_id: p.payment_method_id,
       payment_method_name: p.payment_method_name,
@@ -313,19 +316,8 @@ export function CheckoutDialog({
       notes: null,
     }));
 
-    // Register coupon usage if applied
-    if (appliedCoupon && tab) {
-      await supabase.from("coupon_usage").insert({
-        coupon_id: appliedCoupon.id,
-        client_id: tab.client_id,
-      });
-
-      // Increment coupon uses
-      await supabase
-        .from("discount_coupons")
-        .update({ current_uses: (await supabase.from("discount_coupons").select("current_uses").eq("id", appliedCoupon.id).single()).data?.current_uses + 1 || 1 })
-        .eq("id", appliedCoupon.id);
-    }
+    // Coupon usage is now recorded atomically inside close_tab_atomic RPC
+    // (uses INSERT ... ON CONFLICT (coupon_id, tab_id) DO NOTHING via the new tab_id column).
 
     const couponInfo: CouponInfo | undefined = appliedCoupon ? {
       discount: couponDiscount,
