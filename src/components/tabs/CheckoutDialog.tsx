@@ -595,7 +595,7 @@ export function CheckoutDialog({
           tabId={tab.id}
           subtotal={subtotal}
           currentDiscount={existingDiscount}
-          currentReducesCommission={(tab as any).discount_reduces_commission === true}
+          currentReducesCommission={(tab as any).commission_discount_on_manual === true}
           pinThresholdPercent={discountPinThreshold}
           onApplied={async () => {
             if (onTabRefresh) await onTabRefresh();
