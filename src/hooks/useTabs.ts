@@ -10,7 +10,7 @@ export function useTabs(establishmentId: string | null) {
   const [tabs, setTabs] = useState<TabWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchTabs = useCallback(async (status?: 'open' | 'closed' | 'cancelled') => {
+  const fetchTabs = useCallback(async (status?: 'open' | 'closed' | 'cancelled' | 'history') => {
     if (!establishmentId) return;
 
     setLoading(true);
@@ -25,7 +25,9 @@ export function useTabs(establishmentId: string | null) {
         .eq("establishment_id", establishmentId)
         .order("opened_at", { ascending: false });
 
-      if (status) {
+      if (status === 'history') {
+        query = query.in("status", ["closed", "cancelled"]);
+      } else if (status) {
         query = query.eq("status", status);
       }
 
