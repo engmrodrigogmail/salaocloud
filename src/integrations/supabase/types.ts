@@ -1647,6 +1647,48 @@ export type Database = {
           },
         ]
       }
+      manager_pin_audit: {
+        Row: {
+          action_type: string
+          created_at: string
+          establishment_id: string
+          id: string
+          manager_professional_id: string
+          new_value: Json | null
+          old_value: Json | null
+          reason: string | null
+          tab_id: string | null
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action_type: string
+          created_at?: string
+          establishment_id: string
+          id?: string
+          manager_professional_id: string
+          new_value?: Json | null
+          old_value?: Json | null
+          reason?: string | null
+          tab_id?: string | null
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action_type?: string
+          created_at?: string
+          establishment_id?: string
+          id?: string
+          manager_professional_id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          reason?: string | null
+          tab_id?: string | null
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
+      }
       payment_methods: {
         Row: {
           allows_installments: boolean
@@ -2191,9 +2233,12 @@ export type Database = {
           establishment_id: string
           id: string
           is_active: boolean
+          is_manager: boolean
           leasing_base_date: string | null
           leasing_type: string | null
           leasing_value: number | null
+          manager_pin_hash: string | null
+          manager_pin_set_at: string | null
           name: string
           phone: string | null
           specialties: string[] | null
@@ -2208,9 +2253,12 @@ export type Database = {
           establishment_id: string
           id?: string
           is_active?: boolean
+          is_manager?: boolean
           leasing_base_date?: string | null
           leasing_type?: string | null
           leasing_value?: number | null
+          manager_pin_hash?: string | null
+          manager_pin_set_at?: string | null
           name: string
           phone?: string | null
           specialties?: string[] | null
@@ -2225,9 +2273,12 @@ export type Database = {
           establishment_id?: string
           id?: string
           is_active?: boolean
+          is_manager?: boolean
           leasing_base_date?: string | null
           leasing_type?: string | null
           leasing_value?: number | null
+          manager_pin_hash?: string | null
+          manager_pin_set_at?: string | null
           name?: string
           phone?: string | null
           specialties?: string[] | null
@@ -2886,6 +2937,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      verify_manager_pin: {
+        Args: { _pin_hash: string; _professional_id: string }
+        Returns: boolean
       }
     }
     Enums: {
