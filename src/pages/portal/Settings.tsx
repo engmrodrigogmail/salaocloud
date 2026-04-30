@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { Clock, Save, Loader2, Users, Settings, CalendarDays, Eye } from "lucide-react";
+import { Clock, Save, Loader2, Users, Settings, CalendarDays, Eye, ShieldCheck } from "lucide-react";
 import type { Tables, Json } from "@/integrations/supabase/types";
 
 import { QRCodeCard } from "@/components/booking/QRCodeCard";
@@ -69,6 +69,8 @@ export default function PortalSettings() {
   const [showPrices, setShowPrices] = useState(true);
   const [showServiceDuration, setShowServiceDuration] = useState(true);
   const [savingPortal, setSavingPortal] = useState(false);
+  const [discountPinThreshold, setDiscountPinThreshold] = useState("10");
+  const [savingCheckout, setSavingCheckout] = useState(false);
   const [activeTab, setActiveTab] = useState("working-hours");
 
   useEffect(() => {
@@ -109,6 +111,12 @@ export default function PortalSettings() {
       setShowProfessionalNames(portalData.show_professional_names !== false);
       setShowPrices(portalData.show_prices !== false);
       setShowServiceDuration(portalData.show_service_duration !== false);
+
+      // Discount PIN threshold (default 10%)
+      const threshold = (data as any).discount_pin_threshold_percent;
+      setDiscountPinThreshold(
+        threshold === null || threshold === undefined ? "10" : String(threshold),
+      );
     } catch (error) {
       console.error("Error fetching establishment:", error);
       toast.error("Erro ao carregar dados");
@@ -196,6 +204,29 @@ export default function PortalSettings() {
     }
   };
 
+  const handleSaveCheckoutSettings = async () => {
+    if (!establishment) return;
+    const parsed = parseFloat(discountPinThreshold.replace(",", "."));
+    if (isNaN(parsed) || parsed < 0 || parsed > 100) {
+      toast.error("Informe um percentual entre 0 e 100");
+      return;
+    }
+    setSavingCheckout(true);
+    try {
+      const { error } = await supabase
+        .from("establishments")
+        .update({ discount_pin_threshold_percent: parsed } as never)
+        .eq("id", establishment.id);
+      if (error) throw error;
+      toast.success("Limite de desconto atualizado!");
+    } catch (e) {
+      console.error("Error saving checkout settings:", e);
+      toast.error("Erro ao salvar");
+    } finally {
+      setSavingCheckout(false);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <PortalLayout>
@@ -211,6 +242,7 @@ export default function PortalSettings() {
     { value: "working-hours", label: "Horário de Funcionamento", icon: Clock },
     { value: "agenda-settings", label: "Visualização da Agenda", icon: CalendarDays },
     { value: "client-portal", label: "Portal da Cliente", icon: Eye },
+    { value: "checkout", label: "Caixa & Comandas", icon: ShieldCheck },
   ];
 
 
@@ -495,6 +527,54 @@ export default function PortalSettings() {
                       <Save className="h-4 w-4 mr-2" />
                     )}
                     Salvar Preferências
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="checkout" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-primary" />
+                  Limite de desconto sem PIN
+                </CardTitle>
+                <CardDescription>
+                  Descontos manuais aplicados na comanda ou no caixa até este percentual
+                  do total não pedem autorização. Acima disso, será exigido o PIN de um
+                  gerente. Cupons e fidelidade não passam por essa regra (já são
+                  pré-aprovados).
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 max-w-sm">
+                <div className="space-y-2">
+                  <Label htmlFor="discount-pin-threshold">Percentual livre (%)</Label>
+                  <Input
+                    id="discount-pin-threshold"
+                    type="text"
+                    inputMode="decimal"
+                    value={discountPinThreshold}
+                    onChange={(e) =>
+                      setDiscountPinThreshold(
+                        e.target.value.replace(/[^0-9.,]/g, "").replace(",", "."),
+                      )
+                    }
+                    placeholder="10"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Ex.: 10 = qualquer desconto manual de até 10% é aplicado direto.
+                    Acima disso, exige PIN. Use 0 para exigir PIN em todo desconto manual.
+                  </p>
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleSaveCheckoutSettings} disabled={savingCheckout}>
+                    {savingCheckout ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <Save className="h-4 w-4 mr-2" />
+                    )}
+                    Salvar
                   </Button>
                 </div>
               </CardContent>

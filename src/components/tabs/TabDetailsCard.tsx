@@ -18,15 +18,18 @@ import {
 } from "@/components/ui/alert-dialog";
 import { 
   Plus, Trash2, User, Clock, Package, Scissors, PenLine, 
-  CreditCard, Receipt, ArrowLeft, Minus, Undo2
+  CreditCard, Receipt, ArrowLeft, Minus, Undo2, Tag
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { TabWithDetails, TabItem, PaymentMethod } from "@/types/tabs";
+import { ManualDiscountDialog } from "./ManualDiscountDialog";
 
 interface TabDetailsCardProps {
   tab: TabWithDetails;
   items: TabItem[];
+  establishmentId: string;
+  discountPinThreshold: number;
   onAddItem: () => void;
   onRemoveItem: (itemId: string) => Promise<void>;
   onUpdateQuantity: (itemId: string, quantity: number) => Promise<void>;
@@ -35,11 +38,14 @@ interface TabDetailsCardProps {
   onCancel: () => void;
   onUndoOpening?: () => Promise<void> | void;
   onRecalculate: () => Promise<void>;
+  onDiscountChanged?: () => Promise<void> | void;
 }
 
 export function TabDetailsCard({
   tab,
   items,
+  establishmentId,
+  discountPinThreshold,
   onAddItem,
   onRemoveItem,
   onUpdateQuantity,
@@ -48,9 +54,11 @@ export function TabDetailsCard({
   onCancel,
   onUndoOpening,
   onRecalculate,
+  onDiscountChanged,
 }: TabDetailsCardProps) {
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [confirmUndoOpen, setConfirmUndoOpen] = useState(false);
+  const [discountOpen, setDiscountOpen] = useState(false);
 
   // Eligibility for "Desfazer Abertura": tab created < 5 min ago AND no items.
   const ageMs = Date.now() - new Date(tab.opened_at).getTime();
@@ -272,9 +280,27 @@ export function TabDetailsCard({
             </div>
             {discount > 0 && (
               <div className="flex justify-between text-sm text-green-600">
-                <span>Desconto</span>
+                <span>
+                  Desconto
+                  {(tab as any).discount_reduces_commission && (
+                    <span className="text-[10px] ml-1 text-muted-foreground">
+                      (abate comissão)
+                    </span>
+                  )}
+                </span>
                 <span>-{formatCurrency(discount)}</span>
               </div>
+            )}
+            {tab.status === "open" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full justify-start text-muted-foreground hover:text-foreground"
+                onClick={() => setDiscountOpen(true)}
+              >
+                <Tag className="h-4 w-4 mr-2" />
+                {discount > 0 ? "Editar desconto manual" : "Aplicar desconto manual"}
+              </Button>
             )}
             <Separator />
             <div className="flex justify-between font-bold text-lg">
@@ -284,6 +310,22 @@ export function TabDetailsCard({
           </div>
         </CardContent>
       </Card>
+
+      {establishmentId && (
+        <ManualDiscountDialog
+          open={discountOpen}
+          onOpenChange={setDiscountOpen}
+          establishmentId={establishmentId}
+          tabId={tab.id}
+          subtotal={subtotal}
+          currentDiscount={discount}
+          currentReducesCommission={(tab as any).discount_reduces_commission === true}
+          pinThresholdPercent={discountPinThreshold}
+          onApplied={async () => {
+            if (onDiscountChanged) await onDiscountChanged();
+          }}
+        />
+      )}
 
       {/* Actions */}
       {tab.status === "open" && (

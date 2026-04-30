@@ -30,6 +30,7 @@ export default function InternoComandas() {
   const { user, loading: authLoading } = useAuth();
   
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
+  const [discountPinThreshold, setDiscountPinThreshold] = useState<number>(10);
   const [loading, setLoading] = useState(true);
   const [clients, setClients] = useState<Client[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -66,11 +67,13 @@ export default function InternoComandas() {
     try {
       const { data } = await supabase
         .from("establishments")
-        .select("id")
+        .select("id, discount_pin_threshold_percent")
         .eq("slug", slug)
         .single();
       if (!data) { navigate("/"); return; }
       setEstablishmentId(data.id);
+      const t = (data as any).discount_pin_threshold_percent;
+      if (typeof t === "number") setDiscountPinThreshold(t);
     } catch { navigate("/"); } 
     finally { setLoading(false); }
   };
@@ -234,6 +237,8 @@ export default function InternoComandas() {
           <TabDetailsCard
             tab={selectedTab}
             items={items}
+            establishmentId={establishmentId || ""}
+            discountPinThreshold={discountPinThreshold}
             onAddItem={() => setAddItemOpen(true)}
             onRemoveItem={handleRemoveItem}
             onUpdateQuantity={handleUpdateQuantity}
@@ -242,6 +247,10 @@ export default function InternoComandas() {
             onCancel={handleCancelTab}
             onUndoOpening={handleUndoOpening}
             onRecalculate={async () => { await recalculateTotal(selectedTab.id); }}
+            onDiscountChanged={async () => {
+              const { data } = await supabase.from("tabs").select("*").eq("id", selectedTab.id).single();
+              if (data) setSelectedTab({ ...selectedTab, ...data, status: data.status as TabWithDetails['status'] });
+            }}
           />
         )}
 

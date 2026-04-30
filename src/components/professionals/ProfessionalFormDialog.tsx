@@ -86,6 +86,7 @@ export function ProfessionalFormDialog({
     phone: "",
     specialties: "",
     is_active: true,
+    is_manager: false,
     leasing_type: "none" as "none" | "fixed_monthly" | "proportional",
     leasing_value: "",
     leasing_base_date: "",
@@ -133,6 +134,7 @@ export function ProfessionalFormDialog({
         phone: fullProfessional.phone || "",
         specialties: fullProfessional.specialties?.join(", ") || "",
         is_active: fullProfessional.is_active,
+        is_manager: (fullProfessional as any).is_manager === true,
         leasing_type: (fullProfessional.leasing_type as "none" | "fixed_monthly" | "proportional") || "none",
         leasing_value: fullProfessional.leasing_value ? String(fullProfessional.leasing_value) : "",
         leasing_base_date: fullProfessional.leasing_base_date || "",
@@ -184,6 +186,7 @@ export function ProfessionalFormDialog({
       phone: "",
       specialties: "",
       is_active: true,
+      is_manager: false,
       leasing_type: "none",
       leasing_value: "",
       leasing_base_date: "",
@@ -258,6 +261,7 @@ export function ProfessionalFormDialog({
             phone: formData.phone || null,
             specialties: specialtiesArray.length > 0 ? specialtiesArray : null,
             is_active: formData.is_active,
+            is_manager: formData.is_manager,
             leasing_type: formData.leasing_type,
             leasing_value: formData.leasing_type !== "none" ? (parseFloat(formData.leasing_value) || 0) : 0,
             leasing_base_date: formData.leasing_type === "fixed_monthly" && formData.leasing_base_date 
@@ -265,7 +269,7 @@ export function ProfessionalFormDialog({
               : null,
             avatar_url: formData.avatar_url,
             working_hours: workingHours as unknown as Json,
-          })
+          } as never)
           .eq("id", editingProfessional.id);
 
         if (error) throw error;
@@ -279,6 +283,7 @@ export function ProfessionalFormDialog({
             phone: formData.phone || null,
             specialties: specialtiesArray.length > 0 ? specialtiesArray : null,
             is_active: formData.is_active,
+            is_manager: formData.is_manager,
             leasing_type: formData.leasing_type,
             leasing_value: formData.leasing_type !== "none" ? (parseFloat(formData.leasing_value) || 0) : 0,
             leasing_base_date: formData.leasing_type === "fixed_monthly" && formData.leasing_base_date 
@@ -286,7 +291,7 @@ export function ProfessionalFormDialog({
               : null,
             avatar_url: formData.avatar_url,
             working_hours: workingHours as unknown as Json,
-          })
+          } as never)
           .select()
           .single();
 
@@ -414,6 +419,20 @@ export function ProfessionalFormDialog({
                 <Switch
                   checked={formData.is_active}
                   onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                />
+              </div>
+              <div className="flex items-start justify-between gap-4 p-3 rounded-md border bg-muted/30">
+                <div className="space-y-1">
+                  <Label className="text-sm">Gerente</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Gerentes podem cadastrar um PIN no próprio perfil para autorizar
+                    descontos acima do limite, alteração de preço de itens e ajuste de
+                    comissões no caixa.
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.is_manager}
+                  onCheckedChange={(checked) => setFormData({ ...formData, is_manager: checked })}
                 />
               </div>
             </div>
