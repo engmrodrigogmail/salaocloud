@@ -6,7 +6,7 @@ import { useCommissionCalculator } from "./useCommissionCalculator";
 import { getBrazilNow } from "@/lib/dateUtils";
 
 export function useTabs(establishmentId: string | null) {
-  const { processTabCommissions } = useCommissionCalculator(establishmentId);
+  const { processTabCommissions, calculateCommissionsForTab } = useCommissionCalculator(establishmentId);
   const [tabs, setTabs] = useState<TabWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
 
