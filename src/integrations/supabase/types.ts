@@ -949,6 +949,51 @@ export type Database = {
           },
         ]
       }
+      client_sessions: {
+        Row: {
+          client_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          last_used_at: string
+          token_hash: string
+          user_agent: string | null
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          last_used_at?: string
+          token_hash: string
+          user_agent?: string | null
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          last_used_at?: string
+          token_hash?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_sessions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_no_show_stats"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_sessions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           cpf: string | null
@@ -3397,6 +3442,10 @@ export type Database = {
         }[]
       }
       update_professional_pin: { Args: { _pin_hash: string }; Returns: Json }
+      validate_client_session: {
+        Args: { _token_hash: string }
+        Returns: string
+      }
       verify_manager_pin: {
         Args: { _pin_hash: string; _professional_id: string }
         Returns: boolean
