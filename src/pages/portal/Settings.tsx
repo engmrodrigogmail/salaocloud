@@ -246,6 +246,7 @@ export default function PortalSettings() {
     { value: "agenda-settings", label: "Visualização da Agenda", icon: CalendarDays },
     { value: "client-portal", label: "Portal da Cliente", icon: Eye },
     { value: "checkout", label: "Caixa & Comandas", icon: ShieldCheck },
+    { value: "notifications", label: "Notificações", icon: Bell },
   ];
 
 
