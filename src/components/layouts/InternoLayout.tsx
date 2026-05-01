@@ -11,6 +11,7 @@ import {
   Coins,
   HelpCircle,
   UserCircle,
+  Repeat,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
