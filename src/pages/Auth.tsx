@@ -40,15 +40,6 @@ const signupSchema = z.object({
 type LoginFormData = z.infer<typeof loginSchema>;
 type SignupFormData = z.infer<typeof signupSchema>;
 
-interface AccessTarget {
-  kind: "owner" | "professional";
-  establishment_id: string;
-  establishment_name: string;
-  establishment_slug: string;
-  is_manager: boolean;
-  must_change_password: boolean;
-}
-
 export default function Auth() {
   const [searchParams] = useSearchParams();
   const [isSignup, setIsSignup] = useState(searchParams.get("mode") === "signup");
@@ -56,11 +47,9 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
-  const [targets, setTargets] = useState<AccessTarget[]>([]);
-  const [showPicker, setShowPicker] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { signIn, signUp, user, role, roles, loading } = useAuth();
+  const { signIn, signUp, user, loading } = useAuth();
 
 
   const signupForm = useForm<SignupFormData>({
@@ -68,54 +57,13 @@ export default function Auth() {
     defaultValues: { fullName: "", email: "", password: "", confirmPassword: "" },
   });
 
-  const routeAuthenticatedUser = async (userId: string) => {
-    // Super admin sempre vai para /admin
-    if (role === "super_admin") {
-      navigate("/admin");
-      return;
-    }
-
-    // Busca todos os destinos (dono + profissional) via RPC unificada
-    const { data, error } = await supabase.rpc("get_user_access_targets" as never, {
-      _user_id: userId,
-    } as never);
-
-    if (error) {
-      console.error("get_user_access_targets failed", error);
-    }
-
-    const list = ((data as AccessTarget[] | null) ?? []);
-
-    // Cliente puro (sem ownership e sem vínculo de profissional)
-    if (list.length === 0) {
-      if (roles.includes("client")) {
-        navigate("/meus-agendamentos");
-      } else {
-        navigate("/onboarding");
-      }
-      return;
-    }
-
-    // Único destino → redireciona direto
-    if (list.length === 1) {
-      const t = list[0];
-      if (t.kind === "owner") navigate(`/portal/${t.establishment_slug}`);
-      else navigate(`/interno/${t.establishment_slug}`);
-      return;
-    }
-
-    // Múltiplos destinos (dono+profissional ou múltiplos salões) → seletor
-    setTargets(list);
-    setShowPicker(true);
-  };
-
-  // Redirect based on role when user is authenticated
+  // Toda autenticação bem-sucedida cai no /hub central — ele decide
+  // se auto-redireciona (1 destino) ou mostra seletor (2+).
   useEffect(() => {
-    if (!loading && user && !showPicker) {
-      routeAuthenticatedUser(user.id);
+    if (!loading && user) {
+      navigate("/hub", { replace: true });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, role, roles, loading, showPicker]);
+  }, [user, loading, navigate]);
 
   const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true);
