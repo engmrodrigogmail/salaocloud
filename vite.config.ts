@@ -16,6 +16,9 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: "autoUpdate",
       injectRegister: false, // registramos manualmente em main.tsx com guards
+      strategies: "injectManifest",
+      srcDir: "public",
+      filename: "sw.js",
       devOptions: {
         enabled: false,
       },
@@ -34,11 +37,7 @@ export default defineConfig(({ mode }) => ({
           { src: "/logo-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" },
         ],
       },
-      workbox: {
-        navigateFallbackDenylist: [/^\/~oauth/, /^\/auth/],
-        cleanupOutdatedCaches: true,
-        clientsClaim: true,
-        skipWaiting: true,
+      injectManifest: {
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
     }),

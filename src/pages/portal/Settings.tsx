@@ -13,7 +13,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useOwnerEstablishment } from "@/hooks/useOwnerEstablishment";
 import { useAuth } from "@/contexts/AuthContext";
-import { Clock, Save, Loader2, Users, Settings, CalendarDays, Eye, ShieldCheck } from "lucide-react";
+import { Clock, Save, Loader2, Users, Settings, CalendarDays, Eye, ShieldCheck, Bell } from "lucide-react";
+import { NotificationSettingsCard } from "@/components/notifications/NotificationSettingsCard";
 import type { Tables, Json } from "@/integrations/supabase/types";
 
 import { QRCodeCard } from "@/components/booking/QRCodeCard";
@@ -245,6 +246,7 @@ export default function PortalSettings() {
     { value: "agenda-settings", label: "Visualização da Agenda", icon: CalendarDays },
     { value: "client-portal", label: "Portal da Cliente", icon: Eye },
     { value: "checkout", label: "Caixa & Comandas", icon: ShieldCheck },
+    { value: "notifications", label: "Notificações", icon: Bell },
   ];
 
 
@@ -292,7 +294,7 @@ export default function PortalSettings() {
           </div>
 
           {/* Desktop: Grid tabs (no horizontal scroll) */}
-          <TabsList className="hidden md:grid md:grid-cols-4 mb-6 h-auto p-1 w-full">
+          <TabsList className="hidden md:grid md:grid-cols-5 mb-6 h-auto p-1 w-full">
             {SECTIONS.map(({ value, label, icon: Icon }) => (
               <TabsTrigger
                 key={value}
@@ -591,6 +593,10 @@ export default function PortalSettings() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="notifications" className="space-y-6">
+            {establishment?.id && <NotificationSettingsCard establishmentId={establishment.id} />}
           </TabsContent>
         </Tabs>
       </div>

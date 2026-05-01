@@ -1956,6 +1956,7 @@ export type Database = {
           body: string
           created_at: string
           data: Json | null
+          delivered_push: boolean
           id: string
           link: string | null
           read_at: string | null
@@ -1969,6 +1970,7 @@ export type Database = {
           body: string
           created_at?: string
           data?: Json | null
+          delivered_push?: boolean
           id?: string
           link?: string | null
           read_at?: string | null
@@ -1982,6 +1984,7 @@ export type Database = {
           body?: string
           created_at?: string
           data?: Json | null
+          delivered_push?: boolean
           id?: string
           link?: string | null
           read_at?: string | null
