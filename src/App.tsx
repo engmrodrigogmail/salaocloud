@@ -10,6 +10,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 // Pages
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Hub from "./pages/Hub";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 import Install from "./pages/Install";
@@ -75,6 +76,7 @@ const App = () => (
               {/* Public routes */}
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/hub" element={<Hub />} />
               <Route path="/cliente" element={<ClientLogin />} />
               <Route path="/cliente/redefinir-senha" element={<ClientResetPassword />} />
               <Route path="/instalar" element={<Install />} />
