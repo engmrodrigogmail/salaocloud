@@ -594,6 +594,10 @@ export default function PortalSettings() {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="notifications" className="space-y-6">
+            {establishment?.id && <NotificationSettingsCard establishmentId={establishment.id} />}
+          </TabsContent>
         </Tabs>
       </div>
     </PortalLayout>
