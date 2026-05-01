@@ -5,7 +5,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
-import vitrineBg from "/vitrine-bg.jpg?url";
+const VITRINE_BG = "/vitrine-bg.jpg";
 
 export interface ShowcaseImage {
   id: string;
@@ -70,7 +70,7 @@ export function Vitrine({ images }: VitrineProps) {
     <section
       className="relative min-h-[60vh] py-8 px-4"
       style={{
-        backgroundImage: `url(${vitrineBg})`,
+        backgroundImage: `url(${VITRINE_BG})`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
