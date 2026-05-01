@@ -439,6 +439,19 @@ export function ProfessionalFormDialog({
                   onCheckedChange={(checked) => setFormData({ ...formData, is_manager: checked })}
                 />
               </div>
+
+              {editingProfessional && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Acesso ao app interno</Label>
+                  <ProfessionalAccessSection
+                    establishmentId={establishmentId}
+                    professionalId={editingProfessional.id}
+                    hasAccess={hasAccess}
+                    defaultEmail={formData.email}
+                    onLinked={() => setHasAccess(true)}
+                  />
+                </div>
+              )}
             </div>
 
             <Separator />
