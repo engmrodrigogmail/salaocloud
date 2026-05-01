@@ -3025,6 +3025,19 @@ export type Database = {
           must_change_password: boolean
         }[]
       }
+      get_user_access_targets_full: {
+        Args: { _email?: string; _user_id: string }
+        Returns: {
+          client_id: string
+          establishment_id: string
+          establishment_logo_url: string
+          establishment_name: string
+          establishment_slug: string
+          is_manager: boolean
+          kind: string
+          must_change_password: boolean
+        }[]
+      }
       get_user_establishment_id: { Args: { _user_id: string }; Returns: string }
       get_user_professional_id: { Args: { _user_id: string }; Returns: string }
       get_user_roles: {
