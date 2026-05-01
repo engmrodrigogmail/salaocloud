@@ -189,7 +189,8 @@ export default function ClientLogin() {
       if (data?.status === "ok" && data?.client && selectedEstablishment) {
         persistSession(selectedEstablishment.slug, data.client.id, resolvedEmail);
         toast.success("Bem-vindo!", { position: "top-center", duration: 1500 });
-        navigate(`/${selectedEstablishment.slug}`);
+        // Vai para o hub central — auto-redirect se 1 destino, picker se 2+
+        navigate("/hub");
         return;
       }
 
@@ -335,7 +336,7 @@ export default function ClientLogin() {
       if (loginData?.status === "ok" && loginData?.client && selectedEstablishment) {
         persistSession(selectedEstablishment.slug, loginData.client.id, finalEmail);
         toast.success("Cadastro concluído!", { position: "top-center", duration: 2000 });
-        navigate(`/${selectedEstablishment.slug}`);
+        navigate("/hub");
       }
     } catch (err) {
       console.error(err);
