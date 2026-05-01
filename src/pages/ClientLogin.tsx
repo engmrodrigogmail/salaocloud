@@ -336,7 +336,7 @@ export default function ClientLogin() {
       if (loginData?.status === "ok" && loginData?.client && selectedEstablishment) {
         persistSession(selectedEstablishment.slug, loginData.client.id, finalEmail);
         toast.success("Cadastro concluído!", { position: "top-center", duration: 2000 });
-        navigate(`/${selectedEstablishment.slug}`);
+        navigate("/hub");
       }
     } catch (err) {
       console.error(err);
