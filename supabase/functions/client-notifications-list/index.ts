@@ -1,24 +1,30 @@
 // Edge function: client-notifications-list
-// Lists notifications for a given client_id, optionally marking some as read.
+// Lists notifications for the authenticated client (validated by session token).
+// SECURITY: client_id is resolved from the x-client-session header, never trusted from body.
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { extractSessionToken, resolveClientFromSession } from "../_shared/client-session.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+    "authorization, x-client-info, apikey, content-type, x-client-session, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface ListInput {
-  client_id: string;
   limit?: number;
-  mark_read_ids?: string[]; // optional: mark these specific notifications as read
+  mark_read_ids?: string[];
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const { client_id, limit = 50, mark_read_ids } = (await req.json()) as ListInput;
-    if (!client_id) return json({ error: "client_id_required" }, 400);
+    const token = extractSessionToken(req);
+    const client_id = await resolveClientFromSession(token);
+    if (!client_id) return json({ error: "unauthorized" }, 401);
+
+    const body = (await req.json().catch(() => ({}))) as ListInput;
+    const limit = Math.min(Math.max(body.limit ?? 50, 1), 200);
+    const mark_read_ids = body.mark_read_ids;
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -40,7 +46,7 @@ Deno.serve(async (req) => {
       .eq("recipient_type", "client")
       .eq("recipient_id", client_id)
       .order("created_at", { ascending: false })
-      .limit(Math.min(limit, 200));
+      .limit(limit);
     if (error) return json({ error: error.message }, 500);
 
     const unread = (data ?? []).filter((n) => !n.read_at).length;
