@@ -8,7 +8,7 @@ import logo from "@/assets/logo-salaocloud-v5.png";
 import salonBg from "@/assets/salon-dark-bg.png";
 
 interface AccessTarget {
-  kind: "owner" | "professional" | "client";
+  kind: "owner" | "professional" | "client" | "super_admin";
   establishment_id: string;
   establishment_name: string;
   establishment_slug: string;
@@ -58,13 +58,8 @@ export default function Hub() {
     return out;
   }, []);
 
-  useEffect(() => {
-    // Se super admin, vai direto pra /admin
-    if (!authLoading && user && role === "super_admin") {
-      navigate("/admin", { replace: true });
-      return;
-    }
-  }, [authLoading, user, role, navigate]);
+  // Removido auto-redirect para super_admin: agora ele aparece como mais uma
+  // opção no picker quando o usuário também tem acesso a salões/clientes.
 
   useEffect(() => {
     let cancelled = false;
@@ -112,6 +107,20 @@ export default function Hub() {
         }
       }
 
+      // 3) Acesso de super-admin (se aplicável)
+      if (user && role === "super_admin") {
+        collected.push({
+          kind: "super_admin",
+          establishment_id: "__super_admin__",
+          establishment_name: "Painel Super Admin",
+          establishment_slug: "",
+          establishment_logo_url: null,
+          is_manager: false,
+          must_change_password: false,
+          client_id: null,
+        });
+      }
+
       // Deduplicar por (kind, establishment_id)
       const seen = new Set<string>();
       const deduped = collected.filter((t) => {
@@ -121,8 +130,8 @@ export default function Hub() {
         return true;
       });
 
-      // Ordenar: owner > professional > client; depois por nome
-      const order: Record<AccessTarget["kind"], number> = { owner: 0, professional: 1, client: 2 };
+      // Ordenar: super_admin > owner > professional > client; depois por nome
+      const order: Record<AccessTarget["kind"], number> = { super_admin: 0, owner: 1, professional: 2, client: 3 };
       deduped.sort((a, b) => {
         const d = order[a.kind] - order[b.kind];
         if (d !== 0) return d;
@@ -142,7 +151,8 @@ export default function Hub() {
   }, [authLoading, user, localClientSessions]);
 
   const goTo = (t: AccessTarget) => {
-    if (t.kind === "owner") navigate(`/portal/${t.establishment_slug}`);
+    if (t.kind === "super_admin") navigate("/admin");
+    else if (t.kind === "owner") navigate(`/portal/${t.establishment_slug}`);
     else if (t.kind === "professional") navigate(`/interno/${t.establishment_slug}`);
     else navigate(`/${t.establishment_slug}`);
   };
@@ -207,9 +217,15 @@ export default function Hub() {
 
         <div className="space-y-3">
           {targets.map((t) => {
-            const Icon = t.kind === "owner" ? ShieldCheck : t.kind === "professional" ? Users : User;
+            const Icon =
+              t.kind === "super_admin" ? ShieldCheck
+              : t.kind === "owner" ? ShieldCheck
+              : t.kind === "professional" ? Users
+              : User;
             const label =
-              t.kind === "owner"
+              t.kind === "super_admin"
+                ? "Administração da plataforma"
+                : t.kind === "owner"
                 ? "Painel do dono"
                 : t.kind === "professional"
                 ? (t.is_manager ? "Área interna (Gerente)" : "Área interna")
@@ -223,6 +239,8 @@ export default function Hub() {
                 <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
                   {t.establishment_logo_url ? (
                     <img src={t.establishment_logo_url} alt="" className="h-full w-full object-cover" />
+                  ) : t.kind === "super_admin" ? (
+                    <ShieldCheck className="h-6 w-6 text-primary" />
                   ) : (
                     <Building2 className="h-6 w-6 text-primary" />
                   )}
