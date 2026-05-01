@@ -22,6 +22,7 @@ import {
   
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -123,6 +124,14 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               </DropdownMenuGroup>
             </DropdownMenuContent>
           </DropdownMenu>
+
+          {user?.id && (
+            <NotificationBell
+              recipientType="admin"
+              recipientId={user.id}
+              pushScope="admin"
+            />
+          )}
 
           {/* User Dropdown */}
           <DropdownMenu>

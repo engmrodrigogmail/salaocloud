@@ -14,6 +14,7 @@ import {
   Repeat,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -42,6 +43,7 @@ export function InternoLayout({ children }: InternoLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [establishmentName, setEstablishmentName] = useState("");
   const [isOwner, setIsOwner] = useState(false);
+  const [professionalId, setProfessionalId] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
@@ -57,13 +59,22 @@ export function InternoLayout({ children }: InternoLayoutProps) {
   const fetchEstablishment = async () => {
     const { data } = await supabase
       .from("establishments")
-      .select("name, owner_id")
+      .select("id, name, owner_id")
       .eq("slug", slug)
       .single();
     
     if (data) {
       setEstablishmentName(data.name);
       setIsOwner(data.owner_id === user?.id);
+
+      // Buscar professional vinculado a este user neste estabelecimento
+      const { data: prof } = await supabase
+        .from("professionals")
+        .select("id")
+        .eq("establishment_id", data.id)
+        .eq("user_id", user?.id ?? "")
+        .maybeSingle();
+      if (prof?.id) setProfessionalId(prof.id);
     }
   };
 
@@ -153,6 +164,14 @@ export function InternoLayout({ children }: InternoLayoutProps) {
             </Tooltip>
           </TooltipProvider>
           
+          {professionalId && (
+            <NotificationBell
+              recipientType="professional"
+              recipientId={professionalId}
+              pushScope="professional"
+            />
+          )}
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="gap-2">
