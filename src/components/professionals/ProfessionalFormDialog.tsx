@@ -142,6 +142,7 @@ export function ProfessionalFormDialog({
         leasing_base_date: fullProfessional.leasing_base_date || "",
         avatar_url: fullProfessional.avatar_url || null,
       });
+      setHasAccess(Boolean((fullProfessional as any).user_id));
     }
 
     // Load working hours
@@ -197,6 +198,7 @@ export function ProfessionalFormDialog({
     setSelectedServices(new Set());
     setServiceCommissions({});
     setWorkingHours(DEFAULT_WORKING_HOURS);
+    setHasAccess(false);
   };
 
   const toggleService = (serviceId: string) => {
