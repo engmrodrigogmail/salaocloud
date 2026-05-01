@@ -33,6 +33,7 @@ import {
   type WorkingHours,
 } from "./ProfessionalWorkingHoursSection";
 import { ProfessionalBlockedTimesSection } from "./ProfessionalBlockedTimesSection";
+import { ProfessionalAccessSection } from "./ProfessionalAccessSection";
 import type { Json } from "@/integrations/supabase/types";
 
 interface Service {
@@ -79,6 +80,7 @@ export function ProfessionalFormDialog({
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
   const [serviceCommissions, setServiceCommissions] = useState<Record<string, ServiceCommission>>({});
   const [workingHours, setWorkingHours] = useState<WorkingHours>(DEFAULT_WORKING_HOURS);
+  const [hasAccess, setHasAccess] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -140,6 +142,7 @@ export function ProfessionalFormDialog({
         leasing_base_date: fullProfessional.leasing_base_date || "",
         avatar_url: fullProfessional.avatar_url || null,
       });
+      setHasAccess(Boolean((fullProfessional as any).user_id));
     }
 
     // Load working hours
@@ -195,6 +198,7 @@ export function ProfessionalFormDialog({
     setSelectedServices(new Set());
     setServiceCommissions({});
     setWorkingHours(DEFAULT_WORKING_HOURS);
+    setHasAccess(false);
   };
 
   const toggleService = (serviceId: string) => {
@@ -435,6 +439,19 @@ export function ProfessionalFormDialog({
                   onCheckedChange={(checked) => setFormData({ ...formData, is_manager: checked })}
                 />
               </div>
+
+              {editingProfessional && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">Acesso ao app interno</Label>
+                  <ProfessionalAccessSection
+                    establishmentId={establishmentId}
+                    professionalId={editingProfessional.id}
+                    hasAccess={hasAccess}
+                    defaultEmail={formData.email}
+                    onLinked={() => setHasAccess(true)}
+                  />
+                </div>
+              )}
             </div>
 
             <Separator />
