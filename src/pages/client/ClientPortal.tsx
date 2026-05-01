@@ -144,19 +144,31 @@ const ClientPortal = () => {
 
   const sessionStorageKey = slug ? `client_portal_session:${slug}` : null;
 
-  const persistClientSession = (clientRecord: Client | null) => {
+  const persistClientSession = (
+    clientRecord: Client | null,
+    sessionToken?: string | null,
+    sessionExpiresAt?: string | null,
+  ) => {
     if (!sessionStorageKey) return;
     try {
       if (!clientRecord) {
         localStorage.removeItem(sessionStorageKey);
         return;
       }
+      const existing = (() => {
+        try {
+          const raw = localStorage.getItem(sessionStorageKey);
+          return raw ? (JSON.parse(raw) as { sessionToken?: string | null; sessionExpiresAt?: string | null }) : null;
+        } catch { return null; }
+      })();
       localStorage.setItem(
         sessionStorageKey,
         JSON.stringify({
           clientId: clientRecord.id,
           email: clientRecord.global_identity_email || clientRecord.email || null,
           phone: clientRecord.phone || null,
+          sessionToken: sessionToken ?? existing?.sessionToken ?? null,
+          sessionExpiresAt: sessionExpiresAt ?? existing?.sessionExpiresAt ?? null,
           savedAt: new Date().toISOString(),
         })
       );
@@ -450,7 +462,7 @@ const ClientPortal = () => {
       const authedClient = { ...client, ...data.client } as Client;
       setClient(authedClient);
       setIsAuthenticated(true);
-      persistClientSession(authedClient);
+      persistClientSession(authedClient, data.session_token, data.session_expires_at);
       await fetchClientData(authedClient.id);
       await fetchAllAppointments();
       toast.success(`Bem-vindo(a), ${authedClient.name}!`, { duration: 2000 });
