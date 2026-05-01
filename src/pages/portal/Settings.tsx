@@ -294,7 +294,7 @@ export default function PortalSettings() {
           </div>
 
           {/* Desktop: Grid tabs (no horizontal scroll) */}
-          <TabsList className="hidden md:grid md:grid-cols-4 mb-6 h-auto p-1 w-full">
+          <TabsList className="hidden md:grid md:grid-cols-5 mb-6 h-auto p-1 w-full">
             {SECTIONS.map(({ value, label, icon: Icon }) => (
               <TabsTrigger
                 key={value}
