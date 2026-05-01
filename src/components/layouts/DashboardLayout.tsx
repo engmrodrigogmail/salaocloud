@@ -17,6 +17,7 @@ import {
   Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,7 +77,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
           </Link>
         </div>
 
-        <DropdownMenu>
+        <div className="flex items-center gap-2">
+          {user?.id && (
+            <NotificationBell
+              recipientType="admin"
+              recipientId={user.id}
+              pushScope="admin"
+            />
+          )}
+
+          <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="gap-2">
               <div className="w-8 h-8 rounded-full bg-gradient-primary flex items-center justify-center text-white text-sm font-medium">
@@ -98,6 +108,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </header>
 
       {/* Sidebar */}
