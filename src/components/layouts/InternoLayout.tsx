@@ -29,6 +29,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useInternoTour } from "@/hooks/useInternoTour";
+import { ChangePasswordGate } from "@/components/auth/ChangePasswordGate";
 import logo from "@/assets/logo-salaocloud-v5.png";
 import salonBg from "@/assets/salon-dark-bg.png";
 
@@ -79,6 +80,7 @@ export function InternoLayout({ children }: InternoLayoutProps) {
   };
 
   return (
+    <ChangePasswordGate>
     <div className="min-h-screen bg-background">
       {/* Top bar */}
       <header className="fixed left-0 right-0 top-0 h-16 bg-sidebar border-b border-sidebar-border z-50 flex items-center justify-between px-4">
@@ -196,5 +198,6 @@ export function InternoLayout({ children }: InternoLayoutProps) {
         <div className="p-4 sm:p-6">{children}</div>
       </main>
     </div>
+    </ChangePasswordGate>
   );
 }
