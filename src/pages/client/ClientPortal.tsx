@@ -555,6 +555,8 @@ const ClientPortal = () => {
       const email = emailToCheck.trim().toLowerCase();
 
       // Se a rede já tem senha, valida ANTES de criar o registro local
+      let stitchSessionToken: string | null = null;
+      let stitchSessionExpiresAt: string | null = null;
       if (hasPassword) {
         const { data: loginData, error: loginError } = await supabase.functions.invoke(
           "client-auth-login",
@@ -566,6 +568,8 @@ const ClientPortal = () => {
           setAuthenticating(false);
           return;
         }
+        stitchSessionToken = loginData.session_token ?? null;
+        stitchSessionExpiresAt = loginData.session_expires_at ?? null;
       }
 
       const clientId = crypto.randomUUID();
@@ -611,7 +615,7 @@ const ClientPortal = () => {
       setClient(newClient);
       setStitchSourceClient(null);
       setIsAuthenticated(true);
-      persistClientSession(newClient);
+      persistClientSession(newClient, stitchSessionToken, stitchSessionExpiresAt);
 
       if (loyaltyProgram) {
         await supabase.from("client_loyalty_points").insert({
