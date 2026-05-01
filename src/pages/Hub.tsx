@@ -217,9 +217,15 @@ export default function Hub() {
 
         <div className="space-y-3">
           {targets.map((t) => {
-            const Icon = t.kind === "owner" ? ShieldCheck : t.kind === "professional" ? Users : User;
+            const Icon =
+              t.kind === "super_admin" ? ShieldCheck
+              : t.kind === "owner" ? ShieldCheck
+              : t.kind === "professional" ? Users
+              : User;
             const label =
-              t.kind === "owner"
+              t.kind === "super_admin"
+                ? "Administração da plataforma"
+                : t.kind === "owner"
                 ? "Painel do dono"
                 : t.kind === "professional"
                 ? (t.is_manager ? "Área interna (Gerente)" : "Área interna")
@@ -233,6 +239,8 @@ export default function Hub() {
                 <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
                   {t.establishment_logo_url ? (
                     <img src={t.establishment_logo_url} alt="" className="h-full w-full object-cover" />
+                  ) : t.kind === "super_admin" ? (
+                    <ShieldCheck className="h-6 w-6 text-primary" />
                   ) : (
                     <Building2 className="h-6 w-6 text-primary" />
                   )}
