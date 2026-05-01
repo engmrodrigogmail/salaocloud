@@ -45,16 +45,8 @@ export function ProtectedRoute({
       return <>{children}</>;
     }
     
-    // Redirect to appropriate dashboard based on role
-    if (role === "establishment") {
-      return <Navigate to="/dashboard" replace />;
-    } else if (role === "client") {
-      return <Navigate to="/meus-agendamentos" replace />;
-    } else if (role === "professional") {
-      // Professionals need to be redirected to their establishment's interno page
-      return <Navigate to="/" replace />;
-    }
-    return <Navigate to="/" replace />;
+    // Toda decisão de destino agora é centralizada no /hub
+    return <Navigate to="/hub" replace />;
   }
 
   if (requireRole && !role) {

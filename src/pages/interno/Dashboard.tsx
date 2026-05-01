@@ -56,11 +56,19 @@ export default function InternoDashboard() {
         return;
       }
 
-      // TODO: Check if user is owner or has internal access
-      // For now, only owner can access
+      // Aceita: dono OU profissional ativo vinculado ao estabelecimento
       if (data.owner_id !== user?.id) {
-        navigate("/");
-        return;
+        const { data: prof } = await supabase
+          .from("professionals")
+          .select("id")
+          .eq("establishment_id", data.id)
+          .eq("user_id", user?.id)
+          .eq("is_active", true)
+          .maybeSingle();
+        if (!prof) {
+          navigate("/hub", { replace: true });
+          return;
+        }
       }
 
       setEstablishment(data);
