@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_assistant_conversations: {
         Row: {
           channel: string
@@ -361,6 +400,7 @@ export type Database = {
             | null
           price: number
           professional_id: string
+          reminder_sent_at: string | null
           scheduled_at: string
           service_id: string
           status: Database["public"]["Enums"]["appointment_status"]
@@ -384,6 +424,7 @@ export type Database = {
             | null
           price: number
           professional_id: string
+          reminder_sent_at?: string | null
           scheduled_at: string
           service_id: string
           status?: Database["public"]["Enums"]["appointment_status"]
@@ -407,6 +448,7 @@ export type Database = {
             | null
           price?: number
           professional_id?: string
+          reminder_sent_at?: string | null
           scheduled_at?: string
           service_id?: string
           status?: Database["public"]["Enums"]["appointment_status"]
@@ -852,6 +894,60 @@ export type Database = {
           used_at?: string | null
         }
         Relationships: []
+      }
+      client_push_subscriptions: {
+        Row: {
+          auth: string
+          client_id: string
+          created_at: string
+          endpoint: string
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          auth: string
+          client_id: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          auth?: string
+          client_id?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_push_subscriptions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_no_show_stats"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_push_subscriptions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clients: {
         Row: {
@@ -1476,6 +1572,56 @@ export type Database = {
           },
         ]
       }
+      establishment_push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          establishment_id: string
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          p256dh: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          establishment_id: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          p256dh: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          establishment_id?: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          p256dh?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_push_subscriptions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       establishment_showcase: {
         Row: {
           caption: string | null
@@ -1764,6 +1910,86 @@ export type Database = {
           tab_id?: string | null
           target_id?: string | null
           target_type?: string | null
+        }
+        Relationships: []
+      }
+      notification_settings: {
+        Row: {
+          appointment_reminder_enabled: boolean
+          appointment_reminder_minutes_before: number
+          appointment_reminder_template: string
+          created_at: string
+          establishment_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_reminder_enabled?: boolean
+          appointment_reminder_minutes_before?: number
+          appointment_reminder_template?: string
+          created_at?: string
+          establishment_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_reminder_enabled?: boolean
+          appointment_reminder_minutes_before?: number
+          appointment_reminder_template?: string
+          created_at?: string
+          establishment_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_settings_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          body: string
+          created_at: string
+          data: Json | null
+          id: string
+          link: string | null
+          read_at: string | null
+          recipient_id: string
+          recipient_type: Database["public"]["Enums"]["notification_recipient_type"]
+          sender_id: string | null
+          sender_type: Database["public"]["Enums"]["notification_sender_type"]
+          title: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          data?: Json | null
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          recipient_id: string
+          recipient_type: Database["public"]["Enums"]["notification_recipient_type"]
+          sender_id?: string | null
+          sender_type: Database["public"]["Enums"]["notification_sender_type"]
+          title: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          data?: Json | null
+          id?: string
+          link?: string | null
+          read_at?: string | null
+          recipient_id?: string
+          recipient_type?: Database["public"]["Enums"]["notification_recipient_type"]
+          sender_id?: string | null
+          sender_type?: Database["public"]["Enums"]["notification_sender_type"]
+          title?: string
         }
         Relationships: []
       }
@@ -2267,6 +2493,56 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vw_shared_client_history"
             referencedColumns: ["tab_item_id"]
+          },
+        ]
+      }
+      professional_push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          is_active: boolean
+          last_used_at: string | null
+          p256dh: string
+          professional_id: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          p256dh: string
+          professional_id: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          is_active?: boolean
+          last_used_at?: string | null
+          p256dh?: string
+          professional_id?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "professional_push_subscriptions_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -3134,6 +3410,12 @@ export type Database = {
         | "no_show"
       commission_discount_policy: "always" | "never" | "ask"
       establishment_status: "pending" | "active" | "suspended"
+      notification_recipient_type:
+        | "admin"
+        | "establishment"
+        | "professional"
+        | "client"
+      notification_sender_type: "system" | "admin" | "establishment"
       subscription_plan: "basic" | "professional" | "premium" | "trial"
     }
     CompositeTypes: {
@@ -3273,6 +3555,13 @@ export const Constants = {
       ],
       commission_discount_policy: ["always", "never", "ask"],
       establishment_status: ["pending", "active", "suspended"],
+      notification_recipient_type: [
+        "admin",
+        "establishment",
+        "professional",
+        "client",
+      ],
+      notification_sender_type: ["system", "admin", "establishment"],
       subscription_plan: ["basic", "professional", "premium", "trial"],
     },
   },
