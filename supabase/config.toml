@@ -81,5 +81,8 @@ verify_jwt = false
 [functions.push-send]
 verify_jwt = false
 
+[functions.push-process-pending]
+verify_jwt = false
+
 [functions.client-notifications-list]
 verify_jwt = false
