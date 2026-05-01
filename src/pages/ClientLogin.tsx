@@ -72,9 +72,25 @@ export default function ClientLogin() {
   const [selectedEstablishment, setSelectedEstablishment] = useState<EstablishmentOption | null>(null);
   const [forgotInfoEmail, setForgotInfoEmail] = useState<string | null>(null);
 
-  const persistSession = (slug: string, clientId: string, emailUsed: string) => {
+  const persistSession = (
+    slug: string,
+    clientId: string,
+    emailUsed: string,
+    sessionToken?: string | null,
+    sessionExpiresAt?: string | null,
+  ) => {
     const key = `client_portal_session:${slug}`;
-    localStorage.setItem(key, JSON.stringify({ clientId, email: emailUsed, phone: null }));
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        clientId,
+        email: emailUsed,
+        phone: null,
+        sessionToken: sessionToken ?? null,
+        sessionExpiresAt: sessionExpiresAt ?? null,
+        savedAt: new Date().toISOString(),
+      }),
+    );
   };
 
   const handleSubmitIdentifier = async (e: FormEvent) => {
