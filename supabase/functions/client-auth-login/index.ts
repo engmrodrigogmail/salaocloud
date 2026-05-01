@@ -3,6 +3,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { CLIENT_AUTH_CORS, verifyPassword } from "../_shared/client-auth.ts";
+import { createClientSession } from "../_shared/client-session.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CLIENT_AUTH_CORS });
@@ -55,9 +56,14 @@ Deno.serve(async (req) => {
     const ok = await verifyPassword(password, candidate.password_hash);
     if (!ok) return json({ error: "invalid_credentials" }, 401);
 
+    const ua = req.headers.get("user-agent");
+    const session = await createClientSession(candidate.id, ua);
+
     return json({
       status: "ok",
       client: stripSecrets(candidate),
+      session_token: session?.token ?? null,
+      session_expires_at: session?.expires_at ?? null,
     }, 200);
   } catch (err) {
     console.error("client-auth-login exception", err);
