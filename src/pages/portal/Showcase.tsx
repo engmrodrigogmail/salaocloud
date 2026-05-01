@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 import { PortalLayout } from "@/components/layouts/PortalLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,8 @@ interface ShowcaseItem {
 
 export default function Showcase() {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
   const [isEnabled, setIsEnabled] = useState(true);
   const [items, setItems] = useState<ShowcaseItem[]>([]);
@@ -74,10 +77,16 @@ export default function Showcase() {
     try {
       const { data: est, error: estErr } = await supabase
         .from("establishments")
-        .select("id, is_showcase_enabled, updated_at")
+        .select("id, is_showcase_enabled, updated_at, owner_id")
         .eq("slug", slug!)
         .single();
       if (estErr || !est) throw estErr || new Error("Estabelecimento não encontrado");
+
+      if (!user?.id || (est as any).owner_id !== user.id) {
+        toast.error("Acesso negado");
+        navigate("/", { replace: true });
+        return;
+      }
 
       setEstablishmentId(est.id);
       setIsEnabled(Boolean((est as any).is_showcase_enabled ?? true));
@@ -144,17 +153,17 @@ export default function Showcase() {
 
   const handleDelete = async (item: ShowcaseItem) => {
     try {
-      // 1) Remove arquivo do storage
-      const { error: storageErr } = await supabase.storage
-        .from("showcase-images")
-        .remove([item.storage_path]);
-      if (storageErr) console.warn("storage delete warning:", storageErr);
-      // 2) Remove registro
+      // 1) Remove registro do banco primeiro (evita imagem quebrada se o storage cair)
       const { error: dbErr } = await supabase
         .from("establishment_showcase" as any)
         .delete()
         .eq("id", item.id);
       if (dbErr) throw dbErr;
+      // 2) Só então remove o arquivo do storage
+      const { error: storageErr } = await supabase.storage
+        .from("showcase-images")
+        .remove([item.storage_path]);
+      if (storageErr) console.warn("storage delete warning:", storageErr);
       setItems((prev) => prev.filter((i) => i.id !== item.id));
       toast.success("Imagem excluída");
     } catch (e) {
@@ -374,9 +383,8 @@ function UploadDialog({
         toast.error("Informe data e horário");
         return;
       }
-      // Brasília (UTC-3) — converter "YYYY-MM-DDTHH:mm" assumindo America/Sao_Paulo
-      const isoLocal = `${scheduleDate}T${scheduleTime}:00-03:00`;
-      const d = new Date(isoLocal);
+      // Combina data + hora no fuso local do dispositivo e converte para UTC
+      const d = new Date(`${scheduleDate}T${scheduleTime}`);
       if (isNaN(d.getTime())) {
         toast.error("Data/horário inválidos");
         return;
