@@ -139,48 +139,6 @@ export default function Auth() {
     );
   }
 
-  if (showPicker) {
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center salon-photo-bg px-4"
-        style={{ ['--salon-bg-image' as any]: `url(${salonBg})` }}
-      >
-        <div className="max-w-md w-full premium-card p-6 sm:p-8">
-          <img src={logo} alt="Salão Cloud" className="h-12 w-auto mb-8 mx-auto" />
-          <h1 className="font-display text-2xl font-bold text-center mb-2">
-            Onde você quer acessar?
-          </h1>
-          <p className="text-muted-foreground text-center mb-8">
-            Você tem {targets.length} formas de acesso disponíveis
-          </p>
-          <div className="space-y-3">
-            {targets.map((t) => {
-              const path = t.kind === "owner"
-                ? `/portal/${t.establishment_slug}`
-                : `/interno/${t.establishment_slug}`;
-              const label = t.kind === "owner" ? "Painel do dono" : (t.is_manager ? "Interno (Gerente)" : "Interno");
-              return (
-                <button
-                  key={`${t.kind}-${t.establishment_id}`}
-                  onClick={() => navigate(path)}
-                  className="w-full flex items-center gap-4 p-4 rounded-xl border bg-card hover:border-primary hover:shadow-md transition-all text-left"
-                >
-                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
-                    <Building2 className="h-6 w-6 text-primary" />
-                  </div>
-                  <div>
-                    <div className="font-semibold">{t.establishment_name}</div>
-                    <div className="text-sm text-muted-foreground">{label}</div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
       className="min-h-screen flex salon-photo-bg"
