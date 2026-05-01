@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowRight, ArrowLeft, Building2, Clock, Check, Loader2, Calendar, Users, Settings, Scissors, CreditCard, ExternalLink, Copy, MapPin } from "lucide-react";
+import { ArrowRight, ArrowLeft, Building2, Clock, Check, Loader2, Calendar, Users, Settings, Scissors, CreditCard, ExternalLink, Copy, MapPin, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -396,6 +396,25 @@ export default function Onboarding() {
       </header>
 
       <div className="flex-1 container mx-auto px-4 py-12 max-w-2xl">
+        {/* Aviso para quem chegou aqui sem ser dono */}
+        <div className="mb-8 rounded-xl border border-primary/20 bg-primary/5 p-4 flex gap-3">
+          <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <p className="font-semibold mb-1">Não encontramos um salão vinculado ao seu email</p>
+            <p className="text-muted-foreground">
+              Se você é <strong>profissional</strong> ou <strong>cliente</strong> de um salão, peça ao dono para cadastrar o email <strong>{user?.email}</strong> no seu perfil — assim o sistema reconhece automaticamente.
+              Se você é <strong>dono</strong>, continue abaixo para criar seu estabelecimento.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate("/hub")}
+              className="text-primary hover:underline mt-2 font-medium"
+            >
+              ← Voltar ao hub
+            </button>
+          </div>
+        </div>
+
         {/* Progress */}
         <div className="mb-12">
           <div className="flex items-center justify-between">
