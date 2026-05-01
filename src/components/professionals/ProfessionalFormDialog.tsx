@@ -33,6 +33,7 @@ import {
   type WorkingHours,
 } from "./ProfessionalWorkingHoursSection";
 import { ProfessionalBlockedTimesSection } from "./ProfessionalBlockedTimesSection";
+import { ProfessionalAccessSection } from "./ProfessionalAccessSection";
 import type { Json } from "@/integrations/supabase/types";
 
 interface Service {
@@ -79,6 +80,7 @@ export function ProfessionalFormDialog({
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
   const [serviceCommissions, setServiceCommissions] = useState<Record<string, ServiceCommission>>({});
   const [workingHours, setWorkingHours] = useState<WorkingHours>(DEFAULT_WORKING_HOURS);
+  const [hasAccess, setHasAccess] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
