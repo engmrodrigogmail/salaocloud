@@ -151,7 +151,8 @@ export default function Hub() {
   }, [authLoading, user, localClientSessions]);
 
   const goTo = (t: AccessTarget) => {
-    if (t.kind === "owner") navigate(`/portal/${t.establishment_slug}`);
+    if (t.kind === "super_admin") navigate("/admin");
+    else if (t.kind === "owner") navigate(`/portal/${t.establishment_slug}`);
     else if (t.kind === "professional") navigate(`/interno/${t.establishment_slug}`);
     else navigate(`/${t.establishment_slug}`);
   };
