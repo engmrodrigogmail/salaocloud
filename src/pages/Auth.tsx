@@ -42,7 +42,11 @@ type SignupFormData = z.infer<typeof signupSchema>;
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
-  const [isSignup, setIsSignup] = useState(searchParams.get("mode") === "signup");
+  // Cadastros de novos salões temporariamente suspensos.
+  const SIGNUPS_DISABLED = true;
+  const [isSignup, setIsSignup] = useState(
+    !SIGNUPS_DISABLED && searchParams.get("mode") === "signup"
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
