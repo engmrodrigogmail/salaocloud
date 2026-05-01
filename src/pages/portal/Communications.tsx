@@ -42,7 +42,7 @@ export default function PortalCommunications() {
   // Form
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [link, setLink] = useState("");
+  
   const [target, setTarget] = useState<TargetType>("all_clients");
   const [clients, setClients] = useState<ClientLite[]>([]);
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set());
@@ -158,7 +158,7 @@ export default function PortalCommunications() {
         `Enviado para ${data?.total ?? 0} destinatário(s) — ${data?.sent ?? 0} push entregues`,
         { position: "top-center", duration: 3000 },
       );
-      setTitle(""); setBody(""); setLink(""); setSelectedClients(new Set());
+      setTitle(""); setBody(""); setSelectedClients(new Set());
       await loadHistory(establishmentId);
     } catch (e: any) {
       toast.error("Falha ao enviar: " + (e?.message ?? "erro"), { position: "top-center", duration: 3000 });
