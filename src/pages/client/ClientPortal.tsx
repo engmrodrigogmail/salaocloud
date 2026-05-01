@@ -29,6 +29,7 @@ import { useAvailability } from "@/hooks/useAvailability";
 import { EstablishmentNameHeader } from "@/components/branding/EstablishmentNameHeader";
 import { EstablishmentAIChat } from "@/components/ai-assistant/EstablishmentAIChat";
 import { Vitrine, type ShowcaseImage } from "@/components/showcase/Vitrine";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 
 type Establishment = Tables<"establishments"> & { cancellation_policy?: string | null };
 type Service = Tables<"services">;
@@ -1554,7 +1555,15 @@ const ClientPortal = () => {
         subtitle={client?.name ? `Olá, ${client.name}` : undefined}
       />
       <div className="border-b border-border bg-background">
-        <div className="max-w-7xl mx-auto px-4 py-2 flex justify-end">
+        <div className="max-w-7xl mx-auto px-4 py-2 flex justify-end items-center gap-1">
+          {client?.id && (
+            <NotificationBell
+              recipientType="client"
+              recipientId={client.id}
+              pushScope="client"
+              pushClientId={client.id}
+            />
+          )}
           <Button variant="ghost" size="sm" onClick={handleLogout}>
             <LogOut className="h-4 w-4 mr-2" />
             Sair
