@@ -57,6 +57,7 @@ interface PortalLayoutProps {
 export function PortalLayout({ children }: PortalLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [establishmentName, setEstablishmentName] = useState("");
+  const [establishmentId, setEstablishmentId] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
@@ -73,12 +74,13 @@ export function PortalLayout({ children }: PortalLayoutProps) {
   const fetchEstablishment = async () => {
     const { data } = await supabase
       .from("establishments")
-      .select("name")
+      .select("id, name")
       .eq("slug", slug)
       .single();
     
     if (data) {
       setEstablishmentName(data.name);
+      setEstablishmentId(data.id);
     }
   };
 
