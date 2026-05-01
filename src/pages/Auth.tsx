@@ -157,112 +157,23 @@ export default function Auth() {
             </p>
           </div>
           {isSignup ? (
-            <Form {...signupForm}>
-              <form
-                onSubmit={signupForm.handleSubmit(handleSignup)}
-                className="space-y-5"
-                autoComplete="off"
+            <div className="space-y-5">
+              <div className="rounded-md border border-primary/30 bg-primary/5 p-5 text-sm text-foreground">
+                <p className="font-semibold mb-2">Inscrições temporariamente fechadas</p>
+                <p className="text-muted-foreground">
+                  Estamos pausando novos cadastros de salões para garantir a melhor
+                  experiência aos nossos clientes atuais. Volte em breve — reabriremos
+                  as inscrições muito em breve.
+                </p>
+              </div>
+              <Button
+                type="button"
+                onClick={() => setIsSignup(false)}
+                className="w-full h-12 bg-gradient-primary hover:opacity-90 font-semibold"
               >
-                <FormField
-                  control={signupForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="email"
-                          placeholder="seu@email.com"
-                          autoComplete="email"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={signupForm.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome completo (opcional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="text"
-                          placeholder="Seu nome (opcional)"
-                          autoComplete="name"
-                          autoCapitalize="words"
-                          inputMode="text"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={signupForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Senha</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            {...field}
-                            type={showPassword ? "text" : "password"}
-                            placeholder="••••••••"
-                            autoComplete="new-password"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
-                          >
-                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={signupForm.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirmar senha</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type={showPassword ? "text" : "password"}
-                          placeholder="••••••••"
-                          autoComplete="new-password"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <Button
-                  type="submit"
-                  className="w-full h-12 bg-gradient-primary hover:opacity-90 font-semibold"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    "Criar Conta"
-                  )}
-                </Button>
-              </form>
-            </Form>
+                Já tenho conta — Entrar
+              </Button>
+            </div>
           ) : (
             <form onSubmit={handleNativeLogin} className="space-y-5" key="login-form" noValidate>
               <div className="space-y-2">
