@@ -144,19 +144,31 @@ const ClientPortal = () => {
 
   const sessionStorageKey = slug ? `client_portal_session:${slug}` : null;
 
-  const persistClientSession = (clientRecord: Client | null) => {
+  const persistClientSession = (
+    clientRecord: Client | null,
+    sessionToken?: string | null,
+    sessionExpiresAt?: string | null,
+  ) => {
     if (!sessionStorageKey) return;
     try {
       if (!clientRecord) {
         localStorage.removeItem(sessionStorageKey);
         return;
       }
+      const existing = (() => {
+        try {
+          const raw = localStorage.getItem(sessionStorageKey);
+          return raw ? (JSON.parse(raw) as { sessionToken?: string | null; sessionExpiresAt?: string | null }) : null;
+        } catch { return null; }
+      })();
       localStorage.setItem(
         sessionStorageKey,
         JSON.stringify({
           clientId: clientRecord.id,
           email: clientRecord.global_identity_email || clientRecord.email || null,
           phone: clientRecord.phone || null,
+          sessionToken: sessionToken ?? existing?.sessionToken ?? null,
+          sessionExpiresAt: sessionExpiresAt ?? existing?.sessionExpiresAt ?? null,
           savedAt: new Date().toISOString(),
         })
       );
@@ -450,7 +462,7 @@ const ClientPortal = () => {
       const authedClient = { ...client, ...data.client } as Client;
       setClient(authedClient);
       setIsAuthenticated(true);
-      persistClientSession(authedClient);
+      persistClientSession(authedClient, data.session_token, data.session_expires_at);
       await fetchClientData(authedClient.id);
       await fetchAllAppointments();
       toast.success(`Bem-vindo(a), ${authedClient.name}!`, { duration: 2000 });
@@ -543,6 +555,8 @@ const ClientPortal = () => {
       const email = emailToCheck.trim().toLowerCase();
 
       // Se a rede já tem senha, valida ANTES de criar o registro local
+      let stitchSessionToken: string | null = null;
+      let stitchSessionExpiresAt: string | null = null;
       if (hasPassword) {
         const { data: loginData, error: loginError } = await supabase.functions.invoke(
           "client-auth-login",
@@ -554,6 +568,8 @@ const ClientPortal = () => {
           setAuthenticating(false);
           return;
         }
+        stitchSessionToken = loginData.session_token ?? null;
+        stitchSessionExpiresAt = loginData.session_expires_at ?? null;
       }
 
       const clientId = crypto.randomUUID();
@@ -599,7 +615,7 @@ const ClientPortal = () => {
       setClient(newClient);
       setStitchSourceClient(null);
       setIsAuthenticated(true);
-      persistClientSession(newClient);
+      persistClientSession(newClient, stitchSessionToken, stitchSessionExpiresAt);
 
       if (loyaltyProgram) {
         await supabase.from("client_loyalty_points").insert({

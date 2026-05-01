@@ -26,6 +26,7 @@ import {
   ShieldCheck,
   Repeat,
   Image as ImageIcon,
+  MessageSquare,
 } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
@@ -102,6 +103,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
     { href: `/portal/${slug}/assinatura`, label: "Assinatura", icon: Crown },
     { href: `/portal/${slug}/auditoria`, label: "Auditoria", icon: ShieldCheck },
     { href: `/portal/${slug}/vitrine`, label: "Vitrine", icon: ImageIcon },
+    { href: `/portal/${slug}/comunicacao`, label: "Comunicação", icon: MessageSquare },
     { href: `/portal/${slug}/configuracoes`, label: "Configurações", icon: Settings },
   ];
 

@@ -19,6 +19,7 @@ import {
   MessageCircle,
   Layout,
   BookOpen,
+  MessageSquare,
   
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ const navItems = [
   { href: "/admin/conversations", label: "Conversas", icon: MessageCircle },
   { href: "/admin/portal-structure", label: "Estrutura do Portal", icon: Layout },
   { href: "/admin/integration-guides", label: "Guias de Integração", icon: BookOpen },
+  { href: "/admin/comunicacao", label: "Comunicação", icon: MessageSquare },
   { href: "/admin/settings", label: "Configurações", icon: Settings },
 ];
 

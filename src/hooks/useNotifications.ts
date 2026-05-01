@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { findAnyClientSessionToken } from "@/lib/clientSession";
 
 export type NotificationRecipientType = "admin" | "establishment" | "professional" | "client";
 
@@ -48,9 +49,14 @@ export function useNotifications({
     setError(null);
     try {
       if (recipientType === "client") {
+        const token = findAnyClientSessionToken();
+        if (!token) {
+          setItems([]);
+          return;
+        }
         const { data, error: invokeErr } = await supabase.functions.invoke(
           "client-notifications-list",
-          { body: { client_id: recipientId, limit } },
+          { body: { limit }, headers: { "x-client-session": token } },
         );
         if (invokeErr) throw new Error(invokeErr.message);
         setItems((data?.items ?? []) as NotificationRow[]);
@@ -109,8 +115,11 @@ export function useNotifications({
         prev.map((n) => (ids.includes(n.id) ? { ...n, read_at: new Date().toISOString() } : n)),
       );
       if (recipientType === "client") {
+        const token = findAnyClientSessionToken();
+        if (!token) return;
         await supabase.functions.invoke("client-notifications-list", {
-          body: { client_id: recipientId, limit, mark_read_ids: ids },
+          body: { limit, mark_read_ids: ids },
+          headers: { "x-client-session": token },
         });
       } else {
         await supabase

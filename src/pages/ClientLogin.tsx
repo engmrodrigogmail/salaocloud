@@ -72,9 +72,25 @@ export default function ClientLogin() {
   const [selectedEstablishment, setSelectedEstablishment] = useState<EstablishmentOption | null>(null);
   const [forgotInfoEmail, setForgotInfoEmail] = useState<string | null>(null);
 
-  const persistSession = (slug: string, clientId: string, emailUsed: string) => {
+  const persistSession = (
+    slug: string,
+    clientId: string,
+    emailUsed: string,
+    sessionToken?: string | null,
+    sessionExpiresAt?: string | null,
+  ) => {
     const key = `client_portal_session:${slug}`;
-    localStorage.setItem(key, JSON.stringify({ clientId, email: emailUsed, phone: null }));
+    localStorage.setItem(
+      key,
+      JSON.stringify({
+        clientId,
+        email: emailUsed,
+        phone: null,
+        sessionToken: sessionToken ?? null,
+        sessionExpiresAt: sessionExpiresAt ?? null,
+        savedAt: new Date().toISOString(),
+      }),
+    );
   };
 
   const handleSubmitIdentifier = async (e: FormEvent) => {
@@ -187,9 +203,14 @@ export default function ClientLogin() {
       }
 
       if (data?.status === "ok" && data?.client && selectedEstablishment) {
-        persistSession(selectedEstablishment.slug, data.client.id, resolvedEmail);
+        persistSession(
+          selectedEstablishment.slug,
+          data.client.id,
+          resolvedEmail,
+          data.session_token,
+          data.session_expires_at,
+        );
         toast.success("Bem-vindo!", { position: "top-center", duration: 1500 });
-        // Vai para o hub central — auto-redirect se 1 destino, picker se 2+
         navigate("/hub");
         return;
       }
@@ -334,7 +355,13 @@ export default function ClientLogin() {
       if (loginErr) throw loginErr;
 
       if (loginData?.status === "ok" && loginData?.client && selectedEstablishment) {
-        persistSession(selectedEstablishment.slug, loginData.client.id, finalEmail);
+        persistSession(
+          selectedEstablishment.slug,
+          loginData.client.id,
+          finalEmail,
+          loginData.session_token,
+          loginData.session_expires_at,
+        );
         toast.success("Cadastro concluído!", { position: "top-center", duration: 2000 });
         navigate("/hub");
       }
