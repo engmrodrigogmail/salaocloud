@@ -46,7 +46,7 @@ export default function AdminCommunications() {
 
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [link, setLink] = useState("");
+  
   const [sending, setSending] = useState(false);
 
   const [history, setHistory] = useState<HistoryRow[]>([]);
@@ -123,7 +123,7 @@ export default function AdminCommunications() {
           ids: target === "specific_establishments" ? Array.from(selected) : undefined,
           title: title.trim(),
           body: body.trim(),
-          link: link.trim() || null,
+          link: null,
           category: "admin_broadcast",
         },
       });
@@ -132,7 +132,7 @@ export default function AdminCommunications() {
         `Enviado para ${data?.total ?? 0} salão(ões) — ${data?.sent ?? 0} push entregues`,
         { position: "top-center", duration: 3000 },
       );
-      setTitle(""); setBody(""); setLink(""); setSelected(new Set());
+      setTitle(""); setBody(""); setSelected(new Set());
       await loadHistory();
     } catch (e: any) {
       toast.error("Falha ao enviar: " + (e?.message ?? "erro"), { position: "top-center", duration: 3000 });
@@ -226,10 +226,6 @@ export default function AdminCommunications() {
               <div className="space-y-2">
                 <Label>Mensagem</Label>
                 <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} maxLength={500} />
-              </div>
-              <div className="space-y-2">
-                <Label>Link (opcional)</Label>
-                <Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="/portal/algum-salao/configuracoes" />
               </div>
 
               <Button onClick={handleSend} disabled={sending} className="gap-2">

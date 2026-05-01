@@ -42,7 +42,7 @@ export default function PortalCommunications() {
   // Form
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
-  const [link, setLink] = useState("");
+  
   const [target, setTarget] = useState<TargetType>("all_clients");
   const [clients, setClients] = useState<ClientLite[]>([]);
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set());
@@ -149,7 +149,7 @@ export default function PortalCommunications() {
           ids: target === "specific_clients" ? Array.from(selectedClients) : undefined,
           title: title.trim(),
           body: body.trim(),
-          link: link.trim() || null,
+          link: null,
           category: "manual_broadcast",
         },
       });
@@ -158,7 +158,7 @@ export default function PortalCommunications() {
         `Enviado para ${data?.total ?? 0} destinatário(s) — ${data?.sent ?? 0} push entregues`,
         { position: "top-center", duration: 3000 },
       );
-      setTitle(""); setBody(""); setLink(""); setSelectedClients(new Set());
+      setTitle(""); setBody(""); setSelectedClients(new Set());
       await loadHistory(establishmentId);
     } catch (e: any) {
       toast.error("Falha ao enviar: " + (e?.message ?? "erro"), { position: "top-center", duration: 3000 });
@@ -255,10 +255,6 @@ export default function PortalCommunications() {
               <div className="space-y-2">
                 <Label>Mensagem</Label>
                 <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} maxLength={500} />
-              </div>
-              <div className="space-y-2">
-                <Label>Link (opcional)</Label>
-                <Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="/portal/seu-salao/agenda" />
               </div>
 
               <Button onClick={handleSend} disabled={sending} className="gap-2">
