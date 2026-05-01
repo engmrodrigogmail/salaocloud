@@ -104,9 +104,13 @@ export function usePushNotifications(): UsePushNotificationsResult {
         let sub = await reg.pushManager.getSubscription();
         if (!sub) {
           const publicKey = await getVapidPublicKey();
+          const keyArray = urlBase64ToUint8Array(publicKey);
           sub = await reg.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(publicKey),
+            applicationServerKey: keyArray.buffer.slice(
+              keyArray.byteOffset,
+              keyArray.byteOffset + keyArray.byteLength,
+            ) as ArrayBuffer,
           });
         }
 
