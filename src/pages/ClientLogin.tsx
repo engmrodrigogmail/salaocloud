@@ -203,9 +203,14 @@ export default function ClientLogin() {
       }
 
       if (data?.status === "ok" && data?.client && selectedEstablishment) {
-        persistSession(selectedEstablishment.slug, data.client.id, resolvedEmail);
+        persistSession(
+          selectedEstablishment.slug,
+          data.client.id,
+          resolvedEmail,
+          data.session_token,
+          data.session_expires_at,
+        );
         toast.success("Bem-vindo!", { position: "top-center", duration: 1500 });
-        // Vai para o hub central — auto-redirect se 1 destino, picker se 2+
         navigate("/hub");
         return;
       }
@@ -350,7 +355,13 @@ export default function ClientLogin() {
       if (loginErr) throw loginErr;
 
       if (loginData?.status === "ok" && loginData?.client && selectedEstablishment) {
-        persistSession(selectedEstablishment.slug, loginData.client.id, finalEmail);
+        persistSession(
+          selectedEstablishment.slug,
+          loginData.client.id,
+          finalEmail,
+          loginData.session_token,
+          loginData.session_expires_at,
+        );
         toast.success("Cadastro concluído!", { position: "top-center", duration: 2000 });
         navigate("/hub");
       }
