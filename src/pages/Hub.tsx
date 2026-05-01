@@ -58,13 +58,8 @@ export default function Hub() {
     return out;
   }, []);
 
-  useEffect(() => {
-    // Se super admin, vai direto pra /admin
-    if (!authLoading && user && role === "super_admin") {
-      navigate("/admin", { replace: true });
-      return;
-    }
-  }, [authLoading, user, role, navigate]);
+  // Removido auto-redirect para super_admin: agora ele aparece como mais uma
+  // opção no picker quando o usuário também tem acesso a salões/clientes.
 
   useEffect(() => {
     let cancelled = false;
