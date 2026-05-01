@@ -231,17 +231,19 @@ export default function Auth() {
             </form>
           )}
 
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => setIsSignup(!isSignup)}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              {isSignup
-                ? "Já tem uma conta? Faça login"
-                : "Não tem conta? Cadastre-se"}
-            </button>
-          </div>
+          {!SIGNUPS_DISABLED && (
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={() => setIsSignup(!isSignup)}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                {isSignup
+                  ? "Já tem uma conta? Faça login"
+                  : "Não tem conta? Cadastre-se"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
