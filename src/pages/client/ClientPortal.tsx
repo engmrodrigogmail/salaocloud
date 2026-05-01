@@ -293,6 +293,22 @@ const ClientPortal = () => {
         setRewards(rewardsData || []);
       }
 
+      // Fetch showcase images (vitrine) — somente se habilitada
+      if ((est as any).is_showcase_enabled !== false) {
+        const nowIso = new Date().toISOString();
+        const { data: showcaseData } = await supabase
+          .from("establishment_showcase" as any)
+          .select("id, image_url, caption, scheduled_for, order_index")
+          .eq("establishment_id", est.id)
+          .order("order_index", { ascending: true });
+        const visible = ((showcaseData || []) as any[])
+          .filter((it) => !it.scheduled_for || it.scheduled_for <= nowIso)
+          .map((it) => ({ id: it.id, image_url: it.image_url, caption: it.caption }));
+        setShowcaseImages(visible);
+      } else {
+        setShowcaseImages([]);
+      }
+
     } catch (error) {
       console.error("Error fetching establishment:", error);
       toast.error("Erro ao carregar dados");
