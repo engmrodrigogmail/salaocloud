@@ -107,6 +107,20 @@ export default function Hub() {
         }
       }
 
+      // 3) Acesso de super-admin (se aplicável)
+      if (user && role === "super_admin") {
+        collected.push({
+          kind: "super_admin",
+          establishment_id: "__super_admin__",
+          establishment_name: "Painel Super Admin",
+          establishment_slug: "",
+          establishment_logo_url: null,
+          is_manager: false,
+          must_change_password: false,
+          client_id: null,
+        });
+      }
+
       // Deduplicar por (kind, establishment_id)
       const seen = new Set<string>();
       const deduped = collected.filter((t) => {
@@ -116,8 +130,8 @@ export default function Hub() {
         return true;
       });
 
-      // Ordenar: owner > professional > client; depois por nome
-      const order: Record<AccessTarget["kind"], number> = { owner: 0, professional: 1, client: 2 };
+      // Ordenar: super_admin > owner > professional > client; depois por nome
+      const order: Record<AccessTarget["kind"], number> = { super_admin: 0, owner: 1, professional: 2, client: 3 };
       deduped.sort((a, b) => {
         const d = order[a.kind] - order[b.kind];
         if (d !== 0) return d;
