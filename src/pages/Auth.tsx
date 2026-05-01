@@ -109,27 +109,12 @@ export default function Auth() {
     await handleLogin(parsed.data);
   };
 
-  const handleSignup = async (data: SignupFormData) => {
-    setIsLoading(true);
-    const { error } = await signUp(data.email, data.password, data.fullName);
-    setIsLoading(false);
-
-    if (error) {
-      let message = "Erro ao criar conta. Tente novamente.";
-      if (error.message.includes("already registered")) {
-        message = "Este email já está cadastrado.";
-      }
-      toast({
-        variant: "destructive",
-        title: "Ops!",
-        description: message,
-      });
-    } else {
-      toast({
-        title: "Conta criada!",
-        description: "Bem-vindo ao Salão Cloud!",
-      });
-    }
+  const handleSignup = async (_data: SignupFormData) => {
+    toast({
+      variant: "destructive",
+      title: "Novos cadastros suspensos",
+      description: "No momento não estamos aceitando novos cadastros de salões. Em breve reabriremos as inscrições.",
+    });
   };
 
   if (loading) {
