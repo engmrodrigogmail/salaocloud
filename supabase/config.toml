@@ -68,3 +68,15 @@ verify_jwt = false
 
 [functions.auto-mark-no-shows]
 verify_jwt = false
+
+[functions.push-subscribe]
+verify_jwt = false
+
+[functions.push-unsubscribe]
+verify_jwt = false
+
+[functions.push-send]
+verify_jwt = false
+
+[functions.client-notifications-list]
+verify_jwt = false
