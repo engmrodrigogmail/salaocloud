@@ -31,6 +31,7 @@ import AdminSettings from "./pages/admin/Settings";
 import AdminConversations from "./pages/admin/Conversations";
 import AdminPortalStructure from "./pages/admin/PortalStructure";
 import AdminIntegrationGuides from "./pages/admin/IntegrationGuides";
+import AdminCommunications from "./pages/admin/Communications";
 
 // Portal Pages (Establishment Admin - configuration & settings)
 import PortalDashboard from "./pages/portal/Dashboard";
@@ -47,6 +48,7 @@ import PortalCommissions from "./pages/portal/Commissions";
 import PortalSubscription from "./pages/portal/Subscription";
 import PortalAuditOverrides from "./pages/portal/AuditOverrides";
 import PortalShowcase from "./pages/portal/Showcase";
+import PortalCommunications from "./pages/portal/Communications";
 // Interno Pages (Establishment Internal - operations)
 import InternoDashboard from "./pages/interno/Dashboard";
 import InternoAgenda from "./pages/interno/Agenda";
@@ -184,6 +186,14 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/admin/comunicacao"
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin"]}>
+                    <AdminCommunications />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Portal routes - Establishment Admin (configuration & settings) */}
               <Route path="/portal/:slug" element={<PortalDashboard />} />
@@ -204,6 +214,7 @@ const App = () => (
               <Route path="/portal/:slug/assistente-ia" element={<PortalAIAssistant />} />
               <Route path="/portal/:slug/conversas-ia" element={<PortalAIConversations />} />
               <Route path="/portal/:slug/aprendizados-ia" element={<PortalAILearnings />} />
+              <Route path="/portal/:slug/comunicacao" element={<PortalCommunications />} />
 
               {/* Interno routes - Establishment Internal Operations */}
               <Route path="/interno/:slug" element={<InternoDashboard />} />
