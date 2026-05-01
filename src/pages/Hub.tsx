@@ -157,8 +157,8 @@ export default function Hub() {
       // Autenticado mas sem nenhum vínculo → onboarding
       setDidAutoRedirect(true);
       navigate("/onboarding", { replace: true });
-    } else if (targets.length === 0 && !user) {
-      // Sem auth e sem sessão cliente → manda pro login
+    } else if (targets.length === 0 && !user && localClientSessions.length === 0) {
+      // Sem auth E sem sessão cliente local → manda pro login
       setDidAutoRedirect(true);
       navigate("/auth", { replace: true });
     }
