@@ -17,14 +17,13 @@ interface VitrineProps {
   images: ShowcaseImage[];
 }
 
-const URL_REGEX = /(https?:\/\/[^\s)]+)/gi;
-
 function renderCaptionWithLinks(text: string, onLinkClick: (url: string) => void) {
-  const parts = text.split(URL_REGEX);
+  // Regex sem flag global para evitar estado lastIndex compartilhado entre renders
+  const urlRegex = /(https?:\/\/[^\s)]+)/i;
+  const splitRegex = /(https?:\/\/[^\s)]+)/i;
+  const parts = text.split(splitRegex);
   return parts.map((part, i) => {
-    if (URL_REGEX.test(part)) {
-      // reset regex global state
-      URL_REGEX.lastIndex = 0;
+    if (urlRegex.test(part)) {
       return (
         <button
           key={i}
