@@ -148,11 +148,11 @@ export default function Auth() {
 
           <div className="mb-8">
             <h1 className="font-display text-3xl font-bold mb-2">
-              {isSignup ? "Crie sua conta" : "Bem-vindo de volta!"}
+              {isSignup ? "Novos cadastros suspensos" : "Bem-vindo de volta!"}
             </h1>
             <p className="text-muted-foreground">
               {isSignup
-                ? "Cadastre seu salão e comece a receber agendamentos hoje."
+                ? "No momento não estamos aceitando novos cadastros de salões. Em breve reabriremos as inscrições."
                 : "Entre para acessar seu painel"}
             </p>
           </div>
