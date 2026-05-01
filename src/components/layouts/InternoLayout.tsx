@@ -11,6 +11,7 @@ import {
   Coins,
   HelpCircle,
   UserCircle,
+  Repeat,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -132,6 +133,25 @@ export function InternoLayout({ children }: InternoLayoutProps) {
               Portal Admin
             </Button>
           )}
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate("/hub")}
+                  className="text-muted-foreground hover:text-foreground"
+                  aria-label="Trocar de área"
+                >
+                  <Repeat size={20} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Trocar de área</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
