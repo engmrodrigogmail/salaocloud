@@ -149,7 +149,7 @@ export default function PortalCommunications() {
           ids: target === "specific_clients" ? Array.from(selectedClients) : undefined,
           title: title.trim(),
           body: body.trim(),
-          link: link.trim() || null,
+          link: null,
           category: "manual_broadcast",
         },
       });
@@ -255,10 +255,6 @@ export default function PortalCommunications() {
               <div className="space-y-2">
                 <Label>Mensagem</Label>
                 <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} maxLength={500} />
-              </div>
-              <div className="space-y-2">
-                <Label>Link (opcional)</Label>
-                <Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="/portal/seu-salao/agenda" />
               </div>
 
               <Button onClick={handleSend} disabled={sending} className="gap-2">

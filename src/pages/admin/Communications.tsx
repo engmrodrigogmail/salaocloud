@@ -123,7 +123,7 @@ export default function AdminCommunications() {
           ids: target === "specific_establishments" ? Array.from(selected) : undefined,
           title: title.trim(),
           body: body.trim(),
-          link: link.trim() || null,
+          link: null,
           category: "admin_broadcast",
         },
       });
@@ -226,10 +226,6 @@ export default function AdminCommunications() {
               <div className="space-y-2">
                 <Label>Mensagem</Label>
                 <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={4} maxLength={500} />
-              </div>
-              <div className="space-y-2">
-                <Label>Link (opcional)</Label>
-                <Input value={link} onChange={(e) => setLink(e.target.value)} placeholder="/portal/algum-salao/configuracoes" />
               </div>
 
               <Button onClick={handleSend} disabled={sending} className="gap-2">
