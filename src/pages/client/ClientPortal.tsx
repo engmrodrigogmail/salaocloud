@@ -28,6 +28,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useAvailability } from "@/hooks/useAvailability";
 import { EstablishmentNameHeader } from "@/components/branding/EstablishmentNameHeader";
 import { EstablishmentAIChat } from "@/components/ai-assistant/EstablishmentAIChat";
+import { Vitrine, type ShowcaseImage } from "@/components/showcase/Vitrine";
 
 type Establishment = Tables<"establishments"> & { cancellation_policy?: string | null };
 type Service = Tables<"services">;
@@ -89,6 +90,8 @@ const ClientPortal = () => {
   const [rewards, setRewards] = useState<LoyaltyReward[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [professionalServices, setProfessionalServices] = useState<{professional_id: string, service_id: string}[]>([]);
+  const [showcaseImages, setShowcaseImages] = useState<ShowcaseImage[]>([]);
+  const [showVitrine, setShowVitrine] = useState(true);
 
   // Email check form
   const [emailToCheck, setEmailToCheck] = useState("");
