@@ -182,6 +182,14 @@ export function PortalLayout({ children }: PortalLayoutProps) {
             </Tooltip>
           </TooltipProvider>
           
+          {establishmentId && (
+            <NotificationBell
+              recipientType="establishment"
+              recipientId={establishmentId}
+              pushScope="establishment"
+            />
+          )}
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="gap-2">
