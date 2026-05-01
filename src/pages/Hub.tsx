@@ -8,7 +8,7 @@ import logo from "@/assets/logo-salaocloud-v5.png";
 import salonBg from "@/assets/salon-dark-bg.png";
 
 interface AccessTarget {
-  kind: "owner" | "professional" | "client";
+  kind: "owner" | "professional" | "client" | "super_admin";
   establishment_id: string;
   establishment_name: string;
   establishment_slug: string;
