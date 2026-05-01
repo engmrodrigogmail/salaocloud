@@ -28,6 +28,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { useAvailability } from "@/hooks/useAvailability";
 import { EstablishmentNameHeader } from "@/components/branding/EstablishmentNameHeader";
 import { EstablishmentAIChat } from "@/components/ai-assistant/EstablishmentAIChat";
+import { Vitrine, type ShowcaseImage } from "@/components/showcase/Vitrine";
 
 type Establishment = Tables<"establishments"> & { cancellation_policy?: string | null };
 type Service = Tables<"services">;
@@ -89,6 +90,8 @@ const ClientPortal = () => {
   const [rewards, setRewards] = useState<LoyaltyReward[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [professionalServices, setProfessionalServices] = useState<{professional_id: string, service_id: string}[]>([]);
+  const [showcaseImages, setShowcaseImages] = useState<ShowcaseImage[]>([]);
+  const [showVitrine, setShowVitrine] = useState(true);
 
   // Email check form
   const [emailToCheck, setEmailToCheck] = useState("");
@@ -288,6 +291,22 @@ const ClientPortal = () => {
           .order("points_required");
         
         setRewards(rewardsData || []);
+      }
+
+      // Fetch showcase images (vitrine) — somente se habilitada
+      if ((est as any).is_showcase_enabled !== false) {
+        const nowIso = new Date().toISOString();
+        const { data: showcaseData } = await supabase
+          .from("establishment_showcase" as any)
+          .select("id, image_url, caption, scheduled_for, order_index")
+          .eq("establishment_id", est.id)
+          .order("order_index", { ascending: true });
+        const visible = ((showcaseData || []) as any[])
+          .filter((it) => !it.scheduled_for || it.scheduled_for <= nowIso)
+          .map((it) => ({ id: it.id, image_url: it.image_url, caption: it.caption }));
+        setShowcaseImages(visible);
+      } else {
+        setShowcaseImages([]);
       }
 
     } catch (error) {
@@ -1543,8 +1562,16 @@ const ClientPortal = () => {
         </div>
       </div>
 
+      {showVitrine && showcaseImages.length > 0 && (
+        <Vitrine images={showcaseImages} />
+      )}
+
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <Tabs defaultValue="booking" className="space-y-6">
+        <Tabs
+          defaultValue="booking"
+          className="space-y-6"
+          onValueChange={() => { if (showVitrine) setShowVitrine(false); }}
+        >
           <TabsList className={`grid w-full ${establishment.show_catalog ? "grid-cols-3" : "grid-cols-2"}`}>
             <TabsTrigger value="booking">
               <Calendar className="h-4 w-4 mr-2 hidden sm:inline" />

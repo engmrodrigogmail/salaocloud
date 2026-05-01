@@ -1476,6 +1476,50 @@ export type Database = {
           },
         ]
       }
+      establishment_showcase: {
+        Row: {
+          caption: string | null
+          created_at: string
+          establishment_id: string
+          id: string
+          image_url: string
+          order_index: number
+          scheduled_for: string | null
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          caption?: string | null
+          created_at?: string
+          establishment_id: string
+          id?: string
+          image_url: string
+          order_index?: number
+          scheduled_for?: string | null
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          caption?: string | null
+          created_at?: string
+          establishment_id?: string
+          id?: string
+          image_url?: string
+          order_index?: number
+          scheduled_for?: string | null
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_showcase_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       establishments: {
         Row: {
           address: string | null
@@ -1494,6 +1538,7 @@ export type Database = {
           discount_pin_threshold_percent: number
           email: string | null
           id: string
+          is_showcase_enabled: boolean
           logo_url: string | null
           name: string
           no_show_auto_detect: boolean
@@ -1532,6 +1577,7 @@ export type Database = {
           discount_pin_threshold_percent?: number
           email?: string | null
           id?: string
+          is_showcase_enabled?: boolean
           logo_url?: string | null
           name: string
           no_show_auto_detect?: boolean
@@ -1570,6 +1616,7 @@ export type Database = {
           discount_pin_threshold_percent?: number
           email?: string | null
           id?: string
+          is_showcase_enabled?: boolean
           logo_url?: string | null
           name?: string
           no_show_auto_detect?: boolean
