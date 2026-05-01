@@ -157,6 +157,25 @@ export function PortalLayout({ children }: PortalLayoutProps) {
           >
             Área Interna
           </Button>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate("/hub")}
+                  className="h-9 w-9"
+                  aria-label="Trocar de área"
+                >
+                  <Repeat className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Trocar de área</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
