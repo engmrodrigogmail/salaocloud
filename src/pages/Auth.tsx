@@ -42,6 +42,8 @@ type SignupFormData = z.infer<typeof signupSchema>;
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
+  // Cadastros de novos salões temporariamente suspensos.
+  const SIGNUPS_DISABLED = true;
   const [isSignup, setIsSignup] = useState(searchParams.get("mode") === "signup");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -105,27 +107,12 @@ export default function Auth() {
     await handleLogin(parsed.data);
   };
 
-  const handleSignup = async (data: SignupFormData) => {
-    setIsLoading(true);
-    const { error } = await signUp(data.email, data.password, data.fullName);
-    setIsLoading(false);
-
-    if (error) {
-      let message = "Erro ao criar conta. Tente novamente.";
-      if (error.message.includes("already registered")) {
-        message = "Este email já está cadastrado.";
-      }
-      toast({
-        variant: "destructive",
-        title: "Ops!",
-        description: message,
-      });
-    } else {
-      toast({
-        title: "Conta criada!",
-        description: "Bem-vindo ao Salão Cloud!",
-      });
-    }
+  const handleSignup = async (_data: SignupFormData) => {
+    toast({
+      variant: "destructive",
+      title: "Novos cadastros suspensos",
+      description: "No momento não estamos aceitando novos cadastros de salões. Em breve reabriremos as inscrições.",
+    });
   };
 
   if (loading) {
@@ -159,121 +146,32 @@ export default function Auth() {
 
           <div className="mb-8">
             <h1 className="font-display text-3xl font-bold mb-2">
-              {isSignup ? "Crie sua conta" : "Bem-vindo de volta!"}
+              {isSignup ? "Novos cadastros suspensos" : "Bem-vindo de volta!"}
             </h1>
             <p className="text-muted-foreground">
               {isSignup
-                ? "Cadastre seu salão e comece a receber agendamentos hoje."
+                ? "No momento não estamos aceitando novos cadastros de salões. Em breve reabriremos as inscrições."
                 : "Entre para acessar seu painel"}
             </p>
           </div>
           {isSignup ? (
-            <Form {...signupForm}>
-              <form
-                onSubmit={signupForm.handleSubmit(handleSignup)}
-                className="space-y-5"
-                autoComplete="off"
+            <div className="space-y-5">
+              <div className="rounded-md border border-primary/30 bg-primary/5 p-5 text-sm text-foreground">
+                <p className="font-semibold mb-2">Inscrições temporariamente fechadas</p>
+                <p className="text-muted-foreground">
+                  Estamos pausando novos cadastros de salões para garantir a melhor
+                  experiência aos nossos clientes atuais. Volte em breve — reabriremos
+                  as inscrições muito em breve.
+                </p>
+              </div>
+              <Button
+                type="button"
+                onClick={() => setIsSignup(false)}
+                className="w-full h-12 bg-gradient-primary hover:opacity-90 font-semibold"
               >
-                <FormField
-                  control={signupForm.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Email</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="email"
-                          placeholder="seu@email.com"
-                          autoComplete="email"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={signupForm.control}
-                  name="fullName"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Nome completo (opcional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type="text"
-                          placeholder="Seu nome (opcional)"
-                          autoComplete="name"
-                          autoCapitalize="words"
-                          inputMode="text"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={signupForm.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Senha</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <Input
-                            {...field}
-                            type={showPassword ? "text" : "password"}
-                            placeholder="••••••••"
-                            autoComplete="new-password"
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground z-10"
-                          >
-                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                          </button>
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={signupForm.control}
-                  name="confirmPassword"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Confirmar senha</FormLabel>
-                      <FormControl>
-                        <Input
-                          {...field}
-                          type={showPassword ? "text" : "password"}
-                          placeholder="••••••••"
-                          autoComplete="new-password"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <Button
-                  type="submit"
-                  className="w-full h-12 bg-gradient-primary hover:opacity-90 font-semibold"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    "Criar Conta"
-                  )}
-                </Button>
-              </form>
-            </Form>
+                Já tenho conta — Entrar
+              </Button>
+            </div>
           ) : (
             <form onSubmit={handleNativeLogin} className="space-y-5" key="login-form" noValidate>
               <div className="space-y-2">
@@ -331,17 +229,19 @@ export default function Auth() {
             </form>
           )}
 
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => setIsSignup(!isSignup)}
-              className="text-sm text-muted-foreground hover:text-primary transition-colors"
-            >
-              {isSignup
-                ? "Já tem uma conta? Faça login"
-                : "Não tem conta? Cadastre-se"}
-            </button>
-          </div>
+          {!SIGNUPS_DISABLED && (
+            <div className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={() => setIsSignup(!isSignup)}
+                className="text-sm text-muted-foreground hover:text-primary transition-colors"
+              >
+                {isSignup
+                  ? "Já tem uma conta? Faça login"
+                  : "Não tem conta? Cadastre-se"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
