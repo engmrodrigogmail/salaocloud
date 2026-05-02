@@ -1,88 +1,25 @@
 project_id = "gdjlajktmjskhpugzinh"
 
-[functions.create-checkout]
-verify_jwt = false
-
-[functions.check-subscription]
-verify_jwt = false
-
-[functions.customer-portal]
-verify_jwt = false
-
-[functions.stripe-data]
-verify_jwt = false
-
-[functions.stripe-sync]
-verify_jwt = false
-
 [functions.stripe-webhook]
-verify_jwt = false
-
-[functions.chat-ai-agent]
-verify_jwt = false
-
-[functions.support-chat]
 verify_jwt = false
 
 [functions.zapi-webhook]
 verify_jwt = false
 
-[functions.establishment-ai-assistant]
-verify_jwt = false
-
-[functions.process-email-queue]
-verify_jwt = true
-
-[functions.send-transactional-email]
-verify_jwt = true
-
-[functions.preview-transactional-email]
+[functions.handle-email-suppression]
 verify_jwt = false
 
 [functions.handle-email-unsubscribe]
 verify_jwt = false
 
-[functions.handle-email-suppression]
-verify_jwt = false
-
-[functions.lookup-client-by-email]
-verify_jwt = false
-
-[functions.client-auth-login]
-verify_jwt = false
-
-[functions.client-auth-set-password]
-verify_jwt = false
-
-[functions.client-auth-request-reset]
-verify_jwt = false
-
-[functions.client-auth-reset-password]
-verify_jwt = false
-
-[functions.list-client-establishments]
-verify_jwt = false
-
-[functions.list-client-establishments-by-phone]
+[functions.process-email-queue]
 verify_jwt = false
 
 [functions.auto-mark-no-shows]
 verify_jwt = false
 
-[functions.push-subscribe]
-verify_jwt = false
-
-[functions.push-vapid-public-key]
-verify_jwt = false
-
-[functions.push-unsubscribe]
-verify_jwt = false
-
-[functions.push-send]
-verify_jwt = false
-
 [functions.push-process-pending]
 verify_jwt = false
 
-[functions.client-notifications-list]
+[functions.stripe-bootstrap-sc]
 verify_jwt = false
