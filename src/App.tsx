@@ -198,6 +198,14 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/admin/edu"
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin"]}>
+                    <AdminEdu />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Portal routes - Establishment Admin (configuration & settings) */}
               <Route path="/portal/:slug" element={<PortalDashboard />} />
