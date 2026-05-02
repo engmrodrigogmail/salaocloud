@@ -184,6 +184,14 @@ const ClientPortal = () => {
     }
   }, [slug]);
 
+  // Sempre que o cliente autentica e existem imagens, abre a vitrine
+  useEffect(() => {
+    if (isAuthenticated && showcaseImages.length > 0) {
+      console.info("[Vitrine] auto-abrindo após autenticação. Total:", showcaseImages.length);
+      setShowVitrine(true);
+    }
+  }, [isAuthenticated, showcaseImages.length]);
+
   // Restaurar sessão do cliente após o estabelecimento ser carregado
   useEffect(() => {
     if (!establishment || isAuthenticated || !sessionStorageKey) return;
