@@ -470,6 +470,20 @@ export default function AdminPlans() {
           </Button>
         </div>
 
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="py-4 flex items-start gap-3">
+            <Star className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+            <div className="text-sm">
+              <p className="font-medium text-foreground">
+                O Salão Cloud opera com plano único <strong>Pro</strong> (mensal). O ciclo anual está desativado.
+              </p>
+              <p className="text-muted-foreground mt-1">
+                Trials são liberados manualmente pelo super admin em <strong>/admin/establishments</strong> (status “Trial Premium Adm”).
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
