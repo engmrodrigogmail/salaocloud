@@ -31,13 +31,11 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Match either local email or global identity email; optionally restrict by establishment.
+    // Match all rows sharing this email so a password created in one salon works in another.
     let query = supabase
       .from("clients")
       .select("id, name, phone, email, global_identity_email, cpf, shared_history_consent, notes, establishment_id, password_hash, password_set_at")
       .or(`email.eq.${normalizedEmail},global_identity_email.eq.${normalizedEmail}`);
-
-    if (establishment_id) query = query.eq("establishment_id", establishment_id);
 
     const { data: rows, error } = await query;
     if (error) {
