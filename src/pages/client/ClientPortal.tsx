@@ -573,32 +573,27 @@ const ClientPortal = () => {
         stitchSessionExpiresAt = loginData.session_expires_at ?? null;
       }
 
-      const clientId = crypto.randomUUID();
-      const now = new Date().toISOString();
-      const clientInsert = {
-        id: clientId,
-        establishment_id: establishment.id,
-        name: stitchSourceClient.name,
-        phone: stitchSourceClient.phone,
-        cpf: normalizeOptionalCpf(stitchSourceClient.cpf ?? ""),
-        email,
-        global_identity_email: email,
-        terms_accepted_at: now,
-        shared_history_consent: stitchSourceClient.shared_history_consent ?? false,
-        user_id: null,
-        notes: stitchSourceClient.notes ?? null,
-      };
-      const { error } = await supabase
-        .from("clients")
-        .insert(clientInsert);
+      // Cria/recupera o registro local via edge function (service role) para evitar bloqueios de RLS
+      const { data: stitchData, error: stitchErr } = await supabase.functions.invoke(
+        "client-stitch-identity",
+        {
+          body: {
+            establishment_id: establishment.id,
+            source_client_id: stitchSourceClient.id,
+            email,
+          },
+        }
+      );
 
-      if (error) throw error;
+      if (stitchErr) throw stitchErr;
+      if (stitchData?.error) {
+        if (stitchData.error === "cpf_already_in_salon") {
+          throw new Error("Este CPF já está cadastrado neste salão. Entre em contato com o salão.");
+        }
+        throw new Error(stitchData.error);
+      }
 
-      const newClient = {
-        ...clientInsert,
-        created_at: now,
-        updated_at: now,
-      } as Client;
+      const newClient = stitchData.client as Client;
 
       // Se a rede ainda não tem senha, definimos agora (aplica a todos os registros do e-mail)
       if (!hasPassword) {
