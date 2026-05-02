@@ -4,7 +4,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ChevronLeft, ChevronRight, ExternalLink } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, ExternalLink, X } from "lucide-react";
 const VITRINE_BG = "/vitrine-bg.jpg";
 
 export interface ShowcaseImage {
@@ -15,6 +15,8 @@ export interface ShowcaseImage {
 
 interface VitrineProps {
   images: ShowcaseImage[];
+  /** Quando definido, renderiza a vitrine como overlay full-screen com botão para fechar/agendar. */
+  onClose?: () => void;
 }
 
 function renderCaptionWithLinks(text: string, onLinkClick: (url: string) => void) {
