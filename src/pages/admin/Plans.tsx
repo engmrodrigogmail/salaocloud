@@ -622,34 +622,23 @@ export default function AdminPlans() {
               </div>
 
               {/* Pricing */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Preço Mensal (R$)</Label>
-                  <Input
-                    type="number"
-                    value={planForm.price_monthly}
-                    onChange={(e) =>
-                      setPlanForm({
-                        ...planForm,
-                        price_monthly: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Preço Anual (R$)</Label>
-                  <Input
-                    type="number"
-                    value={planForm.price_yearly}
-                    onChange={(e) =>
-                      setPlanForm({
-                        ...planForm,
-                        price_yearly: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label>Preço Mensal (R$)</Label>
+                <Input
+                  type="number"
+                  value={planForm.price_monthly}
+                  onChange={(e) =>
+                    setPlanForm({
+                      ...planForm,
+                      price_monthly: parseFloat(e.target.value) || 0,
+                    })
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  O ciclo anual está desativado no Salão Cloud.
+                </p>
               </div>
+
 
               {/* Appearance */}
               <div className="grid grid-cols-2 gap-4">
