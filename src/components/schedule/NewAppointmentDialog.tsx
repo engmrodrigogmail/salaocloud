@@ -28,7 +28,10 @@ import { NewClientDialog } from "@/components/clients/NewClientDialog";
 
 type Service = Tables<"services">;
 type Professional = Tables<"professionals">;
-type Client = Pick<Tables<"clients">, "id" | "name" | "phone" | "email">;
+type Client = Pick<Tables<"clients">, "id" | "name" | "phone" | "email"> & {
+  source?: "local" | "network";
+  origin_establishment?: string;
+};
 
 interface NewAppointmentDialogProps {
   open: boolean;
