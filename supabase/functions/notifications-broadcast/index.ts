@@ -169,6 +169,7 @@ Deno.serve(async (req) => {
 
     let sent = 0;
     let failed = 0;
+    let subscriptions = 0;
     for (const grp of ["client", "professional", "establishment"] as const) {
       const idsForGrp = recipients.filter((r) => r.type === grp).map((r) => r.id);
       if (!idsForGrp.length) continue;
@@ -178,6 +179,7 @@ Deno.serve(async (req) => {
         .in(tableMap[grp].col, idsForGrp)
         .eq("is_active", true);
       if (!subs?.length) continue;
+      subscriptions += subs.length;
       const goneIds: string[] = [];
       for (const sub of subs) {
         const payload: PushPayload = {
@@ -208,6 +210,7 @@ Deno.serve(async (req) => {
       notifications_created: inserted?.length ?? 0,
       sent,
       failed,
+      subscriptions,
     });
   } catch (e: any) {
     return json({ error: e?.message ?? "internal_error" }, 500);
