@@ -541,6 +541,9 @@ const ClientPortal = () => {
       const authedClient = { ...client, ...data.client } as Client;
       setClient(authedClient);
       setIsAuthenticated(true);
+      if (establishment) {
+        void loadShowcaseImages(establishment, "login_success");
+      }
       persistClientSession(authedClient, data.session_token, data.session_expires_at);
       await fetchClientData(authedClient.id);
       await fetchAllAppointments();
