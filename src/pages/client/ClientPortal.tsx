@@ -573,32 +573,27 @@ const ClientPortal = () => {
         stitchSessionExpiresAt = loginData.session_expires_at ?? null;
       }
 
-      const clientId = crypto.randomUUID();
-      const now = new Date().toISOString();
-      const clientInsert = {
-        id: clientId,
-        establishment_id: establishment.id,
-        name: stitchSourceClient.name,
-        phone: stitchSourceClient.phone,
-        cpf: normalizeOptionalCpf(stitchSourceClient.cpf ?? ""),
-        email,
-        global_identity_email: email,
-        terms_accepted_at: now,
-        shared_history_consent: stitchSourceClient.shared_history_consent ?? false,
-        user_id: null,
-        notes: stitchSourceClient.notes ?? null,
-      };
-      const { error } = await supabase
-        .from("clients")
-        .insert(clientInsert);
+      // Cria/recupera o registro local via edge function (service role) para evitar bloqueios de RLS
+      const { data: stitchData, error: stitchErr } = await supabase.functions.invoke(
+        "client-stitch-identity",
+        {
+          body: {
+            establishment_id: establishment.id,
+            source_client_id: stitchSourceClient.id,
+            email,
+          },
+        }
+      );
 
-      if (error) throw error;
+      if (stitchErr) throw stitchErr;
+      if (stitchData?.error) {
+        if (stitchData.error === "cpf_already_in_salon") {
+          throw new Error("Este CPF já está cadastrado neste salão. Entre em contato com o salão.");
+        }
+        throw new Error(stitchData.error);
+      }
 
-      const newClient = {
-        ...clientInsert,
-        created_at: now,
-        updated_at: now,
-      } as Client;
+      const newClient = stitchData.client as Client;
 
       // Se a rede ainda não tem senha, definimos agora (aplica a todos os registros do e-mail)
       if (!hasPassword) {
@@ -630,9 +625,23 @@ const ClientPortal = () => {
       await fetchAllAppointments();
       await fetchClientData(newClient.id);
       toast.success(`Bem-vindo(a) de volta, ${newClient.name}!`, { duration: 2500 });
-    } catch (error) {
-      console.error("Error stitching identity:", error);
-      toast.error("Erro ao vincular cadastro");
+    } catch (error: any) {
+      console.error("Error stitching identity:", error, JSON.stringify(error));
+      const code = error?.code || error?.details?.code;
+      const message = error?.message || "";
+      let userMsg = "Erro ao vincular cadastro";
+      if (code === "23505" || /duplicate key|already exists/i.test(message)) {
+        if (/cpf/i.test(message)) {
+          userMsg = "Este CPF já está cadastrado neste salão. Entre em contato com o salão.";
+        } else {
+          userMsg = "Cadastro já existente neste salão. Tente fazer login.";
+        }
+      } else if (code === "42501" || /row-level security|permission denied/i.test(message)) {
+        userMsg = "Permissão negada. Recarregue a página e tente novamente.";
+      } else if (message) {
+        userMsg = `Erro ao vincular cadastro: ${message}`;
+      }
+      toast.error(userMsg, { duration: 5000 });
     } finally {
       setAuthenticating(false);
     }
