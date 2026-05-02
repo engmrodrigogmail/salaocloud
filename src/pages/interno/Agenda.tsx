@@ -504,13 +504,9 @@ export default function InternoAgenda() {
             onOpenChange={setNewApptOpen}
             establishmentId={establishment.id}
             services={services}
-            professionals={
-              role === "professional" && !isOwner && currentProfessionalId
-                ? professionals.filter((p) => p.id === currentProfessionalId)
-                : professionals
-            }
+            professionals={professionals}
             defaultProfessionalId={
-              role === "professional" && currentProfessionalId
+              role === "professional" && !isOwner && !isManager && currentProfessionalId
                 ? currentProfessionalId
                 : undefined
             }
