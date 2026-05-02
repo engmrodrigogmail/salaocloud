@@ -56,8 +56,11 @@ export function NewAppointmentDialog({
   defaultProfessionalId,
   onCreated,
 }: NewAppointmentDialogProps) {
-  const [clients, setClients] = useState<Client[]>([]);
+  const [localResults, setLocalResults] = useState<Client[]>([]);
+  const [networkResults, setNetworkResults] = useState<Client[]>([]);
   const [search, setSearch] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [serviceId, setServiceId] = useState("");
   const [professionalId, setProfessionalId] = useState("");
@@ -69,6 +72,9 @@ export function NewAppointmentDialog({
 
   const reset = () => {
     setSearch("");
+    setLocalResults([]);
+    setNetworkResults([]);
+    setHasSearched(false);
     setSelectedClient(null);
     setServiceId("");
     setProfessionalId(defaultProfessionalId ?? "");
@@ -77,35 +83,65 @@ export function NewAppointmentDialog({
     setNotes("");
   };
 
-  const fetchClients = async () => {
-    const { data, error } = await supabase
-      .from("clients")
-      .select("id, name, phone, email")
-      .eq("establishment_id", establishmentId)
-      .order("name");
-    if (!error && data) setClients(data);
-  };
-
   useEffect(() => {
-    if (open) {
-      reset();
-      fetchClients();
-    }
+    if (open) reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, defaultDate, defaultTime, defaultProfessionalId]);
 
-  const filteredClients = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return clients.slice(0, 8);
-    return clients
-      .filter(
-        (c) =>
-          c.name.toLowerCase().includes(q) ||
-          (c.phone || "").includes(q) ||
-          (c.email || "").toLowerCase().includes(q)
-      )
-      .slice(0, 8);
-  }, [clients, search]);
+  const handleSearch = async () => {
+    const q = search.trim();
+    if (q.length < 2) {
+      toast.error("Digite ao menos 2 caracteres", { position: "top-center", duration: 2000 });
+      return;
+    }
+    setSearching(true);
+    setHasSearched(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("search-clients-global", {
+        body: { establishment_id: establishmentId, query: q },
+      });
+      if (error) throw error;
+      setLocalResults((data?.local || []) as Client[]);
+      setNetworkResults((data?.network || []) as Client[]);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erro ao buscar cliente", { position: "top-center", duration: 2000 });
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const pickNetworkClient = async (c: any) => {
+    try {
+      const { data: existing } = await supabase
+        .from("clients")
+        .select("id, name, phone, email")
+        .eq("establishment_id", establishmentId)
+        .or(`email.eq.${(c.email || "").toLowerCase()},phone.eq.${c.phone}`)
+        .maybeSingle();
+      if (existing) {
+        setSelectedClient(existing as Client);
+        return;
+      }
+      const { data: created, error } = await supabase
+        .from("clients")
+        .insert({
+          establishment_id: establishmentId,
+          name: c.name,
+          phone: c.phone,
+          email: c.email,
+          global_identity_email: (c.email || "").toLowerCase() || null,
+        })
+        .select("id, name, phone, email")
+        .single();
+      if (error) throw error;
+      toast.success("Cliente vinculado ao salão", { position: "top-center", duration: 2000 });
+      setSelectedClient(created as Client);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Erro ao vincular cliente", { position: "top-center", duration: 2500 });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
