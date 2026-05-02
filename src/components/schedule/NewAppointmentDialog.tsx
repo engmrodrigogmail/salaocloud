@@ -18,7 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Loader2, Search, UserPlus } from "lucide-react";
+import { Calendar, Loader2, Search, UserPlus, Globe } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, setHours, setMinutes } from "date-fns";
@@ -27,7 +28,10 @@ import { NewClientDialog } from "@/components/clients/NewClientDialog";
 
 type Service = Tables<"services">;
 type Professional = Tables<"professionals">;
-type Client = Pick<Tables<"clients">, "id" | "name" | "phone" | "email">;
+type Client = Pick<Tables<"clients">, "id" | "name" | "phone" | "email"> & {
+  source?: "local" | "network";
+  origin_establishment?: string;
+};
 
 interface NewAppointmentDialogProps {
   open: boolean;
@@ -52,8 +56,11 @@ export function NewAppointmentDialog({
   defaultProfessionalId,
   onCreated,
 }: NewAppointmentDialogProps) {
-  const [clients, setClients] = useState<Client[]>([]);
+  const [localResults, setLocalResults] = useState<Client[]>([]);
+  const [networkResults, setNetworkResults] = useState<Client[]>([]);
   const [search, setSearch] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [serviceId, setServiceId] = useState("");
   const [professionalId, setProfessionalId] = useState("");
@@ -65,6 +72,9 @@ export function NewAppointmentDialog({
 
   const reset = () => {
     setSearch("");
+    setLocalResults([]);
+    setNetworkResults([]);
+    setHasSearched(false);
     setSelectedClient(null);
     setServiceId("");
     setProfessionalId(defaultProfessionalId ?? "");
@@ -73,35 +83,65 @@ export function NewAppointmentDialog({
     setNotes("");
   };
 
-  const fetchClients = async () => {
-    const { data, error } = await supabase
-      .from("clients")
-      .select("id, name, phone, email")
-      .eq("establishment_id", establishmentId)
-      .order("name");
-    if (!error && data) setClients(data);
-  };
-
   useEffect(() => {
-    if (open) {
-      reset();
-      fetchClients();
-    }
+    if (open) reset();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, defaultDate, defaultTime, defaultProfessionalId]);
 
-  const filteredClients = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return clients.slice(0, 8);
-    return clients
-      .filter(
-        (c) =>
-          c.name.toLowerCase().includes(q) ||
-          (c.phone || "").includes(q) ||
-          (c.email || "").toLowerCase().includes(q)
-      )
-      .slice(0, 8);
-  }, [clients, search]);
+  const handleSearch = async () => {
+    const q = search.trim();
+    if (q.length < 2) {
+      toast.error("Digite ao menos 2 caracteres", { position: "top-center", duration: 2000 });
+      return;
+    }
+    setSearching(true);
+    setHasSearched(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("search-clients-global", {
+        body: { establishment_id: establishmentId, query: q },
+      });
+      if (error) throw error;
+      setLocalResults((data?.local || []) as Client[]);
+      setNetworkResults((data?.network || []) as Client[]);
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erro ao buscar cliente", { position: "top-center", duration: 2000 });
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const pickNetworkClient = async (c: any) => {
+    try {
+      const { data: existing } = await supabase
+        .from("clients")
+        .select("id, name, phone, email")
+        .eq("establishment_id", establishmentId)
+        .or(`email.eq.${(c.email || "").toLowerCase()},phone.eq.${c.phone}`)
+        .maybeSingle();
+      if (existing) {
+        setSelectedClient(existing as Client);
+        return;
+      }
+      const { data: created, error } = await supabase
+        .from("clients")
+        .insert({
+          establishment_id: establishmentId,
+          name: c.name,
+          phone: c.phone,
+          email: c.email,
+          global_identity_email: (c.email || "").toLowerCase() || null,
+        })
+        .select("id, name, phone, email")
+        .single();
+      if (error) throw error;
+      toast.success("Cliente vinculado ao salão", { position: "top-center", duration: 2000 });
+      setSelectedClient(created as Client);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.message || "Erro ao vincular cliente", { position: "top-center", duration: 2500 });
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,34 +229,86 @@ export function NewAppointmentDialog({
                 </div>
               ) : (
                 <>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar por nome, telefone ou e-mail"
-                      className="pl-10"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                    />
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Nome, telefone ou e-mail"
+                        className="pl-10"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleSearch();
+                          }
+                        }}
+                      />
+                    </div>
+                    <Button type="button" onClick={handleSearch} disabled={searching}>
+                      {searching ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Search className="h-4 w-4" />
+                      )}
+                    </Button>
                   </div>
-                  <div className="rounded-md border max-h-48 overflow-y-auto">
-                    {filteredClients.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        Nenhum cliente encontrado
-                      </p>
-                    ) : (
-                      filteredClients.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => setSelectedClient(c)}
-                          className="w-full text-left p-2 hover:bg-accent border-b last:border-b-0"
-                        >
-                          <p className="text-sm font-medium">{c.name}</p>
-                          <p className="text-xs text-muted-foreground">{c.phone}</p>
-                        </button>
-                      ))
-                    )}
-                  </div>
+
+                  {hasSearched && (
+                    <div className="rounded-md border max-h-64 overflow-y-auto">
+                      {localResults.length === 0 && networkResults.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          Nenhum cliente encontrado
+                        </p>
+                      ) : (
+                        <>
+                          {localResults.length > 0 && (
+                            <div className="px-2 py-1 text-xs font-semibold bg-muted/50">
+                              Neste salão
+                            </div>
+                          )}
+                          {localResults.map((c) => (
+                            <button
+                              key={`l-${c.id}`}
+                              type="button"
+                              onClick={() => setSelectedClient(c)}
+                              className="w-full text-left p-2 hover:bg-accent border-b last:border-b-0"
+                            >
+                              <p className="text-sm font-medium">{c.name}</p>
+                              <p className="text-xs text-muted-foreground">{c.phone}</p>
+                            </button>
+                          ))}
+                          {networkResults.length > 0 && (
+                            <div className="px-2 py-1 text-xs font-semibold bg-muted/50 flex items-center gap-1">
+                              <Globe className="h-3 w-3" /> Rede Salão Cloud
+                            </div>
+                          )}
+                          {networkResults.map((c: any) => (
+                            <button
+                              key={`n-${c.id}`}
+                              type="button"
+                              onClick={() => pickNetworkClient(c)}
+                              className="w-full text-left p-2 hover:bg-accent border-b last:border-b-0"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium truncate">{c.name}</p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {c.phone}
+                                    {c.establishments?.name ? ` • ${c.establishments.name}` : ""}
+                                  </p>
+                                </div>
+                                <Badge variant="outline" className="shrink-0 text-[10px]">
+                                  Importar
+                                </Badge>
+                              </div>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  )}
+
                   <Button
                     type="button"
                     variant="outline"
@@ -327,8 +419,8 @@ export function NewAppointmentDialog({
         open={newClientOpen}
         onOpenChange={setNewClientOpen}
         establishmentId={establishmentId}
-        onCreated={() => {
-          fetchClients();
+        onCreated={(c) => {
+          if (c) setSelectedClient(c as Client);
         }}
       />
     </>
