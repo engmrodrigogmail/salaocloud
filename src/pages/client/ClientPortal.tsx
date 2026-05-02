@@ -429,6 +429,13 @@ const ClientPortal = () => {
   const handleLogin = async () => {
     if (!client || !establishment) return;
     const email = (emailToCheck || client.global_identity_email || client.email || "").trim().toLowerCase();
+    clientDebug("client_login_start", {
+      email,
+      clientId: client.id,
+      clientEstablishmentId: client.establishment_id,
+      establishmentId: establishment.id,
+      hasPassword,
+    });
     if (!loginPassword || loginPassword.length < 6) {
       toast.error("Informe sua senha (mínimo 6 caracteres)");
       return;
@@ -438,7 +445,23 @@ const ClientPortal = () => {
       const { data, error } = await supabase.functions.invoke("client-auth-login", {
         body: { email, password: loginPassword, establishment_id: establishment.id },
       });
-      if (error) throw error;
+      clientDebug("client_login_result", {
+        status: data?.status ?? null,
+        hasClient: Boolean(data?.client),
+        returnedClientId: data?.client?.id ?? null,
+        returnedEstablishmentId: data?.client?.establishment_id ?? null,
+        sessionCreated: Boolean(data?.session_token),
+        errorMessage: error?.message ?? null,
+        errorStatus: (error as any)?.context?.status ?? null,
+      }, error ? "error" : "info");
+      if (error) {
+        const status = (error as any)?.context?.status;
+        if (status === 401 || status === 404) {
+          toast.error("E-mail ou senha incorretos");
+          return;
+        }
+        throw error;
+      }
 
       if (data?.status === "password_not_set") {
         // Migração suave: cliente antigo sem senha — leva para criar senha agora
@@ -559,11 +582,34 @@ const ClientPortal = () => {
       let stitchSessionToken: string | null = null;
       let stitchSessionExpiresAt: string | null = null;
       if (hasPassword) {
+        clientDebug("stitch_login_start", {
+          email,
+          sourceClientId: stitchSourceClient.id,
+          sourceEstablishmentId: stitchSourceClient.establishment_id,
+          targetEstablishmentId: establishment.id,
+        });
         const { data: loginData, error: loginError } = await supabase.functions.invoke(
           "client-auth-login",
-          { body: { email, password: loginPassword } }
+          { body: { email, password: loginPassword, establishment_id: establishment.id } }
         );
-        if (loginError) throw loginError;
+        clientDebug("stitch_login_result", {
+          status: loginData?.status ?? null,
+          hasClient: Boolean(loginData?.client),
+          returnedClientId: loginData?.client?.id ?? null,
+          returnedEstablishmentId: loginData?.client?.establishment_id ?? null,
+          sessionCreated: Boolean(loginData?.session_token),
+          errorMessage: loginError?.message ?? null,
+          errorStatus: (loginError as any)?.context?.status ?? null,
+        }, loginError ? "error" : "info");
+        if (loginError) {
+          const status = (loginError as any)?.context?.status;
+          if (status === 401 || status === 404) {
+            toast.error("Senha incorreta");
+            setAuthenticating(false);
+            return;
+          }
+          throw loginError;
+        }
         if (loginData?.status !== "ok") {
           toast.error("Senha incorreta");
           setAuthenticating(false);

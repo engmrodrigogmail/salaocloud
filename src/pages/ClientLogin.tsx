@@ -1,9 +1,10 @@
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Loader2, MapPin, Store, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Loader2, MapPin, Store } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
@@ -61,7 +62,6 @@ export default function ClientLogin() {
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPwd, setShowPwd] = useState(false);
 
   // Extra fields collected on create_password (first access)
   const [extraEmail, setExtraEmail] = useState(""); // when login was by phone and email is missing
@@ -502,14 +502,8 @@ export default function ClientLogin() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="pwd">Senha</Label>
-                  <div className="relative">
-                    <Input id="pwd" type={showPwd ? "text" : "password"} value={password}
-                      onChange={(e) => setPassword(e.target.value)} autoFocus required minLength={6} />
-                    <button type="button" onClick={() => setShowPwd((v) => !v)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                      {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
+                  <PasswordInput id="pwd" value={password}
+                    onChange={(e) => setPassword(e.target.value)} autoFocus required minLength={6} autoComplete="current-password" />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Entrando...</> : "Entrar"}
@@ -587,18 +581,14 @@ export default function ClientLogin() {
 
                 <div className="space-y-2">
                   <Label htmlFor="new-pwd">Nova senha (mín. 6 caracteres) *</Label>
-                  <Input id="new-pwd" type={showPwd ? "text" : "password"} value={password}
-                    onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+                  <PasswordInput id="new-pwd" value={password}
+                    onChange={(e) => setPassword(e.target.value)} required minLength={6} autoComplete="new-password" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirm-pwd">Confirme a senha *</Label>
-                  <Input id="confirm-pwd" type={showPwd ? "text" : "password"} value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} />
+                  <PasswordInput id="confirm-pwd" value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} autoComplete="new-password" />
                 </div>
-                <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer">
-                  <input type="checkbox" checked={showPwd} onChange={(e) => setShowPwd(e.target.checked)} />
-                  Mostrar senhas
-                </label>
 
                 <div className="flex items-start gap-2 p-3 rounded-lg bg-muted/40 border border-border">
                   <Checkbox
