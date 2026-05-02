@@ -70,6 +70,7 @@ export default function InternoAgenda() {
   // Professional-specific state
   const [currentProfessionalId, setCurrentProfessionalId] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  const [isManager, setIsManager] = useState(false);
   
   // Dialog states
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
@@ -136,7 +137,7 @@ export default function InternoAgenda() {
         // Check if user is a professional of this establishment
         const { data: professional } = await supabase
           .from("professionals")
-          .select("id")
+          .select("id, is_manager")
           .eq("establishment_id", data.id)
           .eq("user_id", user?.id)
           .maybeSingle();
@@ -148,6 +149,7 @@ export default function InternoAgenda() {
         
         // Store the professional's ID for filtering
         setCurrentProfessionalId(professional.id);
+        setIsManager(!!professional.is_manager);
       }
 
       setEstablishment({
@@ -502,13 +504,9 @@ export default function InternoAgenda() {
             onOpenChange={setNewApptOpen}
             establishmentId={establishment.id}
             services={services}
-            professionals={
-              role === "professional" && !isOwner && currentProfessionalId
-                ? professionals.filter((p) => p.id === currentProfessionalId)
-                : professionals
-            }
+            professionals={professionals}
             defaultProfessionalId={
-              role === "professional" && currentProfessionalId
+              role === "professional" && !isOwner && !isManager && currentProfessionalId
                 ? currentProfessionalId
                 : undefined
             }
@@ -824,14 +822,16 @@ export default function InternoAgenda() {
               </>
             ) : (
               <>
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <Button variant="outline" size="sm" onClick={() => openEditDialog(selectedAppointment!)}>
-                    <Edit className="h-4 w-4 mr-1" /> Editar
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
-                    <Trash2 className="h-4 w-4 mr-1" /> Excluir
-                  </Button>
-                </div>
+                {(isOwner || isManager) && (
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Button variant="outline" size="sm" onClick={() => openEditDialog(selectedAppointment!)}>
+                      <Edit className="h-4 w-4 mr-1" /> Editar
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
+                      <Trash2 className="h-4 w-4 mr-1" /> Excluir
+                    </Button>
+                  </div>
+                )}
                 {selectedAppointment?.status === "pending" && (
                   <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "confirmed")}>
                     <Check className="h-4 w-4 mr-1" /> Confirmar
