@@ -84,19 +84,23 @@ export function NewClientDialog({
         return;
       }
 
-      const { error } = await supabase.from("clients").insert({
-        establishment_id: establishmentId,
-        name: trimmedName,
-        phone: formatPhoneBR(phone),
-        email: trimmedEmail,
-      });
+      const { data: created, error } = await supabase
+        .from("clients")
+        .insert({
+          establishment_id: establishmentId,
+          name: trimmedName,
+          phone: formatPhoneBR(phone),
+          email: trimmedEmail,
+        })
+        .select("id, name, phone, email")
+        .single();
 
       if (error) throw error;
 
       toast.success("Cliente cadastrado!", { position: "top-center", duration: 2000 });
       reset();
       onOpenChange(false);
-      onCreated?.();
+      onCreated?.(created as any);
     } catch (err: any) {
       console.error(err);
       toast.error(err?.message || "Erro ao cadastrar cliente", {
