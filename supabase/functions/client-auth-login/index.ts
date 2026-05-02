@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
       hasPasswordInput: typeof password === "string" && password.length > 0,
     });
 
-    if (!normalizedEmail || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) {
+    if (!normalizedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
       return json({ error: "invalid_email" }, 400);
     }
     if (!password || typeof password !== "string" || password.length < 6) {
