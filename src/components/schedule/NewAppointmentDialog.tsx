@@ -419,8 +419,8 @@ export function NewAppointmentDialog({
         open={newClientOpen}
         onOpenChange={setNewClientOpen}
         establishmentId={establishmentId}
-        onCreated={() => {
-          fetchClients();
+        onCreated={(c) => {
+          if (c) setSelectedClient(c as Client);
         }}
       />
     </>
