@@ -109,7 +109,6 @@ serve(async (req) => {
     
     const sessionConfig: any = {
       customer: customerId,
-      customer_email: customerId ? undefined : user.email,
       line_items: [
         {
           price: priceId,
@@ -119,10 +118,19 @@ serve(async (req) => {
       mode: "subscription",
       success_url: `${origin}/dashboard?subscription=success`,
       cancel_url: `${origin}/onboarding?subscription=cancelled`,
+      subscription_data: {
+        metadata: {
+          app: "salaocloud",
+          user_id: user.id,
+          plan_slug: planSlug ?? "",
+          billing_cycle: billingCycle ?? "monthly",
+        },
+      },
       metadata: {
+        app: "salaocloud",
         user_id: user.id,
-        plan_slug: planSlug,
-        billing_cycle: billingCycle,
+        plan_slug: planSlug ?? "",
+        billing_cycle: billingCycle ?? "monthly",
       },
     };
 
