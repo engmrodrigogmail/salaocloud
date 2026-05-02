@@ -70,7 +70,7 @@ export function HeroSection() {
 
           {/* Social proof */}
           <p className="text-sm text-muted-foreground">
-            +200 salões já confiam no Salão Cloud
+            O futuro chegou e é agora! 🫶🏻✂️
           </p>
         </div>
       </div>
