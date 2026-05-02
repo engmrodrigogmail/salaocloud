@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1263,9 +1264,8 @@ const ClientPortal = () => {
                   {hasPassword ? (
                     <div className="space-y-2">
                       <Label htmlFor="stitchPwd">Senha</Label>
-                      <Input
+                      <PasswordInput
                         id="stitchPwd"
-                        type="password"
                         autoComplete="current-password"
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
@@ -1290,9 +1290,8 @@ const ClientPortal = () => {
                       </Alert>
                       <div className="space-y-2">
                         <Label htmlFor="stitchNewPwd">Criar senha</Label>
-                        <Input
+                        <PasswordInput
                           id="stitchNewPwd"
-                          type="password"
                           autoComplete="new-password"
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
@@ -1301,9 +1300,8 @@ const ClientPortal = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="stitchNewPwdConfirm">Confirmar senha</Label>
-                        <Input
+                        <PasswordInput
                           id="stitchNewPwdConfirm"
-                          type="password"
                           autoComplete="new-password"
                           value={newPasswordConfirm}
                           onChange={(e) => setNewPasswordConfirm(e.target.value)}
@@ -1345,9 +1343,8 @@ const ClientPortal = () => {
                     <>
                       <div className="space-y-2">
                         <Label htmlFor="loginPwd">Senha</Label>
-                        <Input
+                        <PasswordInput
                           id="loginPwd"
-                          type="password"
                           autoComplete="current-password"
                           value={loginPassword}
                           onChange={(e) => setLoginPassword(e.target.value)}
@@ -1377,9 +1374,8 @@ const ClientPortal = () => {
                       </Alert>
                       <div className="space-y-2">
                         <Label htmlFor="firstPwd">Criar senha</Label>
-                        <Input
+                        <PasswordInput
                           id="firstPwd"
-                          type="password"
                           autoComplete="new-password"
                           value={newPassword}
                           onChange={(e) => setNewPassword(e.target.value)}
@@ -1388,9 +1384,8 @@ const ClientPortal = () => {
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="firstPwdConfirm">Confirmar senha</Label>
-                        <Input
+                        <PasswordInput
                           id="firstPwdConfirm"
-                          type="password"
                           autoComplete="new-password"
                           value={newPasswordConfirm}
                           onChange={(e) => setNewPasswordConfirm(e.target.value)}
@@ -1472,9 +1467,8 @@ const ClientPortal = () => {
 
                   <div className="space-y-2">
                     <Label htmlFor="regPwd">Senha</Label>
-                    <Input
+                    <PasswordInput
                       id="regPwd"
-                      type="password"
                       autoComplete="new-password"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
@@ -1483,9 +1477,8 @@ const ClientPortal = () => {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="regPwdConfirm">Confirmar senha</Label>
-                    <Input
+                    <PasswordInput
                       id="regPwdConfirm"
-                      type="password"
                       autoComplete="new-password"
                       value={newPasswordConfirm}
                       onChange={(e) => setNewPasswordConfirm(e.target.value)}

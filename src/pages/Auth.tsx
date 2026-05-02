@@ -7,6 +7,7 @@ import { Eye, EyeOff, ArrowLeft, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import {
   Form,
   FormControl,
@@ -249,9 +250,8 @@ export default function Auth() {
                     <FormItem>
                       <FormLabel>Senha</FormLabel>
                       <FormControl>
-                        <Input
+                        <PasswordInput
                           {...field}
-                          type={showPassword ? "text" : "password"}
                           placeholder="••••••••"
                           autoComplete="new-password"
                           className="h-14 text-lg"
@@ -268,9 +268,8 @@ export default function Auth() {
                     <FormItem>
                       <FormLabel>Confirmar senha</FormLabel>
                       <FormControl>
-                        <Input
+                        <PasswordInput
                           {...field}
-                          type={showPassword ? "text" : "password"}
                           placeholder="••••••••"
                           autoComplete="new-password"
                           className="h-14 text-lg"
