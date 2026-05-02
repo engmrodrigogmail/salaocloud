@@ -27,6 +27,7 @@ import {
   Repeat,
   Image as ImageIcon,
   MessageSquare,
+  Sparkles,
 } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { usePortalTour } from "@/hooks/usePortalTour";
+import { useEduAccess } from "@/hooks/useEduAccess";
 import logo from "@/assets/logo-salaocloud-v5.png";
 import salonBg from "@/assets/salon-dark-bg.png";
 
@@ -65,6 +67,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
   const { user, signOut } = useAuth();
   const { isImpersonating } = useImpersonation();
   const { startTour } = usePortalTour({ autoStart: true });
+  const { isActive: eduActive } = useEduAccess(establishmentId);
 
   useEffect(() => {
     if (slug) {
@@ -100,6 +103,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
     { href: `/portal/${slug}/assistente-ia`, label: "Assistente IA", icon: Bot },
     { href: `/portal/${slug}/conversas-ia`, label: "Conversas IA", icon: MessageCircle },
     { href: `/portal/${slug}/aprendizados-ia`, label: "Aprendizados IA", icon: Brain },
+    ...(eduActive ? [{ href: `/portal/${slug}/edu`, label: "Consultor Edu", icon: Sparkles }] : []),
     { href: `/portal/${slug}/assinatura`, label: "Assinatura", icon: Crown },
     { href: `/portal/${slug}/auditoria`, label: "Auditoria", icon: ShieldCheck },
     { href: `/portal/${slug}/vitrine`, label: "Vitrine", icon: ImageIcon },

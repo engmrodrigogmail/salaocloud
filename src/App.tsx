@@ -64,6 +64,10 @@ import PortalAILearnings from "./pages/portal/AILearnings";
 
 // Admin AI
 import AdminAIAddon from "./pages/admin/AIAddon";
+import AdminEdu from "./pages/admin/Edu";
+
+// Portal Edu
+import PortalEdu from "./pages/portal/Edu";
 
 const queryClient = new QueryClient();
 
@@ -194,6 +198,14 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/admin/edu"
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin"]}>
+                    <AdminEdu />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Portal routes - Establishment Admin (configuration & settings) */}
               <Route path="/portal/:slug" element={<PortalDashboard />} />
@@ -215,6 +227,7 @@ const App = () => (
               <Route path="/portal/:slug/conversas-ia" element={<PortalAIConversations />} />
               <Route path="/portal/:slug/aprendizados-ia" element={<PortalAILearnings />} />
               <Route path="/portal/:slug/comunicacao" element={<PortalCommunications />} />
+              <Route path="/portal/:slug/edu" element={<PortalEdu />} />
 
               {/* Interno routes - Establishment Internal Operations */}
               <Route path="/interno/:slug" element={<InternoDashboard />} />

@@ -816,6 +816,94 @@ export type Database = {
           },
         ]
       }
+      client_hair_profiles: {
+        Row: {
+          ai_diagnosis: Json | null
+          client_id: string
+          confidence_score: number | null
+          created_at: string
+          damage_level: string | null
+          establishment_id: string
+          hair_type: string | null
+          id: string
+          identified_issues: Json | null
+          is_validated: boolean
+          photo_paths: Json
+          photo_urls: Json
+          photos_purged: boolean
+          porosity_level: string | null
+          professional_correction: string | null
+          technical_explanation: string | null
+          updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+        }
+        Insert: {
+          ai_diagnosis?: Json | null
+          client_id: string
+          confidence_score?: number | null
+          created_at?: string
+          damage_level?: string | null
+          establishment_id: string
+          hair_type?: string | null
+          id?: string
+          identified_issues?: Json | null
+          is_validated?: boolean
+          photo_paths?: Json
+          photo_urls?: Json
+          photos_purged?: boolean
+          porosity_level?: string | null
+          professional_correction?: string | null
+          technical_explanation?: string | null
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Update: {
+          ai_diagnosis?: Json | null
+          client_id?: string
+          confidence_score?: number | null
+          created_at?: string
+          damage_level?: string | null
+          establishment_id?: string
+          hair_type?: string | null
+          id?: string
+          identified_issues?: Json | null
+          is_validated?: boolean
+          photo_paths?: Json
+          photo_urls?: Json
+          photos_purged?: boolean
+          porosity_level?: string | null
+          professional_correction?: string | null
+          technical_explanation?: string | null
+          updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_hair_profiles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_no_show_stats"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "client_hair_profiles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_hair_profiles_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_loyalty_points: {
         Row: {
           client_id: string
@@ -1306,6 +1394,47 @@ export type Database = {
             foreignKeyName: "discount_coupons_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      edu_access_control: {
+        Row: {
+          created_at: string
+          establishment_id: string
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          is_active: boolean
+          revoked_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          establishment_id: string
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          revoked_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          establishment_id?: string
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean
+          revoked_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "edu_access_control_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
@@ -2799,6 +2928,47 @@ export type Database = {
           },
         ]
       }
+      salon_learning_patterns: {
+        Row: {
+          common_damage_patterns: Json
+          establishment_id: string
+          hair_type_distribution: Json
+          total_analyses: number
+          total_corrected: number
+          total_validated: number
+          updated_at: string
+          validation_accuracy: number | null
+        }
+        Insert: {
+          common_damage_patterns?: Json
+          establishment_id: string
+          hair_type_distribution?: Json
+          total_analyses?: number
+          total_corrected?: number
+          total_validated?: number
+          updated_at?: string
+          validation_accuracy?: number | null
+        }
+        Update: {
+          common_damage_patterns?: Json
+          establishment_id?: string
+          hair_type_distribution?: Json
+          total_analyses?: number
+          total_corrected?: number
+          total_validated?: number
+          updated_at?: string
+          validation_accuracy?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salon_learning_patterns_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       service_categories: {
         Row: {
           created_at: string
@@ -3420,6 +3590,7 @@ export type Database = {
           role: Database["public"]["Enums"]["app_role"]
         }[]
       }
+      has_edu_access: { Args: { _establishment_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
