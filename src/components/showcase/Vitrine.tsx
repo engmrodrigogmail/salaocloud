@@ -165,6 +165,19 @@ export function Vitrine({ images, onClose }: VitrineProps) {
             ))}
           </div>
         )}
+
+        {isOverlay && (
+          <div className="mt-6 flex justify-center">
+            <Button
+              size="lg"
+              onClick={onClose}
+              className="bg-brand-copper hover:bg-brand-copper/90 text-white shadow-xl"
+            >
+              <Calendar className="h-5 w-5 mr-2" />
+              Agendar agora
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* External link confirmation */}
