@@ -164,13 +164,21 @@ async function handleSubscriptionEvent(supabase: SupabaseClient<any>, stripe: St
 
   try {
     // Get customer email
-    const customerId = typeof subscription.customer === "string" 
-      ? subscription.customer 
+    const customerId = typeof subscription.customer === "string"
+      ? subscription.customer
       : subscription.customer.id;
-    
+
     const customer = await stripe.customers.retrieve(customerId);
     if (customer.deleted) {
       logStep("Customer was deleted", { customerId });
+      return;
+    }
+
+    // Filter: only process subscriptions belonging to salaocloud
+    const subAppMeta = (subscription.metadata as Record<string, string> | null)?.app;
+    const custAppMeta = (customer as Stripe.Customer).metadata?.app;
+    if (subAppMeta !== "salaocloud" && custAppMeta !== "salaocloud") {
+      logStep("Skipping subscription event (not salaocloud)", { customerId, subAppMeta, custAppMeta });
       return;
     }
 
