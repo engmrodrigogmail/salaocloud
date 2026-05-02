@@ -152,9 +152,6 @@ function SortableRow({
       </TableCell>
       <TableCell>{formatPrice(plan.price_monthly)}</TableCell>
       <TableCell>
-        {plan.price_yearly ? formatPrice(plan.price_yearly) : "-"}
-      </TableCell>
-      <TableCell>
         <span className="text-sm text-muted-foreground">
           {plan.features.length} features
         </span>
