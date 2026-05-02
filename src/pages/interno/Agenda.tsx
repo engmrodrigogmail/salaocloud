@@ -490,8 +490,31 @@ export default function InternoAgenda() {
             <Button variant="outline" onClick={() => setCurrentDate(new Date())}>
               Hoje
             </Button>
+            <Button onClick={() => setNewApptOpen(true)}>
+              <Plus className="h-4 w-4 mr-1.5" /> Novo
+            </Button>
           </div>
         </div>
+
+        {establishment?.id && (
+          <NewAppointmentDialog
+            open={newApptOpen}
+            onOpenChange={setNewApptOpen}
+            establishmentId={establishment.id}
+            services={services}
+            professionals={
+              role === "professional" && !isOwner && currentProfessionalId
+                ? professionals.filter((p) => p.id === currentProfessionalId)
+                : professionals
+            }
+            defaultProfessionalId={
+              role === "professional" && currentProfessionalId
+                ? currentProfessionalId
+                : undefined
+            }
+            onCreated={() => fetchAppointments()}
+          />
+        )}
 
         {/* Filters */}
         <Card>
