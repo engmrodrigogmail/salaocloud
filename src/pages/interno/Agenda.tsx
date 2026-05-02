@@ -26,6 +26,7 @@ import {
 import { ptBR } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
 import { AgendaTimeSlots } from "@/components/schedule/AgendaTimeSlots";
+import { NewAppointmentDialog } from "@/components/schedule/NewAppointmentDialog";
 
 type Client = Tables<"clients">;
 type Service = Tables<"services">;
@@ -75,7 +76,7 @@ export default function InternoAgenda() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  
+  const [newApptOpen, setNewApptOpen] = useState(false);
   // Edit form state
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
@@ -489,8 +490,31 @@ export default function InternoAgenda() {
             <Button variant="outline" onClick={() => setCurrentDate(new Date())}>
               Hoje
             </Button>
+            <Button onClick={() => setNewApptOpen(true)}>
+              <Plus className="h-4 w-4 mr-1.5" /> Novo
+            </Button>
           </div>
         </div>
+
+        {establishment?.id && (
+          <NewAppointmentDialog
+            open={newApptOpen}
+            onOpenChange={setNewApptOpen}
+            establishmentId={establishment.id}
+            services={services}
+            professionals={
+              role === "professional" && !isOwner && currentProfessionalId
+                ? professionals.filter((p) => p.id === currentProfessionalId)
+                : professionals
+            }
+            defaultProfessionalId={
+              role === "professional" && currentProfessionalId
+                ? currentProfessionalId
+                : undefined
+            }
+            onCreated={() => fetchAppointments()}
+          />
+        )}
 
         {/* Filters */}
         <Card>
