@@ -154,10 +154,18 @@ export default function PortalCommunications() {
         },
       });
       if (error) throw error;
-      toast.success(
-        `Enviado para ${data?.total ?? 0} destinatário(s) — ${data?.sent ?? 0} push entregues`,
-        { position: "top-center", duration: 3000 },
-      );
+      {
+        const total = data?.total ?? 0;
+        const sent = data?.sent ?? 0;
+        const subs = data?.subscriptions ?? null;
+        let msg = `Enviado para ${total} destinatário(s) — ${sent} push entregues`;
+        if (sent === 0) {
+          msg = subs === 0
+            ? `Notificação salva no app de ${total} destinatário(s) — 0 push entregues (nenhum dispositivo inscrito)`
+            : `Notificação salva no app de ${total} destinatário(s) — 0 push entregues`;
+        }
+        toast.success(msg, { position: "top-center", duration: 4000 });
+      }
       setTitle(""); setBody(""); setSelectedClients(new Set());
       await loadHistory(establishmentId);
     } catch (e: any) {
