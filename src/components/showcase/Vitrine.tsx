@@ -45,6 +45,7 @@ function renderCaptionWithLinks(text: string, onLinkClick: (url: string) => void
 export function Vitrine({ images, onClose }: VitrineProps) {
   const [index, setIndex] = useState(0);
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+  const [zoomed, setZoomed] = useState(false);
 
   const current = images[index];
   const total = images.length;
@@ -102,13 +103,18 @@ export function Vitrine({ images, onClose }: VitrineProps) {
       <div className="relative max-w-3xl mx-auto">
         {/* Carousel */}
         <div className="relative rounded-2xl overflow-hidden bg-black/40 backdrop-blur-sm border border-brand-copper/40 shadow-2xl">
-          <div className="aspect-[4/3] sm:aspect-[16/10] w-full bg-black flex items-center justify-center">
+          <button
+            type="button"
+            onClick={() => setZoomed(true)}
+            aria-label="Ampliar imagem"
+            className="aspect-[4/3] sm:aspect-[16/10] w-full bg-black flex items-center justify-center cursor-zoom-in"
+          >
             <img
               src={current.image_url}
               alt={current.caption || `Imagem ${index + 1} de ${total}`}
               className="max-h-full max-w-full object-contain"
             />
-          </div>
+          </button>
 
           {/* Arrows */}
           {total > 1 && (
