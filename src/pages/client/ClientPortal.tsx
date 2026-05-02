@@ -1588,7 +1588,7 @@ const ClientPortal = () => {
       </div>
 
       {showVitrine && showcaseImages.length > 0 && (
-        <Vitrine images={showcaseImages} />
+        <Vitrine images={showcaseImages} onClose={() => setShowVitrine(false)} />
       )}
 
       <main className="max-w-4xl mx-auto px-4 py-8">
