@@ -250,9 +250,8 @@ export default function Auth() {
                     <FormItem>
                       <FormLabel>Senha</FormLabel>
                       <FormControl>
-                        <Input
+                        <PasswordInput
                           {...field}
-                          type={showPassword ? "text" : "password"}
                           placeholder="••••••••"
                           autoComplete="new-password"
                           className="h-14 text-lg"
