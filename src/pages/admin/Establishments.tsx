@@ -474,6 +474,7 @@ export default function AdminEstablishments() {
                             Editar assinatura
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
+                          {establishment.status !== "active" && (
                             <DropdownMenuItem
                               onClick={() => {
                                 setSelectedEstablishment(establishment);
