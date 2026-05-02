@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSignupsEnabled } from "@/hooks/useSignupsEnabled";
 import logo from "@/assets/logo-salaocloud-v5.png";
 import salonBg from "@/assets/salon-dark-bg.png";
 
@@ -42,8 +43,9 @@ type SignupFormData = z.infer<typeof signupSchema>;
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
-  // Cadastros de novos salões temporariamente suspensos.
-  const SIGNUPS_DISABLED = true;
+  // Controlado dinamicamente pelo super admin em /admin/configuracoes.
+  const { signupsEnabled } = useSignupsEnabled();
+  const SIGNUPS_DISABLED = !signupsEnabled;
   const [isSignup, setIsSignup] = useState(searchParams.get("mode") === "signup");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
