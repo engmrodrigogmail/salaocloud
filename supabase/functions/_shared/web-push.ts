@@ -6,10 +6,35 @@ import webpush from "npm:web-push@3.6.7";
 
 const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY") ?? "";
 const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY") ?? "";
-const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:contato@salaocloud.com.br";
+const RAW_VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") ?? "mailto:contato@salaocloud.com.br";
+
+// Normaliza o subject: precisa ser uma URL (mailto: ou https://). Se vier só um e-mail, prefixa mailto:.
+function normalizeVapidSubject(raw: string): string {
+  const trimmed = (raw || "").trim();
+  if (!trimmed) return "mailto:contato@salaocloud.com.br";
+  if (trimmed.startsWith("mailto:") || trimmed.startsWith("https://") || trimmed.startsWith("http://")) {
+    return trimmed;
+  }
+  // Se parece um e-mail, prefixa
+  if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+    return `mailto:${trimmed}`;
+  }
+  // Fallback seguro
+  console.warn(`[web-push] VAPID_SUBJECT inválido (${trimmed}), usando fallback`);
+  return "mailto:contato@salaocloud.com.br";
+}
+
+const VAPID_SUBJECT = normalizeVapidSubject(RAW_VAPID_SUBJECT);
 
 if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY) {
-  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+  try {
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+    console.log(`[web-push] VAPID configurado com subject=${VAPID_SUBJECT}`);
+  } catch (err) {
+    console.error("[web-push] Falha ao configurar VAPID:", err);
+  }
+} else {
+  console.warn("[web-push] VAPID_PUBLIC_KEY ou VAPID_PRIVATE_KEY ausentes");
 }
 
 export interface PushSubscriptionRecord {
