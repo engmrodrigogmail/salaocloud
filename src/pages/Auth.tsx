@@ -109,12 +109,34 @@ export default function Auth() {
     await handleLogin(parsed.data);
   };
 
-  const handleSignup = async (_data: SignupFormData) => {
+  const handleSignup = async (data: SignupFormData) => {
+    if (SIGNUPS_DISABLED) {
+      toast({
+        variant: "destructive",
+        title: "Novos cadastros suspensos",
+        description: "No momento não estamos aceitando novos cadastros de salões. Em breve reabriremos as inscrições.",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await signUp(data.email, data.password, data.fullName || undefined);
+    setIsLoading(false);
+
+    if (error) {
+      let message = "Erro ao criar conta. Tente novamente.";
+      if (error.message?.includes("already registered") || error.message?.includes("already been registered")) {
+        message = "Este email já está cadastrado. Faça login.";
+      }
+      toast({ variant: "destructive", title: "Ops!", description: message });
+      return;
+    }
+
     toast({
-      variant: "destructive",
-      title: "Novos cadastros suspensos",
-      description: "No momento não estamos aceitando novos cadastros de salões. Em breve reabriremos as inscrições.",
+      title: "Conta criada!",
+      description: "Verifique seu email para confirmar o cadastro antes de entrar.",
     });
+    setIsSignup(false);
   };
 
   if (loading) {
