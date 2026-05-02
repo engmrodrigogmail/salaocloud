@@ -491,6 +491,14 @@ export default function PortalAgenda() {
 
           {/* Action buttons - Compact row */}
           <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+            <Button
+              size="sm"
+              onClick={() => setNewApptOpen(true)}
+              className="h-8 whitespace-nowrap"
+            >
+              <Plus className="h-3.5 w-3.5 mr-1.5" />
+              Novo agendamento
+            </Button>
             {establishment?.id && <CancelledHistoryDialog establishmentId={establishment.id} />}
             <Button 
               variant="outline" 
@@ -503,6 +511,17 @@ export default function PortalAgenda() {
             </Button>
           </div>
         </div>
+
+        {establishment?.id && (
+          <NewAppointmentDialog
+            open={newApptOpen}
+            onOpenChange={setNewApptOpen}
+            establishmentId={establishment.id}
+            services={services}
+            professionals={professionals}
+            onCreated={() => fetchAppointments()}
+          />
+        )}
 
         {/* Block Schedule Dialog */}
         <BlockScheduleDialog
