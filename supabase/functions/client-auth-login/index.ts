@@ -11,6 +11,13 @@ Deno.serve(async (req) => {
   try {
     const { email, password, establishment_id } = await req.json();
     const normalizedEmail = String(email ?? "").trim().toLowerCase();
+    const requestId = crypto.randomUUID();
+    console.log("[client-auth-login] start", {
+      requestId,
+      email: maskEmail(normalizedEmail),
+      establishment_id: establishment_id ?? null,
+      hasPasswordInput: typeof password === "string" && password.length > 0,
+    });
 
     if (!normalizedEmail || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(normalizedEmail)) {
       return json({ error: "invalid_email" }, 400);
@@ -34,18 +41,33 @@ Deno.serve(async (req) => {
 
     const { data: rows, error } = await query;
     if (error) {
-      console.error("login query error", error);
+      console.error("[client-auth-login] query_error", { requestId, error });
       return json({ error: "lookup_failed" }, 500);
     }
+    console.log("[client-auth-login] lookup_result", {
+      requestId,
+      rows: rows?.length ?? 0,
+      candidates: (rows ?? []).map((r: any) => ({
+        id: r.id,
+        establishment_id: r.establishment_id,
+        has_password: Boolean(r.password_hash),
+        email_match: r.email === normalizedEmail,
+        global_match: r.global_identity_email === normalizedEmail,
+      })),
+    });
     if (!rows || rows.length === 0) {
       return json({ error: "client_not_found" }, 404);
     }
 
-    // If multiple records (one per salon), pick any with password set first; else first.
-    const withPassword = rows.find((r: any) => !!r.password_hash);
-    const candidate = withPassword ?? rows[0];
+    // Passwords are shared by email across salons. Authenticate against any row with a password,
+    // but return the row for the requested establishment when present.
+    const authCandidate = rows.find((r: any) => !!r.password_hash) ?? rows[0];
+    const localCandidate = establishment_id
+      ? rows.find((r: any) => r.establishment_id === establishment_id)
+      : null;
+    const candidate = localCandidate ?? authCandidate;
 
-    if (!candidate.password_hash) {
+    if (!authCandidate.password_hash) {
       // Existing client with no password yet — frontend should redirect to "set password" flow.
       return json({
         status: "password_not_set",
@@ -53,11 +75,24 @@ Deno.serve(async (req) => {
       }, 200);
     }
 
-    const ok = await verifyPassword(password, candidate.password_hash);
+    const ok = await verifyPassword(password, authCandidate.password_hash);
+    console.log("[client-auth-login] password_result", {
+      requestId,
+      ok,
+      authClientId: authCandidate.id,
+      returnedClientId: candidate.id,
+      returnedEstablishmentId: candidate.establishment_id,
+    });
     if (!ok) return json({ error: "invalid_credentials" }, 401);
 
     const ua = req.headers.get("user-agent");
     const session = await createClientSession(candidate.id, ua);
+    console.log("[client-auth-login] success", {
+      requestId,
+      clientId: candidate.id,
+      establishment_id: candidate.establishment_id,
+      sessionCreated: Boolean(session?.token),
+    });
 
     return json({
       status: "ok",
@@ -74,6 +109,12 @@ Deno.serve(async (req) => {
 function stripSecrets(c: any) {
   const { password_hash: _h, ...rest } = c;
   return rest;
+}
+
+function maskEmail(email: string) {
+  const [local, domain] = email.split("@");
+  if (!local || !domain) return "invalid";
+  return `${local.slice(0, 2)}***@${domain}`;
 }
 
 function json(body: unknown, status = 200) {
