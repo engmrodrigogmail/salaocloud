@@ -193,12 +193,17 @@ const ClientPortal = () => {
         total: showcaseImages.length,
         establishmentId: establishment.id,
       });
-      setShowVitrine(true);
+      setTimeout(() => setShowVitrine(true), 100);
       return;
     }
 
-    void loadShowcaseImages(establishment, "after_auth");
-  }, [isAuthenticated, establishment, showcaseImages.length]);
+    void loadShowcaseImages(establishment, "after_auth").then((images) => {
+      if (images && images.length > 0) {
+        setTimeout(() => setShowVitrine(true), 100);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, establishment]);
 
   // Restaurar sessão do cliente após o estabelecimento ser carregado
   useEffect(() => {
