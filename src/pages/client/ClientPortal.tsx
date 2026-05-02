@@ -184,13 +184,21 @@ const ClientPortal = () => {
     }
   }, [slug]);
 
-  // Sempre que o cliente autentica e existem imagens, abre a vitrine
+  // Sempre que o cliente autentica, confirma as imagens e abre a vitrine como primeira tela.
   useEffect(() => {
-    if (isAuthenticated && showcaseImages.length > 0) {
-      console.info("[Vitrine] auto-abrindo após autenticação. Total:", showcaseImages.length);
+    if (!isAuthenticated || !establishment) return;
+
+    if (showcaseImages.length > 0) {
+      console.info("[Vitrine] auto-abrindo após autenticação.", {
+        total: showcaseImages.length,
+        establishmentId: establishment.id,
+      });
       setShowVitrine(true);
+      return;
     }
-  }, [isAuthenticated, showcaseImages.length]);
+
+    void loadShowcaseImages(establishment, "after_auth");
+  }, [isAuthenticated, establishment, showcaseImages.length]);
 
   // Restaurar sessão do cliente após o estabelecimento ser carregado
   useEffect(() => {
@@ -238,6 +246,53 @@ const ClientPortal = () => {
     restore();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [establishment]);
+
+  const loadShowcaseImages = async (est: Establishment, reason: string) => {
+    const showcaseEnabled = (est as Establishment & { is_showcase_enabled?: boolean | null }).is_showcase_enabled === true;
+    console.info("[Vitrine] carregando imagens", {
+      reason,
+      establishmentId: est.id,
+      isShowcaseEnabled: showcaseEnabled,
+    });
+
+    if (!showcaseEnabled) {
+      setShowcaseImages([]);
+      return [] as ShowcaseImage[];
+    }
+
+    try {
+      const { data: showcaseData, error: showcaseErr } = await supabase
+        .from("establishment_showcase" as any)
+        .select("id, image_url, caption, scheduled_for, order_index")
+        .eq("establishment_id", est.id)
+        .order("order_index", { ascending: true });
+
+      if (showcaseErr) {
+        console.error("[Vitrine] erro ao buscar imagens:", showcaseErr);
+        setShowcaseImages([]);
+        return [] as ShowcaseImage[];
+      }
+
+      const nowIso = new Date().toISOString();
+      const visible = ((showcaseData || []) as any[])
+        .filter((it) => it.image_url && (!it.scheduled_for || it.scheduled_for <= nowIso))
+        .map((it) => ({ id: it.id, image_url: it.image_url, caption: it.caption }));
+
+      console.info("[Vitrine] imagens carregadas", {
+        reason,
+        totalReturned: (showcaseData || []).length,
+        totalVisible: visible.length,
+      });
+
+      setShowcaseImages(visible);
+      if (visible.length > 0) setShowVitrine(true);
+      return visible as ShowcaseImage[];
+    } catch (vitrineErr) {
+      console.error("[Vitrine] exceção ao carregar:", vitrineErr);
+      setShowcaseImages([]);
+      return [] as ShowcaseImage[];
+    }
+  };
 
   const fetchEstablishment = async () => {
     try {
@@ -316,32 +371,7 @@ const ClientPortal = () => {
       }
 
       // Fetch showcase images (vitrine) — somente se habilitada
-      try {
-        const enabled = (est as any).is_showcase_enabled !== false;
-        console.info("[Vitrine] is_showcase_enabled:", (est as any).is_showcase_enabled, "→ enabled:", enabled);
-        if (enabled) {
-          const nowIso = new Date().toISOString();
-          const { data: showcaseData, error: showcaseErr } = await supabase
-            .from("establishment_showcase" as any)
-            .select("id, image_url, caption, scheduled_for, order_index")
-            .eq("establishment_id", est.id)
-            .order("order_index", { ascending: true });
-          if (showcaseErr) {
-            console.error("[Vitrine] erro ao buscar imagens:", showcaseErr);
-          }
-          const visible = ((showcaseData || []) as any[])
-            .filter((it) => !it.scheduled_for || it.scheduled_for <= nowIso)
-            .map((it) => ({ id: it.id, image_url: it.image_url, caption: it.caption }));
-          console.info("[Vitrine] imagens carregadas:", visible.length, "de", (showcaseData || []).length);
-          setShowcaseImages(visible);
-          // Reabre a vitrine sempre que novas imagens chegam (importante após login)
-          if (visible.length > 0) setShowVitrine(true);
-        } else {
-          setShowcaseImages([]);
-        }
-      } catch (vitrineErr) {
-        console.error("[Vitrine] exceção ao carregar:", vitrineErr);
-      }
+      await loadShowcaseImages(est, "fetch_establishment");
 
     } catch (error) {
       console.error("Error fetching establishment:", error);
