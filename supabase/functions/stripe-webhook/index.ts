@@ -201,7 +201,7 @@ async function handleSubscriptionEvent(supabase: SupabaseClient<any>, stripe: St
     }
 
     // Determine the new plan based on subscription status
-    let newPlan: string = "basic";
+    let newPlan: string = "pro";
     let newStatus: string = establishment.status;
 
     if (subscription.status === "active" || subscription.status === "trialing") {
@@ -221,7 +221,7 @@ async function handleSubscriptionEvent(supabase: SupabaseClient<any>, stripe: St
         }
       }
     } else if (subscription.status === "canceled" || subscription.status === "unpaid") {
-      newPlan = "basic";
+      newPlan = "pro";
       newStatus = "active"; // Keep active but downgrade to basic
     } else if (subscription.status === "past_due") {
       newStatus = "suspended";
@@ -271,7 +271,7 @@ async function handleCustomerEvent(supabase: SupabaseClient<any>, event: Stripe.
       .update({
         stripe_customer_id: null,
         stripe_subscription_id: null,
-        subscription_plan: "basic",
+        subscription_plan: "pro",
         updated_at: new Date().toISOString(),
       })
       .eq("stripe_customer_id", customer.id);
