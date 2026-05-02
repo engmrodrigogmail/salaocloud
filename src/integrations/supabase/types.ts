@@ -3468,7 +3468,13 @@ export type Database = {
         | "professional"
         | "client"
       notification_sender_type: "system" | "admin" | "establishment"
-      subscription_plan: "basic" | "professional" | "premium" | "trial"
+      subscription_plan:
+        | "basic"
+        | "professional"
+        | "premium"
+        | "trial"
+        | "admin_trial"
+        | "pro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3614,7 +3620,14 @@ export const Constants = {
         "client",
       ],
       notification_sender_type: ["system", "admin", "establishment"],
-      subscription_plan: ["basic", "professional", "premium", "trial"],
+      subscription_plan: [
+        "basic",
+        "professional",
+        "premium",
+        "trial",
+        "admin_trial",
+        "pro",
+      ],
     },
   },
 } as const
