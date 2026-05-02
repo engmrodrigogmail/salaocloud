@@ -67,6 +67,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
   const { user, signOut } = useAuth();
   const { isImpersonating } = useImpersonation();
   const { startTour } = usePortalTour({ autoStart: true });
+  const { isActive: eduActive } = useEduAccess(establishmentId);
 
   useEffect(() => {
     if (slug) {
