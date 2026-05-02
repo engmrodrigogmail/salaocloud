@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -6,6 +6,113 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Calendar, ChevronLeft, ChevronRight, ExternalLink, X } from "lucide-react";
 const VITRINE_BG = "/vitrine-bg.jpg";
+const MAX_ZOOM = 2; // 200%
+const MIN_ZOOM = 1;
+
+interface ZoomViewerProps {
+  src: string;
+  alt: string;
+  onClose: () => void;
+}
+
+function ZoomViewer({ src, alt, onClose }: ZoomViewerProps) {
+  const [scale, setScale] = useState(1);
+  const [tx, setTx] = useState(0);
+  const [ty, setTy] = useState(0);
+  const pointers = useRef<Map<number, { x: number; y: number }>>(new Map());
+  const startDist = useRef(0);
+  const startScale = useRef(1);
+  const lastPan = useRef<{ x: number; y: number } | null>(null);
+
+  const clamp = (s: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, s));
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    (e.target as Element).setPointerCapture(e.pointerId);
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.current.size === 2) {
+      const [a, b] = Array.from(pointers.current.values());
+      startDist.current = Math.hypot(a.x - b.x, a.y - b.y);
+      startScale.current = scale;
+    } else if (pointers.current.size === 1) {
+      lastPan.current = { x: e.clientX, y: e.clientY };
+    }
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!pointers.current.has(e.pointerId)) return;
+    pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (pointers.current.size === 2) {
+      const [a, b] = Array.from(pointers.current.values());
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      if (startDist.current > 0) {
+        const next = clamp(startScale.current * (dist / startDist.current));
+        setScale(next);
+        if (next === 1) { setTx(0); setTy(0); }
+      }
+    } else if (pointers.current.size === 1 && scale > 1 && lastPan.current) {
+      const dx = e.clientX - lastPan.current.x;
+      const dy = e.clientY - lastPan.current.y;
+      lastPan.current = { x: e.clientX, y: e.clientY };
+      setTx((v) => v + dx);
+      setTy((v) => v + dy);
+    }
+  };
+
+  const onPointerUp = (e: React.PointerEvent) => {
+    pointers.current.delete(e.pointerId);
+    if (pointers.current.size < 2) startDist.current = 0;
+    if (pointers.current.size === 0) lastPan.current = null;
+  };
+
+  const onWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const next = clamp(scale + (e.deltaY < 0 ? 0.15 : -0.15));
+    setScale(next);
+    if (next === 1) { setTx(0); setTy(0); }
+  };
+
+  const onDoubleClick = () => {
+    if (scale > 1) { setScale(1); setTx(0); setTy(0); }
+    else setScale(MAX_ZOOM);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[80] bg-black/95 flex items-center justify-center overflow-hidden touch-none select-none"
+      role="dialog"
+      aria-modal="true"
+    >
+      <button
+        type="button"
+        onClick={onClose}
+        aria-label="Fechar ampliação"
+        className="absolute top-3 right-3 z-10 h-10 w-10 rounded-full bg-black/60 border border-brand-copper/60 text-brand-gold hover:bg-black/80 flex items-center justify-center transition"
+      >
+        <X className="h-5 w-5" />
+      </button>
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded-full bg-black/60 text-brand-gold text-xs border border-brand-copper/40">
+        {Math.round(scale * 100)}%
+      </div>
+      <img
+        src={src}
+        alt={alt}
+        draggable={false}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        onWheel={onWheel}
+        onDoubleClick={onDoubleClick}
+        style={{
+          transform: `translate(${tx}px, ${ty}px) scale(${scale})`,
+          transition: pointers.current.size === 0 ? "transform 0.15s ease-out" : "none",
+          touchAction: "none",
+        }}
+        className="max-h-full max-w-full object-contain cursor-grab active:cursor-grabbing"
+      />
+    </div>
+  );
+}
 
 export interface ShowcaseImage {
   id: string;
