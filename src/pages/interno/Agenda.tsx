@@ -137,7 +137,7 @@ export default function InternoAgenda() {
         // Check if user is a professional of this establishment
         const { data: professional } = await supabase
           .from("professionals")
-          .select("id")
+          .select("id, is_manager")
           .eq("establishment_id", data.id)
           .eq("user_id", user?.id)
           .maybeSingle();
@@ -149,6 +149,7 @@ export default function InternoAgenda() {
         
         // Store the professional's ID for filtering
         setCurrentProfessionalId(professional.id);
+        setIsManager(!!professional.is_manager);
       }
 
       setEstablishment({
