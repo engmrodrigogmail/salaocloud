@@ -45,6 +45,7 @@ function renderCaptionWithLinks(text: string, onLinkClick: (url: string) => void
 export function Vitrine({ images, onClose }: VitrineProps) {
   const [index, setIndex] = useState(0);
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
+  const [zoomed, setZoomed] = useState(false);
 
   const current = images[index];
   const total = images.length;
@@ -102,13 +103,18 @@ export function Vitrine({ images, onClose }: VitrineProps) {
       <div className="relative max-w-3xl mx-auto">
         {/* Carousel */}
         <div className="relative rounded-2xl overflow-hidden bg-black/40 backdrop-blur-sm border border-brand-copper/40 shadow-2xl">
-          <div className="aspect-[4/3] sm:aspect-[16/10] w-full bg-black flex items-center justify-center">
+          <button
+            type="button"
+            onClick={() => setZoomed(true)}
+            aria-label="Ampliar imagem"
+            className="aspect-[4/3] sm:aspect-[16/10] w-full bg-black flex items-center justify-center cursor-zoom-in"
+          >
             <img
               src={current.image_url}
               alt={current.caption || `Imagem ${index + 1} de ${total}`}
               className="max-h-full max-w-full object-contain"
             />
-          </div>
+          </button>
 
           {/* Arrows */}
           {total > 1 && (
@@ -179,6 +185,31 @@ export function Vitrine({ images, onClose }: VitrineProps) {
           </div>
         )}
       </div>
+
+      {/* Zoom overlay */}
+      {zoomed && (
+        <div
+          className="fixed inset-0 z-[80] bg-black/95 flex items-center justify-center p-4"
+          onClick={() => setZoomed(false)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); setZoomed(false); }}
+            aria-label="Fechar ampliação"
+            className="absolute top-3 right-3 h-10 w-10 rounded-full bg-black/60 border border-brand-copper/60 text-brand-gold hover:bg-black/80 flex items-center justify-center transition"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          <img
+            src={current.image_url}
+            alt={current.caption || `Imagem ${index + 1} ampliada`}
+            className="max-h-full max-w-full object-contain cursor-zoom-out"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
 
       {/* External link confirmation */}
       <AlertDialog open={!!pendingUrl} onOpenChange={(o) => !o && setPendingUrl(null)}>
