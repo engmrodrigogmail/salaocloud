@@ -18,7 +18,7 @@ interface NewClientDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   establishmentId: string;
-  onCreated?: () => void;
+  onCreated?: (client?: { id: string; name: string; phone: string; email: string | null }) => void;
 }
 
 function formatPhoneBR(value: string): string {
