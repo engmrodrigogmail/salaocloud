@@ -70,6 +70,7 @@ export default function InternoAgenda() {
   // Professional-specific state
   const [currentProfessionalId, setCurrentProfessionalId] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
+  const [isManager, setIsManager] = useState(false);
   
   // Dialog states
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
