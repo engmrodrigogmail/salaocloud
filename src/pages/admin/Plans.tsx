@@ -540,7 +540,7 @@ export default function AdminPlans() {
                       <TableHead className="w-12">#</TableHead>
                       <TableHead>Nome</TableHead>
                       <TableHead>Preço Mensal</TableHead>
-                      <TableHead>Preço Anual</TableHead>
+                      
                       <TableHead>Features</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Destaque</TableHead>
