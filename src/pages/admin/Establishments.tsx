@@ -424,7 +424,16 @@ export default function AdminEstablishments() {
                       </div>
                     </TableCell>
                     <TableCell>{getStatusBadge(establishment.status)}</TableCell>
-                    <TableCell>{getPlanBadge(establishment.subscription_plan)}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-0.5">
+                        {getPlanBadge(establishment.subscription_plan)}
+                        {establishment.subscription_plan === "admin_trial" && establishment.admin_trial_granted_at && (
+                          <span className="text-[10px] text-muted-foreground">
+                            Desde {format(new Date(establishment.admin_trial_granted_at), "dd/MM/yy HH:mm", { locale: ptBR })}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       {format(new Date(establishment.created_at), "dd MMM yyyy", {
                         locale: ptBR,
@@ -455,7 +464,16 @@ export default function AdminEstablishments() {
                             </a>
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          {establishment.status !== "active" && (
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedEstablishment(establishment);
+                              setIsSubscriptionDialogOpen(true);
+                            }}
+                          >
+                            <Crown className="h-4 w-4 mr-2 text-primary" />
+                            Editar assinatura
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                             <DropdownMenuItem
                               onClick={() => {
                                 setSelectedEstablishment(establishment);
