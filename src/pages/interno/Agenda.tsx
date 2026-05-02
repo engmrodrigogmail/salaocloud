@@ -76,7 +76,7 @@ export default function InternoAgenda() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
-  
+  const [newApptOpen, setNewApptOpen] = useState(false);
   // Edit form state
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
