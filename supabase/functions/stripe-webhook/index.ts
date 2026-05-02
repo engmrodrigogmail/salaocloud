@@ -365,10 +365,17 @@ async function handleCheckoutEvent(supabase: SupabaseClient<any>, stripe: Stripe
   });
 
   if (event.type === "checkout.session.completed" && session.mode === "subscription") {
-    const customerId = typeof session.customer === "string" 
-      ? session.customer 
+    // Filter: only process salaocloud sessions
+    const sessionAppMeta = (session.metadata as Record<string, string> | null)?.app;
+    if (sessionAppMeta !== "salaocloud") {
+      logStep("Skipping checkout event (not salaocloud)", { sessionId: session.id, sessionAppMeta });
+      return;
+    }
+
+    const customerId = typeof session.customer === "string"
+      ? session.customer
       : session.customer?.id;
-    
+
     const subscriptionId = typeof session.subscription === "string"
       ? session.subscription
       : session.subscription?.id;
