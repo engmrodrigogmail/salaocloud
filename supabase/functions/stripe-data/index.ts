@@ -67,68 +67,81 @@ serve(async (req) => {
       }
 
       case "get_statistics": {
-        logStep("Fetching statistics");
-        
-        // Get all customers
-        const customers = await stripe.customers.list({ limit: 100 });
-        
-        // Get all subscriptions
-        const activeSubscriptions = await stripe.subscriptions.list({ status: "active", limit: 100 });
-        const canceledSubscriptions = await stripe.subscriptions.list({ status: "canceled", limit: 100 });
-        const allSubscriptions = await stripe.subscriptions.list({ limit: 100 });
-        
-        // Get charges for the last 12 months
+        logStep("Fetching statistics (filter app=salaocloud)");
+
+        const isSC = (m?: Record<string, string> | null) => m?.app === "salaocloud";
+
+        // Get all customers tagged with app=salaocloud
+        const allCustomers = await stripe.customers.list({ limit: 100 });
+        const customers = { data: allCustomers.data.filter((c: Stripe.Customer) => isSC(c.metadata)) };
+        const customerIds = new Set(customers.data.map((c: Stripe.Customer) => c.id));
+
+        // Get all subscriptions and filter by app=salaocloud (or by customer)
+        const filterSubs = (subs: Stripe.Subscription[]) =>
+          subs.filter((s) => isSC(s.metadata as any) || customerIds.has(typeof s.customer === "string" ? s.customer : s.customer.id));
+
+        const activeAll = await stripe.subscriptions.list({ status: "active", limit: 100 });
+        const canceledAll = await stripe.subscriptions.list({ status: "canceled", limit: 100 });
+        const allAll = await stripe.subscriptions.list({ limit: 100 });
+        const activeSubscriptions = { data: filterSubs(activeAll.data) };
+        const canceledSubscriptions = { data: filterSubs(canceledAll.data) };
+        const allSubscriptions = { data: filterSubs(allAll.data) };
+
+        // Get charges for the last 12 months (filter by salaocloud customer)
         const now = new Date();
         const monthlyData: Array<{
           month: string;
           revenue: number;
           subscriptions: number;
         }> = [];
-        
+
         for (let i = 11; i >= 0; i--) {
           const startDate = new Date(now.getFullYear(), now.getMonth() - i, 1);
           const endDate = new Date(now.getFullYear(), now.getMonth() - i + 1, 0, 23, 59, 59);
-          
-          const charges = await stripe.charges.list({
+
+          const chargesAll = await stripe.charges.list({
             created: {
               gte: Math.floor(startDate.getTime() / 1000),
               lte: Math.floor(endDate.getTime() / 1000),
             },
             limit: 100,
           });
-          
-          const revenue = charges.data
+
+          const charges = chargesAll.data.filter((c: Stripe.Charge) => {
+            const cid = typeof c.customer === "string" ? c.customer : c.customer?.id;
+            return cid && customerIds.has(cid);
+          });
+
+          const revenue = charges
             .filter((c: Stripe.Charge) => c.status === "succeeded")
             .reduce((sum: number, c: Stripe.Charge) => sum + (c.amount || 0), 0);
-          
+
           const monthSubscriptions = allSubscriptions.data.filter((sub: Stripe.Subscription) => {
             const created = new Date(sub.created * 1000);
             return created >= startDate && created <= endDate;
           }).length;
-          
+
           monthlyData.push({
             month: startDate.toLocaleString("pt-BR", { month: "short", year: "2-digit" }),
             revenue: revenue / 100,
             subscriptions: monthSubscriptions,
           });
         }
-        
+
         // Calculate average ticket
         const totalRevenue = monthlyData.reduce((sum, m) => sum + m.revenue, 0);
         const totalTransactions = activeSubscriptions.data.length + canceledSubscriptions.data.length;
         const averageTicket = totalTransactions > 0 ? totalRevenue / totalTransactions : 0;
-        
-        // Calculate conversion rate (subscribers / total customers)
-        const conversionRate = customers.data.length > 0 
-          ? (activeSubscriptions.data.length / customers.data.length) * 100 
+
+        const conversionRate = customers.data.length > 0
+          ? (activeSubscriptions.data.length / customers.data.length) * 100
           : 0;
-        
-        // Calculate abandonment rate (canceled / total subscriptions)
+
         const totalSubs = activeSubscriptions.data.length + canceledSubscriptions.data.length;
-        const abandonmentRate = totalSubs > 0 
-          ? (canceledSubscriptions.data.length / totalSubs) * 100 
+        const abandonmentRate = totalSubs > 0
+          ? (canceledSubscriptions.data.length / totalSubs) * 100
           : 0;
-        
+
         const stats = {
           activeSubscriptions: activeSubscriptions.data.length,
           canceledSubscriptions: canceledSubscriptions.data.length,
@@ -138,13 +151,12 @@ serve(async (req) => {
           abandonmentRate: Math.round(abandonmentRate * 100) / 100,
           monthlyData,
         };
-        
+
         logStep("Statistics calculated", stats);
         return new Response(JSON.stringify(stats), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-
       case "check_status": {
         logStep("Checking Stripe status");
         try {
