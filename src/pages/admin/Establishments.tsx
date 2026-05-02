@@ -349,9 +349,12 @@ export default function AdminEstablishments() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos Planos</SelectItem>
-              <SelectItem value="basic">Básico</SelectItem>
-              <SelectItem value="professional">Profissional</SelectItem>
-              <SelectItem value="premium">Premium</SelectItem>
+              <SelectItem value="pro">Pro</SelectItem>
+              <SelectItem value="admin_trial">Trial Premium Adm</SelectItem>
+              <SelectItem value="trial">Trial</SelectItem>
+              <SelectItem value="basic">Básico (legado)</SelectItem>
+              <SelectItem value="professional">Profissional (legado)</SelectItem>
+              <SelectItem value="premium">Premium (legado)</SelectItem>
             </SelectContent>
           </Select>
         </div>
