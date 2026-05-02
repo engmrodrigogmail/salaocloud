@@ -1691,14 +1691,15 @@ const ClientPortal = () => {
       </div>
 
       {showVitrine && showcaseImages.length > 0 && (
-        <Vitrine images={showcaseImages} onClose={() => setShowVitrine(false)} />
+        <div className="fixed inset-0 z-[60]">
+          <Vitrine images={showcaseImages} onClose={() => setShowVitrine(false)} />
+        </div>
       )}
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         <Tabs
           defaultValue="booking"
           className="space-y-6"
-          onValueChange={() => { if (showVitrine) setShowVitrine(false); }}
         >
           <TabsList className={`grid w-full ${establishment.show_catalog ? "grid-cols-3" : "grid-cols-2"}`}>
             <TabsTrigger value="booking">
