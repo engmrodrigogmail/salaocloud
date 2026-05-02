@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSignupsEnabled } from "@/hooks/useSignupsEnabled";
 import logo from "@/assets/logo-salaocloud-v5.png";
 import salonBg from "@/assets/salon-dark-bg.png";
 
@@ -42,8 +43,9 @@ type SignupFormData = z.infer<typeof signupSchema>;
 
 export default function Auth() {
   const [searchParams] = useSearchParams();
-  // Cadastros de novos salões temporariamente suspensos.
-  const SIGNUPS_DISABLED = true;
+  // Controlado dinamicamente pelo super admin em /admin/configuracoes.
+  const { signupsEnabled } = useSignupsEnabled();
+  const SIGNUPS_DISABLED = !signupsEnabled;
   const [isSignup, setIsSignup] = useState(searchParams.get("mode") === "signup");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -107,12 +109,34 @@ export default function Auth() {
     await handleLogin(parsed.data);
   };
 
-  const handleSignup = async (_data: SignupFormData) => {
+  const handleSignup = async (data: SignupFormData) => {
+    if (SIGNUPS_DISABLED) {
+      toast({
+        variant: "destructive",
+        title: "Novos cadastros suspensos",
+        description: "No momento não estamos aceitando novos cadastros de salões. Em breve reabriremos as inscrições.",
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    const { error } = await signUp(data.email, data.password, data.fullName || undefined);
+    setIsLoading(false);
+
+    if (error) {
+      let message = "Erro ao criar conta. Tente novamente.";
+      if (error.message?.includes("already registered") || error.message?.includes("already been registered")) {
+        message = "Este email já está cadastrado. Faça login.";
+      }
+      toast({ variant: "destructive", title: "Ops!", description: message });
+      return;
+    }
+
     toast({
-      variant: "destructive",
-      title: "Novos cadastros suspensos",
-      description: "No momento não estamos aceitando novos cadastros de salões. Em breve reabriremos as inscrições.",
+      title: "Conta criada!",
+      description: "Verifique seu email para confirmar o cadastro antes de entrar.",
     });
+    setIsSignup(false);
   };
 
   if (loading) {
@@ -146,15 +170,21 @@ export default function Auth() {
 
           <div className="mb-8">
             <h1 className="font-display text-3xl font-bold mb-2">
-              {isSignup ? "Novos cadastros suspensos" : "Bem-vindo de volta!"}
+              {isSignup
+                ? SIGNUPS_DISABLED
+                  ? "Novos cadastros suspensos"
+                  : "Crie sua conta"
+                : "Bem-vindo de volta!"}
             </h1>
             <p className="text-muted-foreground">
               {isSignup
-                ? "No momento não estamos aceitando novos cadastros de salões. Em breve reabriremos as inscrições."
+                ? SIGNUPS_DISABLED
+                  ? "No momento não estamos aceitando novos cadastros de salões. Em breve reabriremos as inscrições."
+                  : "Cadastre-se para começar a usar o Salão Cloud"
                 : "Entre para acessar seu painel"}
             </p>
           </div>
-          {isSignup ? (
+          {isSignup && SIGNUPS_DISABLED ? (
             <div className="space-y-5">
               <div className="rounded-md border border-primary/30 bg-primary/5 p-5 text-sm text-foreground">
                 <p className="font-semibold mb-2">Inscrições temporariamente fechadas</p>
@@ -172,6 +202,93 @@ export default function Auth() {
                 Já tenho conta — Entrar
               </Button>
             </div>
+          ) : isSignup ? (
+            <Form {...signupForm}>
+              <form onSubmit={signupForm.handleSubmit(handleSignup)} className="space-y-5" noValidate>
+                <FormField
+                  control={signupForm.control}
+                  name="fullName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome completo</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          placeholder="Seu nome"
+                          autoComplete="name"
+                          className="h-14 text-lg"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={signupForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type="email"
+                          placeholder="seu@email.com"
+                          autoComplete="email"
+                          className="h-14 text-lg"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={signupForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Senha</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          autoComplete="new-password"
+                          className="h-14 text-lg"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={signupForm.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirmar senha</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type={showPassword ? "text" : "password"}
+                          placeholder="••••••••"
+                          autoComplete="new-password"
+                          className="h-14 text-lg"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <Button
+                  type="submit"
+                  className="w-full h-12 bg-gradient-primary hover:opacity-90 font-semibold"
+                  disabled={isLoading}
+                >
+                  {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : "Criar conta"}
+                </Button>
+              </form>
+            </Form>
           ) : (
             <form onSubmit={handleNativeLogin} className="space-y-5" key="login-form" noValidate>
               <div className="space-y-2">
