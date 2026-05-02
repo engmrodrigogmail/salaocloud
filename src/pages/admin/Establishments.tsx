@@ -18,7 +18,10 @@ import {
   MapPin,
   AlertTriangle,
   ClipboardCheck,
+  Crown,
+  Sparkles,
 } from "lucide-react";
+import { EditSubscriptionDialog } from "@/components/admin/EditSubscriptionDialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -80,6 +83,8 @@ interface Establishment {
   state: string | null;
   status: "pending" | "active" | "suspended";
   subscription_plan: string;
+  trial_ends_at: string | null;
+  admin_trial_granted_at: string | null;
   created_at: string;
   owner_id: string;
 }
@@ -92,8 +97,8 @@ interface EstablishmentStats {
   revenue: number;
 }
 
-type StatusFilter = "all" | "active" | "pending" | "suspended";
-type PlanFilter = "all" | "basic" | "professional" | "premium";
+type StatusFilter = "all" | "active" | "pending" | "suspended" | "admin_trial";
+type PlanFilter = "all" | "pro" | "admin_trial" | "trial" | "basic" | "professional" | "premium";
 
 export default function AdminEstablishments() {
   const [establishments, setEstablishments] = useState<Establishment[]>([]);
@@ -105,6 +110,7 @@ export default function AdminEstablishments() {
   const [establishmentStats, setEstablishmentStats] = useState<EstablishmentStats | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const [isSubscriptionDialogOpen, setIsSubscriptionDialogOpen] = useState(false);
   const [newStatus, setNewStatus] = useState<string>("");
   const { toast } = useToast();
 
@@ -218,8 +224,32 @@ export default function AdminEstablishments() {
   };
 
   const getPlanBadge = (plan: string) => {
+    if (plan === "admin_trial") {
+      return (
+        <Badge className="bg-purple-600 text-white hover:bg-purple-600">
+          <Sparkles className="h-3 w-3 mr-1" />
+          Trial Premium Adm
+        </Badge>
+      );
+    }
+    if (plan === "pro") {
+      return (
+        <Badge className="bg-primary/10 text-primary border-primary/20">
+          <Crown className="h-3 w-3 mr-1" />
+          Pro
+        </Badge>
+      );
+    }
+    if (plan === "trial") {
+      return (
+        <Badge className="bg-warning/10 text-warning border-warning/20">
+          <Clock className="h-3 w-3 mr-1" />
+          Trial
+        </Badge>
+      );
+    }
     const config: Record<string, { bg: string; text: string }> = {
-      basic: { bg: "bg-primary/10", text: "text-primary" },
+      basic: { bg: "bg-muted", text: "text-foreground" },
       professional: { bg: "bg-secondary/10", text: "text-secondary" },
       premium: { bg: "bg-accent/10", text: "text-accent-foreground" },
     };
@@ -319,9 +349,12 @@ export default function AdminEstablishments() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos Planos</SelectItem>
-              <SelectItem value="basic">Básico</SelectItem>
-              <SelectItem value="professional">Profissional</SelectItem>
-              <SelectItem value="premium">Premium</SelectItem>
+              <SelectItem value="pro">Pro</SelectItem>
+              <SelectItem value="admin_trial">Trial Premium Adm</SelectItem>
+              <SelectItem value="trial">Trial</SelectItem>
+              <SelectItem value="basic">Básico (legado)</SelectItem>
+              <SelectItem value="professional">Profissional (legado)</SelectItem>
+              <SelectItem value="premium">Premium (legado)</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -391,7 +424,16 @@ export default function AdminEstablishments() {
                       </div>
                     </TableCell>
                     <TableCell>{getStatusBadge(establishment.status)}</TableCell>
-                    <TableCell>{getPlanBadge(establishment.subscription_plan)}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-col gap-0.5">
+                        {getPlanBadge(establishment.subscription_plan)}
+                        {establishment.subscription_plan === "admin_trial" && establishment.admin_trial_granted_at && (
+                          <span className="text-[10px] text-muted-foreground">
+                            Desde {format(new Date(establishment.admin_trial_granted_at), "dd/MM/yy HH:mm", { locale: ptBR })}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       {format(new Date(establishment.created_at), "dd MMM yyyy", {
                         locale: ptBR,
@@ -420,6 +462,16 @@ export default function AdminEstablishments() {
                               <ExternalLink className="h-4 w-4 mr-2" />
                               Ver página
                             </a>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedEstablishment(establishment);
+                              setIsSubscriptionDialogOpen(true);
+                            }}
+                          >
+                            <Crown className="h-4 w-4 mr-2 text-primary" />
+                            Editar assinatura
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           {establishment.status !== "active" && (
@@ -689,6 +741,13 @@ export default function AdminEstablishments() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <EditSubscriptionDialog
+        open={isSubscriptionDialogOpen}
+        onOpenChange={setIsSubscriptionDialogOpen}
+        establishment={selectedEstablishment}
+        onSaved={fetchEstablishments}
+      />
     </AdminLayout>
   );
 }

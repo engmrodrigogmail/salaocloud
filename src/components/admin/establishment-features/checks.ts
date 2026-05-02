@@ -6,12 +6,20 @@ const safeCount = (count: number | null | undefined) => (typeof count === "numbe
 const emptyOrNull = (col: string) => `${col}.is.null,${col}.eq.`;
 
 export async function checkPlanLimits(subscriptionPlan: string, isTrialPeriod: boolean): Promise<BlockResult> {
-  if (!subscriptionPlan || subscriptionPlan === "trial" || isTrialPeriod) {
+  if (!subscriptionPlan || subscriptionPlan === "trial" || subscriptionPlan === "admin_trial" || isTrialPeriod) {
+    const isAdminTrial = subscriptionPlan === "admin_trial";
     return {
       status: "ok",
       summary: [
         { label: "Plano", value: subscriptionPlan || "(não informado)" },
-        { label: "Modo", value: isTrialPeriod ? "Trial (todas liberadas)" : "Trial" },
+        {
+          label: "Modo",
+          value: isAdminTrial
+            ? "Trial Premium Adm (ilimitado)"
+            : isTrialPeriod
+            ? "Trial (todas liberadas)"
+            : "Trial",
+        },
       ],
       issues: [],
     };

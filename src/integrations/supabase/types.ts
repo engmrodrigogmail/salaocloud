@@ -1714,6 +1714,7 @@ export type Database = {
       establishments: {
         Row: {
           address: string | null
+          admin_trial_granted_at: string | null
           agenda_expand_hours: number | null
           agenda_slot_interval: number | null
           brand_accent_color: string | null
@@ -1753,6 +1754,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          admin_trial_granted_at?: string | null
           agenda_expand_hours?: number | null
           agenda_slot_interval?: number | null
           brand_accent_color?: string | null
@@ -1792,6 +1794,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          admin_trial_granted_at?: string | null
           agenda_expand_hours?: number | null
           agenda_slot_interval?: number | null
           brand_accent_color?: string | null
@@ -3424,6 +3427,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_admin_trial: { Args: { _establishment_id: string }; Returns: boolean }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -3468,7 +3472,13 @@ export type Database = {
         | "professional"
         | "client"
       notification_sender_type: "system" | "admin" | "establishment"
-      subscription_plan: "basic" | "professional" | "premium" | "trial"
+      subscription_plan:
+        | "basic"
+        | "professional"
+        | "premium"
+        | "trial"
+        | "admin_trial"
+        | "pro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3614,7 +3624,14 @@ export const Constants = {
         "client",
       ],
       notification_sender_type: ["system", "admin", "establishment"],
-      subscription_plan: ["basic", "professional", "premium", "trial"],
+      subscription_plan: [
+        "basic",
+        "professional",
+        "premium",
+        "trial",
+        "admin_trial",
+        "pro",
+      ],
     },
   },
 } as const
