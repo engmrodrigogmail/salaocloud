@@ -43,12 +43,21 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil" 
     });
 
-    // Check if customer exists
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
+    // Check if customer exists (filter by app=salaocloud metadata)
+    const customers = await stripe.customers.list({ email: user.email, limit: 10 });
+    const scCustomers = customers.data.filter((c: any) => c.metadata?.app === "salaocloud");
     let customerId: string | undefined;
-    if (customers.data.length > 0) {
-      customerId = customers.data[0].id;
-      logStep("Found existing customer", { customerId });
+    if (scCustomers.length > 0) {
+      customerId = scCustomers[0].id;
+      logStep("Found existing salaocloud customer", { customerId });
+    } else {
+      // Create a new customer tagged with app=salaocloud
+      const newCustomer = await stripe.customers.create({
+        email: user.email,
+        metadata: { app: "salaocloud", user_id: user.id },
+      });
+      customerId = newCustomer.id;
+      logStep("Created new salaocloud customer", { customerId });
     }
 
     // Apply coupon if provided
@@ -100,7 +109,6 @@ serve(async (req) => {
     
     const sessionConfig: any = {
       customer: customerId,
-      customer_email: customerId ? undefined : user.email,
       line_items: [
         {
           price: priceId,
@@ -110,10 +118,19 @@ serve(async (req) => {
       mode: "subscription",
       success_url: `${origin}/dashboard?subscription=success`,
       cancel_url: `${origin}/onboarding?subscription=cancelled`,
+      subscription_data: {
+        metadata: {
+          app: "salaocloud",
+          user_id: user.id,
+          plan_slug: planSlug ?? "",
+          billing_cycle: billingCycle ?? "monthly",
+        },
+      },
       metadata: {
+        app: "salaocloud",
         user_id: user.id,
-        plan_slug: planSlug,
-        billing_cycle: billingCycle,
+        plan_slug: planSlug ?? "",
+        billing_cycle: billingCycle ?? "monthly",
       },
     };
 

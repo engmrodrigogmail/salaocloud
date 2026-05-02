@@ -152,9 +152,6 @@ function SortableRow({
       </TableCell>
       <TableCell>{formatPrice(plan.price_monthly)}</TableCell>
       <TableCell>
-        {plan.price_yearly ? formatPrice(plan.price_yearly) : "-"}
-      </TableCell>
-      <TableCell>
         <span className="text-sm text-muted-foreground">
           {plan.features.length} features
         </span>
@@ -470,6 +467,20 @@ export default function AdminPlans() {
           </Button>
         </div>
 
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="py-4 flex items-start gap-3">
+            <Star className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+            <div className="text-sm">
+              <p className="font-medium text-foreground">
+                O Salão Cloud opera com plano único <strong>Pro</strong> (mensal). O ciclo anual está desativado.
+              </p>
+              <p className="text-muted-foreground mt-1">
+                Trials são liberados manualmente pelo super admin em <strong>/admin/establishments</strong> (status “Trial Premium Adm”).
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
@@ -529,7 +540,7 @@ export default function AdminPlans() {
                       <TableHead className="w-12">#</TableHead>
                       <TableHead>Nome</TableHead>
                       <TableHead>Preço Mensal</TableHead>
-                      <TableHead>Preço Anual</TableHead>
+                      
                       <TableHead>Features</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Destaque</TableHead>
@@ -611,34 +622,23 @@ export default function AdminPlans() {
               </div>
 
               {/* Pricing */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Preço Mensal (R$)</Label>
-                  <Input
-                    type="number"
-                    value={planForm.price_monthly}
-                    onChange={(e) =>
-                      setPlanForm({
-                        ...planForm,
-                        price_monthly: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Preço Anual (R$)</Label>
-                  <Input
-                    type="number"
-                    value={planForm.price_yearly}
-                    onChange={(e) =>
-                      setPlanForm({
-                        ...planForm,
-                        price_yearly: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                  />
-                </div>
+              <div className="space-y-2">
+                <Label>Preço Mensal (R$)</Label>
+                <Input
+                  type="number"
+                  value={planForm.price_monthly}
+                  onChange={(e) =>
+                    setPlanForm({
+                      ...planForm,
+                      price_monthly: parseFloat(e.target.value) || 0,
+                    })
+                  }
+                />
+                <p className="text-xs text-muted-foreground">
+                  O ciclo anual está desativado no Salão Cloud.
+                </p>
               </div>
+
 
               {/* Appearance */}
               <div className="grid grid-cols-2 gap-4">

@@ -41,14 +41,15 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     const stripe = new Stripe(stripeKey, { apiVersion: "2025-08-27.basil" });
-    const customers = await stripe.customers.list({ email: user.email, limit: 1 });
-    
-    if (customers.data.length === 0) {
+    const customers = await stripe.customers.list({ email: user.email, limit: 10 });
+    const scCustomers = customers.data.filter((c: any) => c.metadata?.app === "salaocloud");
+
+    if (scCustomers.length === 0) {
       throw new Error("No Stripe customer found for this user");
     }
-    
-    const customerId = customers.data[0].id;
-    logStep("Found Stripe customer", { customerId });
+
+    const customerId = scCustomers[0].id;
+    logStep("Found salaocloud Stripe customer", { customerId });
 
     const origin = req.headers.get("origin") || "https://preview.lovable.dev";
     const portalSession = await stripe.billingPortal.sessions.create({

@@ -164,13 +164,21 @@ async function handleSubscriptionEvent(supabase: SupabaseClient<any>, stripe: St
 
   try {
     // Get customer email
-    const customerId = typeof subscription.customer === "string" 
-      ? subscription.customer 
+    const customerId = typeof subscription.customer === "string"
+      ? subscription.customer
       : subscription.customer.id;
-    
+
     const customer = await stripe.customers.retrieve(customerId);
     if (customer.deleted) {
       logStep("Customer was deleted", { customerId });
+      return;
+    }
+
+    // Filter: only process subscriptions belonging to salaocloud
+    const subAppMeta = (subscription.metadata as Record<string, string> | null)?.app;
+    const custAppMeta = (customer as Stripe.Customer).metadata?.app;
+    if (subAppMeta !== "salaocloud" && custAppMeta !== "salaocloud") {
+      logStep("Skipping subscription event (not salaocloud)", { customerId, subAppMeta, custAppMeta });
       return;
     }
 
@@ -193,7 +201,7 @@ async function handleSubscriptionEvent(supabase: SupabaseClient<any>, stripe: St
     }
 
     // Determine the new plan based on subscription status
-    let newPlan: string = "basic";
+    let newPlan: string = "pro";
     let newStatus: string = establishment.status;
 
     if (subscription.status === "active" || subscription.status === "trialing") {
@@ -213,7 +221,7 @@ async function handleSubscriptionEvent(supabase: SupabaseClient<any>, stripe: St
         }
       }
     } else if (subscription.status === "canceled" || subscription.status === "unpaid") {
-      newPlan = "basic";
+      newPlan = "pro";
       newStatus = "active"; // Keep active but downgrade to basic
     } else if (subscription.status === "past_due") {
       newStatus = "suspended";
@@ -263,7 +271,7 @@ async function handleCustomerEvent(supabase: SupabaseClient<any>, event: Stripe.
       .update({
         stripe_customer_id: null,
         stripe_subscription_id: null,
-        subscription_plan: "basic",
+        subscription_plan: "pro",
         updated_at: new Date().toISOString(),
       })
       .eq("stripe_customer_id", customer.id);
@@ -357,10 +365,17 @@ async function handleCheckoutEvent(supabase: SupabaseClient<any>, stripe: Stripe
   });
 
   if (event.type === "checkout.session.completed" && session.mode === "subscription") {
-    const customerId = typeof session.customer === "string" 
-      ? session.customer 
+    // Filter: only process salaocloud sessions
+    const sessionAppMeta = (session.metadata as Record<string, string> | null)?.app;
+    if (sessionAppMeta !== "salaocloud") {
+      logStep("Skipping checkout event (not salaocloud)", { sessionId: session.id, sessionAppMeta });
+      return;
+    }
+
+    const customerId = typeof session.customer === "string"
+      ? session.customer
       : session.customer?.id;
-    
+
     const subscriptionId = typeof session.subscription === "string"
       ? session.subscription
       : session.subscription?.id;

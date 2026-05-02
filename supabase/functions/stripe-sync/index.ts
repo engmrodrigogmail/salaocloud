@@ -99,6 +99,7 @@ serve(async (req) => {
                 name: planName,
                 description: (plan.description as string) || undefined,
                 metadata: {
+                  app: "salaocloud",
                   portal_plan_id: planId,
                   slug: String(plan.slug ?? ""),
                 },
@@ -109,6 +110,7 @@ serve(async (req) => {
                 name: planName,
                 description: (plan.description as string) || undefined,
                 metadata: {
+                  app: "salaocloud",
                   portal_plan_id: planId,
                   slug: String(plan.slug ?? ""),
                 },
@@ -151,7 +153,7 @@ serve(async (req) => {
                       unit_amount: expectedMonthlyAmount,
                       currency: "brl",
                       recurring: { interval: "month" },
-                      metadata: { type: "monthly" },
+                      metadata: { app: "salaocloud", type: "monthly", slug: String(plan.slug ?? "") },
                     });
                     monthlyPriceId = newMonthlyPrice.id;
                     log(requestId, "Plan: monthly price created", {
@@ -172,7 +174,7 @@ serve(async (req) => {
                     unit_amount: expectedMonthlyAmount,
                     currency: "brl",
                     recurring: { interval: "month" },
-                    metadata: { type: "monthly" },
+                    metadata: { app: "salaocloud", type: "monthly", slug: String(plan.slug ?? "") },
                   });
                   monthlyPriceId = newMonthlyPrice.id;
                   log(requestId, "Plan: monthly price created after error", { planId, newMonthlyPriceId: monthlyPriceId });
@@ -183,7 +185,7 @@ serve(async (req) => {
                   unit_amount: expectedMonthlyAmount,
                   currency: "brl",
                   recurring: { interval: "month" },
-                  metadata: { type: "monthly" },
+                  metadata: { app: "salaocloud", type: "monthly", slug: String(plan.slug ?? "") },
                 });
                 monthlyPriceId = monthlyPrice.id;
                 log(requestId, "Plan: monthly price created (missing)", { planId, monthlyPriceId, amount: expectedMonthlyAmount });
@@ -225,7 +227,7 @@ serve(async (req) => {
                       unit_amount: expectedYearlyAmount,
                       currency: "brl",
                       recurring: { interval: "year" },
-                      metadata: { type: "yearly" },
+                      metadata: { app: "salaocloud", type: "yearly", slug: String(plan.slug ?? "") },
                     });
                     yearlyPriceId = newYearlyPrice.id;
                     log(requestId, "Plan: yearly price created", { planId, newYearlyPriceId: yearlyPriceId, amount: expectedYearlyAmount });
@@ -242,7 +244,7 @@ serve(async (req) => {
                     unit_amount: expectedYearlyAmount,
                     currency: "brl",
                     recurring: { interval: "year" },
-                    metadata: { type: "yearly" },
+                    metadata: { app: "salaocloud", type: "yearly", slug: String(plan.slug ?? "") },
                   });
                   yearlyPriceId = newYearlyPrice.id;
                   log(requestId, "Plan: yearly price created after error", { planId, newYearlyPriceId: yearlyPriceId });
@@ -253,7 +255,7 @@ serve(async (req) => {
                   unit_amount: expectedYearlyAmount,
                   currency: "brl",
                   recurring: { interval: "year" },
-                  metadata: { type: "yearly" },
+                  metadata: { app: "salaocloud", type: "yearly", slug: String(plan.slug ?? "") },
                 });
                 yearlyPriceId = yearlyPrice.id;
                 log(requestId, "Plan: yearly price created (missing)", { planId, yearlyPriceId, amount: expectedYearlyAmount });
@@ -321,6 +323,14 @@ serve(async (req) => {
         for (const stripePlanRaw of plans || []) {
           const stripePlan = stripePlanRaw as AnyRecord;
           const stripeId = String(stripePlan.id ?? "");
+          const planMeta = (stripePlan.metadata as AnyRecord | undefined) || {};
+
+          // Skip products that don't belong to salaocloud
+          if (planMeta.app !== "salaocloud") {
+            log(requestId, "Import: skipped (not salaocloud)", { stripeId, app: planMeta.app });
+            results.push({ stripe_id: stripeId, success: false, skipped: true, reason: "not_salaocloud" });
+            continue;
+          }
 
           try {
             const monthlyPrice = (stripePlan.prices as AnyRecord[] | undefined)?.find(
