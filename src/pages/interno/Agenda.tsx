@@ -822,14 +822,16 @@ export default function InternoAgenda() {
               </>
             ) : (
               <>
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <Button variant="outline" size="sm" onClick={() => openEditDialog(selectedAppointment!)}>
-                    <Edit className="h-4 w-4 mr-1" /> Editar
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
-                    <Trash2 className="h-4 w-4 mr-1" /> Excluir
-                  </Button>
-                </div>
+                {(isOwner || isManager) && (
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <Button variant="outline" size="sm" onClick={() => openEditDialog(selectedAppointment!)}>
+                      <Edit className="h-4 w-4 mr-1" /> Editar
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
+                      <Trash2 className="h-4 w-4 mr-1" /> Excluir
+                    </Button>
+                  </div>
+                )}
                 {selectedAppointment?.status === "pending" && (
                   <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "confirmed")}>
                     <Check className="h-4 w-4 mr-1" /> Confirmar
