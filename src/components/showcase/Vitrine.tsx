@@ -42,7 +42,7 @@ function renderCaptionWithLinks(text: string, onLinkClick: (url: string) => void
   });
 }
 
-export function Vitrine({ images }: VitrineProps) {
+export function Vitrine({ images, onClose }: VitrineProps) {
   const [index, setIndex] = useState(0);
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
 
@@ -67,9 +67,15 @@ export function Vitrine({ images }: VitrineProps) {
 
   if (!current) return null;
 
+  const isOverlay = typeof onClose === "function";
+
   return (
     <section
-      className="relative min-h-[60vh] py-8 px-4"
+      className={
+        isOverlay
+          ? "fixed inset-0 z-[60] overflow-y-auto py-8 px-4"
+          : "relative min-h-[60vh] py-8 px-4"
+      }
       style={{
         backgroundImage: `url(${VITRINE_BG})`,
         backgroundSize: "cover",
@@ -77,8 +83,21 @@ export function Vitrine({ images }: VitrineProps) {
         backgroundRepeat: "no-repeat",
       }}
       aria-label="Vitrine do salão"
+      role={isOverlay ? "dialog" : undefined}
+      aria-modal={isOverlay ? true : undefined}
     >
-      <div className="absolute inset-0 bg-black/30 pointer-events-none" />
+      <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+
+      {isOverlay && (
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Fechar vitrine"
+          className="absolute top-3 right-3 z-10 h-10 w-10 rounded-full bg-black/60 border border-brand-copper/60 text-brand-gold hover:bg-black/80 flex items-center justify-center transition"
+        >
+          <X className="h-5 w-5" />
+        </button>
+      )}
 
       <div className="relative max-w-3xl mx-auto">
         {/* Carousel */}
