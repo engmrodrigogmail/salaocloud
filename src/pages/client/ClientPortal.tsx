@@ -630,9 +630,23 @@ const ClientPortal = () => {
       await fetchAllAppointments();
       await fetchClientData(newClient.id);
       toast.success(`Bem-vindo(a) de volta, ${newClient.name}!`, { duration: 2500 });
-    } catch (error) {
-      console.error("Error stitching identity:", error);
-      toast.error("Erro ao vincular cadastro");
+    } catch (error: any) {
+      console.error("Error stitching identity:", error, JSON.stringify(error));
+      const code = error?.code || error?.details?.code;
+      const message = error?.message || "";
+      let userMsg = "Erro ao vincular cadastro";
+      if (code === "23505" || /duplicate key|already exists/i.test(message)) {
+        if (/cpf/i.test(message)) {
+          userMsg = "Este CPF já está cadastrado neste salão. Entre em contato com o salão.";
+        } else {
+          userMsg = "Cadastro já existente neste salão. Tente fazer login.";
+        }
+      } else if (code === "42501" || /row-level security|permission denied/i.test(message)) {
+        userMsg = "Permissão negada. Recarregue a página e tente novamente.";
+      } else if (message) {
+        userMsg = `Erro ao vincular cadastro: ${message}`;
+      }
+      toast.error(userMsg, { duration: 5000 });
     } finally {
       setAuthenticating(false);
     }
