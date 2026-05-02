@@ -28,10 +28,19 @@ serve(async (req) => {
 
     switch (action) {
       case "get_products_and_prices": {
-        logStep("Fetching products and prices");
-        const products = await stripe.products.list({ limit: 100, active: true });
-        const prices = await stripe.prices.list({ limit: 100, active: true });
-        
+        logStep("Fetching products and prices (filter app=salaocloud)");
+        const allProducts = await stripe.products.list({ limit: 100, active: true });
+        const allPrices = await stripe.prices.list({ limit: 100, active: true });
+
+        // Only keep salaocloud products
+        const products = {
+          data: allProducts.data.filter((p: Stripe.Product) => p.metadata?.app === "salaocloud"),
+        };
+        const productIds = new Set(products.data.map((p: Stripe.Product) => p.id));
+        const prices = {
+          data: allPrices.data.filter((pr: Stripe.Price) => productIds.has(typeof pr.product === "string" ? pr.product : pr.product.id)),
+        };
+
         const productData = products.data.map((product: Stripe.Product) => {
           const productPrices = prices.data.filter((p: Stripe.Price) => p.product === product.id);
           return {
