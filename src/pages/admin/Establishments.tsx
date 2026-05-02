@@ -741,6 +741,13 @@ export default function AdminEstablishments() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <EditSubscriptionDialog
+        open={isSubscriptionDialogOpen}
+        onOpenChange={setIsSubscriptionDialogOpen}
+        establishment={selectedEstablishment}
+        onSaved={fetchEstablishments}
+      />
     </AdminLayout>
   );
 }
