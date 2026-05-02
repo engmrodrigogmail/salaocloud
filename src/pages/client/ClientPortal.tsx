@@ -193,12 +193,17 @@ const ClientPortal = () => {
         total: showcaseImages.length,
         establishmentId: establishment.id,
       });
-      setShowVitrine(true);
+      setTimeout(() => setShowVitrine(true), 100);
       return;
     }
 
-    void loadShowcaseImages(establishment, "after_auth");
-  }, [isAuthenticated, establishment, showcaseImages.length]);
+    void loadShowcaseImages(establishment, "after_auth").then((images) => {
+      if (images && images.length > 0) {
+        setTimeout(() => setShowVitrine(true), 100);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, establishment]);
 
   // Restaurar sessão do cliente após o estabelecimento ser carregado
   useEffect(() => {
@@ -536,6 +541,9 @@ const ClientPortal = () => {
       const authedClient = { ...client, ...data.client } as Client;
       setClient(authedClient);
       setIsAuthenticated(true);
+      if (establishment) {
+        void loadShowcaseImages(establishment, "login_success");
+      }
       persistClientSession(authedClient, data.session_token, data.session_expires_at);
       await fetchClientData(authedClient.id);
       await fetchAllAppointments();
@@ -1686,14 +1694,15 @@ const ClientPortal = () => {
       </div>
 
       {showVitrine && showcaseImages.length > 0 && (
-        <Vitrine images={showcaseImages} onClose={() => setShowVitrine(false)} />
+        <div className="fixed inset-0 z-[60]">
+          <Vitrine images={showcaseImages} onClose={() => setShowVitrine(false)} />
+        </div>
       )}
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         <Tabs
           defaultValue="booking"
           className="space-y-6"
-          onValueChange={() => { if (showVitrine) setShowVitrine(false); }}
         >
           <TabsList className={`grid w-full ${establishment.show_catalog ? "grid-cols-3" : "grid-cols-2"}`}>
             <TabsTrigger value="booking">
