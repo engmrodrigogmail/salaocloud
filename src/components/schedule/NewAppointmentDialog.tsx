@@ -229,34 +229,86 @@ export function NewAppointmentDialog({
                 </div>
               ) : (
                 <>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Buscar por nome, telefone ou e-mail"
-                      className="pl-10"
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                    />
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Nome, telefone ou e-mail"
+                        className="pl-10"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleSearch();
+                          }
+                        }}
+                      />
+                    </div>
+                    <Button type="button" onClick={handleSearch} disabled={searching}>
+                      {searching ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Search className="h-4 w-4" />
+                      )}
+                    </Button>
                   </div>
-                  <div className="rounded-md border max-h-48 overflow-y-auto">
-                    {filteredClients.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">
-                        Nenhum cliente encontrado
-                      </p>
-                    ) : (
-                      filteredClients.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => setSelectedClient(c)}
-                          className="w-full text-left p-2 hover:bg-accent border-b last:border-b-0"
-                        >
-                          <p className="text-sm font-medium">{c.name}</p>
-                          <p className="text-xs text-muted-foreground">{c.phone}</p>
-                        </button>
-                      ))
-                    )}
-                  </div>
+
+                  {hasSearched && (
+                    <div className="rounded-md border max-h-64 overflow-y-auto">
+                      {localResults.length === 0 && networkResults.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-4">
+                          Nenhum cliente encontrado
+                        </p>
+                      ) : (
+                        <>
+                          {localResults.length > 0 && (
+                            <div className="px-2 py-1 text-xs font-semibold bg-muted/50">
+                              Neste salão
+                            </div>
+                          )}
+                          {localResults.map((c) => (
+                            <button
+                              key={`l-${c.id}`}
+                              type="button"
+                              onClick={() => setSelectedClient(c)}
+                              className="w-full text-left p-2 hover:bg-accent border-b last:border-b-0"
+                            >
+                              <p className="text-sm font-medium">{c.name}</p>
+                              <p className="text-xs text-muted-foreground">{c.phone}</p>
+                            </button>
+                          ))}
+                          {networkResults.length > 0 && (
+                            <div className="px-2 py-1 text-xs font-semibold bg-muted/50 flex items-center gap-1">
+                              <Globe className="h-3 w-3" /> Rede Salão Cloud
+                            </div>
+                          )}
+                          {networkResults.map((c: any) => (
+                            <button
+                              key={`n-${c.id}`}
+                              type="button"
+                              onClick={() => pickNetworkClient(c)}
+                              className="w-full text-left p-2 hover:bg-accent border-b last:border-b-0"
+                            >
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium truncate">{c.name}</p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {c.phone}
+                                    {c.establishments?.name ? ` • ${c.establishments.name}` : ""}
+                                  </p>
+                                </div>
+                                <Badge variant="outline" className="shrink-0 text-[10px]">
+                                  Importar
+                                </Badge>
+                              </div>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                    </div>
+                  )}
+
                   <Button
                     type="button"
                     variant="outline"
