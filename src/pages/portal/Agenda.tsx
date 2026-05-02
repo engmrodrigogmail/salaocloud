@@ -16,13 +16,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
   Calendar, Clock, ChevronLeft, ChevronRight, 
-  Check, X, Loader2, Search, Edit, Trash2, Ban, Receipt
+  Check, X, Loader2, Search, Edit, Trash2, Ban, Receipt, Plus
 } from "lucide-react";
 import { BlockScheduleDialog } from "@/components/schedule/BlockScheduleDialog";
 import { BlockedTimesList } from "@/components/schedule/BlockedTimesList";
 import { ConfirmedIndicator } from "@/components/schedule/ConfirmedIndicator";
 import { CancelledHistoryDialog } from "@/components/schedule/CancelledHistoryDialog";
 import { AgendaTimeSlots } from "@/components/schedule/AgendaTimeSlots";
+import { NewAppointmentDialog } from "@/components/schedule/NewAppointmentDialog";
 import { 
   format, addDays, addMonths, addYears, startOfWeek, endOfWeek, 
   eachDayOfInterval, isSameDay, parseISO, startOfDay, startOfMonth, 
