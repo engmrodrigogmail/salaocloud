@@ -103,6 +103,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
     { href: `/portal/${slug}/assistente-ia`, label: "Assistente IA", icon: Bot },
     { href: `/portal/${slug}/conversas-ia`, label: "Conversas IA", icon: MessageCircle },
     { href: `/portal/${slug}/aprendizados-ia`, label: "Aprendizados IA", icon: Brain },
+    ...(eduActive ? [{ href: `/portal/${slug}/edu`, label: "Consultor Edu", icon: Sparkles }] : []),
     { href: `/portal/${slug}/assinatura`, label: "Assinatura", icon: Crown },
     { href: `/portal/${slug}/auditoria`, label: "Auditoria", icon: ShieldCheck },
     { href: `/portal/${slug}/vitrine`, label: "Vitrine", icon: ImageIcon },
