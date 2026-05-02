@@ -188,27 +188,11 @@ export function Vitrine({ images, onClose }: VitrineProps) {
 
       {/* Zoom overlay */}
       {zoomed && (
-        <div
-          className="fixed inset-0 z-[80] bg-black/95 flex items-center justify-center p-4"
-          onClick={() => setZoomed(false)}
-          role="dialog"
-          aria-modal="true"
-        >
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); setZoomed(false); }}
-            aria-label="Fechar ampliação"
-            className="absolute top-3 right-3 h-10 w-10 rounded-full bg-black/60 border border-brand-copper/60 text-brand-gold hover:bg-black/80 flex items-center justify-center transition"
-          >
-            <X className="h-5 w-5" />
-          </button>
-          <img
-            src={current.image_url}
-            alt={current.caption || `Imagem ${index + 1} ampliada`}
-            className="max-h-full max-w-full object-contain cursor-zoom-out"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
+        <ZoomViewer
+          src={current.image_url}
+          alt={current.caption || `Imagem ${index + 1} ampliada`}
+          onClose={() => setZoomed(false)}
+        />
       )}
 
       {/* External link confirmation */}
