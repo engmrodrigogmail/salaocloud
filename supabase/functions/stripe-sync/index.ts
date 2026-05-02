@@ -323,6 +323,14 @@ serve(async (req) => {
         for (const stripePlanRaw of plans || []) {
           const stripePlan = stripePlanRaw as AnyRecord;
           const stripeId = String(stripePlan.id ?? "");
+          const planMeta = (stripePlan.metadata as AnyRecord | undefined) || {};
+
+          // Skip products that don't belong to salaocloud
+          if (planMeta.app !== "salaocloud") {
+            log(requestId, "Import: skipped (not salaocloud)", { stripeId, app: planMeta.app });
+            results.push({ stripe_id: stripeId, success: false, skipped: true, reason: "not_salaocloud" });
+            continue;
+          }
 
           try {
             const monthlyPrice = (stripePlan.prices as AnyRecord[] | undefined)?.find(
