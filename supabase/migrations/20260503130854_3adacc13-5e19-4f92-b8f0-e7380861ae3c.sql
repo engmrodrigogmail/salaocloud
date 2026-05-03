@@ -1,0 +1,1 @@
+ALTER VIEW public.vw_finance_consolidated SET (security_invoker = on);
