@@ -18,8 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Loader2, Search, UserPlus, Globe, Sparkles, ArrowLeft } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Calendar, Loader2, Search, UserPlus, Sparkles, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, setHours, setMinutes, addMinutes, parseISO, isBefore, isAfter, getDay, addDays, startOfDay } from "date-fns";
@@ -73,7 +72,6 @@ export function NewAppointmentDialog({
   onCreated,
 }: NewAppointmentDialogProps) {
   const [localResults, setLocalResults] = useState<Client[]>([]);
-  const [networkResults, setNetworkResults] = useState<Client[]>([]);
   const [search, setSearch] = useState("");
   const [searching, setSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
@@ -98,7 +96,7 @@ export function NewAppointmentDialog({
   const reset = () => {
     setSearch("");
     setLocalResults([]);
-    setNetworkResults([]);
+    
     setHasSearched(false);
     setSelectedClient(null);
     setServiceId("");
@@ -330,44 +328,11 @@ export function NewAppointmentDialog({
       });
       if (error) throw error;
       setLocalResults((data?.local || []) as Client[]);
-      setNetworkResults((data?.network || []) as Client[]);
     } catch (err: any) {
       console.error(err);
       toast.error("Erro ao buscar cliente", { position: "top-center", duration: 2000 });
     } finally {
       setSearching(false);
-    }
-  };
-
-  const pickNetworkClient = async (c: any) => {
-    try {
-      const { data: existing } = await supabase
-        .from("clients")
-        .select("id, name, phone, email")
-        .eq("establishment_id", establishmentId)
-        .or(`email.eq.${(c.email || "").toLowerCase()},phone.eq.${c.phone}`)
-        .maybeSingle();
-      if (existing) {
-        setSelectedClient(existing as Client);
-        return;
-      }
-      const { data: created, error } = await supabase
-        .from("clients")
-        .insert({
-          establishment_id: establishmentId,
-          name: c.name,
-          phone: c.phone,
-          email: c.email,
-          global_identity_email: (c.email || "").toLowerCase() || null,
-        })
-        .select("id, name, phone, email")
-        .single();
-      if (error) throw error;
-      toast.success("Cliente vinculado ao salão", { position: "top-center", duration: 2000 });
-      setSelectedClient(created as Client);
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err?.message || "Erro ao vincular cliente", { position: "top-center", duration: 2500 });
     }
   };
 
@@ -528,13 +493,13 @@ export function NewAppointmentDialog({
 
                     {hasSearched && (
                       <div className="rounded-md border max-h-64 overflow-y-auto">
-                        {localResults.length === 0 && networkResults.length === 0 ? (
-                          <p className="text-sm text-muted-foreground text-center py-4">Nenhum cliente encontrado</p>
+                        {localResults.length === 0 ? (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            Nenhum cliente encontrado neste salão
+                          </p>
                         ) : (
                           <>
-                            {localResults.length > 0 && (
-                              <div className="px-2 py-1 text-xs font-semibold bg-muted/50">Neste salão</div>
-                            )}
+                            <div className="px-2 py-1 text-xs font-semibold bg-muted/50">Neste salão</div>
                             {localResults.map((c) => (
                               <button
                                 key={`l-${c.id}`}
@@ -544,32 +509,6 @@ export function NewAppointmentDialog({
                               >
                                 <p className="text-sm font-medium">{c.name}</p>
                                 <p className="text-xs text-muted-foreground">{c.phone}</p>
-                              </button>
-                            ))}
-                            {networkResults.length > 0 && (
-                              <div className="px-2 py-1 text-xs font-semibold bg-muted/50 flex items-center gap-1">
-                                <Globe className="h-3 w-3" /> Rede Salão Cloud
-                              </div>
-                            )}
-                            {networkResults.map((c: any) => (
-                              <button
-                                key={`n-${c.id}`}
-                                type="button"
-                                onClick={() => pickNetworkClient(c)}
-                                className="w-full text-left p-2 hover:bg-accent border-b last:border-b-0"
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-medium truncate">{c.name}</p>
-                                    <p className="text-xs text-muted-foreground truncate">
-                                      {c.phone}
-                                      {c.establishments?.name ? ` • ${c.establishments.name}` : ""}
-                                    </p>
-                                  </div>
-                                  <Badge variant="outline" className="shrink-0 text-[10px]">
-                                    Importar
-                                  </Badge>
-                                </div>
                               </button>
                             ))}
                           </>
