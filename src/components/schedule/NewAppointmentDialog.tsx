@@ -96,7 +96,7 @@ export function NewAppointmentDialog({
   const reset = () => {
     setSearch("");
     setLocalResults([]);
-    setNetworkResults([]);
+    
     setHasSearched(false);
     setSelectedClient(null);
     setServiceId("");
