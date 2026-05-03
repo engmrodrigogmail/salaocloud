@@ -72,7 +72,6 @@ export function NewAppointmentDialog({
   onCreated,
 }: NewAppointmentDialogProps) {
   const [localResults, setLocalResults] = useState<Client[]>([]);
-  const [networkResults, setNetworkResults] = useState<Client[]>([]);
   const [search, setSearch] = useState("");
   const [searching, setSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
