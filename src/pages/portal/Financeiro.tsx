@@ -230,12 +230,12 @@ function FinanceContent({
       </Alert>
 
       <Tabs defaultValue="dre">
-        <TabsList className="grid grid-cols-5 w-full max-w-2xl">
-          <TabsTrigger value="dre">Resumo</TabsTrigger>
-          <TabsTrigger value="revenue">Receitas</TabsTrigger>
-          <TabsTrigger value="expense">Despesas</TabsTrigger>
-          <TabsTrigger value="recurring">Recorrentes</TabsTrigger>
-          <TabsTrigger value="categories">Categorias</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto overflow-y-hidden justify-start sm:grid sm:grid-cols-5 sm:max-w-2xl">
+          <TabsTrigger value="dre" className="whitespace-nowrap">Resumo</TabsTrigger>
+          <TabsTrigger value="revenue" className="whitespace-nowrap">Receitas</TabsTrigger>
+          <TabsTrigger value="expense" className="whitespace-nowrap">Despesas</TabsTrigger>
+          <TabsTrigger value="recurring" className="whitespace-nowrap">Recorrentes</TabsTrigger>
+          <TabsTrigger value="categories" className="whitespace-nowrap">Categorias</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dre" className="space-y-4">
@@ -355,6 +355,26 @@ function DreTab({
     .sort((a, b) => Number(b.amount) - Number(a.amount))
     .slice(0, 5);
 
+  const expenseByPayment = useMemo(() => {
+    const acc: Record<string, number> = {};
+    for (const r of consolidated) {
+      if (r.type !== "expense" || r.status !== "paid") continue;
+      const key = r.payment_method?.trim() || "Não informado";
+      acc[key] = (acc[key] ?? 0) + Number(r.amount);
+    }
+    return Object.entries(acc).sort((a, b) => b[1] - a[1]);
+  }, [consolidated]);
+
+  const revenueByPayment = useMemo(() => {
+    const acc: Record<string, number> = {};
+    for (const r of consolidated) {
+      if (r.type !== "revenue" || r.status !== "paid") continue;
+      const key = r.payment_method?.trim() || "Não informado";
+      acc[key] = (acc[key] ?? 0) + Number(r.amount);
+    }
+    return Object.entries(acc).sort((a, b) => b[1] - a[1]);
+  }, [consolidated]);
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
@@ -427,23 +447,37 @@ function DreTab({
 
         <Card>
           <CardHeader><CardTitle className="text-base">Por forma de pagamento</CardTitle></CardHeader>
-          <CardContent>
-            {Object.keys(totals.byPayment).length === 0 ? (
-              <p className="text-sm text-muted-foreground">Sem registros</p>
-            ) : (
-              <table className="w-full text-sm">
-                <thead><tr className="text-left text-muted-foreground"><th>Método</th><th className="text-right">Receitas</th><th className="text-right">Despesas</th></tr></thead>
-                <tbody>
-                  {Object.entries(totals.byPayment).map(([k, v]) => (
-                    <tr key={k} className="border-t">
-                      <td className="py-1">{k}</td>
-                      <td className="text-right">{fmtMoney(v.rev)}</td>
-                      <td className="text-right">{fmtMoney(v.exp)}</td>
-                    </tr>
+          <CardContent className="space-y-4">
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground mb-1">Entradas</p>
+              {revenueByPayment.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Sem registros</p>
+              ) : (
+                <ul className="text-sm divide-y">
+                  {revenueByPayment.map(([k, v]) => (
+                    <li key={k} className="flex justify-between py-1">
+                      <span>{k}</span>
+                      <span className="font-medium">{fmtMoney(v)}</span>
+                    </li>
                   ))}
-                </tbody>
-              </table>
-            )}
+                </ul>
+              )}
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground mb-1">Saídas</p>
+              {expenseByPayment.length === 0 ? (
+                <p className="text-sm text-muted-foreground">Sem registros</p>
+              ) : (
+                <ul className="text-sm divide-y">
+                  {expenseByPayment.map(([k, v]) => (
+                    <li key={k} className="flex justify-between py-1">
+                      <span>{k}</span>
+                      <span className="font-medium">{fmtMoney(v)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
