@@ -221,6 +221,7 @@ const App = () => (
               <Route path="/portal/:slug/cupons" element={<PortalCoupons />} />
               <Route path="/portal/:slug/configuracoes" element={<PortalSettings />} />
               <Route path="/portal/:slug/comissoes" element={<PortalCommissions />} />
+              <Route path="/portal/:slug/financeiro" element={<PortalFinanceiro />} />
              <Route path="/portal/:slug/assinatura" element={<PortalSubscription />} />
              <Route path="/portal/:slug/auditoria" element={<PortalAuditOverrides />} />
              <Route path="/portal/:slug/vitrine" element={<PortalShowcase />} />
