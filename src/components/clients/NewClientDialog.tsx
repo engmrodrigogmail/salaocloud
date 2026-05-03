@@ -60,47 +60,39 @@ export function NewClientDialog({
       toast.error("Telefone inválido (DDD + número)", { position: "top-center", duration: 2000 });
       return;
     }
-    if (!trimmedEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+    if (trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       toast.error("E-mail inválido", { position: "top-center", duration: 2000 });
       return;
     }
 
     setSaving(true);
     try {
-      // Check duplicates within this establishment (email or phone)
-      const { data: existing } = await supabase
-        .from("clients")
-        .select("id, name")
-        .eq("establishment_id", establishmentId)
-        .or(`email.eq.${trimmedEmail},phone.eq.${formatPhoneBR(phone)}`)
-        .limit(1);
+      const { data, error } = await supabase.functions.invoke("client-create-balcao", {
+        body: {
+          establishment_id: establishmentId,
+          name: trimmedName,
+          phone,
+          email: trimmedEmail || null,
+        },
+      });
 
-      if (existing && existing.length > 0) {
-        toast.error(`Já existe um cliente cadastrado (${existing[0].name})`, {
+      if (error) throw error;
+      if ((data as any)?.error === "already_in_salon") {
+        const c = (data as any).client;
+        toast.error(`Já existe um cliente cadastrado (${c?.name || ""})`, {
           position: "top-center",
           duration: 3000,
         });
-        setSaving(false);
         return;
       }
-
-      const { data: created, error } = await supabase
-        .from("clients")
-        .insert({
-          establishment_id: establishmentId,
-          name: trimmedName,
-          phone: formatPhoneBR(phone),
-          email: trimmedEmail,
-        })
-        .select("id, name, phone, email")
-        .single();
-
-      if (error) throw error;
+      if ((data as any)?.error) {
+        throw new Error((data as any).error);
+      }
 
       toast.success("Cliente cadastrado!", { position: "top-center", duration: 2000 });
       reset();
       onOpenChange(false);
-      onCreated?.(created as any);
+      onCreated?.((data as any).client);
     } catch (err: any) {
       console.error(err);
       toast.error(err?.message || "Erro ao cadastrar cliente", {
@@ -128,7 +120,7 @@ export function NewClientDialog({
             <UserPlus className="h-5 w-5" /> Novo cliente (modo balcão)
           </DialogTitle>
           <DialogDescription>
-            Cadastro rápido. O cliente poderá completar CPF, senha e termos no primeiro
+            Cadastro rápido. O cliente poderá completar dados e criar senha no primeiro
             acesso ao portal.
           </DialogDescription>
         </DialogHeader>
@@ -155,7 +147,7 @@ export function NewClientDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="new-client-email">E-mail *</Label>
+            <Label htmlFor="new-client-email">E-mail (opcional)</Label>
             <Input
               id="new-client-email"
               type="email"
@@ -163,10 +155,9 @@ export function NewClientDialog({
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="cliente@exemplo.com"
-              required
             />
             <p className="text-xs text-muted-foreground">
-              Necessário para que o cliente acesse o portal e complete o cadastro.
+              Recomendado para que o cliente acesse o portal e o histórico futuramente.
             </p>
           </div>
           <DialogFooter>
