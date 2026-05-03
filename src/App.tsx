@@ -45,6 +45,7 @@ import PortalPromotions from "./pages/portal/Promotions";
 import PortalCoupons from "./pages/portal/Coupons";
 import PortalSettings from "./pages/portal/Settings";
 import PortalCommissions from "./pages/portal/Commissions";
+import PortalFinanceiro from "./pages/portal/Financeiro";
 import PortalSubscription from "./pages/portal/Subscription";
 import PortalAuditOverrides from "./pages/portal/AuditOverrides";
 import PortalShowcase from "./pages/portal/Showcase";
