@@ -89,28 +89,58 @@ export function PortalLayout({ children }: PortalLayoutProps) {
     }
   };
 
-  const navItems = [
-    { href: `/portal/${slug}`, label: "Dashboard", icon: LayoutDashboard },
-    { href: `/portal/${slug}/agenda`, label: "Agenda", icon: Calendar },
-    { href: `/portal/${slug}/profissionais`, label: "Profissionais", icon: Users },
-    { href: `/portal/${slug}/servicos`, label: "Serviços", icon: Scissors },
-    { href: `/portal/${slug}/produtos`, label: "Produtos", icon: Package },
-    { href: `/portal/${slug}/clientes`, label: "Clientes", icon: UserCircle },
-    { href: `/portal/${slug}/categorias`, label: "Categorias", icon: FolderKanban },
-    { href: `/portal/${slug}/fidelidade`, label: "Fidelidade", icon: Star },
-    { href: `/portal/${slug}/promocoes`, label: "Promoções", icon: Gift },
-    { href: `/portal/${slug}/comissoes`, label: "Comissões", icon: DollarSign },
-    { href: `/portal/${slug}/financeiro`, label: "Financeiro", icon: TrendingUp },
-    { href: `/portal/${slug}/cupons`, label: "Cupons", icon: Tag },
-    { href: `/portal/${slug}/assistente-ia`, label: "Assistente IA", icon: Bot },
-    { href: `/portal/${slug}/conversas-ia`, label: "Conversas IA", icon: MessageCircle },
-    { href: `/portal/${slug}/aprendizados-ia`, label: "Aprendizados IA", icon: Brain },
-    ...(eduActive ? [{ href: `/portal/${slug}/edu`, label: "Consultor Edu", icon: Sparkles }] : []),
-    { href: `/portal/${slug}/assinatura`, label: "Assinatura", icon: Crown },
-    { href: `/portal/${slug}/auditoria`, label: "Auditoria", icon: ShieldCheck },
-    { href: `/portal/${slug}/vitrine`, label: "Vitrine", icon: ImageIcon },
-    { href: `/portal/${slug}/comunicacao`, label: "Comunicação", icon: MessageSquare },
-    { href: `/portal/${slug}/configuracoes`, label: "Configurações", icon: Settings },
+  const navGroups: { label: string; items: { href: string; label: string; icon: typeof LayoutDashboard }[] }[] = [
+    {
+      label: "Principal",
+      items: [
+        { href: `/portal/${slug}`, label: "Dashboard", icon: LayoutDashboard },
+        { href: `/portal/${slug}/agenda`, label: "Agenda", icon: Calendar },
+      ],
+    },
+    {
+      label: "Operação",
+      items: [
+        { href: `/portal/${slug}/clientes`, label: "Clientes", icon: UserCircle },
+        { href: `/portal/${slug}/profissionais`, label: "Profissionais", icon: Users },
+        { href: `/portal/${slug}/servicos`, label: "Serviços", icon: Scissors },
+        { href: `/portal/${slug}/produtos`, label: "Produtos", icon: Package },
+        { href: `/portal/${slug}/categorias`, label: "Categorias", icon: FolderKanban },
+      ],
+    },
+    {
+      label: "Gestão & Financeiro",
+      items: [
+        { href: `/portal/${slug}/financeiro`, label: "Financeiro", icon: TrendingUp },
+        { href: `/portal/${slug}/comissoes`, label: "Comissões", icon: DollarSign },
+        { href: `/portal/${slug}/assinatura`, label: "Assinatura", icon: Crown },
+      ],
+    },
+    {
+      label: "Marketing & Retenção",
+      items: [
+        { href: `/portal/${slug}/promocoes`, label: "Promoções", icon: Gift },
+        { href: `/portal/${slug}/cupons`, label: "Cupons", icon: Tag },
+        { href: `/portal/${slug}/fidelidade`, label: "Fidelidade", icon: Star },
+        { href: `/portal/${slug}/vitrine`, label: "Vitrine", icon: ImageIcon },
+        { href: `/portal/${slug}/comunicacao`, label: "Comunicação", icon: MessageSquare },
+      ],
+    },
+    {
+      label: "Inteligência & IA",
+      items: [
+        { href: `/portal/${slug}/assistente-ia`, label: "Assistente IA", icon: Bot },
+        { href: `/portal/${slug}/conversas-ia`, label: "Conversas IA", icon: MessageCircle },
+        { href: `/portal/${slug}/aprendizados-ia`, label: "Aprendizados IA", icon: Brain },
+        ...(eduActive ? [{ href: `/portal/${slug}/edu`, label: "Consultor Edu", icon: Sparkles }] : []),
+      ],
+    },
+    {
+      label: "Administração",
+      items: [
+        { href: `/portal/${slug}/auditoria`, label: "Auditoria", icon: ShieldCheck },
+        { href: `/portal/${slug}/configuracoes`, label: "Configurações", icon: Settings },
+      ],
+    },
   ];
 
   const handleSignOut = async () => {
