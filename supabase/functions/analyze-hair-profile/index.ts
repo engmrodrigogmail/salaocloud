@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 const SYSTEM_PROMPT = `Você é o Edu, um especialista em tricologia e análise capilar avançada.
-Analise as 3 fotos fornecidas (comprimento, pontas e raiz) e o contexto histórico do salão.
+Analise as 3 fotos fornecidas (comprimento, pontas e raiz), o contexto histórico do salão e, quando houver, a auto-percepção da cliente e o resultado esperado por ela.
 Retorne APENAS um JSON válido com a seguinte estrutura, sem markdown ou texto adicional:
 {
   "hair_type": "ex: 3B",
@@ -16,13 +16,16 @@ Retorne APENAS um JSON válido com a seguinte estrutura, sem markdown ou texto a
   "damage_level": "leve|moderado|severo",
   "identified_issues": ["ex: quebra química", "ex: ressecamento"],
   "confidence_score": 85.5,
-  "technical_explanation": "Explicação técnica curta"
+  "technical_explanation": "Explicação técnica curta",
+  "edu_personal_response": "Seção 'Edu e você': resposta empática e personalizada (3 a 6 frases) conectando o que a cliente relatou (estado atual + resultado esperado) com o diagnóstico técnico, com orientações práticas. Se a cliente não respondeu, retorne string vazia."
 }`;
 
 interface AnalyzeBody {
   client_id: string;
   establishment_id: string;
   photo_paths: string[]; // [comprimento, pontas, raiz] em temp-analysis
+  client_self_assessment?: string | null;
+  client_expected_result?: string | null;
 }
 
 serve(async (req) => {
@@ -90,9 +93,14 @@ serve(async (req) => {
         .limit(3),
     ]);
 
+    const selfAssessment = (body.client_self_assessment || "").toString().slice(0, 2000).trim();
+    const expectedResult = (body.client_expected_result || "").toString().slice(0, 2000).trim();
+
     const contextText = `Contexto do salão (padrões agregados): ${JSON.stringify(patterns || {})}.
 Histórico recente da cliente: ${JSON.stringify(history || [])}.
-Foram enviadas ${images.length} foto(s): comprimento, pontas e/ou raiz.`;
+Foram enviadas ${images.length} foto(s): comprimento, pontas e/ou raiz.
+Auto-percepção da cliente sobre o cabelo (estado atual): ${selfAssessment || "(não respondido)"}.
+Principal resultado esperado pela cliente: ${expectedResult || "(não respondido)"}.`;
 
     // Chamada Claude (Anthropic) — modelo claude-3-5-sonnet com vision
     const anthropicReq = {
@@ -164,6 +172,9 @@ Foram enviadas ${images.length} foto(s): comprimento, pontas e/ou raiz.`;
         identified_issues: parsed.identified_issues ?? [],
         technical_explanation: parsed.technical_explanation ?? null,
         confidence_score: typeof parsed.confidence_score === "number" ? parsed.confidence_score : null,
+        client_self_assessment: selfAssessment || null,
+        client_expected_result: expectedResult || null,
+        edu_personal_response: typeof parsed.edu_personal_response === "string" ? parsed.edu_personal_response : null,
       })
       .select()
       .single();

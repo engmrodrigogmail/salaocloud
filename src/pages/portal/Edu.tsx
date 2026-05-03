@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useParams } from "react-router-dom";
 import { PortalLayout } from "@/components/layouts/PortalLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,13 +9,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Sparkles, Upload, CheckCircle2, Pencil, Loader2, Camera } from "lucide-react";
+import { Sparkles, Upload, CheckCircle2, Pencil, Loader2, Camera, Image as ImageIcon, UserPlus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEduAccess } from "@/hooks/useEduAccess";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { NewClientDialog } from "@/components/clients/NewClientDialog";
+import eduSignature from "@/assets/edu-signature.png";
 
 interface Client {
   id: string;
@@ -36,14 +38,17 @@ interface Profile {
   photos_purged: boolean;
   created_at: string;
   validated_at: string | null;
+  client_self_assessment: string | null;
+  client_expected_result: string | null;
+  edu_personal_response: string | null;
   client?: { name: string } | null;
 }
 
 const PHOTO_LABELS = ["Comprimento", "Pontas", "Raiz"];
+const MAX_CHARS = 2000;
 
 export default function PortalEdu() {
   const { slug } = useParams<{ slug: string }>();
-  const navigate = useNavigate();
   const { user } = useAuth();
   const [estId, setEstId] = useState<string | null>(null);
   const { isActive, loading: accessLoading } = useEduAccess(estId);
@@ -53,9 +58,18 @@ export default function PortalEdu() {
   const [loading, setLoading] = useState(true);
 
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedClientId, setSelectedClientId] = useState("");
+  const [clientSearch, setClientSearch] = useState("");
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [showClientList, setShowClientList] = useState(false);
+  const [newClientOpen, setNewClientOpen] = useState(false);
+
   const [photos, setPhotos] = useState<(File | null)[]>([null, null, null]);
+  const [selfAssessment, setSelfAssessment] = useState("");
+  const [expectedResult, setExpectedResult] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
+
+  const galleryRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const cameraRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [reviewProfile, setReviewProfile] = useState<Profile | null>(null);
   const [correction, setCorrection] = useState("");
@@ -90,6 +104,12 @@ export default function PortalEdu() {
     setLoading(false);
   };
 
+  const filteredClients = useMemo(() => {
+    const q = clientSearch.trim().toLowerCase();
+    if (!q) return clients.slice(0, 8);
+    return clients.filter((c) => c.name.toLowerCase().includes(q)).slice(0, 8);
+  }, [clients, clientSearch]);
+
   const pending = useMemo(() => profiles.filter((p) => !p.is_validated), [profiles]);
   const history = useMemo(() => profiles.filter((p) => p.is_validated), [profiles]);
 
@@ -99,14 +119,22 @@ export default function PortalEdu() {
     setPhotos(next);
   };
 
+  const resetForm = () => {
+    setSelectedClient(null);
+    setClientSearch("");
+    setPhotos([null, null, null]);
+    setSelfAssessment("");
+    setExpectedResult("");
+  };
+
   const submitAnalysis = async () => {
-    if (!estId || !selectedClientId) {
-      toast.error("Selecione um cliente");
+    if (!estId || !selectedClient) {
+      toast.error("Selecione um cliente", { position: "top-center", duration: 2000 });
       return;
     }
     const valid = photos.filter(Boolean) as File[];
     if (valid.length === 0) {
-      toast.error("Envie ao menos 1 foto");
+      toast.error("Envie ao menos 1 foto", { position: "top-center", duration: 2000 });
       return;
     }
     setAnalyzing(true);
@@ -115,8 +143,8 @@ export default function PortalEdu() {
       for (let i = 0; i < photos.length; i++) {
         const f = photos[i];
         if (!f) continue;
-        const ext = f.name.split(".").pop() || "jpg";
-        const path = `${estId}/${selectedClientId}/${Date.now()}-${i}.${ext}`;
+        const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
+        const path = `${estId}/${selectedClient.id}/${Date.now()}-${i}.${ext}`;
         const { error: upErr } = await supabase.storage.from("temp-analysis").upload(path, f, {
           contentType: f.type || "image/jpeg",
         });
@@ -125,19 +153,24 @@ export default function PortalEdu() {
       }
 
       const { data, error } = await supabase.functions.invoke("analyze-hair-profile", {
-        body: { client_id: selectedClientId, establishment_id: estId, photo_paths: photoPaths },
+        body: {
+          client_id: selectedClient.id,
+          establishment_id: estId,
+          photo_paths: photoPaths,
+          client_self_assessment: selfAssessment.slice(0, MAX_CHARS),
+          client_expected_result: expectedResult.slice(0, MAX_CHARS),
+        },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
 
-      toast.success("Análise concluída! Revise e valide o diagnóstico.");
+      toast.success("Análise concluída! Revise e valide o diagnóstico.", { position: "top-center", duration: 2000 });
       setDialogOpen(false);
-      setSelectedClientId("");
-      setPhotos([null, null, null]);
+      resetForm();
       loadData();
     } catch (e: any) {
       console.error(e);
-      toast.error("Erro ao analisar: " + (e.message || "desconhecido"));
+      toast.error("Erro ao analisar: " + (e.message || "desconhecido"), { position: "top-center", duration: 2500 });
     } finally {
       setAnalyzing(false);
     }
@@ -158,7 +191,7 @@ export default function PortalEdu() {
       toast.error("Erro: " + error.message);
       return;
     }
-    toast.success("Diagnóstico aprovado");
+    toast.success("Diagnóstico aprovado", { position: "top-center", duration: 2000 });
     setReviewProfile(null);
     loadData();
   };
@@ -166,7 +199,7 @@ export default function PortalEdu() {
   const correct = async () => {
     if (!reviewProfile) return;
     if (!correction.trim()) {
-      toast.error("Digite a correção");
+      toast.error("Digite a correção", { position: "top-center", duration: 2000 });
       return;
     }
     setSavingReview(true);
@@ -184,7 +217,7 @@ export default function PortalEdu() {
       toast.error("Erro: " + error.message);
       return;
     }
-    toast.success("Correção registrada — alimentando o aprendizado.");
+    toast.success("Correção registrada — alimentando o aprendizado.", { position: "top-center", duration: 2000 });
     setReviewProfile(null);
     setCorrection("");
     loadData();
@@ -234,9 +267,7 @@ export default function PortalEdu() {
 
         <Tabs defaultValue="pending">
           <TabsList>
-            <TabsTrigger value="pending">
-              Validação ({pending.length})
-            </TabsTrigger>
+            <TabsTrigger value="pending">Validação ({pending.length})</TabsTrigger>
             <TabsTrigger value="history">Histórico ({history.length})</TabsTrigger>
           </TabsList>
 
@@ -295,47 +326,185 @@ export default function PortalEdu() {
       </div>
 
       {/* Modal: Nova análise */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(o) => {
+          if (!analyzing) {
+            setDialogOpen(o);
+            if (!o) resetForm();
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-lg">
           <DialogHeader>
             <DialogTitle>Nova análise capilar</DialogTitle>
-            <DialogDescription>Selecione a cliente e envie até 3 fotos.</DialogDescription>
+            <DialogDescription>
+              Busque a cliente, envie até 3 fotos e capture a percepção dela.
+            </DialogDescription>
           </DialogHeader>
+
           <div className="space-y-4">
-            <div>
-              <Label>Cliente</Label>
-              <select
-                className="w-full mt-1 border rounded-md p-2 bg-background"
-                value={selectedClientId}
-                onChange={(e) => setSelectedClientId(e.target.value)}
-              >
-                <option value="">Selecione...</option>
-                {clients.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+            {/* Busca de cliente com autocomplete */}
+            <div className="relative">
+              <div className="flex items-center justify-between">
+                <Label>Cliente</Label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs gap-1"
+                  onClick={() => setNewClientOpen(true)}
+                >
+                  <UserPlus className="h-3.5 w-3.5" /> Cadastrar balcão
+                </Button>
+              </div>
+              {selectedClient ? (
+                <div className="flex items-center justify-between mt-1 border rounded-md px-3 py-2 bg-muted/40">
+                  <span className="font-medium text-sm">{selectedClient.name}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => {
+                      setSelectedClient(null);
+                      setClientSearch("");
+                    }}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Input
+                    value={clientSearch}
+                    onChange={(e) => {
+                      setClientSearch(e.target.value);
+                      setShowClientList(true);
+                    }}
+                    onFocus={() => setShowClientList(true)}
+                    onBlur={() => setTimeout(() => setShowClientList(false), 150)}
+                    placeholder="Digite para buscar..."
+                    className="mt-1"
+                  />
+                  {showClientList && filteredClients.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-full bg-popover border rounded-md shadow-md max-h-56 overflow-y-auto">
+                      {filteredClients.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-muted"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => {
+                            setSelectedClient(c);
+                            setClientSearch(c.name);
+                            setShowClientList(false);
+                          }}
+                        >
+                          {c.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {showClientList && clientSearch && filteredClients.length === 0 && (
+                    <div className="absolute z-50 mt-1 w-full bg-popover border rounded-md shadow-md p-3 text-sm text-muted-foreground">
+                      Nenhuma cliente encontrada. Use "Cadastrar balcão" acima.
+                    </div>
+                  )}
+                </>
+              )}
             </div>
+
+            {/* Fotos: galeria ou câmera */}
             <div className="grid gap-3">
               {PHOTO_LABELS.map((label, i) => (
-                <div key={i}>
+                <div key={i} className="space-y-1">
                   <Label>{label}</Label>
-                  <Input
+                  <input
+                    ref={(el) => (galleryRefs.current[i] = el)}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => handlePhoto(i, e.target.files?.[0] ?? null)}
+                  />
+                  <input
+                    ref={(el) => (cameraRefs.current[i] = el)}
                     type="file"
                     accept="image/*"
                     capture="environment"
+                    className="hidden"
                     onChange={(e) => handlePhoto(i, e.target.files?.[0] ?? null)}
-                    className="mt-1"
                   />
-                  {photos[i] && <p className="text-xs text-muted-foreground mt-1">✓ {photos[i]!.name}</p>}
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-2"
+                      onClick={() => galleryRefs.current[i]?.click()}
+                    >
+                      <ImageIcon className="h-4 w-4" /> Galeria
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-2"
+                      onClick={() => cameraRefs.current[i]?.click()}
+                    >
+                      <Camera className="h-4 w-4" /> Câmera
+                    </Button>
+                  </div>
+                  {photos[i] && (
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span className="truncate">✓ {photos[i]!.name}</span>
+                      <button
+                        type="button"
+                        className="text-destructive hover:underline"
+                        onClick={() => handlePhoto(i, null)}
+                      >
+                        Remover
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
+
+            {/* Auto-percepção da cliente */}
+            <div className="space-y-1">
+              <Label htmlFor="self-assess">Comente rapidamente sobre o estado atual do seu cabelo</Label>
+              <Textarea
+                id="self-assess"
+                value={selfAssessment}
+                onChange={(e) => setSelfAssessment(e.target.value.slice(0, MAX_CHARS))}
+                rows={3}
+                placeholder="Ex.: Cabelo ressecado nas pontas, com frizz após a química..."
+              />
+              <div className="text-right text-xs text-muted-foreground">
+                {selfAssessment.length} de {MAX_CHARS}
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="expected-result">Qual o principal resultado esperado para seu cabelo?</Label>
+              <Textarea
+                id="expected-result"
+                value={expectedResult}
+                onChange={(e) => setExpectedResult(e.target.value.slice(0, MAX_CHARS))}
+                rows={3}
+                placeholder="Ex.: Recuperar o brilho e reduzir o volume, mantendo cachos definidos..."
+              />
+              <div className="text-right text-xs text-muted-foreground">
+                {expectedResult.length} de {MAX_CHARS}
+              </div>
+            </div>
+
             <p className="text-xs text-muted-foreground">
               As fotos são apagadas após validação ou em até 48h (LGPD). Apenas o diagnóstico em texto é mantido.
             </p>
           </div>
+
           <DialogFooter>
             <Button variant="ghost" onClick={() => setDialogOpen(false)} disabled={analyzing}>
               Cancelar
@@ -347,6 +516,23 @@ export default function PortalEdu() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Cadastro rápido de cliente balcão */}
+      {estId && (
+        <NewClientDialog
+          open={newClientOpen}
+          onOpenChange={setNewClientOpen}
+          establishmentId={estId}
+          onCreated={(c) => {
+            if (c) {
+              const created: Client = { id: c.id, name: c.name };
+              setClients((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+              setSelectedClient(created);
+              setClientSearch(created.name);
+            }
+          }}
+        />
+      )}
 
       {/* Modal: Revisão */}
       <Dialog open={!!reviewProfile} onOpenChange={(o) => !o && setReviewProfile(null)}>
@@ -396,9 +582,45 @@ export default function PortalEdu() {
               {reviewProfile.technical_explanation && (
                 <div>
                   <div className="text-sm font-semibold mb-1">Explicação técnica</div>
-                  <p className="text-sm text-muted-foreground">{reviewProfile.technical_explanation}</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">{reviewProfile.technical_explanation}</p>
                 </div>
               )}
+
+              {(reviewProfile.client_self_assessment || reviewProfile.client_expected_result) && (
+                <div className="border rounded-md p-3 bg-muted/30 space-y-2">
+                  <div className="text-sm font-semibold">Relato da cliente</div>
+                  {reviewProfile.client_self_assessment && (
+                    <div>
+                      <div className="text-xs text-muted-foreground">Estado atual</div>
+                      <p className="text-sm whitespace-pre-line">{reviewProfile.client_self_assessment}</p>
+                    </div>
+                  )}
+                  {reviewProfile.client_expected_result && (
+                    <div>
+                      <div className="text-xs text-muted-foreground">Resultado esperado</div>
+                      <p className="text-sm whitespace-pre-line">{reviewProfile.client_expected_result}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {reviewProfile.edu_personal_response && (
+                <div className="border rounded-md p-4 bg-primary/5 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-primary" />
+                    <span className="font-semibold">Edu e você</span>
+                  </div>
+                  <p className="text-sm whitespace-pre-line">{reviewProfile.edu_personal_response}</p>
+                  <div className="pt-2 flex justify-end">
+                    <img
+                      src={eduSignature}
+                      alt="Assinatura de Edu Valentim"
+                      className="h-12 object-contain opacity-90 dark:invert dark:opacity-80"
+                    />
+                  </div>
+                </div>
+              )}
+
               {reviewProfile.professional_correction && (
                 <div>
                   <div className="text-sm font-semibold mb-1">Correção do profissional</div>

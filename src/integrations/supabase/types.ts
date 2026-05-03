@@ -819,10 +819,13 @@ export type Database = {
       client_hair_profiles: {
         Row: {
           ai_diagnosis: Json | null
+          client_expected_result: string | null
           client_id: string
+          client_self_assessment: string | null
           confidence_score: number | null
           created_at: string
           damage_level: string | null
+          edu_personal_response: string | null
           establishment_id: string
           hair_type: string | null
           id: string
@@ -840,10 +843,13 @@ export type Database = {
         }
         Insert: {
           ai_diagnosis?: Json | null
+          client_expected_result?: string | null
           client_id: string
+          client_self_assessment?: string | null
           confidence_score?: number | null
           created_at?: string
           damage_level?: string | null
+          edu_personal_response?: string | null
           establishment_id: string
           hair_type?: string | null
           id?: string
@@ -861,10 +867,13 @@ export type Database = {
         }
         Update: {
           ai_diagnosis?: Json | null
+          client_expected_result?: string | null
           client_id?: string
+          client_self_assessment?: string | null
           confidence_score?: number | null
           created_at?: string
           damage_level?: string | null
+          edu_personal_response?: string | null
           establishment_id?: string
           hair_type?: string | null
           id?: string
