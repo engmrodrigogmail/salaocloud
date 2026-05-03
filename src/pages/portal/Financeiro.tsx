@@ -230,12 +230,12 @@ function FinanceContent({
       </Alert>
 
       <Tabs defaultValue="dre">
-        <TabsList className="grid grid-cols-5 w-full max-w-2xl">
-          <TabsTrigger value="dre">Resumo</TabsTrigger>
-          <TabsTrigger value="revenue">Receitas</TabsTrigger>
-          <TabsTrigger value="expense">Despesas</TabsTrigger>
-          <TabsTrigger value="recurring">Recorrentes</TabsTrigger>
-          <TabsTrigger value="categories">Categorias</TabsTrigger>
+        <TabsList className="flex w-full overflow-x-auto overflow-y-hidden justify-start sm:grid sm:grid-cols-5 sm:max-w-2xl">
+          <TabsTrigger value="dre" className="whitespace-nowrap">Resumo</TabsTrigger>
+          <TabsTrigger value="revenue" className="whitespace-nowrap">Receitas</TabsTrigger>
+          <TabsTrigger value="expense" className="whitespace-nowrap">Despesas</TabsTrigger>
+          <TabsTrigger value="recurring" className="whitespace-nowrap">Recorrentes</TabsTrigger>
+          <TabsTrigger value="categories" className="whitespace-nowrap">Categorias</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dre" className="space-y-4">
