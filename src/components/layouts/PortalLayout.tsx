@@ -28,7 +28,7 @@ import {
   Image as ImageIcon,
   MessageSquare,
   Sparkles,
-} from "lucide-react";
+  TrendingUp,
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
 import {
