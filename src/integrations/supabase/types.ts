@@ -1089,6 +1089,7 @@ export type Database = {
           email: string | null
           establishment_id: string
           global_identity_email: string | null
+          global_identity_phone: string | null
           id: string
           name: string
           notes: string | null
@@ -1106,6 +1107,7 @@ export type Database = {
           email?: string | null
           establishment_id: string
           global_identity_email?: string | null
+          global_identity_phone?: string | null
           id?: string
           name: string
           notes?: string | null
@@ -1123,6 +1125,7 @@ export type Database = {
           email?: string | null
           establishment_id?: string
           global_identity_email?: string | null
+          global_identity_phone?: string | null
           id?: string
           name?: string
           notes?: string | null
@@ -3688,6 +3691,7 @@ export type Database = {
           duration_minutes: number | null
           establishment_id: string | null
           global_identity_email: string | null
+          global_identity_phone: string | null
           service_name: string | null
           tab_item_id: string | null
         }
