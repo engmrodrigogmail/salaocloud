@@ -27,14 +27,12 @@ Deno.serve(async (req) => {
 
   // Last day of current month (handles "31" recurrences in shorter months)
   const lastDayOfMonth = new Date(year, month, 0).getDate();
-  const targetDay = Math.min(day, lastDayOfMonth);
 
-  // Fetch active templates due today
+  // Fetch all active templates; per-template effective day check below
   const { data: templates, error } = await supabase
     .from("finance_recurring_templates")
     .select("*")
-    .eq("is_active", true)
-    .eq("day_of_month", targetDay);
+    .eq("is_active", true);
 
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), {
@@ -44,6 +42,9 @@ Deno.serve(async (req) => {
 
   let created = 0;
   for (const tpl of templates ?? []) {
+    // Effective day: if template day exceeds month length, fire on last day of month
+    const effectiveDay = Math.min(tpl.day_of_month, lastDayOfMonth);
+    if (effectiveDay !== day) continue;
     // Skip if already generated today
     const { data: existing } = await supabase
       .from("finance_entries")
