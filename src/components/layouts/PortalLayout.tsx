@@ -89,28 +89,58 @@ export function PortalLayout({ children }: PortalLayoutProps) {
     }
   };
 
-  const navItems = [
-    { href: `/portal/${slug}`, label: "Dashboard", icon: LayoutDashboard },
-    { href: `/portal/${slug}/agenda`, label: "Agenda", icon: Calendar },
-    { href: `/portal/${slug}/profissionais`, label: "Profissionais", icon: Users },
-    { href: `/portal/${slug}/servicos`, label: "Serviços", icon: Scissors },
-    { href: `/portal/${slug}/produtos`, label: "Produtos", icon: Package },
-    { href: `/portal/${slug}/clientes`, label: "Clientes", icon: UserCircle },
-    { href: `/portal/${slug}/categorias`, label: "Categorias", icon: FolderKanban },
-    { href: `/portal/${slug}/fidelidade`, label: "Fidelidade", icon: Star },
-    { href: `/portal/${slug}/promocoes`, label: "Promoções", icon: Gift },
-    { href: `/portal/${slug}/comissoes`, label: "Comissões", icon: DollarSign },
-    { href: `/portal/${slug}/financeiro`, label: "Financeiro", icon: TrendingUp },
-    { href: `/portal/${slug}/cupons`, label: "Cupons", icon: Tag },
-    { href: `/portal/${slug}/assistente-ia`, label: "Assistente IA", icon: Bot },
-    { href: `/portal/${slug}/conversas-ia`, label: "Conversas IA", icon: MessageCircle },
-    { href: `/portal/${slug}/aprendizados-ia`, label: "Aprendizados IA", icon: Brain },
-    ...(eduActive ? [{ href: `/portal/${slug}/edu`, label: "Consultor Edu", icon: Sparkles }] : []),
-    { href: `/portal/${slug}/assinatura`, label: "Assinatura", icon: Crown },
-    { href: `/portal/${slug}/auditoria`, label: "Auditoria", icon: ShieldCheck },
-    { href: `/portal/${slug}/vitrine`, label: "Vitrine", icon: ImageIcon },
-    { href: `/portal/${slug}/comunicacao`, label: "Comunicação", icon: MessageSquare },
-    { href: `/portal/${slug}/configuracoes`, label: "Configurações", icon: Settings },
+  const navGroups: { label: string; items: { href: string; label: string; icon: typeof LayoutDashboard }[] }[] = [
+    {
+      label: "Principal",
+      items: [
+        { href: `/portal/${slug}`, label: "Dashboard", icon: LayoutDashboard },
+        { href: `/portal/${slug}/agenda`, label: "Agenda", icon: Calendar },
+      ],
+    },
+    {
+      label: "Operação",
+      items: [
+        { href: `/portal/${slug}/clientes`, label: "Clientes", icon: UserCircle },
+        { href: `/portal/${slug}/profissionais`, label: "Profissionais", icon: Users },
+        { href: `/portal/${slug}/servicos`, label: "Serviços", icon: Scissors },
+        { href: `/portal/${slug}/produtos`, label: "Produtos", icon: Package },
+        { href: `/portal/${slug}/categorias`, label: "Categorias", icon: FolderKanban },
+      ],
+    },
+    {
+      label: "Gestão & Financeiro",
+      items: [
+        { href: `/portal/${slug}/financeiro`, label: "Financeiro", icon: TrendingUp },
+        { href: `/portal/${slug}/comissoes`, label: "Comissões", icon: DollarSign },
+        { href: `/portal/${slug}/assinatura`, label: "Assinatura", icon: Crown },
+      ],
+    },
+    {
+      label: "Marketing & Retenção",
+      items: [
+        { href: `/portal/${slug}/promocoes`, label: "Promoções", icon: Gift },
+        { href: `/portal/${slug}/cupons`, label: "Cupons", icon: Tag },
+        { href: `/portal/${slug}/fidelidade`, label: "Fidelidade", icon: Star },
+        { href: `/portal/${slug}/vitrine`, label: "Vitrine", icon: ImageIcon },
+        { href: `/portal/${slug}/comunicacao`, label: "Comunicação", icon: MessageSquare },
+      ],
+    },
+    {
+      label: "Inteligência & IA",
+      items: [
+        { href: `/portal/${slug}/assistente-ia`, label: "Assistente IA", icon: Bot },
+        { href: `/portal/${slug}/conversas-ia`, label: "Conversas IA", icon: MessageCircle },
+        { href: `/portal/${slug}/aprendizados-ia`, label: "Aprendizados IA", icon: Brain },
+        ...(eduActive ? [{ href: `/portal/${slug}/edu`, label: "Consultor Edu", icon: Sparkles }] : []),
+      ],
+    },
+    {
+      label: "Administração",
+      items: [
+        { href: `/portal/${slug}/auditoria`, label: "Auditoria", icon: ShieldCheck },
+        { href: `/portal/${slug}/configuracoes`, label: "Configurações", icon: Settings },
+      ],
+    },
   ];
 
   const handleSignOut = async () => {
@@ -231,25 +261,32 @@ export function PortalLayout({ children }: PortalLayoutProps) {
           isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        <nav className="p-4 space-y-1 h-full overflow-y-auto">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                to={item.href}
-                onClick={() => setIsSidebarOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors border-l-4 ${
-                  isActive
-                    ? "bg-gradient-to-r from-brand-copper/20 to-transparent text-brand-copper border-brand-copper"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-brand-copper border-transparent"
-                }`}
-              >
-                <item.icon size={20} />
-                <span className="font-medium">{item.label}</span>
-              </Link>
-            );
-          })}
+        <nav className="p-4 space-y-4 h-full overflow-y-auto">
+          {navGroups.map((group) => (
+            <div key={group.label} className="space-y-1">
+              <div className="px-4 pt-1 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                {group.label}
+              </div>
+              {group.items.map((item) => {
+                const isActive = location.pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    onClick={() => setIsSidebarOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors border-l-4 ${
+                      isActive
+                        ? "bg-gradient-to-r from-brand-copper/20 to-transparent text-brand-copper border-brand-copper"
+                        : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-brand-copper border-transparent"
+                    }`}
+                  >
+                    <item.icon size={20} />
+                    <span className="font-medium">{item.label}</span>
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
       </aside>
 
