@@ -328,44 +328,11 @@ export function NewAppointmentDialog({
       });
       if (error) throw error;
       setLocalResults((data?.local || []) as Client[]);
-      setNetworkResults((data?.network || []) as Client[]);
     } catch (err: any) {
       console.error(err);
       toast.error("Erro ao buscar cliente", { position: "top-center", duration: 2000 });
     } finally {
       setSearching(false);
-    }
-  };
-
-  const pickNetworkClient = async (c: any) => {
-    try {
-      const { data: existing } = await supabase
-        .from("clients")
-        .select("id, name, phone, email")
-        .eq("establishment_id", establishmentId)
-        .or(`email.eq.${(c.email || "").toLowerCase()},phone.eq.${c.phone}`)
-        .maybeSingle();
-      if (existing) {
-        setSelectedClient(existing as Client);
-        return;
-      }
-      const { data: created, error } = await supabase
-        .from("clients")
-        .insert({
-          establishment_id: establishmentId,
-          name: c.name,
-          phone: c.phone,
-          email: c.email,
-          global_identity_email: (c.email || "").toLowerCase() || null,
-        })
-        .select("id, name, phone, email")
-        .single();
-      if (error) throw error;
-      toast.success("Cliente vinculado ao salão", { position: "top-center", duration: 2000 });
-      setSelectedClient(created as Client);
-    } catch (err: any) {
-      console.error(err);
-      toast.error(err?.message || "Erro ao vincular cliente", { position: "top-center", duration: 2500 });
     }
   };
 
