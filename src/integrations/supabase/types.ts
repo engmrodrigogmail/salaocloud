@@ -1963,6 +1963,212 @@ export type Database = {
         }
         Relationships: []
       }
+      finance_categories: {
+        Row: {
+          color: string | null
+          created_at: string
+          establishment_id: string
+          icon: string | null
+          id: string
+          is_active: boolean
+          is_system: boolean
+          name: string
+          type: Database["public"]["Enums"]["finance_entry_type"]
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          establishment_id: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          name: string
+          type: Database["public"]["Enums"]["finance_entry_type"]
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          establishment_id?: string
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          is_system?: boolean
+          name?: string
+          type?: Database["public"]["Enums"]["finance_entry_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_categories_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_entries: {
+        Row: {
+          amount: number
+          category_id: string
+          created_at: string
+          created_by: string | null
+          date: string
+          description: string
+          establishment_id: string
+          id: string
+          paid_at: string | null
+          payment_method: string | null
+          recurring_template_id: string | null
+          status: Database["public"]["Enums"]["finance_entry_status"]
+          type: Database["public"]["Enums"]["finance_entry_type"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          date: string
+          description: string
+          establishment_id: string
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          recurring_template_id?: string | null
+          status?: Database["public"]["Enums"]["finance_entry_status"]
+          type: Database["public"]["Enums"]["finance_entry_type"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string
+          establishment_id?: string
+          id?: string
+          paid_at?: string | null
+          payment_method?: string | null
+          recurring_template_id?: string | null
+          status?: Database["public"]["Enums"]["finance_entry_status"]
+          type?: Database["public"]["Enums"]["finance_entry_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_entries_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "finance_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_entries_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_entries_recurring_template_id_fkey"
+            columns: ["recurring_template_id"]
+            isOneToOne: false
+            referencedRelation: "finance_recurring_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_recurring_templates: {
+        Row: {
+          amount: number
+          category_id: string
+          created_at: string
+          created_by: string | null
+          day_of_month: number
+          description: string
+          establishment_id: string
+          id: string
+          is_active: boolean
+          type: Database["public"]["Enums"]["finance_entry_type"]
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          category_id: string
+          created_at?: string
+          created_by?: string | null
+          day_of_month: number
+          description: string
+          establishment_id: string
+          id?: string
+          is_active?: boolean
+          type: Database["public"]["Enums"]["finance_entry_type"]
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          category_id?: string
+          created_at?: string
+          created_by?: string | null
+          day_of_month?: number
+          description?: string
+          establishment_id?: string
+          id?: string
+          is_active?: boolean
+          type?: Database["public"]["Enums"]["finance_entry_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_recurring_templates_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "finance_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_recurring_templates_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      finance_settings: {
+        Row: {
+          commission_expense_trigger: Database["public"]["Enums"]["finance_commission_trigger"]
+          created_at: string
+          establishment_id: string
+          updated_at: string
+        }
+        Insert: {
+          commission_expense_trigger?: Database["public"]["Enums"]["finance_commission_trigger"]
+          created_at?: string
+          establishment_id: string
+          updated_at?: string
+        }
+        Update: {
+          commission_expense_trigger?: Database["public"]["Enums"]["finance_commission_trigger"]
+          created_at?: string
+          establishment_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "finance_settings_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       loyalty_programs: {
         Row: {
           created_at: string
@@ -3458,6 +3664,24 @@ export type Database = {
           },
         ]
       }
+      vw_finance_consolidated: {
+        Row: {
+          amount: number | null
+          category_id: string | null
+          category_name: string | null
+          date: string | null
+          description: string | null
+          establishment_id: string | null
+          id: string | null
+          is_auto: boolean | null
+          payment_method: string | null
+          source: string | null
+          source_ref_id: string | null
+          status: Database["public"]["Enums"]["finance_entry_status"] | null
+          type: Database["public"]["Enums"]["finance_entry_type"] | null
+        }
+        Relationships: []
+      }
       vw_shared_client_history: {
         Row: {
           closed_at: string | null
@@ -3599,6 +3823,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin_trial: { Args: { _establishment_id: string }; Returns: boolean }
+      is_finance_authorized: {
+        Args: { _establishment_id: string }
+        Returns: boolean
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -3615,6 +3843,10 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      seed_finance_categories: {
+        Args: { _establishment_id: string }
+        Returns: undefined
       }
       update_professional_pin: { Args: { _pin_hash: string }; Returns: Json }
       validate_client_session: {
@@ -3637,6 +3869,9 @@ export type Database = {
         | "no_show"
       commission_discount_policy: "always" | "never" | "ask"
       establishment_status: "pending" | "active" | "suspended"
+      finance_commission_trigger: "on_tab_close" | "on_commission_payment"
+      finance_entry_status: "pending" | "paid"
+      finance_entry_type: "revenue" | "expense"
       notification_recipient_type:
         | "admin"
         | "establishment"
@@ -3788,6 +4023,9 @@ export const Constants = {
       ],
       commission_discount_policy: ["always", "never", "ask"],
       establishment_status: ["pending", "active", "suspended"],
+      finance_commission_trigger: ["on_tab_close", "on_commission_payment"],
+      finance_entry_status: ["pending", "paid"],
+      finance_entry_type: ["revenue", "expense"],
       notification_recipient_type: [
         "admin",
         "establishment",

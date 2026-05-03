@@ -28,6 +28,7 @@ import {
   Image as ImageIcon,
   MessageSquare,
   Sparkles,
+  TrendingUp,
 } from "lucide-react";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Button } from "@/components/ui/button";
@@ -99,6 +100,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
     { href: `/portal/${slug}/fidelidade`, label: "Fidelidade", icon: Star },
     { href: `/portal/${slug}/promocoes`, label: "Promoções", icon: Gift },
     { href: `/portal/${slug}/comissoes`, label: "Comissões", icon: DollarSign },
+    { href: `/portal/${slug}/financeiro`, label: "Financeiro", icon: TrendingUp },
     { href: `/portal/${slug}/cupons`, label: "Cupons", icon: Tag },
     { href: `/portal/${slug}/assistente-ia`, label: "Assistente IA", icon: Bot },
     { href: `/portal/${slug}/conversas-ia`, label: "Conversas IA", icon: MessageCircle },
