@@ -1,6 +1,7 @@
-// Searches clients by name, email or phone within the salon AND across the
-// Salão Cloud network (other establishments). Used by the manual appointment
-// dialog so the receptionist can quickly find a returning customer.
+// Searches clients ONLY within the current salon. NEVER returns data from
+// other establishments — cross-salon discovery would leak PII (name/phone)
+// of clients of other tenants. Identity stitching by phone happens silently
+// during balcão registration via `client-create-balcao`.
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -35,19 +36,17 @@ Deno.serve(async (req) => {
     const digits = onlyDigits(q);
     const isPhone = digits.length >= 4 && !isEmail;
 
-    // Build OR filter
     const filters: string[] = [];
     if (isEmail) {
       const e = q.toLowerCase();
       filters.push(`email.ilike.%${e}%`, `global_identity_email.ilike.%${e}%`);
     } else if (isPhone) {
-      filters.push(`phone.ilike.%${digits}%`);
+      filters.push(`phone.ilike.%${digits}%`, `global_identity_phone.ilike.%${digits}%`);
     } else {
       filters.push(`name.ilike.%${q}%`);
     }
     const orStr = filters.join(",");
 
-    // Local
     const { data: local, error: localErr } = await supabase
       .from("clients")
       .select("id, name, phone, email, establishment_id")
@@ -57,27 +56,9 @@ Deno.serve(async (req) => {
       .limit(15);
     if (localErr) throw localErr;
 
-    // Network (other salons) — only when not found locally OR to enrich
-    const { data: network, error: netErr } = await supabase
-      .from("clients")
-      .select("id, name, phone, email, establishment_id, establishments:establishment_id(name)")
-      .neq("establishment_id", establishment_id)
-      .or(orStr)
-      .order("name")
-      .limit(15);
-    if (netErr) throw netErr;
-
-    // Deduplicate network by phone/email (one entry per person)
-    const seen = new Set<string>();
-    const uniqueNetwork = (network || []).filter((c: any) => {
-      const key = (c.email || "").toLowerCase() || onlyDigits(c.phone || "") || c.id;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
-
+    // network is intentionally always empty — kept in payload for backwards compat
     return new Response(
-      JSON.stringify({ local: local || [], network: uniqueNetwork }),
+      JSON.stringify({ local: local || [], network: [] }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (error) {
