@@ -355,6 +355,26 @@ function DreTab({
     .sort((a, b) => Number(b.amount) - Number(a.amount))
     .slice(0, 5);
 
+  const expenseByPayment = useMemo(() => {
+    const acc: Record<string, number> = {};
+    for (const r of consolidated) {
+      if (r.type !== "expense" || r.status !== "paid") continue;
+      const key = r.payment_method?.trim() || "Não informado";
+      acc[key] = (acc[key] ?? 0) + Number(r.amount);
+    }
+    return Object.entries(acc).sort((a, b) => b[1] - a[1]);
+  }, [consolidated]);
+
+  const revenueByPayment = useMemo(() => {
+    const acc: Record<string, number> = {};
+    for (const r of consolidated) {
+      if (r.type !== "revenue" || r.status !== "paid") continue;
+      const key = r.payment_method?.trim() || "Não informado";
+      acc[key] = (acc[key] ?? 0) + Number(r.amount);
+    }
+    return Object.entries(acc).sort((a, b) => b[1] - a[1]);
+  }, [consolidated]);
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
