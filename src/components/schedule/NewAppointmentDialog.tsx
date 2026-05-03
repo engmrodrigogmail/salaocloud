@@ -493,13 +493,13 @@ export function NewAppointmentDialog({
 
                     {hasSearched && (
                       <div className="rounded-md border max-h-64 overflow-y-auto">
-                        {localResults.length === 0 && networkResults.length === 0 ? (
-                          <p className="text-sm text-muted-foreground text-center py-4">Nenhum cliente encontrado</p>
+                        {localResults.length === 0 ? (
+                          <p className="text-sm text-muted-foreground text-center py-4">
+                            Nenhum cliente encontrado neste salão
+                          </p>
                         ) : (
                           <>
-                            {localResults.length > 0 && (
-                              <div className="px-2 py-1 text-xs font-semibold bg-muted/50">Neste salão</div>
-                            )}
+                            <div className="px-2 py-1 text-xs font-semibold bg-muted/50">Neste salão</div>
                             {localResults.map((c) => (
                               <button
                                 key={`l-${c.id}`}
@@ -509,32 +509,6 @@ export function NewAppointmentDialog({
                               >
                                 <p className="text-sm font-medium">{c.name}</p>
                                 <p className="text-xs text-muted-foreground">{c.phone}</p>
-                              </button>
-                            ))}
-                            {networkResults.length > 0 && (
-                              <div className="px-2 py-1 text-xs font-semibold bg-muted/50 flex items-center gap-1">
-                                <Globe className="h-3 w-3" /> Rede Salão Cloud
-                              </div>
-                            )}
-                            {networkResults.map((c: any) => (
-                              <button
-                                key={`n-${c.id}`}
-                                type="button"
-                                onClick={() => pickNetworkClient(c)}
-                                className="w-full text-left p-2 hover:bg-accent border-b last:border-b-0"
-                              >
-                                <div className="flex items-center justify-between gap-2">
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-medium truncate">{c.name}</p>
-                                    <p className="text-xs text-muted-foreground truncate">
-                                      {c.phone}
-                                      {c.establishments?.name ? ` • ${c.establishments.name}` : ""}
-                                    </p>
-                                  </div>
-                                  <Badge variant="outline" className="shrink-0 text-[10px]">
-                                    Importar
-                                  </Badge>
-                                </div>
                               </button>
                             ))}
                           </>
