@@ -20,6 +20,8 @@ Retorne APENAS um JSON válido com a seguinte estrutura, sem markdown ou texto a
   "edu_personal_response": "Seção 'Edu e você': resposta empática e personalizada (3 a 6 frases) conectando o que a cliente relatou (estado atual + resultado esperado) com o diagnóstico técnico, com orientações práticas. Se a cliente não respondeu, retorne string vazia."
 }`;
 
+const ANTHROPIC_MODELS = ["claude-sonnet-4-6", "claude-sonnet-4-5", "claude-haiku-4-5"];
+
 interface AnalyzeBody {
   client_id: string;
   establishment_id: string;
@@ -102,9 +104,8 @@ Foram enviadas ${images.length} foto(s): comprimento, pontas e/ou raiz.
 Auto-percepção da cliente sobre o cabelo (estado atual): ${selfAssessment || "(não respondido)"}.
 Principal resultado esperado pela cliente: ${expectedResult || "(não respondido)"}.`;
 
-    // Chamada Claude (Anthropic) — alias estável do Sonnet com vision
-    const anthropicReq = {
-      model: "claude-3-5-sonnet-latest",
+    // Chamada Claude (Anthropic) — usa modelos atuais com fallback caso um alias seja recusado
+    const anthropicReqBase = {
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
       messages: [
@@ -121,25 +122,41 @@ Principal resultado esperado pela cliente: ${expectedResult || "(não respondido
       ],
     };
 
-    const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": CLAUDE_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify(anthropicReq),
-    });
+    let claudeRes: Response | null = null;
+    let lastErrText = "";
+    let attemptedModel = ANTHROPIC_MODELS[0];
 
-    if (!claudeRes.ok) {
-      const errText = await claudeRes.text();
-      console.error("Claude error", claudeRes.status, errText);
+    for (const model of ANTHROPIC_MODELS) {
+      attemptedModel = model;
+      claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": CLAUDE_API_KEY,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify({ ...anthropicReqBase, model }),
+      });
+
+      if (claudeRes.ok) break;
+
+      lastErrText = await claudeRes.text();
+      const lower = lastErrText.toLowerCase();
+      const modelNotFound = claudeRes.status === 404 && lower.includes("model");
+      console.error("Claude error", claudeRes.status, model, lastErrText);
+      if (!modelNotFound) break;
+    }
+
+    if (!claudeRes?.ok) {
+      const errText = lastErrText || "Claude request failed without response body";
+      const statusCode = claudeRes?.status ?? 502;
+      console.error("Claude final error", statusCode, attemptedModel, errText);
 
       // Detecta problemas de crédito/cota da Anthropic e notifica super admins
       const lower = errText.toLowerCase();
       const isCredit =
-        claudeRes.status === 402 ||
-        claudeRes.status === 429 ||
+        statusCode === 402 ||
+        statusCode === 429 ||
         lower.includes("credit balance") ||
         lower.includes("insufficient") ||
         lower.includes("quota") ||
@@ -161,7 +178,7 @@ Principal resultado esperado pela cliente: ${expectedResult || "(não respondido
           ? "⚠️ Edu IA: créditos esgotados (Anthropic)"
           : "⚠️ Edu IA: erro na API Claude";
         const bodyMsg =
-          `Salão: ${estInfo?.name ?? body.establishment_id} • Status ${claudeRes.status}. ` +
+          `Salão: ${estInfo?.name ?? body.establishment_id} • Status ${statusCode}. ` +
           `Detalhe: ${errText.slice(0, 400)}`;
 
         for (const a of admins ?? []) {
@@ -176,7 +193,8 @@ Principal resultado esperado pela cliente: ${expectedResult || "(não respondido
               category: "edu_ai_failure",
               establishment_id: body.establishment_id,
               establishment_slug: estInfo?.slug ?? null,
-              status: claudeRes.status,
+              status: statusCode,
+              model: attemptedModel,
               detail: errText.slice(0, 1000),
               is_credit_issue: isCredit,
             },
@@ -189,7 +207,7 @@ Principal resultado esperado pela cliente: ${expectedResult || "(não respondido
       return json(
         {
           error: "claude_error",
-          status: claudeRes.status,
+          status: claudeRes?.status ?? 502,
           user_message:
             "A IA usada pelo Edu está enfrentando instabilidades. Tente novamente mais tarde.",
           detail: errText,
