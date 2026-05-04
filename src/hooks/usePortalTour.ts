@@ -4,7 +4,7 @@ import "driver.js/dist/driver.css";
 import { useParams } from "react-router-dom";
 
 const TOUR_COMPLETED_KEY = "portal_tour_completed";
-const TOUR_VERSION = "1.1"; // Increment to show tour again after updates
+const TOUR_VERSION = "1.2"; // Increment to show tour again after updates
 
 interface UsePortalTourOptions {
   autoStart?: boolean;
@@ -37,7 +37,7 @@ export function usePortalTour(options: UsePortalTourOptions = {}) {
       {
         popover: {
           title: "🎉 Bem-vindo ao seu Portal!",
-          description: "Vamos fazer um tour rápido pelas principais funcionalidades. Você pode pular a qualquer momento clicando no X.",
+          description: "Vamos fazer um tour rápido pelas novas funcionalidades do SalãoCloud. Você pode pular a qualquer momento clicando no X.",
           side: "over",
           align: "center",
         },
@@ -46,7 +46,7 @@ export function usePortalTour(options: UsePortalTourOptions = {}) {
         element: 'nav a[href*="/agenda"]',
         popover: {
           title: "📅 Agenda",
-          description: "Aqui você visualiza e gerencia todos os agendamentos. Pode confirmar, cancelar ou reagendar atendimentos.",
+          description: "Gerencie todos os agendamentos. Confirme, cancele ou reagende atendimentos com facilidade.",
           side: "right",
           align: "start",
         },
@@ -54,44 +54,44 @@ export function usePortalTour(options: UsePortalTourOptions = {}) {
       {
         element: 'nav a[href*="/profissionais"]',
         popover: {
-          title: "👥 Profissionais",
-          description: "Cadastre os profissionais da sua equipe. Cada um terá sua própria agenda e comissões configuráveis.",
+          title: "👥 Profissionais & Serviços",
+          description: "Cadastre sua equipe, defina os serviços que cada um faz e os horários de trabalho.",
           side: "right",
           align: "start",
         },
       },
       {
-        element: 'nav a[href*="/servicos"]',
+        element: 'nav a[href*="/financeiro"]',
         popover: {
-          title: "✂️ Serviços",
-          description: "Adicione os serviços que você oferece, com preços, duração e quais profissionais executam cada um.",
+          title: "📈 Módulo Financeiro",
+          description: "NOVO! Controle total do seu caixa. Comandas e comissões caem aqui automaticamente. Registre despesas e receitas avulsas.",
           side: "right",
           align: "start",
         },
       },
       {
-        element: 'nav a[href*="/clientes"]',
+        element: 'nav a[href*="/vitrine"]',
         popover: {
-          title: "👤 Clientes",
-          description: "Visualize a base de clientes, histórico de agendamentos e informações de contato.",
+          title: "📸 Vitrine de Serviços",
+          description: "Crie um portfólio com fotos dos seus melhores trabalhos para atrair mais clientes na sua página de agendamento.",
           side: "right",
           align: "start",
         },
       },
       {
-        element: 'nav a[href*="/comissoes"]',
+        element: 'nav a[href*="/promocoes"]',
         popover: {
-          title: "💰 Comissões",
-          description: "Configure as regras de comissionamento para cada profissional e serviço. Acompanhe os ganhos em tempo real.",
+          title: "🎁 Marketing & Retenção",
+          description: "Crie promoções, cupons de desconto e programas de fidelidade para fazer seus clientes voltarem mais vezes.",
           side: "right",
           align: "start",
         },
       },
       {
-        element: 'nav a[href*="/fidelidade"]',
+        element: 'nav a[href*="/edu"]',
         popover: {
-          title: "⭐ Fidelidade",
-          description: "Crie programas de fidelidade para recompensar seus clientes mais assíduos.",
+          title: "✨ Consultor Edu (IA)",
+          description: "Exclusividade! Nossa IA analisa fotos do cabelo das clientes e sugere os melhores tratamentos. Aumente seu ticket médio!",
           side: "right",
           align: "start",
         },
@@ -99,26 +99,8 @@ export function usePortalTour(options: UsePortalTourOptions = {}) {
       {
         element: 'nav a[href*="/assistente-ia"]',
         popover: {
-          title: "🤖 Assistente Virtual IA",
-          description: "Configure sua assistente virtual para atender clientes automaticamente via WhatsApp. Ela pode agendar, responder dúvidas e gerenciar fila de espera 24h!",
-          side: "right",
-          align: "start",
-        },
-      },
-      {
-        element: 'nav a[href*="/conversas-ia"]',
-        popover: {
-          title: "💬 Conversas da IA",
-          description: "Monitore as conversas que sua assistente virtual está tendo com os clientes. Veja estatísticas e intervenha quando necessário.",
-          side: "right",
-          align: "start",
-        },
-      },
-      {
-        element: 'nav a[href*="/configuracoes"]',
-        popover: {
-          title: "⚙️ Configurações",
-          description: "Configure horários de funcionamento, dados do estabelecimento e preferências gerais.",
+          title: "🤖 Recepcionista Virtual",
+          description: "A Silvia atende seus clientes 24h por dia no portal, tira dúvidas e faz agendamentos automáticos.",
           side: "right",
           align: "start",
         },
@@ -127,24 +109,15 @@ export function usePortalTour(options: UsePortalTourOptions = {}) {
         element: "#internal-area-button",
         popover: {
           title: "🏪 Área Interna",
-          description: "Acesse o painel de operações do dia a dia: comandas, fechamento de caixa e atendimentos presenciais.",
-          side: "bottom",
-          align: "end",
-        },
-      },
-      {
-        element: "#tour-help-button",
-        popover: {
-          title: "❓ Ajuda",
-          description: "Clique aqui a qualquer momento para refazer este tour guiado.",
+          description: "Na hora do batente, clique aqui para acessar as Comandas e o fluxo de caixa do dia a dia.",
           side: "bottom",
           align: "end",
         },
       },
       {
         popover: {
-          title: "🚀 Pronto para começar!",
-          description: "Você completou o tour! Recomendamos começar cadastrando seus serviços e profissionais. Bom trabalho!",
+          title: "🚀 Pronto para voar!",
+          description: "Você completou o tour! Explore os novos módulos e impulsione seu salão. Bom trabalho!",
           side: "over",
           align: "center",
         },

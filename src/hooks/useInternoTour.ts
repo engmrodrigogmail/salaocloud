@@ -4,7 +4,7 @@ import "driver.js/dist/driver.css";
 import { useParams } from "react-router-dom";
 
 const TOUR_COMPLETED_KEY = "interno_tour_completed";
-const TOUR_VERSION = "1.0";
+const TOUR_VERSION = "1.1";
 
 interface UseInternoTourOptions {
   autoStart?: boolean;
@@ -37,25 +37,16 @@ export function useInternoTour(options: UseInternoTourOptions = {}) {
       {
         popover: {
           title: "🏪 Bem-vindo à Área Interna!",
-          description: "Esta é a área de operações do dia a dia. Aqui você gerencia atendimentos presenciais e comandas. Vamos conhecer!",
+          description: "Esta é a tela que fica aberta no balcão do salão. Focada em agilidade para o dia a dia.",
           side: "over",
           align: "center",
-        },
-      },
-      {
-        element: 'nav a[href*="/interno"][href$="' + slug + '"]',
-        popover: {
-          title: "📊 Painel",
-          description: "Visão geral do dia: agendamentos pendentes, confirmados, concluídos e comandas abertas. Acesso rápido às principais funções.",
-          side: "right",
-          align: "start",
         },
       },
       {
         element: 'nav a[href*="/agenda"]',
         popover: {
           title: "📅 Agenda do Dia",
-          description: "Visualize os agendamentos de hoje. Confirme chegadas, inicie atendimentos e acompanhe o fluxo de clientes.",
+          description: "Acompanhe quem está chegando. Inicie os atendimentos direto por aqui.",
           side: "right",
           align: "start",
         },
@@ -63,8 +54,8 @@ export function useInternoTour(options: UseInternoTourOptions = {}) {
       {
         element: 'nav a[href*="/comandas"]',
         popover: {
-          title: "📋 Comandas",
-          description: "Gerencie comandas abertas: adicione serviços, produtos, aplique descontos e finalize pagamentos com múltiplas formas.",
+          title: "📋 Comandas & Caixa",
+          description: "Abra comandas, adicione serviços/produtos e feche o pagamento. Tudo vai direto para o novo Módulo Financeiro!",
           side: "right",
           align: "start",
         },
@@ -72,25 +63,16 @@ export function useInternoTour(options: UseInternoTourOptions = {}) {
       {
         element: "#portal-admin-button",
         popover: {
-          title: "⚙️ Portal Admin",
-          description: "Acesse o portal administrativo para configurar serviços, profissionais, comissões e configurações gerais.",
-          side: "bottom",
-          align: "end",
-        },
-      },
-      {
-        element: "#interno-tour-help-button",
-        popover: {
-          title: "❓ Ajuda",
-          description: "Clique aqui a qualquer momento para refazer este tour.",
+          title: "⚙️ Voltar ao Portal",
+          description: "Precisa configurar algo ou ver relatórios gerenciais? Volte para o Portal Admin por aqui.",
           side: "bottom",
           align: "end",
         },
       },
       {
         popover: {
-          title: "✅ Pronto para operar!",
-          description: "Agora você conhece a área interna. Use as comandas para registrar consumos e fechar pagamentos. Bom trabalho!",
+          title: "✅ Mão na massa!",
+          description: "Agora é com você. Excelente dia de trabalho!",
           side: "over",
           align: "center",
         },
