@@ -11,6 +11,8 @@ export interface EduAnalysisProfile {
   edu_personal_response: string | null;
   professional_correction: string | null;
   validated_at: string | null;
+  client_self_assessment?: string | null;
+  client_expected_result?: string | null;
 }
 
 interface Props {
@@ -187,6 +189,27 @@ export function EduAnalysisSummary({ profile }: Props) {
           <p className={`text-xs font-semibold ${recoverColor}`}>{recoverStatus}</p>
         </div>
       </div>
+
+      {/* Bloco 5a: Relato da Cliente */}
+      {(profile.client_self_assessment || profile.client_expected_result) && (
+        <div className="rounded-lg border border-amber-600/40 bg-[#1f1f1f] p-3 sm:p-4 space-y-3">
+          <p className="text-xs sm:text-sm font-semibold tracking-widest text-[#E6A15C] uppercase">
+            Seu Relato
+          </p>
+          {profile.client_self_assessment && (
+            <div>
+              <p className="text-[11px] uppercase tracking-wider text-gray-400 mb-1">Como você vê seu cabelo hoje</p>
+              <p className="text-sm text-gray-200 whitespace-pre-line leading-relaxed">{profile.client_self_assessment}</p>
+            </div>
+          )}
+          {profile.client_expected_result && (
+            <div>
+              <p className="text-[11px] uppercase tracking-wider text-gray-400 mb-1">Resultado que você espera</p>
+              <p className="text-sm text-gray-200 whitespace-pre-line leading-relaxed">{profile.client_expected_result}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Bloco 5: Edu e Você (substitui Marcas Recomendadas) */}
       <div className="rounded-lg border border-amber-600/40 bg-[#1f1f1f] p-3 sm:p-4 space-y-3">
