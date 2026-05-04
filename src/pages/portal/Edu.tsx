@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Sparkles, Upload, CheckCircle2, Pencil, Loader2, Camera, Image as ImageIcon, UserPlus, X } from "lucide-react";
+import { Sparkles, Upload, CheckCircle2, Pencil, Loader2, Camera, Image as ImageIcon, UserPlus, X, Eye } from "lucide-react";
+import { EduAnalysisSummary } from "@/components/edu/EduAnalysisSummary";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEduAccess } from "@/hooks/useEduAccess";
@@ -75,6 +76,7 @@ export default function PortalEdu() {
   const cameraRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [reviewProfile, setReviewProfile] = useState<Profile | null>(null);
+  const [clientViewProfile, setClientViewProfile] = useState<Profile | null>(null);
   const [correction, setCorrection] = useState("");
   const [savingReview, setSavingReview] = useState(false);
 
@@ -363,22 +365,38 @@ export default function PortalEdu() {
               <p className="text-muted-foreground text-center py-8">Sem histórico ainda.</p>
             ) : (
               history.map((p) => (
-                <Card key={p.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setReviewProfile(p)}>
+                <Card key={p.id} className="hover:bg-muted/50">
                   <CardContent className="pt-6 flex items-center justify-between gap-4">
-                    <div>
-                      <div className="font-semibold">{p.client?.name || "Cliente"}</div>
-                      <div className="text-sm text-muted-foreground">
+                    <div
+                      className="flex-1 cursor-pointer min-w-0"
+                      onClick={() => setReviewProfile(p)}
+                    >
+                      <div className="font-semibold truncate">{p.client?.name || "Cliente"}</div>
+                      <div className="text-sm text-muted-foreground truncate">
                         {p.hair_type} • {p.porosity_level} • {p.damage_level}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         Validado em {p.validated_at ? format(new Date(p.validated_at), "dd/MM/yyyy", { locale: ptBR }) : "-"}
                       </div>
                     </div>
-                    {p.professional_correction ? (
-                      <Badge variant="secondary">Corrigido</Badge>
-                    ) : (
-                      <Badge className="bg-green-600">Aprovado</Badge>
-                    )}
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      {p.professional_correction ? (
+                        <Badge variant="secondary">Corrigido</Badge>
+                      ) : (
+                        <Badge className="bg-green-600">Aprovado</Badge>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1 h-7 text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setClientViewProfile(p);
+                        }}
+                      >
+                        <Eye className="h-3 w-3" /> Versão Cliente
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))
@@ -734,6 +752,24 @@ export default function PortalEdu() {
               </Button>
             </DialogFooter>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Versão Cliente (resumo visual) */}
+      <Dialog open={!!clientViewProfile} onOpenChange={(o) => !o && setClientViewProfile(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl bg-[#1A1A1A] border-amber-600/50 p-0">
+          <div className="p-4 sm:p-6">
+            {clientViewProfile && <EduAnalysisSummary profile={clientViewProfile} />}
+            <div className="flex justify-end pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setClientViewProfile(null)}
+                className="gap-2 border-amber-600/50 text-amber-300 hover:bg-amber-600/10 hover:text-amber-200"
+              >
+                <X className="h-4 w-4" /> Fechar
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </PortalLayout>
