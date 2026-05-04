@@ -553,14 +553,33 @@ export default function PortalEdu() {
             </p>
           </div>
 
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setDialogOpen(false)} disabled={analyzing}>
-              Cancelar
-            </Button>
-            <Button onClick={submitAnalysis} disabled={analyzing} className="gap-2">
-              {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              {analyzing ? "Analisando..." : "Analisar com Edu"}
-            </Button>
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            {statusStep !== "idle" && analyzing && (
+              <div className="w-full text-xs text-muted-foreground flex items-center gap-2 border rounded-md px-3 py-2 bg-muted/40">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                {statusStep === "uploading" &&
+                  `Enviando fotos (${uploadProgress.current}/${uploadProgress.total})...`}
+                {statusStep === "processing" && "Edu está analisando... aguarde."}
+              </div>
+            )}
+            {errorMsg && !analyzing && (
+              <div className="w-full text-xs text-destructive border border-destructive/40 rounded-md px-3 py-2 bg-destructive/10">
+                {errorMsg}
+              </div>
+            )}
+            <div className="flex gap-2 w-full justify-end">
+              <Button variant="ghost" onClick={() => setDialogOpen(false)} disabled={analyzing}>
+                Cancelar
+              </Button>
+              <Button onClick={submitAnalysis} disabled={analyzing} className="gap-2">
+                {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {statusStep === "uploading"
+                  ? "Enviando fotos..."
+                  : statusStep === "processing"
+                  ? "Analisando..."
+                  : "Analisar com Edu"}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
