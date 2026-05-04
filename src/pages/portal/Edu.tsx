@@ -754,6 +754,24 @@ export default function PortalEdu() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Modal: Versão Cliente (resumo visual) */}
+      <Dialog open={!!clientViewProfile} onOpenChange={(o) => !o && setClientViewProfile(null)}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl bg-[#1A1A1A] border-amber-600/50 p-0">
+          <div className="p-4 sm:p-6">
+            {clientViewProfile && <EduAnalysisSummary profile={clientViewProfile} />}
+            <div className="flex justify-end pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setClientViewProfile(null)}
+                className="gap-2 border-amber-600/50 text-amber-300 hover:bg-amber-600/10 hover:text-amber-200"
+              >
+                <X className="h-4 w-4" /> Fechar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </PortalLayout>
   );
 }
