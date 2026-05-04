@@ -53,6 +53,7 @@ export default function PortalEdu() {
   const { slug } = useParams<{ slug: string }>();
   const { user } = useAuth();
   const [estId, setEstId] = useState<string | null>(null);
+  const [estName, setEstName] = useState<string | null>(null);
   const { isActive, loading: accessLoading } = useEduAccess(estId);
 
   const [clients, setClients] = useState<Client[]>([]);
