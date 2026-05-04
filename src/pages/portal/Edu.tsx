@@ -78,6 +78,7 @@ export default function PortalEdu() {
 
   const [reviewProfile, setReviewProfile] = useState<Profile | null>(null);
   const [clientViewProfile, setClientViewProfile] = useState<Profile | null>(null);
+  const summaryRef = useRef<HTMLDivElement>(null);
   const [correction, setCorrection] = useState("");
   const [savingReview, setSavingReview] = useState(false);
 
