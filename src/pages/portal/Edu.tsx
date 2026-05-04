@@ -187,9 +187,19 @@ export default function PortalEdu() {
           client_expected_result: expectedResult.slice(0, MAX_CHARS),
         },
       });
-      if (error) throw new Error(error.message || "Falha ao chamar o serviço de análise.");
-      const d: any = data;
-      if (d?.error) {
+
+      // Mesmo em respostas não-2xx, tenta ler o body retornado pela edge function
+      let payload: any = data;
+      if (error && (error as any)?.context?.json) {
+        try {
+          payload = await (error as any).context.json();
+        } catch {
+          /* noop */
+        }
+      }
+
+      const d: any = payload;
+      if (d?.error || error) {
         const map: Record<string, string> = {
           unauthorized: "Sessão expirada. Faça login novamente.",
           invalid_token: "Sessão inválida. Faça login novamente.",
@@ -197,11 +207,15 @@ export default function PortalEdu() {
           edu_not_active: "O Consultor Edu não está ativo neste salão.",
           invalid_payload: "Dados inválidos enviados para análise.",
           photo_download_failed: "Não foi possível ler uma das fotos enviadas.",
-          claude_error: "O serviço de IA está instável agora. Tente novamente em instantes.",
+          claude_error: "A IA usada pelo Edu está enfrentando instabilidades. Tente novamente mais tarde.",
           ai_parse_failed: "A IA retornou um formato inesperado. Tente novamente.",
           insert_failed: "Não foi possível salvar o diagnóstico no banco de dados.",
         };
-        throw new Error(map[d.error] || d.detail || d.error);
+        const friendly =
+          (d?.error && map[d.error]) ||
+          d?.user_message ||
+          (error?.message ?? "Falha ao chamar o serviço de análise.");
+        throw new Error(friendly);
       }
 
       setStatusStep("done");
