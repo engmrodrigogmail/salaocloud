@@ -149,13 +149,14 @@ Principal resultado esperado pela cliente: ${expectedResult || "(não respondido
 
     if (!claudeRes?.ok) {
       const errText = lastErrText || "Claude request failed without response body";
-      console.error("Claude final error", claudeRes?.status, attemptedModel, errText);
+      const statusCode = claudeRes?.status ?? 502;
+      console.error("Claude final error", statusCode, attemptedModel, errText);
 
       // Detecta problemas de crédito/cota da Anthropic e notifica super admins
       const lower = errText.toLowerCase();
       const isCredit =
-        claudeRes.status === 402 ||
-        claudeRes.status === 429 ||
+        statusCode === 402 ||
+        statusCode === 429 ||
         lower.includes("credit balance") ||
         lower.includes("insufficient") ||
         lower.includes("quota") ||
@@ -177,7 +178,7 @@ Principal resultado esperado pela cliente: ${expectedResult || "(não respondido
           ? "⚠️ Edu IA: créditos esgotados (Anthropic)"
           : "⚠️ Edu IA: erro na API Claude";
         const bodyMsg =
-          `Salão: ${estInfo?.name ?? body.establishment_id} • Status ${claudeRes.status}. ` +
+          `Salão: ${estInfo?.name ?? body.establishment_id} • Status ${statusCode}. ` +
           `Detalhe: ${errText.slice(0, 400)}`;
 
         for (const a of admins ?? []) {
@@ -192,7 +193,7 @@ Principal resultado esperado pela cliente: ${expectedResult || "(não respondido
               category: "edu_ai_failure",
               establishment_id: body.establishment_id,
               establishment_slug: estInfo?.slug ?? null,
-              status: claudeRes?.status ?? null,
+              status: statusCode,
               model: attemptedModel,
               detail: errText.slice(0, 1000),
               is_credit_issue: isCredit,
