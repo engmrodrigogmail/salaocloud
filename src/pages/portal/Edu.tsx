@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Sparkles, Upload, CheckCircle2, Pencil, Loader2, Camera, Image as ImageIcon, UserPlus, X, Eye } from "lucide-react";
 import { EduAnalysisSummary } from "@/components/edu/EduAnalysisSummary";
+import { ShareSummaryButton } from "@/components/edu/ShareSummaryButton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEduAccess } from "@/hooks/useEduAccess";
