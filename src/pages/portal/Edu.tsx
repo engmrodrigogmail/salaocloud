@@ -478,6 +478,9 @@ export default function PortalEdu() {
             </div>
 
             {/* Fotos: galeria ou câmera */}
+            <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
+              <strong>Dica importante:</strong> tire as fotos com o cabelo o mais natural possível — sem chapinha, escova, cabelo molhado, creme ou gel. Esses fatores podem alterar a textura visível e levar a erros na avaliação.
+            </div>
             <div className="grid gap-3">
               {PHOTO_LABELS.map((label, i) => (
                 <div key={i} className="space-y-1">
