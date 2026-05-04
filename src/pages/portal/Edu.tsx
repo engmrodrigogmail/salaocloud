@@ -775,11 +775,11 @@ export default function PortalEdu() {
       {/* Modal: Versão Cliente (resumo visual) */}
       <Dialog open={!!clientViewProfile} onOpenChange={(o) => !o && setClientViewProfile(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl bg-[#1A1A1A] border-amber-600/50 p-0">
-          <div className="p-4 sm:p-6 pb-24">
+          <div className="p-4 sm:p-6">
             <div ref={summaryRef}>
               {clientViewProfile && <EduAnalysisSummary profile={clientViewProfile} establishmentName={estName} />}
             </div>
-            <div className="flex justify-end pt-4">
+            <div className="flex flex-col-reverse sm:flex-row justify-end items-stretch sm:items-center gap-2 pt-4">
               <Button
                 variant="outline"
                 onClick={() => setClientViewProfile(null)}
@@ -787,15 +787,15 @@ export default function PortalEdu() {
               >
                 <X className="h-4 w-4" /> Fechar
               </Button>
+              {clientViewProfile && (
+                <ShareSummaryButton
+                  profile={clientViewProfile}
+                  establishmentName={estName}
+                  fileName={`analise-${(clientViewProfile.client?.name || "cliente").toLowerCase().replace(/\s+/g, "-")}.pdf`}
+                />
+              )}
             </div>
           </div>
-          {clientViewProfile && (
-            <ShareSummaryButton
-              targetRef={summaryRef}
-              fileName={`analise-${(clientViewProfile.client?.name || "cliente").toLowerCase().replace(/\s+/g, "-")}.png`}
-              shareText="Sua análise capilar — SalaoCloud"
-            />
-          )}
         </DialogContent>
       </Dialog>
     </PortalLayout>
