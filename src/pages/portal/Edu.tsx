@@ -365,22 +365,38 @@ export default function PortalEdu() {
               <p className="text-muted-foreground text-center py-8">Sem histórico ainda.</p>
             ) : (
               history.map((p) => (
-                <Card key={p.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setReviewProfile(p)}>
+                <Card key={p.id} className="hover:bg-muted/50">
                   <CardContent className="pt-6 flex items-center justify-between gap-4">
-                    <div>
-                      <div className="font-semibold">{p.client?.name || "Cliente"}</div>
-                      <div className="text-sm text-muted-foreground">
+                    <div
+                      className="flex-1 cursor-pointer min-w-0"
+                      onClick={() => setReviewProfile(p)}
+                    >
+                      <div className="font-semibold truncate">{p.client?.name || "Cliente"}</div>
+                      <div className="text-sm text-muted-foreground truncate">
                         {p.hair_type} • {p.porosity_level} • {p.damage_level}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         Validado em {p.validated_at ? format(new Date(p.validated_at), "dd/MM/yyyy", { locale: ptBR }) : "-"}
                       </div>
                     </div>
-                    {p.professional_correction ? (
-                      <Badge variant="secondary">Corrigido</Badge>
-                    ) : (
-                      <Badge className="bg-green-600">Aprovado</Badge>
-                    )}
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      {p.professional_correction ? (
+                        <Badge variant="secondary">Corrigido</Badge>
+                      ) : (
+                        <Badge className="bg-green-600">Aprovado</Badge>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1 h-7 text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setClientViewProfile(p);
+                        }}
+                      >
+                        <Eye className="h-3 w-3" /> Versão Cliente
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))
