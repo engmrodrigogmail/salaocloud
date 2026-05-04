@@ -53,6 +53,7 @@ export default function PortalEdu() {
   const { slug } = useParams<{ slug: string }>();
   const { user } = useAuth();
   const [estId, setEstId] = useState<string | null>(null);
+  const [estName, setEstName] = useState<string | null>(null);
   const { isActive, loading: accessLoading } = useEduAccess(estId);
 
   const [clients, setClients] = useState<Client[]>([]);
@@ -85,8 +86,9 @@ export default function PortalEdu() {
   useEffect(() => {
     (async () => {
       if (!slug) return;
-      const { data } = await supabase.from("establishments").select("id").eq("slug", slug).maybeSingle();
+      const { data } = await supabase.from("establishments").select("id, name").eq("slug", slug).maybeSingle();
       setEstId(data?.id ?? null);
+      setEstName(data?.name ?? null);
     })();
   }, [slug]);
 
@@ -775,7 +777,7 @@ export default function PortalEdu() {
         <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl bg-[#1A1A1A] border-amber-600/50 p-0">
           <div className="p-4 sm:p-6 pb-24">
             <div ref={summaryRef}>
-              {clientViewProfile && <EduAnalysisSummary profile={clientViewProfile} />}
+              {clientViewProfile && <EduAnalysisSummary profile={clientViewProfile} establishmentName={estName} />}
             </div>
             <div className="flex justify-end pt-4">
               <Button

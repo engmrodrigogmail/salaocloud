@@ -17,6 +17,7 @@ export interface EduAnalysisProfile {
 
 interface Props {
   profile: EduAnalysisProfile;
+  establishmentName?: string | null;
 }
 
 // Map damage_level (textual) to a 0-100 position on the 5-segment bar.
@@ -61,7 +62,7 @@ function damageToScore(d: string | null): { value: string; score: number } {
   return { value: d || "—", score: 3 };
 }
 
-export function EduAnalysisSummary({ profile }: Props) {
+export function EduAnalysisSummary({ profile, establishmentName }: Props) {
   const health = damageToHealth(profile.damage_level);
   const por = porosityToScore(profile.porosity_level);
   const dmg = damageToScore(profile.damage_level);
@@ -88,9 +89,12 @@ export function EduAnalysisSummary({ profile }: Props) {
     <div className="rounded-xl border border-amber-600/50 bg-[#1A1A1A] text-gray-200 p-4 sm:p-6 space-y-5">
       {/* Header */}
       <div className="text-center space-y-1 pb-3 border-b border-amber-600/30">
-        <h2 className="text-2xl sm:text-3xl font-bold text-[#E6A15C]">SalaoCloud</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold text-[#E6A15C]">Salão Cloud</h2>
+        {establishmentName && (
+          <p className="text-sm sm:text-base text-gray-100 font-medium">{establishmentName}</p>
+        )}
         <p className="text-xs sm:text-sm tracking-widest text-[#E6A15C]/80 uppercase">
-          Análise Capilar Profissional
+          Análise Capilar por IA
         </p>
         {profile.client?.name && (
           <p className="text-xs text-gray-400 pt-1">Cliente: {profile.client.name}</p>
@@ -233,6 +237,16 @@ export function EduAnalysisSummary({ profile }: Props) {
           className="h-14 object-contain opacity-90 invert"
         />
         <p className="text-[10px] text-gray-500 mt-1">Edu Valentim — IA Hair Expert</p>
+      </div>
+
+      {/* Nota de rodapé */}
+      <div className="pt-3 border-t border-amber-600/20 space-y-1">
+        <p className="text-[9px] sm:text-[10px] text-gray-500 leading-snug">
+          * A qualidade da análise pode sofrer alterações por variáveis externas como qualidade da foto, iluminação, ângulo, entre outros.
+        </p>
+        <p className="text-[9px] sm:text-[10px] text-gray-500 leading-snug">
+          ** Nenhuma análise computacional substitui a avaliação de um profissional.
+        </p>
       </div>
     </div>
   );
