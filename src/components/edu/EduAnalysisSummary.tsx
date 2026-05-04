@@ -17,6 +17,7 @@ export interface EduAnalysisProfile {
 
 interface Props {
   profile: EduAnalysisProfile;
+  establishmentName?: string | null;
 }
 
 // Map damage_level (textual) to a 0-100 position on the 5-segment bar.
