@@ -100,8 +100,8 @@ Sempre enfatize que o custo de NÃO ter o sistema é maior:
 
 ## 8. SOBRE O SALÃO CLOUD
 
-Agendamento online, gestão completa, comissões automáticas, fidelidade, financeiro, IA atendente.
-- Básico R$49/mês • Profissional R$99/mês • Premium R$199/mês
+Plataforma completa para salões/barbearias/clínicas: agendamento online, gestão financeira, comissões automáticas, programa de fidelidade, vitrine de serviços, recepcionista virtual IA e **Edu Valentim** (IA exclusiva de análise capilar).
+- **Plano Único Promocional: R$129,90/mês** — profissionais ilimitados, tudo incluído.
 
 ## 9. VISITANTES RETORNANDO
 
