@@ -209,7 +209,7 @@ export function EduAnalysisSummary({ profile }: Props) {
           alt="Assinatura de Edu Valentim"
           className="h-14 object-contain opacity-90 invert"
         />
-        <p className="text-[10px] text-gray-500 mt-1">Edu Valentim — Consultor Capilar IA</p>
+        <p className="text-[10px] text-gray-500 mt-1">Edu Valentim — IA Hair Expert</p>
       </div>
     </div>
   );
