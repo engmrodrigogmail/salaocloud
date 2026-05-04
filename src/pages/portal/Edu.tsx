@@ -777,7 +777,7 @@ export default function PortalEdu() {
         <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl bg-[#1A1A1A] border-amber-600/50 p-0">
           <div className="p-4 sm:p-6 pb-24">
             <div ref={summaryRef}>
-              {clientViewProfile && <EduAnalysisSummary profile={clientViewProfile} />}
+              {clientViewProfile && <EduAnalysisSummary profile={clientViewProfile} establishmentName={estName} />}
             </div>
             <div className="flex justify-end pt-4">
               <Button
