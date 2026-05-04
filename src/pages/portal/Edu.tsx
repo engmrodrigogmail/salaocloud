@@ -67,6 +67,9 @@ export default function PortalEdu() {
   const [selfAssessment, setSelfAssessment] = useState("");
   const [expectedResult, setExpectedResult] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
+  const [statusStep, setStatusStep] = useState<"idle" | "uploading" | "processing" | "done">("idle");
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const galleryRefs = useRef<(HTMLInputElement | null)[]>([]);
   const cameraRefs = useRef<(HTMLInputElement | null)[]>([]);
