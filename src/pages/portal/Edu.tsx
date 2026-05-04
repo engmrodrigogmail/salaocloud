@@ -76,6 +76,7 @@ export default function PortalEdu() {
   const cameraRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [reviewProfile, setReviewProfile] = useState<Profile | null>(null);
+  const [clientViewProfile, setClientViewProfile] = useState<Profile | null>(null);
   const [correction, setCorrection] = useState("");
   const [savingReview, setSavingReview] = useState(false);
 
