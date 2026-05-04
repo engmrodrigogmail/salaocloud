@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Sparkles, Upload, CheckCircle2, Pencil, Loader2, Camera, Image as ImageIcon, UserPlus, X, Eye } from "lucide-react";
 import { EduAnalysisSummary } from "@/components/edu/EduAnalysisSummary";
+import { ShareSummaryButton } from "@/components/edu/ShareSummaryButton";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEduAccess } from "@/hooks/useEduAccess";
@@ -77,6 +78,7 @@ export default function PortalEdu() {
 
   const [reviewProfile, setReviewProfile] = useState<Profile | null>(null);
   const [clientViewProfile, setClientViewProfile] = useState<Profile | null>(null);
+  const summaryRef = useRef<HTMLDivElement>(null);
   const [correction, setCorrection] = useState("");
   const [savingReview, setSavingReview] = useState(false);
 
@@ -771,8 +773,10 @@ export default function PortalEdu() {
       {/* Modal: Versão Cliente (resumo visual) */}
       <Dialog open={!!clientViewProfile} onOpenChange={(o) => !o && setClientViewProfile(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl bg-[#1A1A1A] border-amber-600/50 p-0">
-          <div className="p-4 sm:p-6">
-            {clientViewProfile && <EduAnalysisSummary profile={clientViewProfile} />}
+          <div className="p-4 sm:p-6 pb-24">
+            <div ref={summaryRef}>
+              {clientViewProfile && <EduAnalysisSummary profile={clientViewProfile} />}
+            </div>
             <div className="flex justify-end pt-4">
               <Button
                 variant="outline"
@@ -783,6 +787,13 @@ export default function PortalEdu() {
               </Button>
             </div>
           </div>
+          {clientViewProfile && (
+            <ShareSummaryButton
+              targetRef={summaryRef}
+              fileName={`analise-${(clientViewProfile.client?.name || "cliente").toLowerCase().replace(/\s+/g, "-")}.png`}
+              shareText="Sua análise capilar — SalaoCloud"
+            />
+          )}
         </DialogContent>
       </Dialog>
     </PortalLayout>
