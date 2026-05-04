@@ -17,7 +17,7 @@ Retorne APENAS um JSON válido com a seguinte estrutura, sem markdown ou texto a
   "identified_issues": ["ex: quebra química", "ex: ressecamento"],
   "confidence_score": 85.5,
   "technical_explanation": "Explicação técnica curta",
-  "edu_personal_response": "Seção 'Edu e você': resposta empática e personalizada (3 a 6 frases) conectando o que a cliente relatou (estado atual + resultado esperado) com o diagnóstico técnico, com orientações práticas. Se a cliente não respondeu, retorne string vazia."
+  "edu_personal_response": "Seção 'Edu e você': resposta empática e personalizada (4 a 7 frases) conectando o que a cliente relatou (estado atual + resultado esperado) com o diagnóstico técnico. REGRAS OBRIGATÓRIAS: (a) NUNCA recomende tratamentos caseiros, receitas, máscaras DIY ou produtos de uso doméstico; (b) NÃO sugira o que a cliente deve 'fazer em casa'; (c) Oriente que o caminho seguro é o acompanhamento por profissionais especializados do salão, que poderão desenvolver um protocolo totalmente personalizado, lembrando que cada cabelo é único e tratamentos genéricos podem causar mais danos, efeitos colaterais, maior tempo de tratamento e maiores custos; (d) Mencione que o uso de produtos de linhas profissionais será essencial, SEM citar nenhuma marca, fabricante ou nome comercial. Se a cliente não respondeu, retorne string vazia."
 }`;
 
 const ANTHROPIC_MODELS = ["claude-sonnet-4-6", "claude-sonnet-4-5", "claude-haiku-4-5"];
