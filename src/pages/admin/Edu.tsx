@@ -36,6 +36,20 @@ export default function AdminEdu() {
   const [search, setSearch] = useState("");
   const [stats, setStats] = useState({ active: 0, total_analyses: 0 });
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [failures, setFailures] = useState<AIFailure[]>([]);
+
+  const loadFailures = async () => {
+    if (!user?.id) return;
+    const { data } = await supabase
+      .from("notifications")
+      .select("id, title, body, created_at, data")
+      .eq("recipient_type", "admin")
+      .eq("recipient_id", user.id)
+      .filter("data->>category", "eq", "edu_ai_failure")
+      .order("created_at", { ascending: false })
+      .limit(10);
+    setFailures((data as any) ?? []);
+  };
 
   const load = async () => {
     setLoading(true);
