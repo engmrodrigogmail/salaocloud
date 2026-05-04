@@ -5,10 +5,20 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Sparkles, Building2, Activity, Search, Loader2 } from "lucide-react";
+import { Sparkles, Building2, Activity, Search, Loader2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+interface AIFailure {
+  id: string;
+  title: string;
+  body: string;
+  created_at: string;
+  data: any;
+}
 
 interface Row {
   id: string;
@@ -26,6 +36,20 @@ export default function AdminEdu() {
   const [search, setSearch] = useState("");
   const [stats, setStats] = useState({ active: 0, total_analyses: 0 });
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [failures, setFailures] = useState<AIFailure[]>([]);
+
+  const loadFailures = async () => {
+    if (!user?.id) return;
+    const { data } = await supabase
+      .from("notifications")
+      .select("id, title, body, created_at, data")
+      .eq("recipient_type", "admin")
+      .eq("recipient_id", user.id)
+      .filter("data->>category", "eq", "edu_ai_failure")
+      .order("created_at", { ascending: false })
+      .limit(10);
+    setFailures((data as any) ?? []);
+  };
 
   const load = async () => {
     setLoading(true);
@@ -57,7 +81,8 @@ export default function AdminEdu() {
 
   useEffect(() => {
     load();
-  }, []);
+    loadFailures();
+  }, [user?.id]);
 
   const toggle = async (row: Row, next: boolean) => {
     setSavingId(row.id);
@@ -132,6 +157,41 @@ export default function AdminEdu() {
             </CardContent>
           </Card>
         </div>
+
+        {failures.length > 0 && (
+          <Card className="border-destructive/40">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                Incidentes da IA Edu (últimos {failures.length})
+              </CardTitle>
+              <CardDescription>
+                Falhas reais retornadas pela API Claude (Anthropic). Os salões veem apenas a mensagem amigável de instabilidade.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {failures.map((f) => (
+                <div key={f.id} className="rounded-md border p-3 text-sm space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold">{f.title}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(f.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground">{f.body}</p>
+                  {f.data?.detail && (
+                    <pre className="mt-1 max-h-32 overflow-auto rounded bg-muted p-2 text-xs whitespace-pre-wrap break-all">
+                      {String(f.data.detail).slice(0, 800)}
+                    </pre>
+                  )}
+                  {f.data?.is_credit_issue && (
+                    <Badge variant="destructive">Créditos esgotados</Badge>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>
