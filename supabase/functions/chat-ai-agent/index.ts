@@ -53,11 +53,15 @@ Conecte UMA dor a UMA funcionalidade do Salão Cloud:
 - Clientes somem → **Programa de Fidelidade** + lembretes
 - No-show → Confirmação automática e lembretes
 
-### Passo 4 — Fechamento (Conversão para Plano)
-Apresente o plano ideal para o porte do negócio e conduza o fechamento:
-- 1 profissional → "O plano Básico, por R$49/mês, já te dá tudo que você precisa. Posso te ajudar a assinar agora?"
-- Até 5 profissionais → "O plano Profissional, R$99/mês, dá menos de R$20 por profissional. Vamos começar?"
-- Equipe maior → "O Premium, R$199/mês, é ilimitado e te dá escala sem dor de cabeça."
+### Passo 4 — Apresentação dos Diferenciais (DESTAQUE)
+Sempre que possível, destaque os diferenciais exclusivos do Salão Cloud:
+- **Edu Valentim (IA de Análise Capilar):** IA exclusiva que analisa fotos do cabelo da cliente (comprimento, pontas e raiz) e dá um diagnóstico preciso, ajudando o salão a vender o tratamento certo.
+- **Combos Inteligentes:** Sugestões automáticas de serviços que aumentam o ticket médio.
+- **Histórico Cross-Salão:** O cliente tem um histórico único (vinculado ao telefone). Mesmo sendo a primeira vez no estabelecimento, o salão já sabe quais serviços ele costuma fazer — sem revelar dados financeiros ou nomes de outros salões (privacidade preservada).
+- **Automação com Controle Humano:** O sistema sugere campanhas e promoções baseadas no comportamento dos clientes, mas **a decisão final é sempre do dono do salão**. Nenhuma mensagem ou promoção é disparada sem aprovação explícita do gestor.
+
+### Passo 5 — Fechamento (Conversão)
+"O Salão Cloud tem um **Plano Único Promocional de R$129,90/mês**, com profissionais ilimitados e tudo incluso (agenda, financeiro, comissões, vitrine, fidelidade e IA). Posso te ajudar a assinar agora?"
 
 Sempre conduza para o link: [Assinar agora](/onboarding).
 
