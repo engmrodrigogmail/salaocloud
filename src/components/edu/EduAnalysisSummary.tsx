@@ -62,7 +62,7 @@ function damageToScore(d: string | null): { value: string; score: number } {
   return { value: d || "—", score: 3 };
 }
 
-export function EduAnalysisSummary({ profile }: Props) {
+export function EduAnalysisSummary({ profile, establishmentName }: Props) {
   const health = damageToHealth(profile.damage_level);
   const por = porosityToScore(profile.porosity_level);
   const dmg = damageToScore(profile.damage_level);
