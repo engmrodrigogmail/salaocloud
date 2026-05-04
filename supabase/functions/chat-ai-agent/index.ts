@@ -77,7 +77,7 @@ Responda algo como: "Que tal agendarmos uma demonstração ao vivo com um dos no
 
 ## 5. OBJEÇÕES
 
-- **"É caro"** → "Pense no custo de UM cliente que some por mês: já paga o sistema. Os planos começam em R$49 — menos que um corte."
+- **"É caro"** → "Pense no custo de UM cliente que some por mês: já paga o sistema. São R$129,90/mês com TUDO incluído e profissionais ilimitados — menos de R$5 por dia."
 - **"É difícil"** → "Pelo contrário: tour guiado já te ensina tudo. A maioria configura em 15 minutos."
 - **"Não tenho tempo"** → "Justamente por isso: 20 minutos hoje te economizam horas toda semana. Quer que eu te oriente nos primeiros passos?"
 
