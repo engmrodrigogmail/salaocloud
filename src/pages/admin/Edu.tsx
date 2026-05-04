@@ -158,6 +158,41 @@ export default function AdminEdu() {
           </Card>
         </div>
 
+        {failures.length > 0 && (
+          <Card className="border-destructive/40">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-5 w-5" />
+                Incidentes da IA Edu (últimos {failures.length})
+              </CardTitle>
+              <CardDescription>
+                Falhas reais retornadas pela API Claude (Anthropic). Os salões veem apenas a mensagem amigável de instabilidade.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {failures.map((f) => (
+                <div key={f.id} className="rounded-md border p-3 text-sm space-y-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold">{f.title}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(f.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+                    </span>
+                  </div>
+                  <p className="text-muted-foreground">{f.body}</p>
+                  {f.data?.detail && (
+                    <pre className="mt-1 max-h-32 overflow-auto rounded bg-muted p-2 text-xs whitespace-pre-wrap break-all">
+                      {String(f.data.detail).slice(0, 800)}
+                    </pre>
+                  )}
+                  {f.data?.is_credit_issue && (
+                    <Badge variant="destructive">Créditos esgotados</Badge>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>Salões cadastrados</CardTitle>
