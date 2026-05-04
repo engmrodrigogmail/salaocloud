@@ -102,9 +102,9 @@ Foram enviadas ${images.length} foto(s): comprimento, pontas e/ou raiz.
 Auto-percepção da cliente sobre o cabelo (estado atual): ${selfAssessment || "(não respondido)"}.
 Principal resultado esperado pela cliente: ${expectedResult || "(não respondido)"}.`;
 
-    // Chamada Claude (Anthropic) — modelo claude-3-5-sonnet com vision
+    // Chamada Claude (Anthropic) — alias estável do Sonnet com vision
     const anthropicReq = {
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-3-5-sonnet-latest",
       max_tokens: 1024,
       system: SYSTEM_PROMPT,
       messages: [
