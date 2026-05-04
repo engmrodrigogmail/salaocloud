@@ -107,7 +107,7 @@ export function EduAnalysisSummary({ profile }: Props) {
           <span>Porosidade: {por.value}</span>
           <span>Nível de dano: {dmg.value}</span>
           {profile.validated_at && (
-            <span>Validado em: {new Date(profile.validated_at).toLocaleDateString("pt-BR")}</span>
+            <span>Data: {new Date(profile.validated_at).toLocaleDateString("pt-BR")}</span>
           )}
         </div>
       </div>
