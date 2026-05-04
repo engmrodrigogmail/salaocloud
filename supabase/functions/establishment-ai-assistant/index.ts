@@ -2278,7 +2278,7 @@ serve(async (req) => {
         sender_type: 'assistant',
         message_type: 'text',
         content: assistantMessage,
-        metadata: { waitlistData, scheduleData, shouldEscalate, showAppointmentsList },
+        metadata: { waitlistData, scheduleData, shouldEscalate, showAppointmentsList, cancelData },
       });
 
       // Increment usage
@@ -2291,6 +2291,7 @@ serve(async (req) => {
           waitlistData,
           scheduleData,
           showAppointmentsList,
+          cancelData,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
