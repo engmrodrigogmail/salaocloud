@@ -89,9 +89,12 @@ export function EduAnalysisSummary({ profile, establishmentName }: Props) {
     <div className="rounded-xl border border-amber-600/50 bg-[#1A1A1A] text-gray-200 p-4 sm:p-6 space-y-5">
       {/* Header */}
       <div className="text-center space-y-1 pb-3 border-b border-amber-600/30">
-        <h2 className="text-2xl sm:text-3xl font-bold text-[#E6A15C]">SalaoCloud</h2>
+        <h2 className="text-2xl sm:text-3xl font-bold text-[#E6A15C]">Salão Cloud</h2>
+        {establishmentName && (
+          <p className="text-sm sm:text-base text-gray-100 font-medium">{establishmentName}</p>
+        )}
         <p className="text-xs sm:text-sm tracking-widest text-[#E6A15C]/80 uppercase">
-          Análise Capilar Profissional
+          Análise Capilar por IA
         </p>
         {profile.client?.name && (
           <p className="text-xs text-gray-400 pt-1">Cliente: {profile.client.name}</p>
