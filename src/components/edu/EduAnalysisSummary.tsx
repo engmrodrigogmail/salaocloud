@@ -238,6 +238,16 @@ export function EduAnalysisSummary({ profile, establishmentName }: Props) {
         />
         <p className="text-[10px] text-gray-500 mt-1">Edu Valentim — IA Hair Expert</p>
       </div>
+
+      {/* Nota de rodapé */}
+      <div className="pt-3 border-t border-amber-600/20 space-y-1">
+        <p className="text-[9px] sm:text-[10px] text-gray-500 leading-snug">
+          * A qualidade da análise pode sofrer alterações por variáveis externas como qualidade da foto, iluminação, ângulo, entre outros.
+        </p>
+        <p className="text-[9px] sm:text-[10px] text-gray-500 leading-snug">
+          ** Nenhuma análise computacional substitui a avaliação de um profissional.
+        </p>
+      </div>
     </div>
   );
 }
