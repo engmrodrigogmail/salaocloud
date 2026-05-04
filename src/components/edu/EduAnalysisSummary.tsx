@@ -11,6 +11,8 @@ export interface EduAnalysisProfile {
   edu_personal_response: string | null;
   professional_correction: string | null;
   validated_at: string | null;
+  client_self_assessment?: string | null;
+  client_expected_result?: string | null;
 }
 
 interface Props {
