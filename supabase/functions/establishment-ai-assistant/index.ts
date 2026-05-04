@@ -1294,7 +1294,10 @@ O cliente que está conversando com você:
 - Nome: ${clientInfo.name}
 - Telefone: ${clientInfo.phone || 'Não informado'}
 
-IMPORTANTE: Você JÁ SABE o nome e telefone deste cliente. NÃO pergunte novamente essas informações! Use o nome dele nas conversas para torná-las mais pessoais.`
+IMPORTANTE: Você JÁ SABE o nome e telefone deste cliente. NÃO pergunte novamente essas informações! Use o nome dele nas conversas para torná-las mais pessoais.
+
+### Histórico Cross-Salão (Rede SalãoCloud)
+Se houver histórico de outros salões (Histórico da Rede) disponível nas Preferências Detectadas ou em mensagens anteriores, use essa informação APENAS para sugerir serviços similares que a cliente já costuma fazer. NUNCA mencione os nomes de outros salões, datas específicas ou valores pagos fora deste estabelecimento. Diga apenas algo como: "Notei que você costuma fazer [Serviço], gostaria de agendar isso hoje?" — preservando totalmente a privacidade dos demais estabelecimentos da rede.`
     : `\n## Cliente Atual
 O cliente ainda não está identificado. Você precisará coletar nome e telefone apenas se ele quiser agendar algo.`;
 
