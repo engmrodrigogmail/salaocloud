@@ -278,10 +278,23 @@ export default function PortalEdu() {
       .eq("id", reviewProfile.id);
     setSavingReview(false);
     if (error) {
+      setSavingReview(false);
       toast.error("Erro: " + error.message);
       return;
     }
-    toast.success("Correção registrada — alimentando o aprendizado.", { position: "top-center", duration: 2000 });
+    // Regenera o "Edu e Você" incorporando a observação do profissional
+    const { error: regenErr } = await supabase.functions.invoke("regenerate-edu-summary", {
+      body: { profile_id: reviewProfile.id },
+    });
+    setSavingReview(false);
+    if (regenErr) {
+      toast.warning("Correção salva, mas o resumo da cliente não foi atualizado automaticamente.", {
+        position: "top-center",
+        duration: 3000,
+      });
+    } else {
+      toast.success("Correção registrada — resumo da cliente atualizado.", { position: "top-center", duration: 2000 });
+    }
     setReviewProfile(null);
     setCorrection("");
     loadData();

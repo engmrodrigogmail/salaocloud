@@ -107,7 +107,7 @@ export function EduAnalysisSummary({ profile }: Props) {
           <span>Porosidade: {por.value}</span>
           <span>Nível de dano: {dmg.value}</span>
           {profile.validated_at && (
-            <span>Validado em: {new Date(profile.validated_at).toLocaleDateString("pt-BR")}</span>
+            <span>Data: {new Date(profile.validated_at).toLocaleDateString("pt-BR")}</span>
           )}
         </div>
       </div>
@@ -200,16 +200,6 @@ export function EduAnalysisSummary({ profile }: Props) {
           {profile.edu_personal_response ||
             "Sua análise foi registrada. Em breve seu profissional irá conversar com você sobre o melhor plano de cuidados personalizado."}
         </p>
-        {profile.professional_correction && (
-          <div className="pt-2 border-t border-gray-800">
-            <p className="text-[10px] uppercase tracking-widest text-gray-500 mb-1">
-              Observação do profissional
-            </p>
-            <p className="text-xs text-gray-300 whitespace-pre-line">
-              {profile.professional_correction}
-            </p>
-          </div>
-        )}
       </div>
 
       {/* Assinatura do Edu */}
@@ -219,7 +209,7 @@ export function EduAnalysisSummary({ profile }: Props) {
           alt="Assinatura de Edu Valentim"
           className="h-14 object-contain opacity-90 invert"
         />
-        <p className="text-[10px] text-gray-500 mt-1">Edu Valentim — Consultor Capilar IA</p>
+        <p className="text-[10px] text-gray-500 mt-1">Edu Valentim — IA Hair Expert</p>
       </div>
     </div>
   );
