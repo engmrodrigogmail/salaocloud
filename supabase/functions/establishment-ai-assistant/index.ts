@@ -1294,7 +1294,10 @@ O cliente que está conversando com você:
 - Nome: ${clientInfo.name}
 - Telefone: ${clientInfo.phone || 'Não informado'}
 
-IMPORTANTE: Você JÁ SABE o nome e telefone deste cliente. NÃO pergunte novamente essas informações! Use o nome dele nas conversas para torná-las mais pessoais.`
+IMPORTANTE: Você JÁ SABE o nome e telefone deste cliente. NÃO pergunte novamente essas informações! Use o nome dele nas conversas para torná-las mais pessoais.
+
+### Histórico Cross-Salão (Rede SalãoCloud)
+Se houver histórico de outros salões (Histórico da Rede) disponível nas Preferências Detectadas ou em mensagens anteriores, use essa informação APENAS para sugerir serviços similares que a cliente já costuma fazer. NUNCA mencione os nomes de outros salões, datas específicas ou valores pagos fora deste estabelecimento. Diga apenas algo como: "Notei que você costuma fazer [Serviço], gostaria de agendar isso hoje?" — preservando totalmente a privacidade dos demais estabelecimentos da rede.`
     : `\n## Cliente Atual
 O cliente ainda não está identificado. Você precisará coletar nome e telefone apenas se ele quiser agendar algo.`;
 
@@ -1433,20 +1436,28 @@ Sempre pergunte: "Posso confirmar este agendamento para você?" e AGUARDE uma re
 4. PRIORIZE horários de HOJE e AMANHÃ
 5. Se não conseguir resolver, ofereça encaminhar para humano [ESCALAR]
 6. Respeite SEMPRE as Configurações de Exibição acima
+7. UPSELL GENTIL: Sempre que a cliente agendar um serviço principal (ex: Corte ou Coloração), ofereça gentilmente UM serviço complementar rápido (ex: "Gostaria de aproveitar e incluir uma hidratação ou escova?"). Se ela recusar, não insista nem repita a oferta na mesma conversa.
 
 ## PROTOCOLO DE HORÁRIO NÃO CONFIGURADO
 Se "HORÁRIO NÃO CONFIGURADO" aparecer:
 1. Informe gentilmente; 2. Peça desculpas; 3. Indique o telefone ${establishment.phone || 'não informado'}; 4. Inclua [NOTIFICAR_HORARIO]; 5. NÃO agende.
 
-## CONSULTA DE AGENDAMENTOS
-Quando a cliente perguntar sobre seus agendamentos, queira verificar, cancelar ou remarcar:
+## CONSULTA E CANCELAMENTO DE AGENDAMENTOS
+Quando a cliente perguntar sobre seus agendamentos, queira verificar ou remarcar:
 - Responda com [LISTAR_AGENDAMENTOS] no final — o sistema mostra a lista automaticamente.
+
+Quando a cliente pedir para CANCELAR um agendamento específico:
+1. Se você ainda não conhece o ID do agendamento, primeiro emita [LISTAR_AGENDAMENTOS] para mostrar a lista.
+2. Após a cliente indicar claramente qual agendamento deseja cancelar (por número da lista, serviço/data ou ID), CONFIRME explicitamente: "Posso cancelar o agendamento de [Serviço] no dia [Data] às [Hora]?".
+3. Somente após resposta positiva da cliente ("sim", "pode", "confirmar", "ok"), emita o comando [CANCELAR|id_do_agendamento] no FINAL da mensagem, usando o UUID exato do agendamento que apareceu na lista. NUNCA invente IDs.
+4. NÃO emita [CANCELAR|...] na mesma mensagem do pedido de confirmação.
 
 ## Ações Especiais
 - [ESCALAR] — escalar para humano
 - [FILA_ESPERA|serviço|data|horário] — adicionar à fila de espera
 - [AGENDAR|serviço|profissional|data|horário|nome|telefone] — SOMENTE após confirmação explícita da cliente. Use SEMPRE o nome real do profissional escolhido (mesmo se "show_professional_names" estiver desativado).
 - [LISTAR_AGENDAMENTOS] — listar agendamentos do cliente
+- [CANCELAR|id_do_agendamento] — cancelar um agendamento específico SOMENTE após a cliente confirmar qual deseja cancelar. Use o UUID exato exibido na lista.
 - [NOTIFICAR_HORARIO] — notificar sobre horário não configurado`;
 
 // IMPORTANTE: O separador | é usado para evitar conflitos com : no horário (ex: 13:30)
@@ -1920,12 +1931,57 @@ serve(async (req) => {
       } | null = null;
       let showAppointmentsList = false;
       let notifyWorkingHours = false;
+      let cancelData: { cancelled: number; appointmentIds: string[]; success: boolean; errors: string[] } | null = null;
 
       // Check for cancellation flow trigger
       if (assistantMessage.includes('[LISTAR_AGENDAMENTOS]')) {
         showAppointmentsList = true;
         assistantMessage = assistantMessage.replace('[LISTAR_AGENDAMENTOS]', '').trim();
       }
+
+      // Check for direct cancellation command: [CANCELAR|id1] or [CANCELAR|id1,id2]
+      const cancelMatches = [...assistantMessage.matchAll(/\[CANCELAR\|([^\]]+)\]/g)];
+      if (cancelMatches.length > 0) {
+        const idsToCancel: string[] = [];
+        for (const m of cancelMatches) {
+          const raw = m[1].trim();
+          for (const part of raw.split(/[,;\s]+/)) {
+            const candidate = part.trim();
+            // Validate UUID format to prevent invalid DB calls
+            if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidate)) {
+              idsToCancel.push(candidate);
+            }
+          }
+          assistantMessage = assistantMessage.replace(m[0], '').trim();
+        }
+
+        if (idsToCancel.length > 0) {
+          // Security: ensure those appointments belong to the current client
+          const futureAppts = await getClientFutureAppointments(establishmentId, clientId, clientPhone);
+          const ownedIds = new Set(futureAppts.map((a: any) => a.id));
+          const allowedIds = idsToCancel.filter(id => ownedIds.has(id));
+
+          if (allowedIds.length > 0) {
+            console.log('[AI-Assistant] Cancelando via [CANCELAR|...]:', allowedIds);
+            const result = await cancelAppointments(allowedIds, 'Cancelado pela cliente via Silvia');
+            cancelData = {
+              cancelled: result.cancelled,
+              appointmentIds: allowedIds,
+              success: result.success,
+              errors: result.errors,
+            };
+            const confirmation = result.cancelled > 0
+              ? `\n\n✅ ${result.cancelled} agendamento(s) cancelado(s) com sucesso.`
+              : `\n\n⚠️ Não consegui cancelar agora. Por favor, tente novamente em instantes.`;
+            assistantMessage = (assistantMessage + confirmation).trim();
+          } else {
+            console.warn('[AI-Assistant] [CANCELAR|...] com IDs não pertencentes ao cliente, ignorando.');
+            assistantMessage = (assistantMessage + '\n\nNão localizei esse agendamento na sua lista. Quer que eu liste seus agendamentos novamente?').trim();
+            showAppointmentsList = true;
+          }
+        }
+      }
+
 
       // Check for working hours notification - just log it, no WhatsApp notification
       // The establishment will see an in-app alert on the portal dashboard
@@ -2222,7 +2278,7 @@ serve(async (req) => {
         sender_type: 'assistant',
         message_type: 'text',
         content: assistantMessage,
-        metadata: { waitlistData, scheduleData, shouldEscalate, showAppointmentsList },
+        metadata: { waitlistData, scheduleData, shouldEscalate, showAppointmentsList, cancelData },
       });
 
       // Increment usage
@@ -2235,6 +2291,7 @@ serve(async (req) => {
           waitlistData,
           scheduleData,
           showAppointmentsList,
+          cancelData,
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
