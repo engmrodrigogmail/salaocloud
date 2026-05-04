@@ -5,10 +5,20 @@ import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Sparkles, Building2, Activity, Search, Loader2 } from "lucide-react";
+import { Sparkles, Building2, Activity, Search, Loader2, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+interface AIFailure {
+  id: string;
+  title: string;
+  body: string;
+  created_at: string;
+  data: any;
+}
 
 interface Row {
   id: string;
