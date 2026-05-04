@@ -81,7 +81,8 @@ export default function AdminEdu() {
 
   useEffect(() => {
     load();
-  }, []);
+    loadFailures();
+  }, [user?.id]);
 
   const toggle = async (row: Row, next: boolean) => {
     setSavingId(row.id);
