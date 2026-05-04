@@ -1931,12 +1931,57 @@ serve(async (req) => {
       } | null = null;
       let showAppointmentsList = false;
       let notifyWorkingHours = false;
+      let cancelData: { cancelled: number; appointmentIds: string[]; success: boolean; errors: string[] } | null = null;
 
       // Check for cancellation flow trigger
       if (assistantMessage.includes('[LISTAR_AGENDAMENTOS]')) {
         showAppointmentsList = true;
         assistantMessage = assistantMessage.replace('[LISTAR_AGENDAMENTOS]', '').trim();
       }
+
+      // Check for direct cancellation command: [CANCELAR|id1] or [CANCELAR|id1,id2]
+      const cancelMatches = [...assistantMessage.matchAll(/\[CANCELAR\|([^\]]+)\]/g)];
+      if (cancelMatches.length > 0) {
+        const idsToCancel: string[] = [];
+        for (const m of cancelMatches) {
+          const raw = m[1].trim();
+          for (const part of raw.split(/[,;\s]+/)) {
+            const candidate = part.trim();
+            // Validate UUID format to prevent invalid DB calls
+            if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(candidate)) {
+              idsToCancel.push(candidate);
+            }
+          }
+          assistantMessage = assistantMessage.replace(m[0], '').trim();
+        }
+
+        if (idsToCancel.length > 0) {
+          // Security: ensure those appointments belong to the current client
+          const futureAppts = await getClientFutureAppointments(establishmentId, clientId, clientPhone);
+          const ownedIds = new Set(futureAppts.map((a: any) => a.id));
+          const allowedIds = idsToCancel.filter(id => ownedIds.has(id));
+
+          if (allowedIds.length > 0) {
+            console.log('[AI-Assistant] Cancelando via [CANCELAR|...]:', allowedIds);
+            const result = await cancelAppointments(allowedIds, 'Cancelado pela cliente via Silvia');
+            cancelData = {
+              cancelled: result.cancelled,
+              appointmentIds: allowedIds,
+              success: result.success,
+              errors: result.errors,
+            };
+            const confirmation = result.cancelled > 0
+              ? `\n\n✅ ${result.cancelled} agendamento(s) cancelado(s) com sucesso.`
+              : `\n\n⚠️ Não consegui cancelar agora. Por favor, tente novamente em instantes.`;
+            assistantMessage = (assistantMessage + confirmation).trim();
+          } else {
+            console.warn('[AI-Assistant] [CANCELAR|...] com IDs não pertencentes ao cliente, ignorando.');
+            assistantMessage = (assistantMessage + '\n\nNão localizei esse agendamento na sua lista. Quer que eu liste seus agendamentos novamente?').trim();
+            showAppointmentsList = true;
+          }
+        }
+      }
+
 
       // Check for working hours notification - just log it, no WhatsApp notification
       // The establishment will see an in-app alert on the portal dashboard
