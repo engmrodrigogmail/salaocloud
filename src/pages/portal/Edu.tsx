@@ -67,6 +67,9 @@ export default function PortalEdu() {
   const [selfAssessment, setSelfAssessment] = useState("");
   const [expectedResult, setExpectedResult] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
+  const [statusStep, setStatusStep] = useState<"idle" | "uploading" | "processing" | "done">("idle");
+  const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0 });
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const galleryRefs = useRef<(HTMLInputElement | null)[]>([]);
   const cameraRefs = useRef<(HTMLInputElement | null)[]>([]);
@@ -125,21 +128,33 @@ export default function PortalEdu() {
     setPhotos([null, null, null]);
     setSelfAssessment("");
     setExpectedResult("");
+    setStatusStep("idle");
+    setUploadProgress({ current: 0, total: 0 });
+    setErrorMsg(null);
   };
 
   const submitAnalysis = async () => {
+    setErrorMsg(null);
     if (!estId || !selectedClient) {
-      toast.error("Selecione um cliente", { position: "top-center", duration: 2000 });
+      const m = "Selecione uma cliente antes de continuar.";
+      setErrorMsg(m);
+      toast.error(m, { position: "top-center", duration: 2500 });
       return;
     }
     const valid = photos.filter(Boolean) as File[];
     if (valid.length === 0) {
-      toast.error("Envie ao menos 1 foto", { position: "top-center", duration: 2000 });
+      const m = "Envie ao menos 1 foto para análise.";
+      setErrorMsg(m);
+      toast.error(m, { position: "top-center", duration: 2500 });
       return;
     }
     setAnalyzing(true);
+    setStatusStep("uploading");
+    setUploadProgress({ current: 0, total: valid.length });
+    const uploadToastId = toast.loading(`Enviando fotos (0/${valid.length})...`, { position: "top-center" });
     try {
       const photoPaths: string[] = [];
+      let uploaded = 0;
       for (let i = 0; i < photos.length; i++) {
         const f = photos[i];
         if (!f) continue;
@@ -148,9 +163,20 @@ export default function PortalEdu() {
         const { error: upErr } = await supabase.storage.from("temp-analysis").upload(path, f, {
           contentType: f.type || "image/jpeg",
         });
-        if (upErr) throw upErr;
+        if (upErr) {
+          throw new Error(`Falha no upload da foto ${i + 1}: ${upErr.message}`);
+        }
         photoPaths.push(path);
+        uploaded += 1;
+        setUploadProgress({ current: uploaded, total: valid.length });
+        toast.loading(`Enviando fotos (${uploaded}/${valid.length})...`, { id: uploadToastId, position: "top-center" });
       }
+
+      setStatusStep("processing");
+      toast.loading("Edu está analisando as fotos... isso pode levar alguns segundos.", {
+        id: uploadToastId,
+        position: "top-center",
+      });
 
       const { data, error } = await supabase.functions.invoke("analyze-hair-profile", {
         body: {
@@ -161,16 +187,38 @@ export default function PortalEdu() {
           client_expected_result: expectedResult.slice(0, MAX_CHARS),
         },
       });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).error);
+      if (error) throw new Error(error.message || "Falha ao chamar o serviço de análise.");
+      const d: any = data;
+      if (d?.error) {
+        const map: Record<string, string> = {
+          unauthorized: "Sessão expirada. Faça login novamente.",
+          invalid_token: "Sessão inválida. Faça login novamente.",
+          forbidden: "Você não tem permissão para analisar neste salão.",
+          edu_not_active: "O Consultor Edu não está ativo neste salão.",
+          invalid_payload: "Dados inválidos enviados para análise.",
+          photo_download_failed: "Não foi possível ler uma das fotos enviadas.",
+          claude_error: "O serviço de IA está instável agora. Tente novamente em instantes.",
+          ai_parse_failed: "A IA retornou um formato inesperado. Tente novamente.",
+          insert_failed: "Não foi possível salvar o diagnóstico no banco de dados.",
+        };
+        throw new Error(map[d.error] || d.detail || d.error);
+      }
 
-      toast.success("Análise concluída! Revise e valide o diagnóstico.", { position: "top-center", duration: 2000 });
+      setStatusStep("done");
+      toast.success("Análise concluída! Revise e valide o diagnóstico.", {
+        id: uploadToastId,
+        position: "top-center",
+        duration: 2500,
+      });
       setDialogOpen(false);
       resetForm();
       loadData();
     } catch (e: any) {
-      console.error(e);
-      toast.error("Erro ao analisar: " + (e.message || "desconhecido"), { position: "top-center", duration: 2500 });
+      console.error("[Edu] submitAnalysis error", e);
+      const msg = e?.message || "Erro desconhecido durante a análise.";
+      setErrorMsg(msg);
+      setStatusStep("idle");
+      toast.error(msg, { id: uploadToastId, position: "top-center", duration: 4000 });
     } finally {
       setAnalyzing(false);
     }
@@ -505,14 +553,33 @@ export default function PortalEdu() {
             </p>
           </div>
 
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setDialogOpen(false)} disabled={analyzing}>
-              Cancelar
-            </Button>
-            <Button onClick={submitAnalysis} disabled={analyzing} className="gap-2">
-              {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              {analyzing ? "Analisando..." : "Analisar com Edu"}
-            </Button>
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            {statusStep !== "idle" && analyzing && (
+              <div className="w-full text-xs text-muted-foreground flex items-center gap-2 border rounded-md px-3 py-2 bg-muted/40">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                {statusStep === "uploading" &&
+                  `Enviando fotos (${uploadProgress.current}/${uploadProgress.total})...`}
+                {statusStep === "processing" && "Edu está analisando... aguarde."}
+              </div>
+            )}
+            {errorMsg && !analyzing && (
+              <div className="w-full text-xs text-destructive border border-destructive/40 rounded-md px-3 py-2 bg-destructive/10">
+                {errorMsg}
+              </div>
+            )}
+            <div className="flex gap-2 w-full justify-end">
+              <Button variant="ghost" onClick={() => setDialogOpen(false)} disabled={analyzing}>
+                Cancelar
+              </Button>
+              <Button onClick={submitAnalysis} disabled={analyzing} className="gap-2">
+                {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {statusStep === "uploading"
+                  ? "Enviando fotos..."
+                  : statusStep === "processing"
+                  ? "Analisando..."
+                  : "Analisar com Edu"}
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
