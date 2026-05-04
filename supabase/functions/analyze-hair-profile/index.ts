@@ -134,7 +134,68 @@ Principal resultado esperado pela cliente: ${expectedResult || "(não respondido
     if (!claudeRes.ok) {
       const errText = await claudeRes.text();
       console.error("Claude error", claudeRes.status, errText);
-      return json({ error: "claude_error", status: claudeRes.status, detail: errText }, 502);
+
+      // Detecta problemas de crédito/cota da Anthropic e notifica super admins
+      const lower = errText.toLowerCase();
+      const isCredit =
+        claudeRes.status === 402 ||
+        claudeRes.status === 429 ||
+        lower.includes("credit balance") ||
+        lower.includes("insufficient") ||
+        lower.includes("quota") ||
+        lower.includes("rate limit");
+
+      try {
+        const { data: estInfo } = await admin
+          .from("establishments")
+          .select("name, slug")
+          .eq("id", body.establishment_id)
+          .maybeSingle();
+
+        const { data: admins } = await admin
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "super_admin");
+
+        const title = isCredit
+          ? "⚠️ Edu IA: créditos esgotados (Anthropic)"
+          : "⚠️ Edu IA: erro na API Claude";
+        const bodyMsg =
+          `Salão: ${estInfo?.name ?? body.establishment_id} • Status ${claudeRes.status}. ` +
+          `Detalhe: ${errText.slice(0, 400)}`;
+
+        for (const a of admins ?? []) {
+          await admin.from("notifications").insert({
+            sender_type: "system",
+            recipient_type: "admin",
+            recipient_id: a.user_id,
+            title,
+            body: bodyMsg,
+            link: "/admin/edu",
+            data: {
+              category: "edu_ai_failure",
+              establishment_id: body.establishment_id,
+              establishment_slug: estInfo?.slug ?? null,
+              status: claudeRes.status,
+              detail: errText.slice(0, 1000),
+              is_credit_issue: isCredit,
+            },
+          });
+        }
+      } catch (notifyErr) {
+        console.error("notify super admins failed", notifyErr);
+      }
+
+      return json(
+        {
+          error: "claude_error",
+          status: claudeRes.status,
+          user_message:
+            "A IA usada pelo Edu está enfrentando instabilidades. Tente novamente mais tarde.",
+          detail: errText,
+        },
+        502,
+      );
     }
 
     const claudeData = await claudeRes.json();
