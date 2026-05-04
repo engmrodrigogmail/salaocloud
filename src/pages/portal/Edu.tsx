@@ -86,8 +86,9 @@ export default function PortalEdu() {
   useEffect(() => {
     (async () => {
       if (!slug) return;
-      const { data } = await supabase.from("establishments").select("id").eq("slug", slug).maybeSingle();
+      const { data } = await supabase.from("establishments").select("id, name").eq("slug", slug).maybeSingle();
       setEstId(data?.id ?? null);
+      setEstName(data?.name ?? null);
     })();
   }, [slug]);
 
