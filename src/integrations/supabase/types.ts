@@ -112,6 +112,20 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ai_assistant_conversations_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "ai_assistant_conversations_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ai_assistant_messages: {
@@ -194,6 +208,20 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ai_assistant_usage_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "ai_assistant_usage_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
         ]
       }
       ai_assistant_waitlist: {
@@ -265,6 +293,20 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ai_assistant_waitlist_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "ai_assistant_waitlist_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
             referencedColumns: ["id"]
           },
           {
@@ -477,6 +519,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "appointments_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "appointments_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "appointments_professional_id_fkey"
             columns: ["professional_id"]
             isOneToOne: false
@@ -544,6 +600,20 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_campaigns_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "broadcast_campaigns_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
             referencedColumns: ["id"]
           },
         ]
@@ -649,6 +719,20 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: true
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "broadcast_subscriptions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "broadcast_subscriptions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "vw_last_establishment_access"
             referencedColumns: ["id"]
           },
         ]
@@ -808,6 +892,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "client_ai_preferences_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "client_ai_preferences_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "client_ai_preferences_favorite_professional_id_fkey"
             columns: ["favorite_professional_id"]
             isOneToOne: false
@@ -909,6 +1007,20 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_hair_profiles_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "client_hair_profiles_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
             referencedColumns: ["id"]
           },
         ]
@@ -1154,6 +1266,20 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "clients_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "clients_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
         ]
       }
       commission_audit_log: {
@@ -1276,6 +1402,20 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_rules_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "commission_rules_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
             referencedColumns: ["id"]
           },
         ]
@@ -1409,6 +1549,20 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "discount_coupons_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "discount_coupons_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
         ]
       }
       edu_access_control: {
@@ -1448,6 +1602,20 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: true
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "edu_access_control_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "edu_access_control_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "vw_last_establishment_access"
             referencedColumns: ["id"]
           },
         ]
@@ -1593,6 +1761,20 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "establishment_ai_assistant_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "establishment_ai_assistant_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
         ]
       }
       establishment_ai_learnings: {
@@ -1656,6 +1838,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "establishment_ai_learnings_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "establishment_ai_learnings_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "establishment_ai_learnings_source_conversation_id_fkey"
             columns: ["source_conversation_id"]
             isOneToOne: false
@@ -1709,6 +1905,20 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "establishment_ai_subscriptions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "establishment_ai_subscriptions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
         ]
       }
       establishment_closures: {
@@ -1754,6 +1964,20 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishment_closures_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "establishment_closures_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
             referencedColumns: ["id"]
           },
         ]
@@ -1806,6 +2030,20 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "establishment_push_subscriptions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "establishment_push_subscriptions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
         ]
       }
       establishment_showcase: {
@@ -1848,6 +2086,20 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishment_showcase_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "establishment_showcase_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
             referencedColumns: ["id"]
           },
         ]
@@ -2020,6 +2272,20 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "finance_categories_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "finance_categories_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
         ]
       }
       finance_entries: {
@@ -2087,6 +2353,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "finance_entries_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "finance_entries_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "finance_entries_recurring_template_id_fkey"
             columns: ["recurring_template_id"]
             isOneToOne: false
@@ -2150,6 +2430,20 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "finance_recurring_templates_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "finance_recurring_templates_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
         ]
       }
       finance_settings: {
@@ -2177,6 +2471,20 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: true
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "finance_settings_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "finance_settings_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "vw_last_establishment_access"
             referencedColumns: ["id"]
           },
         ]
@@ -2218,6 +2526,20 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_programs_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "loyalty_programs_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
             referencedColumns: ["id"]
           },
         ]
@@ -2344,6 +2666,20 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "notification_settings_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "notification_settings_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
         ]
       }
       notifications: {
@@ -2442,6 +2778,20 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "payment_methods_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "payment_methods_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
         ]
       }
       platform_ai_addon: {
@@ -2527,6 +2877,20 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_coupon_redemptions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "platform_coupon_redemptions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
             referencedColumns: ["id"]
           },
         ]
@@ -2648,6 +3012,20 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "product_categories_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "product_categories_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
         ]
       }
       product_units: {
@@ -2678,6 +3056,20 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "product_units_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "product_units_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
             referencedColumns: ["id"]
           },
         ]
@@ -2728,6 +3120,20 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "products_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "products_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
             referencedColumns: ["id"]
           },
         ]
@@ -2862,6 +3268,20 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "professional_commissions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "professional_commissions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
             referencedColumns: ["id"]
           },
           {
@@ -3064,6 +3484,20 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "professionals_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "professionals_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
         ]
       }
       profiles: {
@@ -3144,6 +3578,20 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "promotions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "promotions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
         ]
       }
       salon_learning_patterns: {
@@ -3185,6 +3633,20 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "salon_learning_patterns_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "salon_learning_patterns_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
         ]
       }
       service_categories: {
@@ -3218,6 +3680,20 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_categories_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "service_categories_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
             referencedColumns: ["id"]
           },
         ]
@@ -3272,6 +3748,20 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "services_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "services_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
             referencedColumns: ["id"]
           },
         ]
@@ -3624,6 +4114,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "tabs_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "tabs_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tabs_professional_id_fkey"
             columns: ["professional_id"]
             isOneToOne: false
@@ -3653,6 +4157,67 @@ export type Database = {
         }
         Relationships: []
       }
+      user_session_logs: {
+        Row: {
+          created_at: string
+          establishment_id: string
+          id: string
+          page_name: string
+          page_route: string
+          referrer_page: string | null
+          session_id: string
+          session_start: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          establishment_id: string
+          id?: string
+          page_name: string
+          page_route: string
+          referrer_page?: string | null
+          session_id: string
+          session_start?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          establishment_id?: string
+          id?: string
+          page_name?: string
+          page_route?: string
+          referrer_page?: string | null
+          session_id?: string
+          session_start?: string
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_session_logs_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_session_logs_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "user_session_logs_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       client_no_show_stats: {
@@ -3674,7 +4239,33 @@ export type Database = {
             referencedRelation: "establishments"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "clients_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "clients_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
         ]
+      }
+      vw_client_registration_status: {
+        Row: {
+          clients_complete: number | null
+          clients_pending: number | null
+          completion_percentage: number | null
+          establishment_id: string | null
+          establishment_name: string | null
+          pending_percentage: number | null
+          total_clients: number | null
+        }
+        Relationships: []
       }
       vw_finance_consolidated: {
         Row: {
@@ -3694,6 +4285,25 @@ export type Database = {
         }
         Relationships: []
       }
+      vw_last_establishment_access: {
+        Row: {
+          days_active_this_month: number | null
+          days_since_last_access: number | null
+          id: string | null
+          last_access_at: string | null
+          last_page_accessed: string | null
+          name: string | null
+          owner_id: string | null
+          owner_name: string | null
+          slug: string | null
+          status: Database["public"]["Enums"]["establishment_status"] | null
+          subscription_plan:
+            | Database["public"]["Enums"]["subscription_plan"]
+            | null
+          total_sessions_this_month: number | null
+        }
+        Relationships: []
+      }
       vw_shared_client_history: {
         Row: {
           closed_at: string | null
@@ -3710,6 +4320,20 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tabs_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "tabs_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
             referencedColumns: ["id"]
           },
         ]
