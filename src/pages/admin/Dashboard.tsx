@@ -309,6 +309,14 @@ export default function AdminDashboard() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setMonitoringOpen(true)}
+              className="gap-2"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Monitoramento de Salões
+            </Button>
             <Button 
               variant="outline" 
               onClick={handleSyncLandingpage}
