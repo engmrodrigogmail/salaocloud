@@ -163,9 +163,10 @@ export default function PortalEdu() {
       const photoPaths: string[] = [];
       let uploaded = 0;
       for (let i = 0; i < photos.length; i++) {
-        const f = photos[i];
-        if (!f) continue;
-        const ext = (f.name.split(".").pop() || "jpg").toLowerCase();
+        const original = photos[i];
+        if (!original) continue;
+        const f = await compressImageForAI(original);
+        const ext = "jpg";
         const path = `${estId}/${selectedClient.id}/${Date.now()}-${i}.${ext}`;
         const { error: upErr } = await supabase.storage.from("temp-analysis").upload(path, f, {
           contentType: f.type || "image/jpeg",
