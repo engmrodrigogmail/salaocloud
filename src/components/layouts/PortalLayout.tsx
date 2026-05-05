@@ -70,6 +70,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
   const { isImpersonating } = useImpersonation();
   const { startTour } = usePortalTour({ autoStart: true });
   const { isActive: eduActive } = useEduAccess(establishmentId);
+  useTrackPageAccess(establishmentId);
 
   useEffect(() => {
     if (slug) {
