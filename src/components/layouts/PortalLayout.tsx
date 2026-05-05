@@ -51,6 +51,7 @@ import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { supabase } from "@/integrations/supabase/client";
 import { usePortalTour } from "@/hooks/usePortalTour";
 import { useEduAccess } from "@/hooks/useEduAccess";
+import { useTrackPageAccess } from "@/hooks/useTrackPageAccess";
 import logo from "@/assets/logo-salaocloud-v5.png";
 import salonBg from "@/assets/salon-dark-bg.png";
 
