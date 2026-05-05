@@ -37,6 +37,8 @@ import {
   Cell,
 } from "recharts";
 import { Link } from "react-router-dom";
+import { MonitoringModal } from "@/components/admin/MonitoringModal";
+import { BarChart3 } from "lucide-react";
 
 interface Stats {
   totalEstablishments: number;
