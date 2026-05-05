@@ -616,6 +616,7 @@ export default function AdminDashboard() {
           </Card>
         </div>
       </div>
+      <MonitoringModal open={monitoringOpen} onOpenChange={setMonitoringOpen} />
     </AdminLayout>
   );
 }
