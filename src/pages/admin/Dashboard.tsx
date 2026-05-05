@@ -84,6 +84,7 @@ export default function AdminDashboard() {
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [recentEstablishments, setRecentEstablishments] = useState<any[]>([]);
+  const [monitoringOpen, setMonitoringOpen] = useState(false);
 
   const handleSyncLandingpage = async () => {
     setSyncing(true);
