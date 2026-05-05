@@ -37,6 +37,8 @@ import {
   Cell,
 } from "recharts";
 import { Link } from "react-router-dom";
+import { MonitoringModal } from "@/components/admin/MonitoringModal";
+import { BarChart3 } from "lucide-react";
 
 interface Stats {
   totalEstablishments: number;
@@ -82,6 +84,7 @@ export default function AdminDashboard() {
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [recentEstablishments, setRecentEstablishments] = useState<any[]>([]);
+  const [monitoringOpen, setMonitoringOpen] = useState(false);
 
   const handleSyncLandingpage = async () => {
     setSyncing(true);
@@ -306,6 +309,14 @@ export default function AdminDashboard() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setMonitoringOpen(true)}
+              className="gap-2"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Monitoramento de Salões
+            </Button>
             <Button 
               variant="outline" 
               onClick={handleSyncLandingpage}
@@ -605,6 +616,7 @@ export default function AdminDashboard() {
           </Card>
         </div>
       </div>
+      <MonitoringModal open={monitoringOpen} onOpenChange={setMonitoringOpen} />
     </AdminLayout>
   );
 }
