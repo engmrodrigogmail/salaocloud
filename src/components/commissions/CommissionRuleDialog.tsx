@@ -110,15 +110,38 @@ export function CommissionRuleDialog({
       return;
     }
 
+    if (
+      formData.applies_to === "specific_items" &&
+      formData.applicable_service_ids.length === 0 &&
+      formData.applicable_product_ids.length === 0
+    ) {
+      toast.error("Selecione ao menos um produto ou serviço");
+      return;
+    }
+
     setLoading(true);
     try {
+      const isSpecific = formData.applies_to === "specific_items";
+      const hasServices = isSpecific && formData.applicable_service_ids.length > 0;
+      const hasProducts = isSpecific && formData.applicable_product_ids.length > 0;
+      // Map UI "specific_items" to DB applies_to (specific_services / specific_products / specific_mixed)
+      const dbAppliesTo = isSpecific
+        ? hasServices && hasProducts
+          ? "specific_mixed"
+          : hasProducts
+          ? "specific_products"
+          : "specific_services"
+        : formData.applies_to;
+
       const payload = {
         establishment_id: establishmentId,
         name: formData.name,
         description: formData.description || null,
         commission_type: formData.commission_type,
         commission_value: formData.commission_value,
-        applies_to: formData.applies_to,
+        applies_to: dbAppliesTo,
+        applicable_service_ids: isSpecific ? formData.applicable_service_ids : [],
+        applicable_product_ids: isSpecific ? formData.applicable_product_ids : [],
         is_challenge: isChallenge,
         challenge_target: isChallenge ? formData.challenge_target : null,
         challenge_start_date: isChallenge && formData.challenge_start_date
