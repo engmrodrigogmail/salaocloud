@@ -215,13 +215,14 @@ export default function PortalEdu() {
           edu_not_active: "O Consultor Edu não está ativo neste salão.",
           invalid_payload: "Dados inválidos enviados para análise.",
           photo_download_failed: "Não foi possível ler uma das fotos enviadas.",
+          photo_too_large: "Uma das fotos ficou grande demais para análise. Remova e envie a foto novamente.",
           claude_error: "A IA usada pelo Edu está enfrentando instabilidades. Tente novamente mais tarde.",
           ai_parse_failed: "A IA retornou um formato inesperado. Tente novamente.",
           insert_failed: "Não foi possível salvar o diagnóstico no banco de dados.",
         };
         const friendly =
-          (d?.error && map[d.error]) ||
           d?.user_message ||
+          (d?.error && map[d.error]) ||
           (error?.message ?? "Falha ao chamar o serviço de análise.");
         throw new Error(friendly);
       }
