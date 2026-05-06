@@ -307,6 +307,27 @@ export default function PortalEdu() {
     loadData();
   };
 
+  const reopenForReview = async (p: Profile) => {
+    if (!confirm("Voltar este diagnóstico para validação humana? Você poderá editar e aprovar novamente.")) return;
+    setSavingReview(true);
+    const { error } = await supabase
+      .from("client_hair_profiles")
+      .update({
+        is_validated: false,
+        validated_by: null,
+        validated_at: null,
+      })
+      .eq("id", p.id);
+    setSavingReview(false);
+    if (error) {
+      toast.error("Erro: " + error.message);
+      return;
+    }
+    toast.success("Diagnóstico retornado para validação", { position: "top-center", duration: 2000 });
+    setReviewProfile(null);
+    loadData();
+  };
+
   if (accessLoading) {
     return (
       <PortalLayout>
