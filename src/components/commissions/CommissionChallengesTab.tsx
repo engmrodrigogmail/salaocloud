@@ -32,6 +32,7 @@ interface Challenge {
   challenge_start_date: string | null;
   challenge_end_date: string | null;
   is_active: boolean;
+  motivational_message: string | null;
 }
 
 interface CommissionChallengesTabProps {
