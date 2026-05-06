@@ -21,6 +21,7 @@ Retorne APENAS um JSON válido com a seguinte estrutura, sem markdown ou texto a
 }`;
 
 const ANTHROPIC_MODELS = ["claude-sonnet-4-6", "claude-sonnet-4-5", "claude-haiku-4-5"];
+const MAX_CLAUDE_IMAGE_BASE64_BYTES = 5 * 1024 * 1024;
 
 interface AnalyzeBody {
   client_id: string;
@@ -81,6 +82,15 @@ serve(async (req) => {
       }
       const buf = await file.arrayBuffer();
       const b64 = base64Encode(new Uint8Array(buf));
+      if (b64.length > MAX_CLAUDE_IMAGE_BASE64_BYTES) {
+        return json(
+          {
+            error: "photo_too_large",
+            user_message: "Uma das fotos ficou grande demais para análise. Remova e envie a foto novamente.",
+          },
+          413,
+        );
+      }
       images.push({ mime: file.type || "image/jpeg", b64 });
     }
 
