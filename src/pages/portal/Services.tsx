@@ -31,6 +31,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ServiceFormDialog } from "@/components/services/ServiceFormDialog";
 import { CategoryManagerDialog } from "@/components/categories/CategoryManagerDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Service {
   id: string;
@@ -61,6 +71,7 @@ export default function PortalServices() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const [deletingService, setDeletingService] = useState<Service | null>(null);
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -321,7 +332,7 @@ export default function PortalServices() {
                               Editar
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => handleDelete(service.id)}
+                              onClick={() => setDeletingService(service)}
                               className="text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
@@ -338,6 +349,36 @@ export default function PortalServices() {
           </Table>
         </div>
       </div>
+
+      <AlertDialog open={!!deletingService} onOpenChange={(o) => !o && setDeletingService(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir serviço?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deletingService && (
+                <>
+                  Tem certeza que deseja excluir o serviço <strong>{deletingService.name}</strong>?
+                  Essa ação não pode ser desfeita.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (deletingService) {
+                  await handleDelete(deletingService.id);
+                  setDeletingService(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PortalLayout>
   );
 }
