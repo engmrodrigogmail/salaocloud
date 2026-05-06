@@ -33,6 +33,7 @@ interface CommissionRule {
   challenge_target?: number | null;
   challenge_start_date?: string | null;
   challenge_end_date?: string | null;
+  motivational_message?: string | null;
   applicable_service_ids?: string[] | null;
   applicable_product_ids?: string[] | null;
 }
