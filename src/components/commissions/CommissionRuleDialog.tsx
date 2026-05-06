@@ -210,6 +210,28 @@ export function CommissionRuleDialog({
             />
           </div>
 
+          {isChallenge && (
+            <div className="space-y-2">
+              <Label htmlFor="motivational_message">Mensagem para os profissionais</Label>
+              <Textarea
+                id="motivational_message"
+                value={formData.motivational_message}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    motivational_message: e.target.value.slice(0, 500),
+                  })
+                }
+                placeholder="Escreva uma mensagem motivacional que aparecerá para os profissionais..."
+                rows={3}
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground text-right">
+                {formData.motivational_message.length}/500
+              </p>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="description">Descrição</Label>
             <Textarea
