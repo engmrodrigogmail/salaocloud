@@ -3766,6 +3766,42 @@ export type Database = {
           },
         ]
       }
+      services_audit_log: {
+        Row: {
+          action: string
+          establishment_id: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          performed_at: string
+          performed_by: string | null
+          service_id: string
+          service_name: string
+        }
+        Insert: {
+          action: string
+          establishment_id: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          performed_at?: string
+          performed_by?: string | null
+          service_id: string
+          service_name: string
+        }
+        Update: {
+          action?: string
+          establishment_id?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          performed_at?: string
+          performed_by?: string | null
+          service_id?: string
+          service_name?: string
+        }
+        Relationships: []
+      }
       subscription_plans: {
         Row: {
           badge: string | null
@@ -4473,6 +4509,7 @@ export type Database = {
         }
         Returns: number
       }
+      purge_services_audit_log: { Args: never; Returns: undefined }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
         Returns: {
