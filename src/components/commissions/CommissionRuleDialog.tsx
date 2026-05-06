@@ -18,6 +18,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { SpecificItemsPickerDialog } from "./SpecificItemsPickerDialog";
+import { Badge } from "@/components/ui/badge";
+import { ListChecks } from "lucide-react";
 
 interface CommissionRule {
   id: string;
@@ -30,6 +33,8 @@ interface CommissionRule {
   challenge_target?: number | null;
   challenge_start_date?: string | null;
   challenge_end_date?: string | null;
+  applicable_service_ids?: string[] | null;
+  applicable_product_ids?: string[] | null;
 }
 
 interface CommissionRuleDialogProps {
