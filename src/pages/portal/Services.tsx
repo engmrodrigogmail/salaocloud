@@ -349,6 +349,36 @@ export default function PortalServices() {
           </Table>
         </div>
       </div>
+
+      <AlertDialog open={!!deletingService} onOpenChange={(o) => !o && setDeletingService(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir serviço?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deletingService && (
+                <>
+                  Tem certeza que deseja excluir o serviço <strong>{deletingService.name}</strong>?
+                  Essa ação não pode ser desfeita.
+                </>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (deletingService) {
+                  await handleDelete(deletingService.id);
+                  setDeletingService(null);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PortalLayout>
   );
 }
