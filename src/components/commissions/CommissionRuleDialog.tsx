@@ -263,9 +263,54 @@ export function CommissionRuleDialog({
                 <SelectItem value="own_services">Serviços realizados pelo profissional</SelectItem>
                 <SelectItem value="all_services">Todos os serviços vendidos</SelectItem>
                 <SelectItem value="products">Produtos vendidos</SelectItem>
+                <SelectItem value="specific_items">Produtos ou serviços específicos</SelectItem>
               </SelectContent>
             </Select>
+
+            {formData.applies_to === "specific_items" && (
+              <div className="space-y-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setPickerOpen(true)}
+                >
+                  <ListChecks className="h-4 w-4 mr-2" />
+                  Selecionar itens
+                </Button>
+                {(formData.applicable_service_ids.length > 0 ||
+                  formData.applicable_product_ids.length > 0) && (
+                  <div className="flex gap-2 flex-wrap text-xs">
+                    {formData.applicable_service_ids.length > 0 && (
+                      <Badge variant="secondary">
+                        {formData.applicable_service_ids.length} serviço(s)
+                      </Badge>
+                    )}
+                    {formData.applicable_product_ids.length > 0 && (
+                      <Badge variant="secondary">
+                        {formData.applicable_product_ids.length} produto(s)
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
+          <SpecificItemsPickerDialog
+            open={pickerOpen}
+            onOpenChange={setPickerOpen}
+            establishmentId={establishmentId}
+            selectedServiceIds={formData.applicable_service_ids}
+            selectedProductIds={formData.applicable_product_ids}
+            onConfirm={(serviceIds, productIds) =>
+              setFormData({
+                ...formData,
+                applicable_service_ids: serviceIds,
+                applicable_product_ids: productIds,
+              })
+            }
+          />
 
           {isChallenge && (
             <>
