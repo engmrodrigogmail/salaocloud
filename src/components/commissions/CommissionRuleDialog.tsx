@@ -90,6 +90,7 @@ export function CommissionRuleDialog({
           : "",
         applicable_service_ids: rule.applicable_service_ids || [],
         applicable_product_ids: rule.applicable_product_ids || [],
+        motivational_message: rule.motivational_message || "",
       });
     } else {
       setFormData({
