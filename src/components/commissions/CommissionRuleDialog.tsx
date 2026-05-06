@@ -104,6 +104,7 @@ export function CommissionRuleDialog({
         challenge_end_date: "",
         applicable_service_ids: [],
         applicable_product_ids: [],
+        motivational_message: "",
       });
     }
   }, [rule, open]);
