@@ -79,21 +79,21 @@ export function useCommissionCalculator(establishmentId: string | null) {
   ): CommissionRule | null => {
     // Priority order: specific_services/products > own_services > all_services > products
     
-    // 1. Check specific services
+    // 1. Check specific services (incl. specific_mixed)
     if (item.service_id) {
       const specificServiceRule = rules.find(
         (r) =>
-          r.applies_to === "specific_services" &&
+          (r.applies_to === "specific_services" || r.applies_to === "specific_mixed") &&
           r.applicable_service_ids?.includes(item.service_id!)
       );
       if (specificServiceRule) return specificServiceRule;
     }
 
-    // 2. Check specific products
+    // 2. Check specific products (incl. specific_mixed)
     if (item.product_id) {
       const specificProductRule = rules.find(
         (r) =>
-          r.applies_to === "specific_products" &&
+          (r.applies_to === "specific_products" || r.applies_to === "specific_mixed") &&
           r.applicable_product_ids?.includes(item.product_id!)
       );
       if (specificProductRule) return specificProductRule;

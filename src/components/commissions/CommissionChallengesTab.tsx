@@ -118,6 +118,9 @@ export function CommissionChallengesTab({ establishmentId }: CommissionChallenge
       own_services: "Serviços próprios",
       all_services: "Todos os serviços",
       products: "Produtos",
+      specific_services: "Serviços específicos",
+      specific_products: "Produtos específicos",
+      specific_mixed: "Itens específicos",
     };
     return labels[appliesTo] || appliesTo;
   };

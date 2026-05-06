@@ -18,6 +18,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
+import { SpecificItemsPickerDialog } from "./SpecificItemsPickerDialog";
+import { Badge } from "@/components/ui/badge";
+import { ListChecks } from "lucide-react";
 
 interface CommissionRule {
   id: string;
@@ -30,6 +33,8 @@ interface CommissionRule {
   challenge_target?: number | null;
   challenge_start_date?: string | null;
   challenge_end_date?: string | null;
+  applicable_service_ids?: string[] | null;
+  applicable_product_ids?: string[] | null;
 }
 
 interface CommissionRuleDialogProps {
@@ -50,6 +55,7 @@ export function CommissionRuleDialog({
   onSuccess,
 }: CommissionRuleDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -59,6 +65,8 @@ export function CommissionRuleDialog({
     challenge_target: 0,
     challenge_start_date: "",
     challenge_end_date: "",
+    applicable_service_ids: [] as string[],
+    applicable_product_ids: [] as string[],
   });
 
   useEffect(() => {
@@ -68,7 +76,9 @@ export function CommissionRuleDialog({
         description: rule.description || "",
         commission_type: rule.commission_type,
         commission_value: rule.commission_value,
-        applies_to: rule.applies_to,
+        applies_to: ["specific_services", "specific_products", "specific_mixed", "specific_items"].includes(rule.applies_to)
+          ? "specific_items"
+          : rule.applies_to,
         challenge_target: rule.challenge_target || 0,
         challenge_start_date: rule.challenge_start_date
           ? new Date(rule.challenge_start_date).toISOString().split("T")[0]
@@ -76,6 +86,8 @@ export function CommissionRuleDialog({
         challenge_end_date: rule.challenge_end_date
           ? new Date(rule.challenge_end_date).toISOString().split("T")[0]
           : "",
+        applicable_service_ids: rule.applicable_service_ids || [],
+        applicable_product_ids: rule.applicable_product_ids || [],
       });
     } else {
       setFormData({
@@ -87,6 +99,8 @@ export function CommissionRuleDialog({
         challenge_target: 0,
         challenge_start_date: "",
         challenge_end_date: "",
+        applicable_service_ids: [],
+        applicable_product_ids: [],
       });
     }
   }, [rule, open]);
@@ -98,15 +112,38 @@ export function CommissionRuleDialog({
       return;
     }
 
+    if (
+      formData.applies_to === "specific_items" &&
+      formData.applicable_service_ids.length === 0 &&
+      formData.applicable_product_ids.length === 0
+    ) {
+      toast.error("Selecione ao menos um produto ou serviço");
+      return;
+    }
+
     setLoading(true);
     try {
+      const isSpecific = formData.applies_to === "specific_items";
+      const hasServices = isSpecific && formData.applicable_service_ids.length > 0;
+      const hasProducts = isSpecific && formData.applicable_product_ids.length > 0;
+      // Map UI "specific_items" to DB applies_to (specific_services / specific_products / specific_mixed)
+      const dbAppliesTo = isSpecific
+        ? hasServices && hasProducts
+          ? "specific_mixed"
+          : hasProducts
+          ? "specific_products"
+          : "specific_services"
+        : formData.applies_to;
+
       const payload = {
         establishment_id: establishmentId,
         name: formData.name,
         description: formData.description || null,
         commission_type: formData.commission_type,
         commission_value: formData.commission_value,
-        applies_to: formData.applies_to,
+        applies_to: dbAppliesTo,
+        applicable_service_ids: isSpecific ? formData.applicable_service_ids : [],
+        applicable_product_ids: isSpecific ? formData.applicable_product_ids : [],
         is_challenge: isChallenge,
         challenge_target: isChallenge ? formData.challenge_target : null,
         challenge_start_date: isChallenge && formData.challenge_start_date
@@ -226,9 +263,54 @@ export function CommissionRuleDialog({
                 <SelectItem value="own_services">Serviços realizados pelo profissional</SelectItem>
                 <SelectItem value="all_services">Todos os serviços vendidos</SelectItem>
                 <SelectItem value="products">Produtos vendidos</SelectItem>
+                <SelectItem value="specific_items">Produtos ou serviços específicos</SelectItem>
               </SelectContent>
             </Select>
+
+            {formData.applies_to === "specific_items" && (
+              <div className="space-y-2 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setPickerOpen(true)}
+                >
+                  <ListChecks className="h-4 w-4 mr-2" />
+                  Selecionar itens
+                </Button>
+                {(formData.applicable_service_ids.length > 0 ||
+                  formData.applicable_product_ids.length > 0) && (
+                  <div className="flex gap-2 flex-wrap text-xs">
+                    {formData.applicable_service_ids.length > 0 && (
+                      <Badge variant="secondary">
+                        {formData.applicable_service_ids.length} serviço(s)
+                      </Badge>
+                    )}
+                    {formData.applicable_product_ids.length > 0 && (
+                      <Badge variant="secondary">
+                        {formData.applicable_product_ids.length} produto(s)
+                      </Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
+          <SpecificItemsPickerDialog
+            open={pickerOpen}
+            onOpenChange={setPickerOpen}
+            establishmentId={establishmentId}
+            selectedServiceIds={formData.applicable_service_ids}
+            selectedProductIds={formData.applicable_product_ids}
+            onConfirm={(serviceIds, productIds) =>
+              setFormData({
+                ...formData,
+                applicable_service_ids: serviceIds,
+                applicable_product_ids: productIds,
+              })
+            }
+          />
 
           {isChallenge && (
             <>
