@@ -164,6 +164,51 @@ export default function InternoComissoes() {
           </p>
         </div>
 
+        {activeChallenges.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-primary" /> Desafios em andamento
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {activeChallenges.map((ch) => (
+                <Card key={ch.id} className="border-primary/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">{ch.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {ch.motivational_message && (
+                      <p className="text-sm italic text-muted-foreground whitespace-pre-wrap border-l-2 border-primary pl-3">
+                        "{ch.motivational_message}"
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      {ch.challenge_target && (
+                        <span>Meta: <strong className="text-foreground">{fmt(ch.challenge_target)}</strong></span>
+                      )}
+                      <span>
+                        Bonificação:{" "}
+                        <strong className="text-foreground">
+                          {ch.commission_type === "percentage"
+                            ? `${ch.commission_value}%`
+                            : fmt(ch.commission_value)}
+                        </strong>
+                      </span>
+                      {ch.challenge_end_date && (
+                        <span>
+                          Até{" "}
+                          <strong className="text-foreground">
+                            {format(parseISO(ch.challenge_end_date), "dd/MM/yyyy", { locale: ptBR })}
+                          </strong>
+                        </span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Card>
             <CardHeader className="pb-2">
