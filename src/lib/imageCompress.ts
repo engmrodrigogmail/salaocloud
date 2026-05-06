@@ -1,13 +1,14 @@
 // Comprime imagens no client antes do upload para a API Claude (limite 5MB por imagem).
 // Redimensiona mantendo proporção (lado maior <= maxDim) e exporta JPEG com qualidade ajustável.
-const MAX_BYTES = 4_500_000; // margem de segurança abaixo de 5MB
+// Claude limita 5MB no payload base64. Como base64 infla ~33%, o arquivo binário precisa ficar abaixo de ~3.7MB.
+const MAX_BYTES = 3_500_000;
 
 export async function compressImageForAI(
   file: File,
   opts: { maxDim?: number; quality?: number } = {},
 ): Promise<File> {
-  const maxDim = opts.maxDim ?? 1600;
-  let quality = opts.quality ?? 0.82;
+  const maxDim = opts.maxDim ?? 1400;
+  let quality = opts.quality ?? 0.78;
 
   // Se já é pequeno o suficiente e não é HEIC, retorna direto
   if (file.size <= MAX_BYTES && !/heic|heif/i.test(file.type)) {
