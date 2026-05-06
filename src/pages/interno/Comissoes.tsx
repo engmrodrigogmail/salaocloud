@@ -108,6 +108,21 @@ export default function InternoComissoes() {
 
       if (error) throw error;
       setCommissions((data as CommissionRow[]) || []);
+
+      // Active challenges of the establishment
+      const nowIso = new Date().toISOString();
+      const { data: challenges } = await supabase
+        .from("commission_rules")
+        .select("id, name, motivational_message, commission_type, commission_value, challenge_target, challenge_start_date, challenge_end_date")
+        .eq("establishment_id", est.id)
+        .eq("is_challenge", true)
+        .eq("is_active", true);
+      const filtered = (challenges || []).filter((c: any) => {
+        if (c.challenge_start_date && c.challenge_start_date > nowIso) return false;
+        if (c.challenge_end_date && c.challenge_end_date < nowIso) return false;
+        return true;
+      });
+      setActiveChallenges(filtered as any);
     } catch (e) {
       console.error("Error loading commissions:", e);
     } finally {
