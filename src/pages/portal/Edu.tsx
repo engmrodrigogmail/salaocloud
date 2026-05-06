@@ -793,9 +793,6 @@ export default function PortalEdu() {
               </Button>
             </DialogFooter>
           )}
-        </DialogContent>
-      </Dialog>
-
           {reviewProfile && reviewProfile.is_validated && (
             <DialogFooter className="gap-2">
               <Button
