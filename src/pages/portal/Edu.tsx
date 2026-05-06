@@ -796,6 +796,21 @@ export default function PortalEdu() {
         </DialogContent>
       </Dialog>
 
+          {reviewProfile && reviewProfile.is_validated && (
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => reopenForReview(reviewProfile)}
+                disabled={savingReview}
+                className="gap-2"
+              >
+                <Undo2 className="h-4 w-4" /> Voltar para validação humana
+              </Button>
+            </DialogFooter>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Modal: Versão Cliente (resumo visual) */}
       <Dialog open={!!clientViewProfile} onOpenChange={(o) => !o && setClientViewProfile(null)}>
         <DialogContent className="max-h-[90vh] overflow-y-auto max-w-2xl bg-[#1A1A1A] border-amber-600/50 p-0">
