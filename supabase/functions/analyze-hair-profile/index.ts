@@ -312,3 +312,7 @@ function base64Encode(bytes: Uint8Array): string {
   }
   return btoa(binary);
 }
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
