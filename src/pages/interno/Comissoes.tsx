@@ -50,6 +50,15 @@ export default function InternoComissoes() {
   const [loading, setLoading] = useState(true);
   const [professionalName, setProfessionalName] = useState<string | null>(null);
   const [commissions, setCommissions] = useState<CommissionRow[]>([]);
+  const [activeChallenges, setActiveChallenges] = useState<Array<{
+    id: string;
+    name: string;
+    motivational_message: string | null;
+    commission_type: string;
+    commission_value: number;
+    challenge_target: number | null;
+    challenge_end_date: string | null;
+  }>>([]);
 
   useEffect(() => {
     if (!authLoading && !user) {
