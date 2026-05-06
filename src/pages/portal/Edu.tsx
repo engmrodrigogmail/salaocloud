@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Sparkles, Upload, CheckCircle2, Pencil, Loader2, Camera, Image as ImageIcon, UserPlus, X, Eye } from "lucide-react";
+import { Sparkles, Upload, CheckCircle2, Pencil, Loader2, Camera, Image as ImageIcon, UserPlus, X, Eye, Undo2 } from "lucide-react";
 import { EduAnalysisSummary } from "@/components/edu/EduAnalysisSummary";
 import { ShareSummaryButton } from "@/components/edu/ShareSummaryButton";
 import { supabase } from "@/integrations/supabase/client";
@@ -304,6 +304,27 @@ export default function PortalEdu() {
     }
     setReviewProfile(null);
     setCorrection("");
+    loadData();
+  };
+
+  const reopenForReview = async (p: Profile) => {
+    if (!confirm("Voltar este diagnóstico para validação humana? Você poderá editar e aprovar novamente.")) return;
+    setSavingReview(true);
+    const { error } = await supabase
+      .from("client_hair_profiles")
+      .update({
+        is_validated: false,
+        validated_by: null,
+        validated_at: null,
+      })
+      .eq("id", p.id);
+    setSavingReview(false);
+    if (error) {
+      toast.error("Erro: " + error.message);
+      return;
+    }
+    toast.success("Diagnóstico retornado para validação", { position: "top-center", duration: 2000 });
+    setReviewProfile(null);
     loadData();
   };
 
@@ -769,6 +790,18 @@ export default function PortalEdu() {
               </Button>
               <Button onClick={() => approve(reviewProfile)} disabled={savingReview} className="gap-2">
                 <CheckCircle2 className="h-4 w-4" /> Aprovar
+              </Button>
+            </DialogFooter>
+          )}
+          {reviewProfile && reviewProfile.is_validated && (
+            <DialogFooter className="gap-2">
+              <Button
+                variant="outline"
+                onClick={() => reopenForReview(reviewProfile)}
+                disabled={savingReview}
+                className="gap-2"
+              >
+                <Undo2 className="h-4 w-4" /> Voltar para validação humana
               </Button>
             </DialogFooter>
           )}
