@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Sparkles, Upload, CheckCircle2, Pencil, Loader2, Camera, Image as ImageIcon, UserPlus, X, Eye } from "lucide-react";
+import { Sparkles, Upload, CheckCircle2, Pencil, Loader2, Camera, Image as ImageIcon, UserPlus, X, Eye, Undo2 } from "lucide-react";
 import { EduAnalysisSummary } from "@/components/edu/EduAnalysisSummary";
 import { ShareSummaryButton } from "@/components/edu/ShareSummaryButton";
 import { supabase } from "@/integrations/supabase/client";
