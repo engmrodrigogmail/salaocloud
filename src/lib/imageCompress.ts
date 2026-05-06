@@ -1,17 +1,18 @@
 // Comprime imagens no client antes do upload para a API Claude (limite 5MB por imagem).
 // Redimensiona mantendo proporção (lado maior <= maxDim) e exporta JPEG com qualidade ajustável.
-// Claude limita 5MB no payload base64. Como base64 infla ~33%, o arquivo binário precisa ficar abaixo de ~3.7MB.
-const MAX_BYTES = 3_500_000;
+// Claude limita 5MB no payload base64. Como base64 infla ~33%, mantemos folga ampla
+// para metadados/payload e variações de conversão do navegador.
+export const AI_IMAGE_MAX_BYTES = 2_800_000;
 
 export async function compressImageForAI(
   file: File,
   opts: { maxDim?: number; quality?: number } = {},
 ): Promise<File> {
-  const maxDim = opts.maxDim ?? 1400;
-  let quality = opts.quality ?? 0.78;
+  const maxDim = opts.maxDim ?? 1200;
+  let quality = opts.quality ?? 0.72;
 
   // Se já é pequeno o suficiente e não é HEIC, retorna direto
-  if (file.size <= MAX_BYTES && !/heic|heif/i.test(file.type)) {
+  if (file.size <= AI_IMAGE_MAX_BYTES && /jpe?g|png|webp/i.test(file.type) && !/heic|heif/i.test(file.type)) {
     return file;
   }
 
@@ -38,13 +39,13 @@ export async function compressImageForAI(
 
   // Tenta qualidades decrescentes até ficar abaixo do limite
   let blob = await canvasToBlob(canvas, quality);
-  while (blob && blob.size > MAX_BYTES && quality > 0.35) {
+  while (blob && blob.size > AI_IMAGE_MAX_BYTES && quality > 0.32) {
     quality -= 0.1;
     blob = await canvasToBlob(canvas, quality);
   }
   // Se ainda está acima do limite, reduz dimensões e tenta de novo
   let currentMaxDim = maxDim;
-  while (blob && blob.size > MAX_BYTES && currentMaxDim > 800) {
+  while (blob && blob.size > AI_IMAGE_MAX_BYTES && currentMaxDim > 640) {
     currentMaxDim = Math.round(currentMaxDim * 0.85);
     const w = canvas.width >= canvas.height
       ? currentMaxDim
@@ -55,9 +56,12 @@ export async function compressImageForAI(
     canvas.width = w;
     canvas.height = h;
     ctx.drawImage(img, 0, 0, w, h);
-    blob = await canvasToBlob(canvas, 0.75);
+    blob = await canvasToBlob(canvas, 0.68);
   }
   if (!blob) return file;
+  if (blob.size > AI_IMAGE_MAX_BYTES) {
+    throw new Error("A foto ficou grande demais para análise. Tente enviar uma imagem menor ou tirar a foto novamente com menos zoom.");
+  }
 
   const newName = file.name.replace(/\.[^.]+$/, "") + ".jpg";
   return new File([blob], newName, { type: "image/jpeg", lastModified: Date.now() });
