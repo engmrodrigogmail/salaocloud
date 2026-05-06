@@ -84,6 +84,8 @@ export function CommissionRuleDialog({
         challenge_end_date: rule.challenge_end_date
           ? new Date(rule.challenge_end_date).toISOString().split("T")[0]
           : "",
+        applicable_service_ids: rule.applicable_service_ids || [],
+        applicable_product_ids: rule.applicable_product_ids || [],
       });
     } else {
       setFormData({
@@ -95,6 +97,8 @@ export function CommissionRuleDialog({
         challenge_target: 0,
         challenge_start_date: "",
         challenge_end_date: "",
+        applicable_service_ids: [],
+        applicable_product_ids: [],
       });
     }
   }, [rule, open]);
