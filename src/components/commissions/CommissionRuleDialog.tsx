@@ -55,6 +55,7 @@ export function CommissionRuleDialog({
   onSuccess,
 }: CommissionRuleDialogProps) {
   const [loading, setLoading] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -64,6 +65,8 @@ export function CommissionRuleDialog({
     challenge_target: 0,
     challenge_start_date: "",
     challenge_end_date: "",
+    applicable_service_ids: [] as string[],
+    applicable_product_ids: [] as string[],
   });
 
   useEffect(() => {
