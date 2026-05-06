@@ -71,6 +71,7 @@ export default function PortalServices() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const [deletingService, setDeletingService] = useState<Service | null>(null);
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
 
   useEffect(() => {
