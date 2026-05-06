@@ -31,6 +31,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { ServiceFormDialog } from "@/components/services/ServiceFormDialog";
 import { CategoryManagerDialog } from "@/components/categories/CategoryManagerDialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Service {
   id: string;
