@@ -143,8 +143,17 @@ Principal resultado esperado pela cliente: ${expectedResult || "(não respondido
       lastErrText = await claudeRes.text();
       const lower = lastErrText.toLowerCase();
       const modelNotFound = claudeRes.status === 404 && lower.includes("model");
+      const retryableOverload =
+        claudeRes.status === 529 ||
+        claudeRes.status === 503 ||
+        lower.includes("overloaded") ||
+        lower.includes("temporarily unavailable");
       console.error("Claude error", claudeRes.status, model, lastErrText);
-      if (!modelNotFound) break;
+      if (modelNotFound || retryableOverload) {
+        await delay(650);
+        continue;
+      }
+      break;
     }
 
     if (!claudeRes?.ok) {
@@ -161,6 +170,8 @@ Principal resultado esperado pela cliente: ${expectedResult || "(não respondido
         lower.includes("insufficient") ||
         lower.includes("quota") ||
         lower.includes("rate limit");
+      const isImageTooLarge = lower.includes("image exceeds 5 mb") || lower.includes("base64: image exceeds");
+      const isOverloaded = statusCode === 529 || lower.includes("overloaded") || lower.includes("temporarily unavailable");
 
       try {
         const { data: estInfo } = await admin
@@ -209,7 +220,11 @@ Principal resultado esperado pela cliente: ${expectedResult || "(não respondido
           error: "claude_error",
           status: claudeRes?.status ?? 502,
           user_message:
-            "A IA usada pelo Edu está enfrentando instabilidades. Tente novamente mais tarde.",
+            isImageTooLarge
+              ? "Uma das fotos ficou grande demais para análise. Remova e envie a foto novamente."
+              : isOverloaded
+                ? "A IA usada pelo Edu está sobrecarregada agora. Tente novamente em alguns instantes."
+                : "A IA usada pelo Edu está enfrentando instabilidades. Tente novamente mais tarde.",
           detail: errText,
         },
         502,
