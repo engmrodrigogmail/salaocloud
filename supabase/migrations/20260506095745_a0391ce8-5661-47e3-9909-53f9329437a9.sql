@@ -1,0 +1,1 @@
+ALTER TABLE public.commission_rules ADD COLUMN IF NOT EXISTS motivational_message text;

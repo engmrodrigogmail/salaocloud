@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Coins, Wallet, Clock } from "lucide-react";
+import { Coins, Wallet, Clock, Trophy } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -50,6 +50,15 @@ export default function InternoComissoes() {
   const [loading, setLoading] = useState(true);
   const [professionalName, setProfessionalName] = useState<string | null>(null);
   const [commissions, setCommissions] = useState<CommissionRow[]>([]);
+  const [activeChallenges, setActiveChallenges] = useState<Array<{
+    id: string;
+    name: string;
+    motivational_message: string | null;
+    commission_type: string;
+    commission_value: number;
+    challenge_target: number | null;
+    challenge_end_date: string | null;
+  }>>([]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -99,6 +108,21 @@ export default function InternoComissoes() {
 
       if (error) throw error;
       setCommissions((data as CommissionRow[]) || []);
+
+      // Active challenges of the establishment
+      const nowIso = new Date().toISOString();
+      const { data: challenges } = await supabase
+        .from("commission_rules")
+        .select("id, name, motivational_message, commission_type, commission_value, challenge_target, challenge_start_date, challenge_end_date")
+        .eq("establishment_id", est.id)
+        .eq("is_challenge", true)
+        .eq("is_active", true);
+      const filtered = (challenges || []).filter((c: any) => {
+        if (c.challenge_start_date && c.challenge_start_date > nowIso) return false;
+        if (c.challenge_end_date && c.challenge_end_date < nowIso) return false;
+        return true;
+      });
+      setActiveChallenges(filtered as any);
     } catch (e) {
       console.error("Error loading commissions:", e);
     } finally {
@@ -139,6 +163,51 @@ export default function InternoComissoes() {
               : "Você não está vinculada como profissional neste salão."}
           </p>
         </div>
+
+        {activeChallenges.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Trophy className="h-5 w-5 text-primary" /> Desafios em andamento
+            </h2>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {activeChallenges.map((ch) => (
+                <Card key={ch.id} className="border-primary/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">{ch.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {ch.motivational_message && (
+                      <p className="text-sm italic text-muted-foreground whitespace-pre-wrap border-l-2 border-primary pl-3">
+                        "{ch.motivational_message}"
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      {ch.challenge_target && (
+                        <span>Meta: <strong className="text-foreground">{fmt(ch.challenge_target)}</strong></span>
+                      )}
+                      <span>
+                        Bonificação:{" "}
+                        <strong className="text-foreground">
+                          {ch.commission_type === "percentage"
+                            ? `${ch.commission_value}%`
+                            : fmt(ch.commission_value)}
+                        </strong>
+                      </span>
+                      {ch.challenge_end_date && (
+                        <span>
+                          Até{" "}
+                          <strong className="text-foreground">
+                            {format(parseISO(ch.challenge_end_date), "dd/MM/yyyy", { locale: ptBR })}
+                          </strong>
+                        </span>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Card>

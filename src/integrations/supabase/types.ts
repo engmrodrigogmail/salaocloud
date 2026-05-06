@@ -1341,6 +1341,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_challenge: boolean
+          motivational_message: string | null
           name: string
           priority: number | null
           product_brand: string | null
@@ -1365,6 +1366,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_challenge?: boolean
+          motivational_message?: string | null
           name: string
           priority?: number | null
           product_brand?: string | null
@@ -1389,6 +1391,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_challenge?: boolean
+          motivational_message?: string | null
           name?: string
           priority?: number | null
           product_brand?: string | null

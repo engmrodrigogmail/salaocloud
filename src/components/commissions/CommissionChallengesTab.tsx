@@ -32,6 +32,7 @@ interface Challenge {
   challenge_start_date: string | null;
   challenge_end_date: string | null;
   is_active: boolean;
+  motivational_message: string | null;
 }
 
 interface CommissionChallengesTabProps {
@@ -177,6 +178,11 @@ export function CommissionChallengesTab({ establishmentId }: CommissionChallenge
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
+                  {challenge.motivational_message && (
+                    <div className="rounded-md border-l-2 border-primary bg-primary/5 px-3 py-2 text-sm italic text-muted-foreground whitespace-pre-wrap">
+                      "{challenge.motivational_message}"
+                    </div>
+                  )}
                   {challenge.challenge_target && (
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">

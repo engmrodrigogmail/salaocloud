@@ -33,6 +33,7 @@ interface CommissionRule {
   challenge_target?: number | null;
   challenge_start_date?: string | null;
   challenge_end_date?: string | null;
+  motivational_message?: string | null;
   applicable_service_ids?: string[] | null;
   applicable_product_ids?: string[] | null;
 }
@@ -67,6 +68,7 @@ export function CommissionRuleDialog({
     challenge_end_date: "",
     applicable_service_ids: [] as string[],
     applicable_product_ids: [] as string[],
+    motivational_message: "",
   });
 
   useEffect(() => {
@@ -88,6 +90,7 @@ export function CommissionRuleDialog({
           : "",
         applicable_service_ids: rule.applicable_service_ids || [],
         applicable_product_ids: rule.applicable_product_ids || [],
+        motivational_message: rule.motivational_message || "",
       });
     } else {
       setFormData({
@@ -101,6 +104,7 @@ export function CommissionRuleDialog({
         challenge_end_date: "",
         applicable_service_ids: [],
         applicable_product_ids: [],
+        motivational_message: "",
       });
     }
   }, [rule, open]);
@@ -152,6 +156,7 @@ export function CommissionRuleDialog({
         challenge_end_date: isChallenge && formData.challenge_end_date
           ? new Date(formData.challenge_end_date).toISOString()
           : null,
+        motivational_message: isChallenge ? (formData.motivational_message?.trim() || null) : null,
       };
 
       if (rule) {
@@ -204,6 +209,28 @@ export function CommissionRuleDialog({
               placeholder={isChallenge ? "Ex: Desafio de Natal" : "Ex: Comissão Padrão"}
             />
           </div>
+
+          {isChallenge && (
+            <div className="space-y-2">
+              <Label htmlFor="motivational_message">Mensagem para os profissionais</Label>
+              <Textarea
+                id="motivational_message"
+                value={formData.motivational_message}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    motivational_message: e.target.value.slice(0, 500),
+                  })
+                }
+                placeholder="Escreva uma mensagem motivacional que aparecerá para os profissionais..."
+                rows={3}
+                maxLength={500}
+              />
+              <p className="text-xs text-muted-foreground text-right">
+                {formData.motivational_message.length}/500
+              </p>
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="description">Descrição</Label>
