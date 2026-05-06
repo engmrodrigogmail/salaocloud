@@ -156,6 +156,7 @@ export function CommissionRuleDialog({
         challenge_end_date: isChallenge && formData.challenge_end_date
           ? new Date(formData.challenge_end_date).toISOString()
           : null,
+        motivational_message: isChallenge ? (formData.motivational_message?.trim() || null) : null,
       };
 
       if (rule) {
