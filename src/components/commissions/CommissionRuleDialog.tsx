@@ -76,7 +76,9 @@ export function CommissionRuleDialog({
         description: rule.description || "",
         commission_type: rule.commission_type,
         commission_value: rule.commission_value,
-        applies_to: rule.applies_to,
+        applies_to: ["specific_services", "specific_products", "specific_mixed", "specific_items"].includes(rule.applies_to)
+          ? "specific_items"
+          : rule.applies_to,
         challenge_target: rule.challenge_target || 0,
         challenge_start_date: rule.challenge_start_date
           ? new Date(rule.challenge_start_date).toISOString().split("T")[0]
