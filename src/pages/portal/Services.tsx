@@ -332,7 +332,7 @@ export default function PortalServices() {
                               Editar
                             </DropdownMenuItem>
                             <DropdownMenuItem
-                              onClick={() => handleDelete(service.id)}
+                              onClick={() => setDeletingService(service)}
                               className="text-destructive"
                             >
                               <Trash2 className="h-4 w-4 mr-2" />
