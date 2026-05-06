@@ -138,32 +138,47 @@ Principal resultado esperado pela cliente: ${expectedResult || "(não respondido
 
     for (const model of ANTHROPIC_MODELS) {
       attemptedModel = model;
-      claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": CLAUDE_API_KEY,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({ ...anthropicReqBase, model }),
-      });
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": CLAUDE_API_KEY,
+            "anthropic-version": "2023-06-01",
+          },
+          body: JSON.stringify({ ...anthropicReqBase, model }),
+        });
 
-      if (claudeRes.ok) break;
+        if (claudeRes.ok) break;
 
-      lastErrText = await claudeRes.text();
+        lastErrText = await claudeRes.text();
+        const lower = lastErrText.toLowerCase();
+        const modelNotFound = claudeRes.status === 404 && lower.includes("model");
+        const retryableOverload =
+          claudeRes.status === 529 ||
+          claudeRes.status === 503 ||
+          lower.includes("overloaded") ||
+          lower.includes("temporarily unavailable");
+        console.error("Claude error", claudeRes.status, model, `attempt ${attempt}`, lastErrText);
+        if (retryableOverload && attempt < 2) {
+          await delay(900 * attempt);
+          continue;
+        }
+        if (modelNotFound || retryableOverload) {
+          await delay(650);
+          break;
+        }
+        break;
+      }
+      if (claudeRes?.ok) break;
       const lower = lastErrText.toLowerCase();
-      const modelNotFound = claudeRes.status === 404 && lower.includes("model");
-      const retryableOverload =
-        claudeRes.status === 529 ||
-        claudeRes.status === 503 ||
+      const shouldTryNextModel =
+        (claudeRes?.status === 404 && lower.includes("model")) ||
+        claudeRes?.status === 529 ||
+        claudeRes?.status === 503 ||
         lower.includes("overloaded") ||
         lower.includes("temporarily unavailable");
-      console.error("Claude error", claudeRes.status, model, lastErrText);
-      if (modelNotFound || retryableOverload) {
-        await delay(650);
-        continue;
-      }
-      break;
+      if (!shouldTryNextModel) break;
     }
 
     if (!claudeRes?.ok) {
