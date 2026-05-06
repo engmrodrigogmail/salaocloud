@@ -68,6 +68,7 @@ export function CommissionRuleDialog({
     challenge_end_date: "",
     applicable_service_ids: [] as string[],
     applicable_product_ids: [] as string[],
+    motivational_message: "",
   });
 
   useEffect(() => {
