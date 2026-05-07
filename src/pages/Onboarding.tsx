@@ -95,20 +95,37 @@ export default function Onboarding() {
     setIsLoading(true);
 
     try {
-      // Create establishment
-      const { error: estError } = await supabase.from("establishments").insert({
-        owner_id: user.id,
-        name: data.name,
-        slug: data.slug,
-        phone: data.phone || null,
-        email: data.email || null,
-        address: data.address || null,
-        city: data.city || null,
-        state: data.state || null,
-        description: data.description || null,
-        status: "active",
-        subscription_plan: "pro",
-      });
+      // 1. Buscar plano Pro ativo (price_id do Stripe)
+      const { data: planData, error: planError } = await supabase
+        .from("subscription_plans")
+        .select("slug, stripe_price_id_monthly")
+        .eq("is_active", true)
+        .order("display_order", { ascending: true })
+        .limit(1)
+        .maybeSingle();
+
+      if (planError || !planData?.stripe_price_id_monthly) {
+        throw new Error("Plano de assinatura indisponível no momento. Tente novamente mais tarde.");
+      }
+
+      // 2. Cria estabelecimento como pendente (sem acesso até pagar)
+      const { data: created, error: estError } = await supabase
+        .from("establishments")
+        .insert({
+          owner_id: user.id,
+          name: data.name,
+          slug: data.slug,
+          phone: data.phone || null,
+          email: data.email || null,
+          address: data.address || null,
+          city: data.city || null,
+          state: data.state || null,
+          description: data.description || null,
+          status: "pending",
+          subscription_plan: "pro",
+        })
+        .select("id, slug")
+        .single();
 
       if (estError) {
         if (estError.message.includes("duplicate")) {
@@ -123,25 +140,41 @@ export default function Onboarding() {
         throw estError;
       }
 
-      // Add establishment role to user
+      // 3. Garante role establishment
       const { error: roleError } = await supabase.from("user_roles").insert({
         user_id: user.id,
         role: "establishment",
       });
-
       if (roleError && !roleError.message.includes("duplicate")) {
         console.error("Role error:", roleError);
       }
 
-      setCreatedSlug(data.slug);
-      setIsComplete(true);
+      // 4. Cria sessão Stripe Checkout e redireciona
+      const origin = window.location.origin;
+      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
+        "create-checkout",
+        {
+          body: {
+            priceId: planData.stripe_price_id_monthly,
+            planSlug: planData.slug,
+            billingCycle: "monthly",
+            successUrl: `${origin}/onboarding/aguardando?slug=${created.slug}`,
+            cancelUrl: `${origin}/onboarding/aguardando?slug=${created.slug}&cancelled=1`,
+          },
+        }
+      );
+
+      if (checkoutError || !checkoutData?.url) {
+        throw new Error(checkoutError?.message || "Não foi possível iniciar o pagamento");
+      }
+
+      window.location.href = checkoutData.url;
     } catch (error: any) {
       toast({
         variant: "destructive",
         title: "Erro",
         description: error.message || "Não foi possível criar o estabelecimento.",
       });
-    } finally {
       setIsLoading(false);
     }
   };
