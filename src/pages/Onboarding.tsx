@@ -107,6 +107,7 @@ export default function Onboarding() {
         state: data.state || null,
         description: data.description || null,
         status: "active",
+        subscription_plan: "pro",
       });
 
       if (estError) {
