@@ -34,8 +34,8 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { priceId, planSlug, couponCode, billingCycle } = await req.json();
-    logStep("Request body", { priceId, planSlug, couponCode, billingCycle });
+    const { priceId, planSlug, couponCode, billingCycle, successUrl, cancelUrl } = await req.json();
+    logStep("Request body", { priceId, planSlug, couponCode, billingCycle, successUrl, cancelUrl });
 
     if (!priceId) throw new Error("Price ID is required");
 
