@@ -101,11 +101,11 @@ serve(async (req) => {
           .update({
             stripe_customer_id: customerId,
             stripe_subscription_id: subscription.id,
-            subscription_plan: planSlug || "professional",
+            subscription_plan: planSlug || "pro",
             status: "active",
           })
           .eq("id", establishment.id);
-        logStep("Updated establishment", { establishmentId: establishment.id });
+        logStep("Updated establishment to active", { establishmentId: establishment.id });
       }
     } else {
       logStep("No active subscription found");

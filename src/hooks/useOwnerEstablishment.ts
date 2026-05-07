@@ -51,7 +51,7 @@ export function useOwnerEstablishment(slug: string | undefined): UseOwnerEstabli
       setLoading(true);
       const { data, error } = await supabase
         .from("establishments")
-        .select("id, name, slug, owner_id")
+        .select("id, name, slug, owner_id, status, stripe_subscription_id, subscription_plan")
         .eq("slug", slug)
         .maybeSingle();
 
@@ -59,6 +59,17 @@ export function useOwnerEstablishment(slug: string | undefined): UseOwnerEstabli
 
       if (error || !data || data.owner_id !== user.id) {
         navigate("/");
+        return;
+      }
+
+      // Bloqueia acesso se ainda está pendente de pagamento
+      const isPaid =
+        !!data.stripe_subscription_id ||
+        data.subscription_plan === "admin_trial" ||
+        data.status === "active";
+
+      if (data.status === "pending" && !isPaid) {
+        navigate(`/onboarding/aguardando?slug=${data.slug}`, { replace: true });
         return;
       }
 
