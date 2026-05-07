@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Hub from "./pages/Hub";
 import Onboarding from "./pages/Onboarding";
+import OnboardingAwaitingPayment from "./pages/OnboardingAwaitingPayment";
 import NotFound from "./pages/NotFound";
 import Install from "./pages/Install";
 import ClientPortal from "./pages/client/ClientPortal";
@@ -98,6 +99,14 @@ const App = () => (
                 element={
                   <ProtectedRoute>
                     <Onboarding />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/onboarding/aguardando"
+                element={
+                  <ProtectedRoute>
+                    <OnboardingAwaitingPayment />
                   </ProtectedRoute>
                 }
               />
