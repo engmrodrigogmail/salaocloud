@@ -116,8 +116,8 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${origin}/dashboard?subscription=success`,
-      cancel_url: `${origin}/onboarding?subscription=cancelled`,
+      success_url: successUrl || `${origin}/dashboard?subscription=success`,
+      cancel_url: cancelUrl || `${origin}/onboarding?subscription=cancelled`,
       subscription_data: {
         metadata: {
           app: "salaocloud",
