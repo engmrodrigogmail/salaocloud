@@ -59,7 +59,7 @@ serve(async (req) => {
 
     const { data: est } = await admin
       .from("establishments")
-      .select("owner_id")
+      .select("owner_id, name, slug, phone")
       .eq("id", profile.establishment_id)
       .maybeSingle();
     if (!est || est.owner_id !== userId) return json({ error: "forbidden" }, 403);
@@ -68,8 +68,8 @@ serve(async (req) => {
       return json({ skipped: true, reason: "no_correction" }, 200);
     }
 
-    // Carrega histórico anterior + catálogo de serviços ativos do salão
-    const [{ data: history }, { data: services }] = await Promise.all([
+    // Carrega histórico anterior + padrões + catálogo de serviços ativos do salão
+    const [{ data: history }, { data: services }, { data: patterns }] = await Promise.all([
       admin
         .from("client_hair_profiles")
         .select("hair_type,porosity_level,damage_level,identified_issues,is_validated,created_at")
@@ -79,15 +79,24 @@ serve(async (req) => {
         .limit(3),
       admin
         .from("services")
-        .select("name,description")
+        .select("name,description,duration_minutes,price")
         .eq("establishment_id", profile.establishment_id)
         .eq("is_active", true)
         .limit(40),
+      admin.from("salon_learning_patterns").select("*").eq("establishment_id", profile.establishment_id).maybeSingle(),
     ]);
     const servicesCompact = (services || []).map((s: any) => ({
       nome: s.name,
       descricao: (s.description || "").toString().slice(0, 160),
+      duracao_min: s.duration_minutes ?? null,
+      preco: s.price ?? null,
     }));
+    const salonContext = {
+      salon_name: est.name ?? null,
+      salon_slug: est.slug ?? null,
+      salon_phone: est.phone ?? null,
+      booking_url: est.slug ? `https://salaocloud.com.br/${est.slug}` : null,
+    };
 
     const userMsg = `Análise técnica original (IA):
 - Tipo: ${profile.hair_type ?? "—"}
@@ -96,8 +105,10 @@ serve(async (req) => {
 - Problemas identificados: ${JSON.stringify(profile.identified_issues ?? [])}
 - Explicação técnica: ${profile.technical_explanation ?? "—"}
 
+Dados do salão (use para CTA): ${JSON.stringify(salonContext)}
+Padrões agregados do salão (use APENAS números explicitamente presentes): ${JSON.stringify(patterns || {})}
 Histórico anterior desta cliente (mais novo primeiro): ${JSON.stringify(history || [])}
-Catálogo de serviços ATIVOS do salão (use APENAS estes nomes): ${JSON.stringify(servicesCompact)}
+Catálogo de serviços ATIVOS do salão (use APENAS estes nomes/preços/durações): ${JSON.stringify(servicesCompact)}
 
 Auto-percepção da cliente: ${profile.client_self_assessment ?? "(não respondido)"}
 Resultado esperado pela cliente: ${profile.client_expected_result ?? "(não respondido)"}
