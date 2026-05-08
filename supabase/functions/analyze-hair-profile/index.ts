@@ -80,7 +80,7 @@ serve(async (req) => {
     // Verifica que o usuário é dono do estabelecimento
     const { data: est } = await admin
       .from("establishments")
-      .select("id, owner_id")
+      .select("id, owner_id, name, slug, phone")
       .eq("id", body.establishment_id)
       .maybeSingle();
     if (!est || est.owner_id !== userId) return json({ error: "forbidden" }, 403);
