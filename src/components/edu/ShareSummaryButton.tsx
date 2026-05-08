@@ -124,26 +124,26 @@ export function ShareSummaryButton({ profile, establishmentName, slug, fileName 
       pdf.setDrawColor(...AMBER);
       pdf.setLineWidth(0.3);
       pdf.line(M, y + 1.2, PW - M, y + 1.2);
-      y += 5;
+      y += 4;
       pdf.setTextColor(...TEXT);
     };
 
     sectionTitle("Classificação");
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(11);
+    pdf.setFontSize(10.5);
     pdf.text(profile.hair_type || "Tipo capilar não identificado", M, y);
-    y += 5;
+    y += 4;
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(9);
     pdf.setTextColor(...MUTED);
     pdf.text(`Porosidade: ${por.value}    •    Nível de dano: ${dmg.value}`, M, y);
-    y += 7;
+    y += 5;
     pdf.setTextColor(...TEXT);
 
     // Section: Saúde Capilar (5-segment bar)
     sectionTitle("Nível de Saúde Capilar");
     const barY = y;
-    const barH = 4;
+    const barH = 3.5;
     const segW = W / 5;
     const segs: [number, number, number][] = [
       [16, 185, 129],
@@ -165,14 +165,14 @@ export function ShareSummaryButton({ profile, establishmentName, slug, fileName 
     pdf.setFontSize(7);
     pdf.setTextColor(...MUTED);
     ["Saudável", "Levemente", "Comprom.", "Bastante", "Severamente"].forEach((l, i) => {
-      pdf.text(l, M + i * segW + segW / 2, barY + barH + 3, { align: "center" });
+      pdf.text(l, M + i * segW + segW / 2, barY + barH + 2.6, { align: "center" });
     });
-    y = barY + barH + 6;
+    y = barY + barH + 5;
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(10);
+    pdf.setFontSize(9.5);
     pdf.setTextColor(...AMBER_DARK);
     pdf.text(health.label, PW / 2, y, { align: "center" });
-    y += 6;
+    y += 4;
     pdf.setTextColor(...TEXT);
 
     // Section: Métricas (compact rows with score bars)
