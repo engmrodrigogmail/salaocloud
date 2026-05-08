@@ -94,15 +94,15 @@ export function ShareSummaryButton({ profile, establishmentName, slug, fileName 
       pdf.text(new Date(profile.validated_at).toLocaleDateString("pt-BR"), PW - M, 18, { align: "right" });
     }
 
-    let y = 30;
+    let y = 27;
     pdf.setTextColor(...TEXT);
 
     // Client name
     if (profile.client?.name) {
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(13);
+      pdf.setFontSize(12);
       pdf.text(`Cliente: ${profile.client.name}`, M, y);
-      y += 7;
+      y += 5;
     }
 
     const health = damageToHealth(profile.damage_level);
