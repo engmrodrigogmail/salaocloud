@@ -186,7 +186,7 @@ export function ShareSummaryButton({ profile, establishmentName, slug, fileName 
     ];
     metrics.forEach((m) => {
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(9);
+      pdf.setFontSize(8.5);
       pdf.setTextColor(...TEXT);
       pdf.text(m.name, M, y);
       pdf.setFont("helvetica", "normal");
@@ -196,30 +196,30 @@ export function ShareSummaryButton({ profile, establishmentName, slug, fileName 
       const barX = M + 95;
       const bW = 55;
       pdf.setFillColor(235, 230, 220);
-      pdf.rect(barX, y - 2.5, bW, 2.5, "F");
+      pdf.rect(barX, y - 2, bW, 2, "F");
       const fillC: [number, number, number] =
         m.score >= 4 ? [16, 185, 129] : m.score >= 3 ? [245, 158, 11] : [220, 60, 60];
       pdf.setFillColor(...fillC);
-      pdf.rect(barX, y - 2.5, (bW * m.score) / 5, 2.5, "F");
+      pdf.rect(barX, y - 2, (bW * m.score) / 5, 2, "F");
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(...AMBER_DARK);
       pdf.text(`${m.score}/5`, PW - M, y, { align: "right" });
-      y += 5.5;
+      y += 4.5;
     });
-    y += 2;
+    y += 1;
 
     // Recoverability box
     pdf.setFillColor(...SUBTLE_BG);
     pdf.setDrawColor(...AMBER);
     pdf.setLineWidth(0.4);
-    const recH = 16;
+    const recH = 13;
     pdf.roundedRect(M, y, W, recH, 2, 2, "FD");
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(10);
+    pdf.setFontSize(9.5);
     pdf.setTextColor(...TEXT);
-    pdf.text("Índice de Recuperabilidade", M + 4, y + 6);
+    pdf.text("Índice de Recuperabilidade", M + 4, y + 5);
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(8);
+    pdf.setFontSize(7.5);
     pdf.setTextColor(...MUTED);
     const recDesc =
       recoverability >= 7
@@ -227,14 +227,14 @@ export function ShareSummaryButton({ profile, establishmentName, slug, fileName 
         : recoverability >= 4
         ? "Recuperação possível com cuidados consistentes."
         : "Requer plano intensivo e acompanhamento profissional.";
-    pdf.text(recDesc, M + 4, y + 11, { maxWidth: W - 35 });
+    pdf.text(recDesc, M + 4, y + 9.5, { maxWidth: W - 35 });
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(16);
+    pdf.setFontSize(14);
     pdf.setTextColor(...AMBER_DARK);
-    pdf.text(`${recoverability}/10`, PW - M - 4, y + 8, { align: "right" });
+    pdf.text(`${recoverability}/10`, PW - M - 4, y + 7, { align: "right" });
     pdf.setFontSize(7);
-    pdf.text(recoverStatus, PW - M - 4, y + 13, { align: "right" });
-    y += recH + 5;
+    pdf.text(recoverStatus, PW - M - 4, y + 11, { align: "right" });
+    y += recH + 3;
 
     // Two-column section: Relato + Edu e Você
     pdf.setTextColor(...TEXT);
