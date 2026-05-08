@@ -301,7 +301,11 @@ export default function PortalAgenda() {
         .update({ status: "in_service", previous_status: selectedAppointment.status } as never)
         .eq("id", selectedAppointment.id);
 
-      if (updError) throw updError;
+      if (updError) {
+        // Rollback orphan tab to keep DB consistent
+        await supabase.from("tabs").delete().eq("id", tab.id);
+        throw updError;
+      }
 
       toast.success("Comanda aberta. Agenda bloqueada até o fechamento.");
       setDialogOpen(false);
