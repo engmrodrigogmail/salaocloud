@@ -1,13 +1,16 @@
 import { useState } from "react";
 import { Share2, Loader2 } from "lucide-react";
 import { jsPDF } from "jspdf";
+import QRCode from "qrcode";
 import { toast } from "sonner";
 import eduSignature from "@/assets/edu-signature.png";
+import { salonInlineReference } from "@/lib/salonReference";
 import type { EduAnalysisProfile } from "./EduAnalysisSummary";
 
 interface Props {
   profile: EduAnalysisProfile;
   establishmentName?: string | null;
+  slug?: string | null;
   fileName?: string;
 }
 
