@@ -99,8 +99,8 @@ serve(async (req) => {
       images.push({ mime: file.type || "image/jpeg", b64 });
     }
 
-    // Contexto: padrões agregados do salão + histórico do cliente
-    const [{ data: patterns }, { data: history }] = await Promise.all([
+    // Contexto: padrões agregados do salão + histórico do cliente + catálogo de serviços ativos
+    const [{ data: patterns }, { data: history }, { data: services }] = await Promise.all([
       admin.from("salon_learning_patterns").select("*").eq("establishment_id", body.establishment_id).maybeSingle(),
       admin
         .from("client_hair_profiles")
@@ -108,13 +108,25 @@ serve(async (req) => {
         .eq("client_id", body.client_id)
         .order("created_at", { ascending: false })
         .limit(3),
+      admin
+        .from("services")
+        .select("name,description,duration_minutes,price")
+        .eq("establishment_id", body.establishment_id)
+        .eq("is_active", true)
+        .limit(40),
     ]);
 
     const selfAssessment = (body.client_self_assessment || "").toString().slice(0, 2000).trim();
     const expectedResult = (body.client_expected_result || "").toString().slice(0, 2000).trim();
 
-    const contextText = `Contexto do salão (padrões agregados): ${JSON.stringify(patterns || {})}.
-Histórico recente da cliente: ${JSON.stringify(history || [])}.
+    const servicesCompact = (services || []).map((s: any) => ({
+      nome: s.name,
+      descricao: (s.description || "").toString().slice(0, 160),
+    }));
+
+    const contextText = `Padrões agregados do salão (use para citar experiência com perfis semelhantes, sem inventar números): ${JSON.stringify(patterns || {})}.
+Histórico recente desta cliente (mais novo primeiro — use para comparar evolução): ${JSON.stringify(history || [])}.
+Catálogo de serviços ATIVOS do salão (use APENAS estes nomes ao recomendar; se vazio, não recomende serviços específicos): ${JSON.stringify(servicesCompact)}.
 Foram enviadas ${images.length} foto(s): comprimento, pontas e/ou raiz.
 Auto-percepção da cliente sobre o cabelo (estado atual): ${selfAssessment || "(não respondido)"}.
 Principal resultado esperado pela cliente: ${expectedResult || "(não respondido)"}.`;
