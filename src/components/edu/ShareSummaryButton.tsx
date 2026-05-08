@@ -247,33 +247,33 @@ export function ShareSummaryButton({ profile, establishmentName, slug, fileName 
       pdf.setFontSize(9);
       pdf.setTextColor(...AMBER_DARK);
       pdf.text("SEU RELATO", M, y);
-      y += 4;
+      y += 3.5;
       pdf.setTextColor(...TEXT);
       if (profile.client_self_assessment) {
         pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(7.5);
+        pdf.setFontSize(7);
         pdf.setTextColor(...MUTED);
         pdf.text("COMO VOCÊ VÊ SEU CABELO HOJE", M, y);
-        y += 3.5;
+        y += 3;
         pdf.setFont("helvetica", "normal");
-        pdf.setFontSize(8.5);
+        pdf.setFontSize(8);
         pdf.setTextColor(...TEXT);
         const lines = pdf.splitTextToSize(profile.client_self_assessment, colW);
         pdf.text(lines, M, y);
-        y += lines.length * 3.6 + 2;
+        y += lines.length * 3.3 + 1.5;
       }
       if (profile.client_expected_result) {
         pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(7.5);
+        pdf.setFontSize(7);
         pdf.setTextColor(...MUTED);
         pdf.text("RESULTADO QUE VOCÊ ESPERA", M, y);
-        y += 3.5;
+        y += 3;
         pdf.setFont("helvetica", "normal");
-        pdf.setFontSize(8.5);
+        pdf.setFontSize(8);
         pdf.setTextColor(...TEXT);
         const lines = pdf.splitTextToSize(profile.client_expected_result, colW);
         pdf.text(lines, M, y);
-        y += lines.length * 3.6;
+        y += lines.length * 3.3;
       }
     }
     const leftEndY = y;
@@ -285,40 +285,40 @@ export function ShareSummaryButton({ profile, establishmentName, slug, fileName 
     pdf.setFontSize(9);
     pdf.setTextColor(...AMBER_DARK);
     pdf.text("✦  EDU E VOCÊ", xR, yR);
-    yR += 4;
+    yR += 3.5;
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(8.5);
+    pdf.setFontSize(8);
     pdf.setTextColor(...TEXT);
     const eduText =
       profile.edu_personal_response ||
       "Sua análise foi registrada. Em breve seu profissional irá conversar com você sobre o melhor plano de cuidados personalizado.";
     const eduLines = pdf.splitTextToSize(eduText, colW);
     pdf.text(eduLines, xR, yR);
-    yR += eduLines.length * 3.6;
+    yR += eduLines.length * 3.3;
 
-    y = Math.max(leftEndY, yR) + 6;
+    y = Math.max(leftEndY, yR) + 4;
 
     // Signature
     try {
       const sig = await loadImageAsDataURL(eduSignature);
-      pdf.addImage(sig, "PNG", PW - M - 38, y, 38, 12);
+      pdf.addImage(sig, "PNG", PW - M - 32, y, 32, 10);
     } catch {
       /* noop */
     }
     pdf.setFont("helvetica", "italic");
-    pdf.setFontSize(8);
+    pdf.setFontSize(7.5);
     pdf.setTextColor(...MUTED);
-    pdf.text("Edu Valentim — IA Hair Expert", PW - M, y + 15, { align: "right" });
-    y += 20;
+    pdf.text("Edu Valentim — IA Hair Expert", PW - M, y + 13, { align: "right" });
+    y += 16;
 
-    // Convite Sílvia + QR Code (substitui o botão da versão tela)
+    // Convite Sílvia + QR Code (substitui o botão da versão tela). SEMPRE na mesma página.
     if (slug) {
       const bookingUrl = `${window.location.origin}/${slug}`;
-      const qrSize = 32; // mm
-      // Garante espaço; se não couber, adiciona página
-      if (y + qrSize + 14 > PH - 22) {
-        pdf.addPage();
-        y = 20;
+      const qrSize = 26; // mm
+      // Garante que cabe acima do footer; se não, comprime y
+      const footerTop = PH - 22;
+      if (y + qrSize > footerTop) {
+        y = footerTop - qrSize;
       }
       try {
         const qrDataUrl = await QRCode.toDataURL(bookingUrl, {
@@ -330,29 +330,29 @@ export function ShareSummaryButton({ profile, establishmentName, slug, fileName 
       } catch {
         /* noop */
       }
-      const tx = M + qrSize + 5;
-      const tw = W - qrSize - 5;
+      const tx = M + qrSize + 4;
+      const tw = W - qrSize - 4;
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(10);
+      pdf.setFontSize(9.5);
       pdf.setTextColor(...AMBER_DARK);
-      pdf.text("Continue com a Sílvia", tx, y + 5);
+      pdf.text("Continue com a Sílvia", tx, y + 4);
       pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(9);
+      pdf.setFontSize(8);
       pdf.setTextColor(...TEXT);
       const inviteText = `Posso te direcionar para a Sílvia, minha colega de atendimento virtual do ${salonInlineReference(
         establishmentName,
       )}, para que ela agende rapidinho a continuação dessa experiência que adorei ter tido com você!`;
       const inviteLines = pdf.splitTextToSize(inviteText, tw);
-      pdf.text(inviteLines, tx, y + 10);
+      pdf.text(inviteLines, tx, y + 8);
       pdf.setFont("helvetica", "italic");
-      pdf.setFontSize(8);
+      pdf.setFontSize(7.5);
       pdf.setTextColor(...MUTED);
       pdf.text(
         "Escaneie este QR Code para falar com a Sílvia.",
         tx,
-        y + 10 + inviteLines.length * 3.6 + 4,
+        y + 8 + inviteLines.length * 3.3 + 3,
       );
-      y += qrSize + 4;
+      y += qrSize + 3;
     }
 
     // Footer disclaimers
