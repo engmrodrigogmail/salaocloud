@@ -67,12 +67,36 @@ serve(async (req) => {
       return json({ skipped: true, reason: "no_correction" }, 200);
     }
 
+    // Carrega histórico anterior + catálogo de serviços ativos do salão
+    const [{ data: history }, { data: services }] = await Promise.all([
+      admin
+        .from("client_hair_profiles")
+        .select("hair_type,porosity_level,damage_level,identified_issues,is_validated,created_at")
+        .eq("client_id", profile.client_id)
+        .neq("id", profile.id)
+        .order("created_at", { ascending: false })
+        .limit(3),
+      admin
+        .from("services")
+        .select("name,description")
+        .eq("establishment_id", profile.establishment_id)
+        .eq("is_active", true)
+        .limit(40),
+    ]);
+    const servicesCompact = (services || []).map((s: any) => ({
+      nome: s.name,
+      descricao: (s.description || "").toString().slice(0, 160),
+    }));
+
     const userMsg = `Análise técnica original (IA):
 - Tipo: ${profile.hair_type ?? "—"}
 - Porosidade: ${profile.porosity_level ?? "—"}
 - Nível de dano: ${profile.damage_level ?? "—"}
 - Problemas identificados: ${JSON.stringify(profile.identified_issues ?? [])}
 - Explicação técnica: ${profile.technical_explanation ?? "—"}
+
+Histórico anterior desta cliente (mais novo primeiro): ${JSON.stringify(history || [])}
+Catálogo de serviços ATIVOS do salão (use APENAS estes nomes): ${JSON.stringify(servicesCompact)}
 
 Auto-percepção da cliente: ${profile.client_self_assessment ?? "(não respondido)"}
 Resultado esperado pela cliente: ${profile.client_expected_result ?? "(não respondido)"}
