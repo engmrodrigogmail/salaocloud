@@ -138,11 +138,21 @@ serve(async (req) => {
     const servicesCompact = (services || []).map((s: any) => ({
       nome: s.name,
       descricao: (s.description || "").toString().slice(0, 160),
+      duracao_min: s.duration_minutes ?? null,
+      preco: s.price ?? null,
     }));
 
-    const contextText = `Padrões agregados do salão (use para citar experiência com perfis semelhantes, sem inventar números): ${JSON.stringify(patterns || {})}.
-Histórico recente desta cliente (mais novo primeiro — use para comparar evolução): ${JSON.stringify(history || [])}.
-Catálogo de serviços ATIVOS do salão (use APENAS estes nomes ao recomendar; se vazio, não recomende serviços específicos): ${JSON.stringify(servicesCompact)}.
+    const salonContext = {
+      salon_name: est.name ?? null,
+      salon_slug: est.slug ?? null,
+      salon_phone: est.phone ?? null,
+      booking_url: est.slug ? `https://salaocloud.com.br/${est.slug}` : null,
+    };
+
+    const contextText = `Dados do salão (use para CTA e personalização): ${JSON.stringify(salonContext)}.
+Padrões agregados do salão (use APENAS números explicitamente presentes; NUNCA invente percentuais): ${JSON.stringify(patterns || {})}.
+Histórico recente desta cliente (mais novo primeiro — use para comparar evolução, citando a data anterior): ${JSON.stringify(history || [])}.
+Catálogo de serviços ATIVOS do salão (use APENAS estes nomes/preços/durações ao recomendar; se vazio, não recomende serviços específicos nem inclua CTA): ${JSON.stringify(servicesCompact)}.
 Foram enviadas ${images.length} foto(s): comprimento, pontas e/ou raiz.
 Auto-percepção da cliente sobre o cabelo (estado atual): ${selfAssessment || "(não respondido)"}.
 Principal resultado esperado pela cliente: ${expectedResult || "(não respondido)"}.`;
