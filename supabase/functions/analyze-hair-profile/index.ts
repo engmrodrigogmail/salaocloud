@@ -159,7 +159,7 @@ Principal resultado esperado pela cliente: ${expectedResult || "(não respondido
 
     // Chamada Claude (Anthropic) — usa modelos atuais com fallback caso um alias seja recusado
     const anthropicReqBase = {
-      max_tokens: 1024,
+      max_tokens: 1800,
       system: SYSTEM_PROMPT,
       messages: [
         {
