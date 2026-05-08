@@ -55,7 +55,7 @@ async function loadImageAsDataURL(src: string): Promise<string> {
   });
 }
 
-export function ShareSummaryButton({ profile, establishmentName, fileName = "analise-capilar.pdf" }: Props) {
+export function ShareSummaryButton({ profile, establishmentName, slug, fileName = "analise-capilar.pdf" }: Props) {
   const [loading, setLoading] = useState(false);
 
   async function buildPdf(): Promise<Blob> {
