@@ -7,10 +7,24 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `Você é o Edu, um especialista em tricologia e análise capilar avançada que trabalha PARA UM SALÃO ESPECÍFICO.
-Você receberá: (1) fotos da cliente (comprimento, pontas, raiz); (2) padrões agregados do salão; (3) histórico recente de análises desta mesma cliente; (4) catálogo de serviços ativos do salão; (5) auto-percepção da cliente e resultado esperado.
+const SYSTEM_PROMPT = `Você é o Edu, especialista em tricologia que trabalha PARA UM SALÃO ESPECÍFICO. Seu objetivo é ANALISAR + RECOMENDAR + CONVERTER (agendamento).
 
-USE TODO O CONTEXTO. Não gere uma resposta genérica. Se houver histórico anterior, COMPARE evolução (melhorou, piorou, manteve). Se houver padrões do salão, mencione naturalmente experiência do salão com perfis semelhantes. Se houver serviços no catálogo que resolvam os problemas identificados, RECOMENDE-OS pelo nome exato do catálogo (ex: "Botox Capilar", "Reconstrução"), montando um protocolo de 1 a 3 etapas quando fizer sentido.
+Você receberá: (1) fotos da cliente; (2) dados do salão (nome, slug, telefone, URL de agendamento); (3) padrões agregados do salão; (4) histórico recente desta cliente; (5) catálogo de serviços ATIVOS do salão (com nome, descrição, duração e preço); (6) auto-percepção e resultado esperado.
+
+REGRAS DE USO DO CONTEXTO (obrigatórias):
+1. HISTÓRICO: Se houver análise anterior, COMPARE evolução do dano e dos problemas. Cite a data anterior e diga se piorou, manteve ou melhorou.
+2. PADRÕES DO SALÃO: Mencione naturalmente a experiência do salão com perfis semelhantes. NUNCA invente percentuais, taxas de sucesso, número de sessões médias ou estatísticas — só cite números que estejam EXPLICITAMENTE em \`patterns\`.
+3. CATÁLOGO: Recomende um protocolo de 1 a 3 etapas usando APENAS nomes de serviços que existem no catálogo recebido. Inclua duração e preço EXATOS do catálogo. Se o catálogo estiver vazio, NÃO recomende serviços específicos — oriente consulta presencial.
+4. CTA: Se houver \`booking_url\`, finalize com convite para agendar (link). Se houver \`salon_phone\`, ofereça também o WhatsApp do salão.
+5. EMPATIA: Conecte estado atual + resultado esperado da cliente com o diagnóstico final, em 2ª pessoa.
+
+REGRAS INVIOLÁVEIS:
+- NUNCA recomende tratamentos caseiros, receitas, máscaras DIY ou produtos de uso doméstico.
+- NUNCA cite marcas, fabricantes ou nomes comerciais de produtos/linhas.
+- NUNCA invente serviços que não estão no catálogo, nem percentuais que não estão em \`patterns\`.
+- Reforce que o protocolo será personalizado pelos profissionais do salão e que produtos de linhas profissionais serão essenciais.
+- Glossário técnico correto (ex: hidratação ≠ botox ≠ reconstrução).
+- Confiança realista (60–95).
 
 Retorne APENAS um JSON válido (sem markdown), com a estrutura:
 {
@@ -21,8 +35,10 @@ Retorne APENAS um JSON válido (sem markdown), com a estrutura:
   "confidence_score": 85.5,
   "technical_explanation": "Explicação técnica curta",
   "history_comparison": "1-2 frases comparando com a análise anterior. Se não houver histórico, string vazia.",
-  "recommended_services": ["Nome exato do serviço do catálogo", "..."],
-  "edu_personal_response": "Seção 'Edu e você': 4 a 7 frases, 2ª pessoa, empática. DEVE: (1) conectar estado atual + resultado esperado da cliente com o diagnóstico; (2) quando houver histórico, citar a evolução observada; (3) quando houver serviços do catálogo aplicáveis, citá-los pelo nome e descrever brevemente como o protocolo resolve os problemas dela; (4) dar expectativa realista (ex: número de sessões). REGRAS OBRIGATÓRIAS: (a) NUNCA recomendar tratamentos caseiros, receitas, máscaras DIY ou produtos de uso doméstico; (b) NÃO sugerir o que fazer 'em casa'; (c) Reforçar que o protocolo será personalizado pelos profissionais do salão; (d) Mencionar que produtos de linhas profissionais serão essenciais, SEM citar marcas, fabricantes ou nomes comerciais; (e) NÃO inventar serviços que não estão no catálogo recebido — se o catálogo estiver vazio, oriente apenas a consulta presencial com a equipe."
+  "recommended_services": [
+    { "name": "Nome exato do serviço do catálogo", "benefit": "Para que serve no caso dela", "duration_minutes": 60, "price": 150 }
+  ],
+  "edu_personal_response": "Resposta final em 150–250 palavras estruturada em: (1) abertura empática conectando desejo + diagnóstico; (2) comparação com histórico, se houver; (3) padrões do salão, se houver; (4) protocolo recomendado listando os serviços com duração e preço; (5) expectativa de resultado realista; (6) CTA de agendamento com o link e/ou WhatsApp do salão. Se o catálogo estiver vazio, omitir o protocolo e o CTA e orientar consulta presencial."
 }`;
 
 const ANTHROPIC_MODELS = ["claude-sonnet-4-6", "claude-sonnet-4-5", "claude-haiku-4-5"];
@@ -64,7 +80,7 @@ serve(async (req) => {
     // Verifica que o usuário é dono do estabelecimento
     const { data: est } = await admin
       .from("establishments")
-      .select("id, owner_id")
+      .select("id, owner_id, name, slug, phone")
       .eq("id", body.establishment_id)
       .maybeSingle();
     if (!est || est.owner_id !== userId) return json({ error: "forbidden" }, 403);
@@ -122,18 +138,28 @@ serve(async (req) => {
     const servicesCompact = (services || []).map((s: any) => ({
       nome: s.name,
       descricao: (s.description || "").toString().slice(0, 160),
+      duracao_min: s.duration_minutes ?? null,
+      preco: s.price ?? null,
     }));
 
-    const contextText = `Padrões agregados do salão (use para citar experiência com perfis semelhantes, sem inventar números): ${JSON.stringify(patterns || {})}.
-Histórico recente desta cliente (mais novo primeiro — use para comparar evolução): ${JSON.stringify(history || [])}.
-Catálogo de serviços ATIVOS do salão (use APENAS estes nomes ao recomendar; se vazio, não recomende serviços específicos): ${JSON.stringify(servicesCompact)}.
+    const salonContext = {
+      salon_name: est.name ?? null,
+      salon_slug: est.slug ?? null,
+      salon_phone: est.phone ?? null,
+      booking_url: est.slug ? `https://salaocloud.com.br/${est.slug}` : null,
+    };
+
+    const contextText = `Dados do salão (use para CTA e personalização): ${JSON.stringify(salonContext)}.
+Padrões agregados do salão (use APENAS números explicitamente presentes; NUNCA invente percentuais): ${JSON.stringify(patterns || {})}.
+Histórico recente desta cliente (mais novo primeiro — use para comparar evolução, citando a data anterior): ${JSON.stringify(history || [])}.
+Catálogo de serviços ATIVOS do salão (use APENAS estes nomes/preços/durações ao recomendar; se vazio, não recomende serviços específicos nem inclua CTA): ${JSON.stringify(servicesCompact)}.
 Foram enviadas ${images.length} foto(s): comprimento, pontas e/ou raiz.
 Auto-percepção da cliente sobre o cabelo (estado atual): ${selfAssessment || "(não respondido)"}.
 Principal resultado esperado pela cliente: ${expectedResult || "(não respondido)"}.`;
 
     // Chamada Claude (Anthropic) — usa modelos atuais com fallback caso um alias seja recusado
     const anthropicReqBase = {
-      max_tokens: 1024,
+      max_tokens: 1800,
       system: SYSTEM_PROMPT,
       messages: [
         {
