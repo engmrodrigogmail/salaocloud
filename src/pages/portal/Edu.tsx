@@ -21,6 +21,7 @@ import { ptBR } from "date-fns/locale";
 import { NewClientDialog } from "@/components/clients/NewClientDialog";
 import eduSignature from "@/assets/edu-signature.png";
 import { compressImageForAI } from "@/lib/imageCompress";
+import { salonInlineReference } from "@/lib/salonReference";
 
 interface Client {
   id: string;
@@ -815,6 +816,28 @@ export default function PortalEdu() {
             <div ref={summaryRef}>
               {clientViewProfile && <EduAnalysisSummary profile={clientViewProfile} establishmentName={estName} />}
             </div>
+
+            {/* Convite para a Sílvia (fora da análise) */}
+            {clientViewProfile && slug && (
+              <div className="mt-5 rounded-xl border border-amber-600/40 bg-[#1f1f1f] p-4 sm:p-5 space-y-3">
+                <p className="text-sm sm:text-[15px] text-gray-200 leading-relaxed">
+                  Posso te direcionar para a <span className="text-[#E6A15C] font-semibold">Sílvia</span>,
+                  minha colega de atendimento virtual do {salonInlineReference(estName)}, para que ela agende
+                  rapidinho e com toda a comodidade a continuação dessa experiência que, do meu lado,
+                  adorei ter tido com você até agora!
+                </p>
+                <a
+                  href={`/${slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex w-full sm:w-auto items-center justify-center gap-2 rounded-full bg-[#E6A15C] text-[#1A1A1A] px-5 py-2.5 text-sm font-semibold shadow-lg hover:bg-[#d4914f] active:scale-95 transition-all"
+                >
+                  <Sparkles className="h-4 w-4" />
+                  Agende com a Sílvia
+                </a>
+              </div>
+            )}
+
             <div className="flex flex-col-reverse sm:flex-row justify-end items-stretch sm:items-center gap-2 pt-4">
               <Button
                 variant="outline"
@@ -827,6 +850,7 @@ export default function PortalEdu() {
                 <ShareSummaryButton
                   profile={clientViewProfile}
                   establishmentName={estName}
+                  slug={slug ?? null}
                   fileName={`analise-${(clientViewProfile.client?.name || "cliente").toLowerCase().replace(/\s+/g, "-")}.pdf`}
                 />
               )}

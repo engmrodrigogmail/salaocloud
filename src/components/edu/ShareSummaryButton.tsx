@@ -1,13 +1,16 @@
 import { useState } from "react";
 import { Share2, Loader2 } from "lucide-react";
 import { jsPDF } from "jspdf";
+import QRCode from "qrcode";
 import { toast } from "sonner";
 import eduSignature from "@/assets/edu-signature.png";
+import { salonInlineReference } from "@/lib/salonReference";
 import type { EduAnalysisProfile } from "./EduAnalysisSummary";
 
 interface Props {
   profile: EduAnalysisProfile;
   establishmentName?: string | null;
+  slug?: string | null;
   fileName?: string;
 }
 
@@ -52,7 +55,7 @@ async function loadImageAsDataURL(src: string): Promise<string> {
   });
 }
 
-export function ShareSummaryButton({ profile, establishmentName, fileName = "analise-capilar.pdf" }: Props) {
+export function ShareSummaryButton({ profile, establishmentName, slug, fileName = "analise-capilar.pdf" }: Props) {
   const [loading, setLoading] = useState(false);
 
   async function buildPdf(): Promise<Blob> {
@@ -306,6 +309,51 @@ export function ShareSummaryButton({ profile, establishmentName, fileName = "ana
     pdf.setFontSize(8);
     pdf.setTextColor(...MUTED);
     pdf.text("Edu Valentim — IA Hair Expert", PW - M, y + 15, { align: "right" });
+    y += 20;
+
+    // Convite Sílvia + QR Code (substitui o botão da versão tela)
+    if (slug) {
+      const bookingUrl = `${window.location.origin}/${slug}`;
+      const qrSize = 32; // mm
+      // Garante espaço; se não couber, adiciona página
+      if (y + qrSize + 14 > PH - 22) {
+        pdf.addPage();
+        y = 20;
+      }
+      try {
+        const qrDataUrl = await QRCode.toDataURL(bookingUrl, {
+          margin: 1,
+          width: 512,
+          color: { dark: "#1A1A1A", light: "#FFFFFF" },
+        });
+        pdf.addImage(qrDataUrl, "PNG", M, y, qrSize, qrSize);
+      } catch {
+        /* noop */
+      }
+      const tx = M + qrSize + 5;
+      const tw = W - qrSize - 5;
+      pdf.setFont("helvetica", "bold");
+      pdf.setFontSize(10);
+      pdf.setTextColor(...AMBER_DARK);
+      pdf.text("Continue com a Sílvia", tx, y + 5);
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(9);
+      pdf.setTextColor(...TEXT);
+      const inviteText = `Posso te direcionar para a Sílvia, minha colega de atendimento virtual do ${salonInlineReference(
+        establishmentName,
+      )}, para que ela agende rapidinho a continuação dessa experiência que adorei ter tido com você!`;
+      const inviteLines = pdf.splitTextToSize(inviteText, tw);
+      pdf.text(inviteLines, tx, y + 10);
+      pdf.setFont("helvetica", "italic");
+      pdf.setFontSize(8);
+      pdf.setTextColor(...MUTED);
+      pdf.text(
+        "Escaneie este QR Code para falar com a Sílvia.",
+        tx,
+        y + 10 + inviteLines.length * 3.6 + 4,
+      );
+      y += qrSize + 4;
+    }
 
     // Footer disclaimers
     const footY = PH - 18;
