@@ -94,15 +94,15 @@ export function ShareSummaryButton({ profile, establishmentName, slug, fileName 
       pdf.text(new Date(profile.validated_at).toLocaleDateString("pt-BR"), PW - M, 18, { align: "right" });
     }
 
-    let y = 30;
+    let y = 27;
     pdf.setTextColor(...TEXT);
 
     // Client name
     if (profile.client?.name) {
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(13);
+      pdf.setFontSize(12);
       pdf.text(`Cliente: ${profile.client.name}`, M, y);
-      y += 7;
+      y += 5;
     }
 
     const health = damageToHealth(profile.damage_level);
@@ -124,26 +124,26 @@ export function ShareSummaryButton({ profile, establishmentName, slug, fileName 
       pdf.setDrawColor(...AMBER);
       pdf.setLineWidth(0.3);
       pdf.line(M, y + 1.2, PW - M, y + 1.2);
-      y += 5;
+      y += 4;
       pdf.setTextColor(...TEXT);
     };
 
     sectionTitle("Classificação");
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(11);
+    pdf.setFontSize(10.5);
     pdf.text(profile.hair_type || "Tipo capilar não identificado", M, y);
-    y += 5;
+    y += 4;
     pdf.setFont("helvetica", "normal");
     pdf.setFontSize(9);
     pdf.setTextColor(...MUTED);
     pdf.text(`Porosidade: ${por.value}    •    Nível de dano: ${dmg.value}`, M, y);
-    y += 7;
+    y += 5;
     pdf.setTextColor(...TEXT);
 
     // Section: Saúde Capilar (5-segment bar)
     sectionTitle("Nível de Saúde Capilar");
     const barY = y;
-    const barH = 4;
+    const barH = 3.5;
     const segW = W / 5;
     const segs: [number, number, number][] = [
       [16, 185, 129],
@@ -165,14 +165,14 @@ export function ShareSummaryButton({ profile, establishmentName, slug, fileName 
     pdf.setFontSize(7);
     pdf.setTextColor(...MUTED);
     ["Saudável", "Levemente", "Comprom.", "Bastante", "Severamente"].forEach((l, i) => {
-      pdf.text(l, M + i * segW + segW / 2, barY + barH + 3, { align: "center" });
+      pdf.text(l, M + i * segW + segW / 2, barY + barH + 2.6, { align: "center" });
     });
-    y = barY + barH + 6;
+    y = barY + barH + 5;
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(10);
+    pdf.setFontSize(9.5);
     pdf.setTextColor(...AMBER_DARK);
     pdf.text(health.label, PW / 2, y, { align: "center" });
-    y += 6;
+    y += 4;
     pdf.setTextColor(...TEXT);
 
     // Section: Métricas (compact rows with score bars)
@@ -186,7 +186,7 @@ export function ShareSummaryButton({ profile, establishmentName, slug, fileName 
     ];
     metrics.forEach((m) => {
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(9);
+      pdf.setFontSize(8.5);
       pdf.setTextColor(...TEXT);
       pdf.text(m.name, M, y);
       pdf.setFont("helvetica", "normal");
@@ -196,30 +196,30 @@ export function ShareSummaryButton({ profile, establishmentName, slug, fileName 
       const barX = M + 95;
       const bW = 55;
       pdf.setFillColor(235, 230, 220);
-      pdf.rect(barX, y - 2.5, bW, 2.5, "F");
+      pdf.rect(barX, y - 2, bW, 2, "F");
       const fillC: [number, number, number] =
         m.score >= 4 ? [16, 185, 129] : m.score >= 3 ? [245, 158, 11] : [220, 60, 60];
       pdf.setFillColor(...fillC);
-      pdf.rect(barX, y - 2.5, (bW * m.score) / 5, 2.5, "F");
+      pdf.rect(barX, y - 2, (bW * m.score) / 5, 2, "F");
       pdf.setFont("helvetica", "bold");
       pdf.setTextColor(...AMBER_DARK);
       pdf.text(`${m.score}/5`, PW - M, y, { align: "right" });
-      y += 5.5;
+      y += 4.5;
     });
-    y += 2;
+    y += 1;
 
     // Recoverability box
     pdf.setFillColor(...SUBTLE_BG);
     pdf.setDrawColor(...AMBER);
     pdf.setLineWidth(0.4);
-    const recH = 16;
+    const recH = 13;
     pdf.roundedRect(M, y, W, recH, 2, 2, "FD");
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(10);
+    pdf.setFontSize(9.5);
     pdf.setTextColor(...TEXT);
-    pdf.text("Índice de Recuperabilidade", M + 4, y + 6);
+    pdf.text("Índice de Recuperabilidade", M + 4, y + 5);
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(8);
+    pdf.setFontSize(7.5);
     pdf.setTextColor(...MUTED);
     const recDesc =
       recoverability >= 7
@@ -227,14 +227,14 @@ export function ShareSummaryButton({ profile, establishmentName, slug, fileName 
         : recoverability >= 4
         ? "Recuperação possível com cuidados consistentes."
         : "Requer plano intensivo e acompanhamento profissional.";
-    pdf.text(recDesc, M + 4, y + 11, { maxWidth: W - 35 });
+    pdf.text(recDesc, M + 4, y + 9.5, { maxWidth: W - 35 });
     pdf.setFont("helvetica", "bold");
-    pdf.setFontSize(16);
+    pdf.setFontSize(14);
     pdf.setTextColor(...AMBER_DARK);
-    pdf.text(`${recoverability}/10`, PW - M - 4, y + 8, { align: "right" });
+    pdf.text(`${recoverability}/10`, PW - M - 4, y + 7, { align: "right" });
     pdf.setFontSize(7);
-    pdf.text(recoverStatus, PW - M - 4, y + 13, { align: "right" });
-    y += recH + 5;
+    pdf.text(recoverStatus, PW - M - 4, y + 11, { align: "right" });
+    y += recH + 3;
 
     // Two-column section: Relato + Edu e Você
     pdf.setTextColor(...TEXT);
@@ -247,33 +247,33 @@ export function ShareSummaryButton({ profile, establishmentName, slug, fileName 
       pdf.setFontSize(9);
       pdf.setTextColor(...AMBER_DARK);
       pdf.text("SEU RELATO", M, y);
-      y += 4;
+      y += 3.5;
       pdf.setTextColor(...TEXT);
       if (profile.client_self_assessment) {
         pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(7.5);
+        pdf.setFontSize(7);
         pdf.setTextColor(...MUTED);
         pdf.text("COMO VOCÊ VÊ SEU CABELO HOJE", M, y);
-        y += 3.5;
+        y += 3;
         pdf.setFont("helvetica", "normal");
-        pdf.setFontSize(8.5);
+        pdf.setFontSize(8);
         pdf.setTextColor(...TEXT);
         const lines = pdf.splitTextToSize(profile.client_self_assessment, colW);
         pdf.text(lines, M, y);
-        y += lines.length * 3.6 + 2;
+        y += lines.length * 3.3 + 1.5;
       }
       if (profile.client_expected_result) {
         pdf.setFont("helvetica", "bold");
-        pdf.setFontSize(7.5);
+        pdf.setFontSize(7);
         pdf.setTextColor(...MUTED);
         pdf.text("RESULTADO QUE VOCÊ ESPERA", M, y);
-        y += 3.5;
+        y += 3;
         pdf.setFont("helvetica", "normal");
-        pdf.setFontSize(8.5);
+        pdf.setFontSize(8);
         pdf.setTextColor(...TEXT);
         const lines = pdf.splitTextToSize(profile.client_expected_result, colW);
         pdf.text(lines, M, y);
-        y += lines.length * 3.6;
+        y += lines.length * 3.3;
       }
     }
     const leftEndY = y;
@@ -285,40 +285,40 @@ export function ShareSummaryButton({ profile, establishmentName, slug, fileName 
     pdf.setFontSize(9);
     pdf.setTextColor(...AMBER_DARK);
     pdf.text("✦  EDU E VOCÊ", xR, yR);
-    yR += 4;
+    yR += 3.5;
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(8.5);
+    pdf.setFontSize(8);
     pdf.setTextColor(...TEXT);
     const eduText =
       profile.edu_personal_response ||
       "Sua análise foi registrada. Em breve seu profissional irá conversar com você sobre o melhor plano de cuidados personalizado.";
     const eduLines = pdf.splitTextToSize(eduText, colW);
     pdf.text(eduLines, xR, yR);
-    yR += eduLines.length * 3.6;
+    yR += eduLines.length * 3.3;
 
-    y = Math.max(leftEndY, yR) + 6;
+    y = Math.max(leftEndY, yR) + 4;
 
     // Signature
     try {
       const sig = await loadImageAsDataURL(eduSignature);
-      pdf.addImage(sig, "PNG", PW - M - 38, y, 38, 12);
+      pdf.addImage(sig, "PNG", PW - M - 32, y, 32, 10);
     } catch {
       /* noop */
     }
     pdf.setFont("helvetica", "italic");
-    pdf.setFontSize(8);
+    pdf.setFontSize(7.5);
     pdf.setTextColor(...MUTED);
-    pdf.text("Edu Valentim — IA Hair Expert", PW - M, y + 15, { align: "right" });
-    y += 20;
+    pdf.text("Edu Valentim — IA Hair Expert", PW - M, y + 13, { align: "right" });
+    y += 16;
 
-    // Convite Sílvia + QR Code (substitui o botão da versão tela)
+    // Convite Sílvia + QR Code (substitui o botão da versão tela). SEMPRE na mesma página.
     if (slug) {
       const bookingUrl = `${window.location.origin}/${slug}`;
-      const qrSize = 32; // mm
-      // Garante espaço; se não couber, adiciona página
-      if (y + qrSize + 14 > PH - 22) {
-        pdf.addPage();
-        y = 20;
+      const qrSize = 26; // mm
+      // Garante que cabe acima do footer; se não, comprime y
+      const footerTop = PH - 22;
+      if (y + qrSize > footerTop) {
+        y = footerTop - qrSize;
       }
       try {
         const qrDataUrl = await QRCode.toDataURL(bookingUrl, {
@@ -330,29 +330,29 @@ export function ShareSummaryButton({ profile, establishmentName, slug, fileName 
       } catch {
         /* noop */
       }
-      const tx = M + qrSize + 5;
-      const tw = W - qrSize - 5;
+      const tx = M + qrSize + 4;
+      const tw = W - qrSize - 4;
       pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(10);
+      pdf.setFontSize(9.5);
       pdf.setTextColor(...AMBER_DARK);
-      pdf.text("Continue com a Sílvia", tx, y + 5);
+      pdf.text("Continue com a Sílvia", tx, y + 4);
       pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(9);
+      pdf.setFontSize(8);
       pdf.setTextColor(...TEXT);
       const inviteText = `Posso te direcionar para a Sílvia, minha colega de atendimento virtual do ${salonInlineReference(
         establishmentName,
       )}, para que ela agende rapidinho a continuação dessa experiência que adorei ter tido com você!`;
       const inviteLines = pdf.splitTextToSize(inviteText, tw);
-      pdf.text(inviteLines, tx, y + 10);
+      pdf.text(inviteLines, tx, y + 8);
       pdf.setFont("helvetica", "italic");
-      pdf.setFontSize(8);
+      pdf.setFontSize(7.5);
       pdf.setTextColor(...MUTED);
       pdf.text(
         "Escaneie este QR Code para falar com a Sílvia.",
         tx,
-        y + 10 + inviteLines.length * 3.6 + 4,
+        y + 8 + inviteLines.length * 3.3 + 3,
       );
-      y += qrSize + 4;
+      y += qrSize + 3;
     }
 
     // Footer disclaimers
