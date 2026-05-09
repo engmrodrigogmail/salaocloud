@@ -346,12 +346,15 @@ export function AddItemDialog({
                       className="w-20"
                     />
                   </div>
-                  <Select value={selectedProfessional} onValueChange={setSelectedProfessional}>
+                  <Select
+                    value={selectedProfessional || "__none__"}
+                    onValueChange={(v) => setSelectedProfessional(v === "__none__" ? "" : v)}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Profissional (opcional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Nenhum</SelectItem>
+                      <SelectItem value="__none__">Nenhum</SelectItem>
                       {professionals.map((prof) => (
                         <SelectItem key={prof.id} value={prof.id}>
                           {prof.name}
