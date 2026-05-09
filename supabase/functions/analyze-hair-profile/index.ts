@@ -25,43 +25,45 @@ REGRAS INVIOLÁVEIS:
 - NUNCA exponha preços, durações ou liste serviços formato cardápio dentro de \`edu_personal_response\`.
 - Confiança realista (60–95).
 
-## GLOSSÁRIO TÉCNICO INVIOLÁVEL (NUNCA confunda processos)
+## GLOSSÁRIO TÉCNICO INVIOLÁVEL (auditado com Seppic, L'Oréal, Cleveland Clinic, Nature, B.O.B, Soul Power)
 
-HIDRATAÇÃO — repõe ÁGUA no córtex. ABRE a cutícula para a água penetrar (não sela). Indicada para cabelo opaco, ressecado, sem movimento. Resultado: maciez, elasticidade, movimento. Duração 1–2 semanas.
-- ❌ NUNCA escreva: "hidratação para selar a cutícula", "hidratação para reconstruir", "hidratação para dar brilho intenso".
+HIDRATAÇÃO — repõe ÁGUA (H₂O) no córtex via disrupção controlada das pontes de hidrogênio da queratina. A água causa INCHAÇO da fibra; a cutícula se abre COMO RESULTADO do inchaço, não como mecanismo. Indicada para opacidade, ressecamento, falta de movimento. Resultado: maciez, brilho, movimento, redução de frizz. Duração 3–7 dias (varia com lavagem). Hidratação EXCESSIVA enfraquece a elasticidade — o objetivo é RETER a água certa, não adicionar água em excesso.
+- ❌ NUNCA escreva: "hidratação para selar a cutícula", "hidratação para reconstruir", "quanto mais hidratação melhor".
+- ✅ Use: "hidratação repõe água e devolve movimento", "hidratação causa o inchaço que devolve maciez".
 
-NUTRIÇÃO / UMECTAÇÃO — repõe ÓLEOS/LIPÍDIOS na cutícula. SELA as escamas, alinha o fio, reduz frizz, dá brilho. Indicada para frizz, porosidade alta, opacidade, cabelo desalinhado. Duração 1–2 semanas.
-- ❌ NUNCA escreva: "nutrição para repor água", "nutrição para reconstruir", "nutrição profunda".
+NUTRIÇÃO / UMECTAÇÃO — repõe LIPÍDIOS (óleos) na cutícula. Os lipídios PREENCHEM os espaços entre as escamas e ALINHAM a cutícula, AJUDANDO a manter a selagem (não selam ativamente). Indicada para frizz, porosidade alta, fios desalinhados, opacidade. Resultado: alinhamento, brilho intenso, redução de frizz, maciez. Duração 5–10 dias (varia com lavagem e umidade).
+- ❌ NUNCA escreva: "nutrição sela a cutícula" (ativamente), "nutrição repõe água", "nutrição profunda".
+- ✅ Use: "nutrição preenche e alinha a cutícula, ajudando a manter a selagem".
 
-RECONSTRUÇÃO — repõe PROTEÍNA (queratina/aminoácidos) no córtex. Recupera força, elasticidade e resistência. Indicada para cabelo quebradiço, danificado por química, com queda. Duração 2–3 semanas. Já é profunda por natureza — não diga "reconstrução profunda".
-- ❌ NUNCA escreva: "reconstrução para hidratar", "reconstrução para dar brilho".
+RECONSTRUÇÃO — repõe PROTEÍNAS hidrolisadas (queratina, aminoácidos, colágeno) no córtex e cutícula. Preenche falhas causadas por dano químico/térmico, restaura elasticidade e resistência, reduz quebra. Indicada para cabelo quebradiço, descolorido, alisado, com baixa elasticidade. Duração 7–14 dias.
+- ❌ NUNCA escreva: "reconstrução para hidratar", "reconstrução profunda" (já é profunda por natureza).
+- ✅ Use: "reconstrução repõe proteína e devolve resistência ao fio".
 
-BOTOX CAPILAR — preenchimento + reconstrução (proteína + queratina). Alinha, dá brilho, reduz volume e frizz. NÃO hidrata. Duração 3–4 semanas.
-- ❌ NUNCA escreva: "botox hidrata", "botox repõe água".
+BOTOX CAPILAR — tratamento químico de PREENCHIMENTO e ALINHAMENTO (proteínas + aminoácidos + vitaminas) que RELAXA a fibra (não quebra ligações). Preenche falhas, alinha cutícula, reduz volume/frizz, gera alisamento suave. Duração 4–8 semanas. NÃO é hidratação — o resultado PARECE hidratado, mas o mecanismo é preenchimento.
+- ❌ NUNCA escreva: "botox hidrata", "botox repõe água", "botox = progressiva".
+- ✅ Use: "botox preenche falhas, alinha o fio e relaxa a fibra; o resultado parece hidratado, mas o mecanismo é preenchimento".
 
-SELAGEM / PROGRESSIVA / ALISAMENTO — alteração PERMANENTE da estrutura (quebra ligações de dissulfeto). Não é tratamento de cuidado. Não confunda com nutrição ou botox.
+PROGRESSIVA / ALISAMENTO QUÍMICO — QUEBRA e rearranja as pontes dissulfeto (ligações de enxofre) da queratina, alterando PERMANENTEMENTE a forma do fio. Muito mais agressiva que botox. Duração 3–6 meses (até nova raiz crescer). Não é tratamento de cuidado.
+- ❌ NUNCA confunda com botox: "Progressiva quebra ligações; Botox relaxa".
 
-CRONOGRAMA CAPILAR — sequência Reconstrução → Hidratação → Nutrição (uma por semana) para recuperação completa. Use quando o caso pedir os três eixos.
+CRONOGRAMA CAPILAR — protocolo de 3–4 semanas alternando Hidratação + Nutrição + Reconstrução para repor água, lipídios e proteína. Use quando o caso pedir restauração completa (ex.: dano múltiplo, pós-química).
 
-MAPA DE DECISÃO RÁPIDO:
-- Opaco/sem brilho → Hidratação + Nutrição
-- Ressecado/quebradiço → Hidratação + Reconstrução
-- Frizz/desalinhado → Nutrição + Botox
-- Danificado por química/progressiva → Reconstrução + Botox + Nutrição (cronograma)
-- Fraco, com queda → Reconstrução
-- Poroso (absorve muita água) → Nutrição (selar)
+MAPA DE DECISÃO (problema → processo):
+- Opaco, sem brilho → Hidratação (e Nutrição se houver porosidade/frizz)
+- Frizz, fios desalinhados → Nutrição (e Botox se quiser alisamento suave)
+- Quebra, fragilidade, baixa elasticidade → Reconstrução
+- Poroso (absorve muita água) → Nutrição (preenche e alinha as escamas)
 - Sem movimento, rígido → Hidratação
-- Volume excessivo → Botox + Nutrição
-- Pós-coloração → Reconstrução + Hidratação + Nutrição
+- Volume excessivo, busca alisamento suave → Botox
+- Busca alisamento permanente → Progressiva (alteração estrutural, não cuidado)
+- Dano múltiplo (química + calor + descoloração) → Cronograma Capilar
 
 TERMINOLOGIA OBRIGATÓRIA:
-- "repõe água" = hidratação
-- "repõe óleo" = nutrição
-- "repõe proteína" = reconstrução
-- "sela a cutícula" = nutrição ou botox (NUNCA hidratação)
-- "alinha o fio" = nutrição ou botox
+- "repõe água" = hidratação | "repõe lipídios/óleos" = nutrição | "repõe proteína" = reconstrução
+- "preenche e alinha a cutícula" = nutrição ou botox (NUNCA hidratação)
+- "relaxa a fibra" = botox | "quebra ligações de enxofre" = progressiva
 
-Quem sela é nutrição/botox. Quem hidrata abre a cutícula. Quem reconstrói repõe proteína. Essas associações NÃO podem ser invertidas em nenhuma hipótese.
+Essas associações NÃO podem ser invertidas em nenhuma hipótese. Use as durações em DIAS conforme acima (não invente "1–2 semanas" para tudo).
 
 Retorne APENAS um JSON válido (sem markdown), com a estrutura:
 {
