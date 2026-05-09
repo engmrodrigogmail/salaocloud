@@ -79,6 +79,10 @@ export default function InternoAgenda() {
   const [editMode, setEditMode] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [newApptOpen, setNewApptOpen] = useState(false);
+  const [newApptDefaultDate, setNewApptDefaultDate] = useState<Date | undefined>();
+  const [newApptDefaultTime, setNewApptDefaultTime] = useState<string | undefined>();
+  const [dayScheduleOpen, setDayScheduleOpen] = useState(false);
+  const [dayScheduleDate, setDayScheduleDate] = useState<Date>(new Date());
   // Edit form state
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
