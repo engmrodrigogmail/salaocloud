@@ -56,20 +56,33 @@ export function ReviewsDashboard({ establishmentId, settings }: { establishmentI
       setLoading(true);
       const since =
         period === "all" ? null : subDays(new Date(), parseInt(period, 10)).toISOString();
+      // Respect visibility toggles at the query level — don't fetch what won't be shown
+      const showComments = !!settings?.show_comments_on_dashboard;
+      const showProfRatings = !!settings?.show_professional_ratings;
+      const selectCols = [
+        "id", "tab_id", "client_id", "status", "client_rating",
+        showComments ? "client_comment" : null,
+        "client_submitted_at", "salon_rating",
+        showComments ? "salon_comment" : null,
+        "reward_coupon_id", "created_at", "clients(id, name)",
+      ].filter(Boolean).join(", ");
+
       let q = supabase
         .from("tab_reviews")
-        .select("id, tab_id, client_id, status, client_rating, client_comment, client_submitted_at, salon_rating, salon_comment, reward_coupon_id, created_at, clients(id, name)")
+        .select(selectCols)
         .eq("establishment_id", establishmentId)
         .eq("status", "submitted")
         .order("client_submitted_at", { ascending: false });
       if (since) q = q.gte("client_submitted_at", since);
       const { data: reviews } = await q;
-      const ids = (reviews ?? []).map((r) => r.id);
+      const ids = (reviews ?? []).map((r: any) => r.id);
       const [{ data: profRatings }, { data: professionals }] = await Promise.all([
-        ids.length
+        showProfRatings && ids.length
           ? supabase.from("tab_review_professionals").select("*").in("tab_review_id", ids)
           : Promise.resolve({ data: [] as any[] }),
-        supabase.from("professionals").select("id, name, photo_url").eq("establishment_id", establishmentId),
+        showProfRatings
+          ? supabase.from("professionals").select("id, name, photo_url").eq("establishment_id", establishmentId)
+          : Promise.resolve({ data: [] as any[] }),
       ]);
       setData({
         reviews: (reviews ?? []) as any,
@@ -78,7 +91,7 @@ export function ReviewsDashboard({ establishmentId, settings }: { establishmentI
       });
       setLoading(false);
     })();
-  }, [establishmentId, period]);
+  }, [establishmentId, period, settings?.show_comments_on_dashboard, settings?.show_professional_ratings]);
 
   const metrics = useMemo(() => {
     if (!data) return null;
