@@ -26,6 +26,7 @@ import {
 import { ptBR } from "date-fns/locale";
 import type { Tables } from "@/integrations/supabase/types";
 import { AgendaTimeSlots } from "@/components/schedule/AgendaTimeSlots";
+import { DayScheduleDialog } from "@/components/schedule/DayScheduleDialog";
 import { NewAppointmentDialog } from "@/components/schedule/NewAppointmentDialog";
 
 type Client = Tables<"clients">;
