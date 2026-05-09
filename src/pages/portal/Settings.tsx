@@ -18,6 +18,7 @@ import { NotificationSettingsCard } from "@/components/notifications/Notificatio
 import type { Tables, Json } from "@/integrations/supabase/types";
 
 import { QRCodeCard } from "@/components/booking/QRCodeCard";
+import { PaymentMethodsCard } from "@/components/settings/PaymentMethodsCard";
 
 type Establishment = Tables<"establishments"> & {
   show_professional_names?: boolean | null;
