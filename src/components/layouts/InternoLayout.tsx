@@ -239,6 +239,7 @@ export function InternoLayout({ children }: InternoLayoutProps) {
       >
         <div className="p-4 sm:p-6">{children}</div>
       </main>
+      <SilviaHelpButton profile={isOwner || isManager ? "recepcionista" : "profissional"} />
     </div>
     </ChangePasswordGate>
   );
