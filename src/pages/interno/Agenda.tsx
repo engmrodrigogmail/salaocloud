@@ -28,6 +28,7 @@ import type { Tables } from "@/integrations/supabase/types";
 import { AgendaTimeSlots } from "@/components/schedule/AgendaTimeSlots";
 import { DayScheduleDialog } from "@/components/schedule/DayScheduleDialog";
 import { NewAppointmentDialog } from "@/components/schedule/NewAppointmentDialog";
+import { TimeSelect } from "@/components/schedule/TimeSelect";
 
 type Client = Tables<"clients">;
 type Service = Tables<"services">;
@@ -778,7 +779,7 @@ export default function InternoAgenda() {
                     </div>
                     <div>
                       <Label>Horário</Label>
-                      <Input type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} />
+                      <TimeSelect value={editTime} onChange={setEditTime} />
                     </div>
                   </div>
                   <div>

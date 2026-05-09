@@ -25,6 +25,7 @@ import { CancelledHistoryDialog } from "@/components/schedule/CancelledHistoryDi
 import { AgendaTimeSlots } from "@/components/schedule/AgendaTimeSlots";
 import { DayScheduleDialog } from "@/components/schedule/DayScheduleDialog";
 import { NewAppointmentDialog } from "@/components/schedule/NewAppointmentDialog";
+import { TimeSelect } from "@/components/schedule/TimeSelect";
 import { 
   format, addDays, addMonths, addYears, startOfWeek, endOfWeek, 
   eachDayOfInterval, isSameDay, parseISO, startOfDay, startOfMonth, 
@@ -787,7 +788,7 @@ export default function PortalAgenda() {
                     </div>
                     <div>
                       <Label>Horário</Label>
-                      <Input type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} />
+                      <TimeSelect value={editTime} onChange={setEditTime} />
                     </div>
                   </div>
                   <div>
