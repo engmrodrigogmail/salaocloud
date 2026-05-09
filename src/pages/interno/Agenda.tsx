@@ -347,6 +347,24 @@ export default function InternoAgenda() {
     if (!selectedAppointment) return;
 
     try {
+      // Block deletion if there's an open tab linked to this appointment or client
+      let openTabQuery = supabase
+        .from("tabs")
+        .select("id")
+        .eq("status", "open")
+        .limit(1);
+      if (selectedAppointment.client_id) {
+        openTabQuery = openTabQuery.or(`appointment_id.eq.${selectedAppointment.id},client_id.eq.${selectedAppointment.client_id}`);
+      } else {
+        openTabQuery = openTabQuery.eq("appointment_id", selectedAppointment.id);
+      }
+      const { data: openTabs } = await openTabQuery;
+      if (openTabs && openTabs.length > 0) {
+        toast.error("Não é possível excluir: existe uma comanda aberta para este cliente. Finalize ou cancele a comanda antes.");
+        setDeleteConfirmOpen(false);
+        return;
+      }
+
       const { error } = await supabase
         .from("appointments")
         .delete()
