@@ -45,6 +45,7 @@ export function InternoLayout({ children }: InternoLayoutProps) {
   const [establishmentName, setEstablishmentName] = useState("");
   const [isOwner, setIsOwner] = useState(false);
   const [professionalId, setProfessionalId] = useState<string | null>(null);
+  const [isManager, setIsManager] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
