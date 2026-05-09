@@ -385,7 +385,7 @@ export default function AILearnings() {
               Base de Conhecimento
             </CardTitle>
             <CardDescription>
-              Aprendizados automáticos e manuais que melhoram as respostas da IA
+              Aprendizados automáticos e manuais que melhoram as respostas da Silvia
             </CardDescription>
           </CardHeader>
           <CardContent>
