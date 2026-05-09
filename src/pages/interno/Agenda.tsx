@@ -779,7 +779,7 @@ export default function InternoAgenda() {
                     </div>
                     <div>
                       <Label>Horário</Label>
-                      <Input type="time" value={editTime} onChange={(e) => setEditTime(e.target.value)} />
+                      <TimeSelect value={editTime} onChange={setEditTime} />
                     </div>
                   </div>
                   <div>
