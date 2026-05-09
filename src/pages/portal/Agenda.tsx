@@ -331,7 +331,7 @@ export default function PortalAgenda() {
       let openTabQuery = supabase
         .from("tabs")
         .select("id")
-        .eq("establishment_id", establishmentId!)
+        .eq("establishment_id", establishment!.id)
         .eq("status", "open")
         .limit(1);
       if (selectedAppointment.client_id) {
