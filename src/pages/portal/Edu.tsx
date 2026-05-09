@@ -371,8 +371,6 @@ export default function PortalEdu() {
           </Button>
         </div>
 
-        {estId && <EduProfileCard establishmentId={estId} />}
-
         <Tabs defaultValue="pending">
           <TabsList>
             <TabsTrigger value="pending">Validação ({pending.length})</TabsTrigger>
