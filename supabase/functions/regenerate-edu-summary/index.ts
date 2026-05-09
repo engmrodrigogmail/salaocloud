@@ -134,6 +134,17 @@ serve(async (req) => {
       return json({ skipped: true, reason: "no_correction" }, 200);
     }
 
+    // Carrega perfil de tom configurado pelo salão
+    const { data: access } = await admin
+      .from("edu_access_control")
+      .select("edu_profile")
+      .eq("establishment_id", profile.establishment_id)
+      .maybeSingle();
+    const eduProfile: "tecnico" | "acolhedor" =
+      (access as any)?.edu_profile === "acolhedor" ? "acolhedor" : "tecnico";
+    const toneOverlay = eduProfile === "acolhedor" ? TONE_OVERLAY_ACOLHEDOR : TONE_OVERLAY_TECNICO;
+    const finalSystemPrompt = `${SYSTEM_PROMPT}\n\n${toneOverlay}`;
+
     // Carrega histórico anterior + padrões + catálogo de serviços ativos do salão
     const [{ data: history }, { data: services }, { data: patterns }] = await Promise.all([
       admin
