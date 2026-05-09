@@ -315,7 +315,7 @@ export default function PortalAgenda() {
       toast.success("Comanda aberta. Agenda bloqueada até o fechamento.");
       setDialogOpen(false);
       fetchAppointments();
-      navigate(`/portal/${slug}/comandas`);
+      navigate(`/interno/${slug}/comandas`);
     } catch (error) {
       console.error("Error opening tab from appointment:", error);
       toast.error("Erro ao abrir comanda");
