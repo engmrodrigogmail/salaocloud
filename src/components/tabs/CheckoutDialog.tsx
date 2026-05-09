@@ -350,7 +350,7 @@ export function CheckoutDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
+        <div className="flex-1 overflow-y-auto overscroll-contain pr-2 -mr-2">
           <div className="space-y-4">
             {/* Coupon Section */}
             <Card>
