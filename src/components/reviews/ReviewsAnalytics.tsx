@@ -267,14 +267,30 @@ export function ReviewsHistory({ establishmentId, settings }: { establishmentId:
   const [profFilter, setProfFilter] = useState<string>("all");
   const [ratingFilter, setRatingFilter] = useState<string>("all");
 
+  const showComments = !!settings?.show_comments_on_dashboard;
+  const showProfRatings = !!settings?.show_professional_ratings;
+
+  // Reset filter if toggle is turned off
+  useEffect(() => {
+    if (!showProfRatings && profFilter !== "all") setProfFilter("all");
+  }, [showProfRatings, profFilter]);
+
   useEffect(() => {
     (async () => {
       setLoading(true);
       const since =
         period === "all" ? null : subDays(new Date(), parseInt(period, 10)).toISOString();
+      const selectCols = [
+        "id", "tab_id", "client_id", "status", "client_rating",
+        showComments ? "client_comment" : null,
+        "client_submitted_at", "salon_rating",
+        showComments ? "salon_comment" : null,
+        "reward_coupon_id", "created_at", "clients(id, name)",
+      ].filter(Boolean).join(", ");
+
       let q = supabase
         .from("tab_reviews")
-        .select("id, tab_id, client_id, status, client_rating, client_comment, client_submitted_at, salon_rating, salon_comment, reward_coupon_id, created_at, clients(id, name)")
+        .select(selectCols)
         .eq("establishment_id", establishmentId)
         .eq("status", "submitted")
         .order("client_submitted_at", { ascending: false })
@@ -282,19 +298,21 @@ export function ReviewsHistory({ establishmentId, settings }: { establishmentId:
       if (since) q = q.gte("client_submitted_at", since);
       if (ratingFilter !== "all") q = q.eq("client_rating", parseInt(ratingFilter, 10));
       const { data: rev } = await q;
-      const ids = (rev ?? []).map((r) => r.id);
+      const ids = (rev ?? []).map((r: any) => r.id);
       const [{ data: pr }, { data: profs }] = await Promise.all([
-        ids.length
+        showProfRatings && ids.length
           ? supabase.from("tab_review_professionals").select("*").in("tab_review_id", ids)
           : Promise.resolve({ data: [] as any[] }),
-        supabase.from("professionals").select("id, name, photo_url").eq("establishment_id", establishmentId),
+        showProfRatings
+          ? supabase.from("professionals").select("id, name, photo_url").eq("establishment_id", establishmentId)
+          : Promise.resolve({ data: [] as any[] }),
       ]);
       setReviews((rev ?? []) as any);
       setProfRatings((pr ?? []) as any);
       setProfessionals((profs ?? []) as any);
       setLoading(false);
     })();
-  }, [establishmentId, period, ratingFilter]);
+  }, [establishmentId, period, ratingFilter, showComments, showProfRatings]);
 
   const filtered = useMemo(() => {
     if (profFilter === "all") return reviews;
