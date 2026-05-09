@@ -31,7 +31,7 @@ export function usePaymentMethods(
     } finally {
       setLoading(false);
     }
-  }, [establishmentId]);
+  }, [establishmentId, includeInactive]);
 
   const createPaymentMethod = async (methodData: {
     name: string;
