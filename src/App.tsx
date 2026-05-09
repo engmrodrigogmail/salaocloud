@@ -233,7 +233,8 @@ const App = () => (
               <Route path="/portal/:slug/comissoes" element={<PortalCommissions />} />
               <Route path="/portal/:slug/financeiro" element={<PortalFinanceiro />} />
              <Route path="/portal/:slug/assinatura" element={<PortalSubscription />} />
-             <Route path="/portal/:slug/auditoria" element={<PortalAuditOverrides />} />
+            <Route path="/portal/:slug/auditoria" element={<PortalAuditOverrides />} />
+            <Route path="/portal/:slug/avaliacoes" element={<PortalReviews />} />
              <Route path="/portal/:slug/vitrine" element={<PortalShowcase />} />
               <Route path="/portal/:slug/assistente-ia" element={<PortalAIAssistant />} />
               <Route path="/portal/:slug/conversas-ia" element={<PortalAIConversations />} />
