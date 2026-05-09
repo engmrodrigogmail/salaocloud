@@ -49,6 +49,7 @@ import PortalCommissions from "./pages/portal/Commissions";
 import PortalFinanceiro from "./pages/portal/Financeiro";
 import PortalSubscription from "./pages/portal/Subscription";
 import PortalAuditOverrides from "./pages/portal/AuditOverrides";
+import PortalReviews from "./pages/portal/Reviews";
 import PortalShowcase from "./pages/portal/Showcase";
 import PortalCommunications from "./pages/portal/Communications";
 // Interno Pages (Establishment Internal - operations)
