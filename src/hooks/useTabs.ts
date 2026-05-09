@@ -53,6 +53,26 @@ export function useTabs(establishmentId: string | null) {
     if (!establishmentId) return null;
 
     try {
+      // Block duplicate open tabs for the same client
+      if (tabData.client_id) {
+        const { data: existingOpen, error: existingErr } = await supabase
+          .from("tabs")
+          .select("id")
+          .eq("establishment_id", establishmentId)
+          .eq("client_id", tabData.client_id)
+          .eq("status", "open")
+          .limit(1);
+        if (existingErr) {
+          console.error("Error checking existing open tabs:", existingErr);
+          toast.error("Erro ao verificar comandas abertas. Tente novamente.");
+          return null;
+        }
+        if (existingOpen && existingOpen.length > 0) {
+          toast.error("Este cliente já possui uma comanda aberta. Finalize-a antes de abrir outra.");
+          return null;
+        }
+      }
+
       let appointmentId = tabData.appointment_id;
 
       // Auto-create an "in_service" appointment to block the professional's agenda
