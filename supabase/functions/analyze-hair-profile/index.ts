@@ -145,13 +145,14 @@ serve(async (req) => {
       .maybeSingle();
     if (!est || est.owner_id !== userId) return json({ error: "forbidden" }, 403);
 
-    // Verifica acesso Edu ativo
+    // Verifica acesso Edu ativo + perfil de tom
     const { data: access } = await admin
       .from("edu_access_control")
-      .select("is_active")
+      .select("is_active, edu_profile")
       .eq("establishment_id", body.establishment_id)
       .maybeSingle();
     if (!access?.is_active) return json({ error: "edu_not_active" }, 403);
+    const eduProfile: "tecnico" | "acolhedor" = (access as any)?.edu_profile === "acolhedor" ? "acolhedor" : "tecnico";
 
     // Baixa as fotos do bucket privado e converte para base64
     const images: { mime: string; b64: string }[] = [];
