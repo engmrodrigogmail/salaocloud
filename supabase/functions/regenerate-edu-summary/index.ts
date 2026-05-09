@@ -208,7 +208,7 @@ Reescreva a seção "Edu e Você" consolidando tudo conforme as regras.`;
         body: JSON.stringify({
           model,
           max_tokens: 1500,
-          system: SYSTEM_PROMPT,
+          system: finalSystemPrompt,
           messages: [{ role: "user", content: userMsg }],
         }),
       });
