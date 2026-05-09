@@ -594,6 +594,8 @@ export default function PortalSettings() {
                 </div>
               </CardContent>
             </Card>
+
+            {establishment?.id && <PaymentMethodsCard establishmentId={establishment.id} />}
           </TabsContent>
 
           <TabsContent value="notifications" className="space-y-6">
