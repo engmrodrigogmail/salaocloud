@@ -116,6 +116,7 @@ REGRAS DE TOM:
 6. Mantenha 130–220 palavras, 2ª pessoa, SEM CTA explícito ("agende agora", telefone, link). Encerre com fechamento acolhedor de cuidado e confiança no acompanhamento profissional.
 7. Os campos estruturados (hair_type, porosity_level, damage_level, identified_issues, confidence_score, technical_explanation, recommended_services) permanecem técnicos e objetivos — o tom acolhedor afeta APENAS \`edu_personal_response\`.`;
 
+const ANTHROPIC_MODELS = ["claude-sonnet-4-6", "claude-sonnet-4-5", "claude-haiku-4-5"];
 const MAX_CLAUDE_IMAGE_BASE64_BYTES = 5 * 1024 * 1024;
 
 interface AnalyzeBody {
