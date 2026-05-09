@@ -81,7 +81,7 @@ FINANCEIRO
 ASSISTENTE IA E COMUNICAÇÃO
 - Configurar assistente IA do salão (atende clientes no WhatsApp): Portal → Assistente IA.
 - Histórico de conversas: Portal → Conversas IA.
-- Aprendizados/personalização: Portal → Aprendizados IA.
+- Aprendizados/personalização: Portal → Aprendizados Silvia.
 - Comunicações (avisos): Portal → Comunicação.
 
 EDU (Consultor capilar IA)
