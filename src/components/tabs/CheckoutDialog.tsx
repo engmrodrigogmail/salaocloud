@@ -660,7 +660,6 @@ export function CheckoutDialog({
               </div>
             )}
           </div>
-          </div>
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
