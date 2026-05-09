@@ -660,7 +660,8 @@ export function CheckoutDialog({
               </div>
             )}
           </div>
-        </ScrollArea>
+          </div>
+        </div>
 
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
