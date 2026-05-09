@@ -23,6 +23,7 @@ import { BlockedTimesList } from "@/components/schedule/BlockedTimesList";
 import { ConfirmedIndicator } from "@/components/schedule/ConfirmedIndicator";
 import { CancelledHistoryDialog } from "@/components/schedule/CancelledHistoryDialog";
 import { AgendaTimeSlots } from "@/components/schedule/AgendaTimeSlots";
+import { DayScheduleDialog } from "@/components/schedule/DayScheduleDialog";
 import { NewAppointmentDialog } from "@/components/schedule/NewAppointmentDialog";
 import { 
   format, addDays, addMonths, addYears, startOfWeek, endOfWeek, 
@@ -80,6 +81,10 @@ export default function PortalAgenda() {
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [blocksRefreshKey, setBlocksRefreshKey] = useState(0);
   const [newApptOpen, setNewApptOpen] = useState(false);
+  const [newApptDefaultDate, setNewApptDefaultDate] = useState<Date | undefined>();
+  const [newApptDefaultTime, setNewApptDefaultTime] = useState<string | undefined>();
+  const [dayScheduleOpen, setDayScheduleOpen] = useState(false);
+  const [dayScheduleDate, setDayScheduleDate] = useState<Date>(new Date());
   
   // Edit form state
   const [editDate, setEditDate] = useState("");
@@ -519,11 +524,40 @@ export default function PortalAgenda() {
         {establishment?.id && (
           <NewAppointmentDialog
             open={newApptOpen}
-            onOpenChange={setNewApptOpen}
+            onOpenChange={(o) => {
+              setNewApptOpen(o);
+              if (!o) {
+                setNewApptDefaultDate(undefined);
+                setNewApptDefaultTime(undefined);
+              }
+            }}
             establishmentId={establishment.id}
             services={services}
             professionals={professionals}
+            defaultDate={newApptDefaultDate}
+            defaultTime={newApptDefaultTime}
             onCreated={() => fetchAppointments()}
+          />
+        )}
+
+        {establishment?.id && (
+          <DayScheduleDialog
+            open={dayScheduleOpen}
+            onOpenChange={setDayScheduleOpen}
+            date={dayScheduleDate}
+            appointments={filteredAppointments}
+            professionals={professionals}
+            basePath="/portal/:slug"
+            onAppointmentClick={(apt) => {
+              setDayScheduleOpen(false);
+              openViewDialog(apt);
+            }}
+            onCreateAtSlot={(d, time) => {
+              setNewApptDefaultDate(d);
+              setNewApptDefaultTime(time);
+              setDayScheduleOpen(false);
+              setNewApptOpen(true);
+            }}
           />
         )}
 
@@ -632,7 +666,10 @@ export default function PortalAgenda() {
                   const isToday = isSameDay(day, new Date());
                   return (
                     <div key={day.toISOString()} className="space-y-2">
-                      <div className={`text-center p-2 rounded-lg ${isToday ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
+                      <div
+                        className={`text-center p-2 rounded-lg cursor-pointer hover:opacity-90 transition-opacity ${isToday ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+                        onClick={() => { setDayScheduleDate(day); setDayScheduleOpen(true); }}
+                      >
                         <div className="text-xs">{format(day, "EEE", { locale: ptBR })}</div>
                         <div className="text-lg font-bold">{format(day, "dd")}</div>
                       </div>
