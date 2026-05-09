@@ -16,6 +16,7 @@ import OnboardingAwaitingPayment from "./pages/OnboardingAwaitingPayment";
 import NotFound from "./pages/NotFound";
 import Install from "./pages/Install";
 import ClientPortal from "./pages/client/ClientPortal";
+import ClientReviewSubmit from "./pages/client/ReviewSubmit";
 import ClientLogin from "./pages/ClientLogin";
 import ClientResetPassword from "./pages/ClientResetPassword";
 import Termos from "./pages/Termos";
@@ -248,6 +249,9 @@ const App = () => (
               <Route path="/interno/:slug/comandas" element={<InternoComandas />} />
               <Route path="/interno/:slug/comissoes" element={<InternoComissoes />} />
               <Route path="/interno/:slug/perfil" element={<InternoPerfil />} />
+
+              {/* Client review submission */}
+              <Route path="/:slug/avaliar/:reviewId" element={<ClientReviewSubmit />} />
 
               {/* Public client portal - /{slug} opens client booking page */}
               <Route path="/:slug" element={<ClientPortal />} />
