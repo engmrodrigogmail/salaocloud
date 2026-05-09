@@ -25,6 +25,7 @@ import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { TabWithDetails, TabItem, PaymentMethod } from "@/types/tabs";
 import { ManualDiscountDialog } from "./ManualDiscountDialog";
+import { SalonReviewDialog } from "./SalonReviewDialog";
 
 interface TabDetailsCardProps {
   tab: TabWithDetails;
@@ -60,6 +61,7 @@ export function TabDetailsCard({
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [confirmUndoOpen, setConfirmUndoOpen] = useState(false);
   const [discountOpen, setDiscountOpen] = useState(false);
+  const [salonReviewOpen, setSalonReviewOpen] = useState(false);
 
   // Eligibility for "Desfazer Abertura": tab created < 5 min ago AND no items.
   const ageMs = Date.now() - new Date(tab.opened_at).getTime();
@@ -381,6 +383,19 @@ export function TabDetailsCard({
           </div>
         </div>
       )}
+
+      {tab.status === "closed" && tab.client_id && (
+        <Button variant="outline" className="w-full" onClick={() => setSalonReviewOpen(true)}>
+          <Star className="h-4 w-4 mr-2" />
+          Avaliar cliente
+        </Button>
+      )}
+
+      <SalonReviewDialog
+        tabId={tab.id}
+        open={salonReviewOpen}
+        onOpenChange={setSalonReviewOpen}
+      />
 
       {/* Confirm Cancel */}
       <AlertDialog open={confirmCancelOpen} onOpenChange={setConfirmCancelOpen}>
