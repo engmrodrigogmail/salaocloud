@@ -19,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Star, Settings as SettingsIcon, History, BarChart3, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { ReviewsDashboard, ReviewsHistory } from "@/components/reviews/ReviewsAnalytics";
 
 type ReviewSettings = {
   id?: string;
@@ -150,29 +151,19 @@ export default function PortalReviews() {
           </TabsList>
 
           <TabsContent value="dashboard" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Dashboard de Avaliações</CardTitle>
-                <CardDescription>Métricas, distribuição de notas e desempenho por profissional.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Em breve (Fase 3). Habilite as avaliações em "Configurações" para começar a coletar dados.
-                </p>
-              </CardContent>
-            </Card>
+            {estId && settings ? (
+              <ReviewsDashboard establishmentId={estId} settings={settings} />
+            ) : (
+              <Skeleton className="h-32 w-full" />
+            )}
           </TabsContent>
 
           <TabsContent value="history" className="mt-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Histórico de Avaliações</CardTitle>
-                <CardDescription>Lista completa com filtros por período, profissional e nota.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">Em breve (Fase 3).</p>
-              </CardContent>
-            </Card>
+            {estId && settings ? (
+              <ReviewsHistory establishmentId={estId} settings={settings} />
+            ) : (
+              <Skeleton className="h-32 w-full" />
+            )}
           </TabsContent>
 
           <TabsContent value="config" className="mt-4 space-y-4">
