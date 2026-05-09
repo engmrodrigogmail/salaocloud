@@ -18,6 +18,7 @@ import { NotificationSettingsCard } from "@/components/notifications/Notificatio
 import type { Tables, Json } from "@/integrations/supabase/types";
 
 import { QRCodeCard } from "@/components/booking/QRCodeCard";
+import { PaymentMethodsCard } from "@/components/settings/PaymentMethodsCard";
 
 type Establishment = Tables<"establishments"> & {
   show_professional_names?: boolean | null;
@@ -593,6 +594,8 @@ export default function PortalSettings() {
                 </div>
               </CardContent>
             </Card>
+
+            {establishment?.id && <PaymentMethodsCard establishmentId={establishment.id} />}
           </TabsContent>
 
           <TabsContent value="notifications" className="space-y-6">
