@@ -34,6 +34,7 @@ import { useInternoTour } from "@/hooks/useInternoTour";
 import { ChangePasswordGate } from "@/components/auth/ChangePasswordGate";
 import logo from "@/assets/logo-salaocloud-v5.png";
 import salonBg from "@/assets/salon-dark-bg.png";
+import { SilviaHelpButton } from "@/components/help/SilviaHelpButton";
 
 interface InternoLayoutProps {
   children: React.ReactNode;
