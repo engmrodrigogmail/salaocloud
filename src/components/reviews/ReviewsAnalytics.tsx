@@ -258,14 +258,20 @@ function MetricCard({
   );
 }
 
+const PAGE_SIZE = 20;
+
 export function ReviewsHistory({ establishmentId, settings }: { establishmentId: string; settings: any }) {
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [reviews, setReviews] = useState<ReviewRow[]>([]);
   const [profRatings, setProfRatings] = useState<ProfRating[]>([]);
   const [professionals, setProfessionals] = useState<{ id: string; name: string; photo_url: string | null }[]>([]);
   const [period, setPeriod] = useState<"7" | "30" | "90" | "all">("30");
   const [profFilter, setProfFilter] = useState<string>("all");
   const [ratingFilter, setRatingFilter] = useState<string>("all");
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
 
   const showComments = !!settings?.show_comments_on_dashboard;
   const showProfRatings = !!settings?.show_professional_ratings;
@@ -275,44 +281,68 @@ export function ReviewsHistory({ establishmentId, settings }: { establishmentId:
     if (!showProfRatings && profFilter !== "all") setProfFilter("all");
   }, [showProfRatings, profFilter]);
 
-  useEffect(() => {
-    (async () => {
-      setLoading(true);
-      const since =
-        period === "all" ? null : subDays(new Date(), parseInt(period, 10)).toISOString();
-      const selectCols = [
-        "id", "tab_id", "client_id", "status", "client_rating",
-        showComments ? "client_comment" : null,
-        "client_submitted_at", "salon_rating",
-        showComments ? "salon_comment" : null,
-        "reward_coupon_id", "created_at", "clients(id, name)",
-      ].filter(Boolean).join(", ");
+  const selectCols = useMemo(() => [
+    "id", "tab_id", "client_id", "status", "client_rating",
+    showComments ? "client_comment" : null,
+    "client_submitted_at", "salon_rating",
+    showComments ? "salon_comment" : null,
+    "reward_coupon_id", "created_at", "clients(id, name)",
+  ].filter(Boolean).join(", "), [showComments]);
 
-      let q = supabase
-        .from("tab_reviews")
-        .select(selectCols)
-        .eq("establishment_id", establishmentId)
-        .eq("status", "submitted")
-        .order("client_submitted_at", { ascending: false })
-        .limit(200);
-      if (since) q = q.gte("client_submitted_at", since);
-      if (ratingFilter !== "all") q = q.eq("client_rating", parseInt(ratingFilter, 10));
-      const { data: rev } = await q;
-      const ids = (rev ?? []).map((r: any) => r.id);
-      const [{ data: pr }, { data: profs }] = await Promise.all([
-        showProfRatings && ids.length
-          ? supabase.from("tab_review_professionals").select("*").in("tab_review_id", ids)
-          : Promise.resolve({ data: [] as any[] }),
-        showProfRatings
-          ? supabase.from("professionals").select("id, name, photo_url").eq("establishment_id", establishmentId)
-          : Promise.resolve({ data: [] as any[] }),
-      ]);
-      setReviews((rev ?? []) as any);
-      setProfRatings((pr ?? []) as any);
-      setProfessionals((profs ?? []) as any);
-      setLoading(false);
-    })();
+  const fetchPage = async (pageIndex: number, append: boolean, currentReviews: ReviewRow[]) => {
+    if (append) setLoadingMore(true); else setLoading(true);
+    const since =
+      period === "all" ? null : subDays(new Date(), parseInt(period, 10)).toISOString();
+
+    const from = pageIndex * PAGE_SIZE;
+    const to = from + PAGE_SIZE - 1;
+
+    let q = supabase
+      .from("tab_reviews")
+      .select(selectCols, append ? undefined : { count: "exact" })
+      .eq("establishment_id", establishmentId)
+      .eq("status", "submitted")
+      .order("client_submitted_at", { ascending: false })
+      .range(from, to);
+    if (since) q = q.gte("client_submitted_at", since);
+    if (ratingFilter !== "all") q = q.eq("client_rating", parseInt(ratingFilter, 10));
+
+    const { data: rev, count } = await q;
+    const newRows = (rev ?? []) as any as ReviewRow[];
+    const merged = append ? [...currentReviews, ...newRows] : newRows;
+
+    const ids = merged.map((r) => r.id);
+    const [{ data: pr }, { data: profs }] = await Promise.all([
+      showProfRatings && ids.length
+        ? supabase.from("tab_review_professionals").select("*").in("tab_review_id", ids)
+        : Promise.resolve({ data: [] as any[] }),
+      showProfRatings && (!append || professionals.length === 0)
+        ? supabase.from("professionals").select("id, name, photo_url").eq("establishment_id", establishmentId)
+        : Promise.resolve({ data: professionals as any[] }),
+    ]);
+
+    setReviews(merged);
+    setProfRatings((pr ?? []) as any);
+    setProfessionals((profs ?? []) as any);
+    setHasMore(newRows.length === PAGE_SIZE);
+    if (!append && typeof count === "number") setTotalCount(count);
+    setLoading(false);
+    setLoadingMore(false);
+  };
+
+  // Reset and load first page when filters/toggles change
+  useEffect(() => {
+    setPage(0);
+    setHasMore(true);
+    fetchPage(0, false, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [establishmentId, period, ratingFilter, showComments, showProfRatings]);
+
+  const loadMore = async () => {
+    const next = page + 1;
+    setPage(next);
+    await fetchPage(next, true, reviews);
+  };
 
   const filtered = useMemo(() => {
     if (profFilter === "all") return reviews;
