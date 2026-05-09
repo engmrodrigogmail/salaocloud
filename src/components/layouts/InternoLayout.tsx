@@ -34,6 +34,7 @@ import { useInternoTour } from "@/hooks/useInternoTour";
 import { ChangePasswordGate } from "@/components/auth/ChangePasswordGate";
 import logo from "@/assets/logo-salaocloud-v5.png";
 import salonBg from "@/assets/salon-dark-bg.png";
+import { SilviaHelpButton } from "@/components/help/SilviaHelpButton";
 
 interface InternoLayoutProps {
   children: React.ReactNode;
@@ -44,6 +45,7 @@ export function InternoLayout({ children }: InternoLayoutProps) {
   const [establishmentName, setEstablishmentName] = useState("");
   const [isOwner, setIsOwner] = useState(false);
   const [professionalId, setProfessionalId] = useState<string | null>(null);
+  const [isManager, setIsManager] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { slug } = useParams<{ slug: string }>();
@@ -70,11 +72,12 @@ export function InternoLayout({ children }: InternoLayoutProps) {
       // Buscar professional vinculado a este user neste estabelecimento
       const { data: prof } = await supabase
         .from("professionals")
-        .select("id")
+        .select("id, is_manager")
         .eq("establishment_id", data.id)
         .eq("user_id", user?.id ?? "")
         .maybeSingle();
       if (prof?.id) setProfessionalId(prof.id);
+      if (prof?.is_manager) setIsManager(true);
     }
   };
 
@@ -236,6 +239,7 @@ export function InternoLayout({ children }: InternoLayoutProps) {
       >
         <div className="p-4 sm:p-6">{children}</div>
       </main>
+      <SilviaHelpButton profile={isOwner || isManager ? "recepcionista" : "profissional"} />
     </div>
     </ChangePasswordGate>
   );
