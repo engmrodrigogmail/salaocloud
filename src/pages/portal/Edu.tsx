@@ -56,6 +56,7 @@ export default function PortalEdu() {
   const { user } = useAuth();
   const [estId, setEstId] = useState<string | null>(null);
   const [estName, setEstName] = useState<string | null>(null);
+  const [eduProfile, setEduProfile] = useState<"tecnico" | "acolhedor" | null>(null);
   const { isActive, loading: accessLoading } = useEduAccess(estId);
 
   const [clients, setClients] = useState<Client[]>([]);
@@ -97,6 +98,14 @@ export default function PortalEdu() {
   useEffect(() => {
     if (!estId || !isActive) return;
     loadData();
+    (async () => {
+      const { data } = await supabase
+        .from("edu_access_control")
+        .select("edu_profile")
+        .eq("establishment_id", estId)
+        .maybeSingle();
+      setEduProfile(((data as any)?.edu_profile as "tecnico" | "acolhedor") ?? "tecnico");
+    })();
   }, [estId, isActive]);
 
   const loadData = async () => {
@@ -363,6 +372,16 @@ export default function PortalEdu() {
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">Consultor Edu</h1>
               <p className="text-muted-foreground text-sm">Análise capilar por IA com validação profissional.</p>
+              {eduProfile && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Personalidade ativa:{" "}
+                  <span className="font-semibold text-foreground">
+                    {eduProfile === "acolhedor" ? "Acolhedor" : "Técnico"}
+                  </span>
+                  {" — "}
+                  <span className="italic">altere em Configurações → Edu</span>
+                </p>
+              )}
             </div>
           </div>
           <Button onClick={() => setDialogOpen(true)} className="gap-2">
