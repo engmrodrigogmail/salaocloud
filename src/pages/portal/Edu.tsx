@@ -20,7 +20,6 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { NewClientDialog } from "@/components/clients/NewClientDialog";
 import eduSignature from "@/assets/edu-signature.png";
-import { EduProfileCard } from "@/components/edu/EduProfileCard";
 import { compressImageForAI } from "@/lib/imageCompress";
 import { salonInlineReference } from "@/lib/salonReference";
 
