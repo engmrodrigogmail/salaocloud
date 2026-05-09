@@ -322,7 +322,7 @@ export function ReviewsHistory({ establishmentId, settings }: { establishmentId:
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <div className={`grid grid-cols-1 ${showProfRatings ? "sm:grid-cols-3" : "sm:grid-cols-2"} gap-2`}>
         <Select value={period} onValueChange={(v: any) => setPeriod(v)}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -332,15 +332,17 @@ export function ReviewsHistory({ establishmentId, settings }: { establishmentId:
             <SelectItem value="all">Todo o período</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={profFilter} onValueChange={setProfFilter}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos profissionais</SelectItem>
-            {professionals.map((p) => (
-              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {showProfRatings && (
+          <Select value={profFilter} onValueChange={setProfFilter}>
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos profissionais</SelectItem>
+              {professionals.map((p) => (
+                <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
         <Select value={ratingFilter} onValueChange={setRatingFilter}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
