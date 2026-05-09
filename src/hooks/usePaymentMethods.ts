@@ -3,7 +3,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { PaymentMethod } from "@/types/tabs";
 
-export function usePaymentMethods(establishmentId: string | null) {
+export function usePaymentMethods(
+  establishmentId: string | null,
+  options: { includeInactive?: boolean } = {},
+) {
+  const { includeInactive = false } = options;
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -12,12 +16,13 @@ export function usePaymentMethods(establishmentId: string | null) {
 
     setLoading(true);
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from("payment_methods")
         .select("*")
         .eq("establishment_id", establishmentId)
-        .eq("is_active", true)
         .order("display_order");
+      if (!includeInactive) query = query.eq("is_active", true);
+      const { data, error } = await query;
 
       if (error) throw error;
       setPaymentMethods((data as PaymentMethod[]) || []);
