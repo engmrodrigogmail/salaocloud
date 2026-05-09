@@ -249,6 +249,7 @@ export default function PortalSettings() {
     { value: "client-portal", label: "Portal da Cliente", icon: Eye },
     { value: "checkout", label: "Caixa & Comandas", icon: ShieldCheck },
     { value: "notifications", label: "Notificações", icon: Bell },
+    { value: "edu", label: "Edu", icon: Sparkles },
   ];
 
 
