@@ -19,6 +19,7 @@ import type { Tables, Json } from "@/integrations/supabase/types";
 
 import { QRCodeCard } from "@/components/booking/QRCodeCard";
 import { PaymentMethodsCard } from "@/components/settings/PaymentMethodsCard";
+import { EduProfileCard } from "@/components/edu/EduProfileCard";
 
 type Establishment = Tables<"establishments"> & {
   show_professional_names?: boolean | null;
