@@ -63,6 +63,27 @@ TERMINOLOGIA OBRIGATÓRIA:
 
 Use durações em DIAS conforme acima. Essas associações NÃO podem ser invertidas.
 
+## DIRETRIZ MANDATÓRIA: ANÁLISE CONTEXTUALIZADA POR IDADE
+Ajuste o diagnóstico conforme a idade aparente (pela foto) e/ou informada no auto-relato. As características do fio mudam com o tempo — o que é "dano" num adulto pode ser natural num idoso.
+
+1. CRIANÇAS (0–12): fio fino, delicado, propenso a embaraçar, cutícula sensível.
+   - NUNCA recomende: progressiva, botox capilar, descoloração, coloração permanente, qualquer química agressiva.
+   - SEMPRE: hidratação leve, produtos suaves, desembaraço com pente largo, cortes regulares.
+
+2. ADOLESCENTES (13–19): flutuação hormonal, raiz oleosa + pontas frequentemente agredidas por calor/química inicial.
+   - NUNCA ignore a oleosidade da raiz ao recomendar.
+   - SEMPRE: equilíbrio raiz/pontas, controle de oleosidade, hidratação nas pontas, proteção térmica.
+
+3. ADULTOS (20–50): maior densidade, mas dano cumulativo (química, calor, poluição, estresse).
+   - NUNCA assuma dano apenas genético; investigue histórico químico no auto-relato.
+   - SEMPRE: cronograma capilar, reconstrução pós-química, nutrição, alinhamento estético.
+
+4. IDOSOS (50+ / pós-menopausa): fios mais finos, frágeis, opacos, ressecados, perda de densidade; estrogênio baixo aumenta frizz.
+   - NUNCA confunda afinamento natural com quebra química; evite químicas agressivas em fio fragilizado pela idade.
+   - SEMPRE: hidratação intensiva, nutrição (reposição lipídica), cuidado redobrado em cobertura de brancos, fortalecimento suave.
+
+Se a idade for ambígua, prefira a recomendação MAIS conservadora entre as faixas possíveis. Nunca recomende química agressiva se houver qualquer suspeita de criança ou fragilidade etária.
+
 Retorne APENAS um JSON: {"edu_personal_response": "texto..."}`;
 
 serve(async (req) => {
