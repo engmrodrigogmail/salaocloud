@@ -101,6 +101,21 @@ Retorne APENAS um JSON válido (sem markdown), com a estrutura:
   "edu_personal_response": "Texto fluido em 130–220 palavras, em 2ª pessoa, estruturado em: (1) abertura empática conectando desejo + diagnóstico; (2) comparação com histórico, se houver; (3) leitura técnica do que está acontecendo; (4) caminho de cuidado descrito por BENEFÍCIOS (sem listar serviços, sem preço, sem duração, sem nomes comerciais); (5) expectativa realista; (6) fechamento de cuidado. SEM CTA, SEM link, SEM telefone."
 }`;
 
+const TONE_OVERLAY_TECNICO = `## TOM DE COMUNICAÇÃO (perfil TÉCNICO — padrão)
+Mantenha o texto de \`edu_personal_response\` com tom clínico, profissional, preciso e informativo. Sem eufemismos, sem celebrações exageradas. Foco em diagnóstico, mecanismo e caminho de cuidado. Linguagem profissional adequada a público técnico, masculino e/ou barbershop. Não invente leveza emocional onde não cabe.`;
+
+const TONE_OVERLAY_ACOLHEDOR = `## TOM DE COMUNICAÇÃO (perfil ACOLHEDOR)
+Reescreva \`edu_personal_response\` com tom acolhedor, celebratório e inspirador, mantendo TODO o rigor técnico do glossário acima (nada de inverter mecanismos: hidratação ≠ nutrição ≠ reconstrução ≠ botox).
+
+REGRAS DE TOM:
+1. Comece com um elogio genuíno e específico ao que vê na foto (cor, corte, ombré, brilho residual etc.) — sem inventar.
+2. Reposicione "problemas" como "oportunidades de cuidado" e características como vantagens reais quando forem (ex.: "fios delicados respondem muito bem a tratamentos profissionais").
+3. Use vocabulário positivo: "seu cabelo está pedindo nutrição", "pedindo cuidado", "estrutura que responde bem", "selagem profissional".
+4. Mantenha precisão: NÃO chame nutrição de hidratação, NÃO diga que botox hidrata, NÃO invente percentuais.
+5. Evite frieza clínica e jargão excessivo no texto livre — guarde os termos técnicos para os campos estruturados (hair_type, porosity_level, damage_level, technical_explanation).
+6. Mantenha 130–220 palavras, 2ª pessoa, SEM CTA explícito ("agende agora", telefone, link). Encerre com fechamento acolhedor de cuidado e confiança no acompanhamento profissional.
+7. Os campos estruturados (hair_type, porosity_level, damage_level, identified_issues, confidence_score, technical_explanation, recommended_services) permanecem técnicos e objetivos — o tom acolhedor afeta APENAS \`edu_personal_response\`.`;
+
 const ANTHROPIC_MODELS = ["claude-sonnet-4-6", "claude-sonnet-4-5", "claude-haiku-4-5"];
 const MAX_CLAUDE_IMAGE_BASE64_BYTES = 5 * 1024 * 1024;
 
@@ -145,13 +160,14 @@ serve(async (req) => {
       .maybeSingle();
     if (!est || est.owner_id !== userId) return json({ error: "forbidden" }, 403);
 
-    // Verifica acesso Edu ativo
+    // Verifica acesso Edu ativo + perfil de tom
     const { data: access } = await admin
       .from("edu_access_control")
-      .select("is_active")
+      .select("is_active, edu_profile")
       .eq("establishment_id", body.establishment_id)
       .maybeSingle();
     if (!access?.is_active) return json({ error: "edu_not_active" }, 403);
+    const eduProfile: "tecnico" | "acolhedor" = (access as any)?.edu_profile === "acolhedor" ? "acolhedor" : "tecnico";
 
     // Baixa as fotos do bucket privado e converte para base64
     const images: { mime: string; b64: string }[] = [];
@@ -218,9 +234,11 @@ Auto-percepção da cliente sobre o cabelo (estado atual): ${selfAssessment || "
 Principal resultado esperado pela cliente: ${expectedResult || "(não respondido)"}.`;
 
     // Chamada Claude (Anthropic) — usa modelos atuais com fallback caso um alias seja recusado
+    const toneOverlay = eduProfile === "acolhedor" ? TONE_OVERLAY_ACOLHEDOR : TONE_OVERLAY_TECNICO;
+    const finalSystemPrompt = `${SYSTEM_PROMPT}\n\n${toneOverlay}`;
     const anthropicReqBase = {
       max_tokens: 1800,
-      system: SYSTEM_PROMPT,
+      system: finalSystemPrompt,
       messages: [
         {
           role: "user",

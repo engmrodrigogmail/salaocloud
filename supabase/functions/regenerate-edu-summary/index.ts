@@ -86,6 +86,16 @@ Se a idade for ambígua, prefira a recomendação MAIS conservadora entre as fai
 
 Retorne APENAS um JSON: {"edu_personal_response": "texto..."}`;
 
+const TONE_OVERLAY_TECNICO = `## TOM DE COMUNICAÇÃO (perfil TÉCNICO — padrão)
+Mantenha o texto com tom clínico, profissional, preciso e informativo. Sem eufemismos, sem celebrações exageradas. Foco em diagnóstico, mecanismo e caminho de cuidado.`;
+
+const TONE_OVERLAY_ACOLHEDOR = `## TOM DE COMUNICAÇÃO (perfil ACOLHEDOR)
+Reescreva com tom acolhedor, celebratório e inspirador, MANTENDO todo o rigor técnico do glossário (não inverter mecanismos: hidratação ≠ nutrição ≠ reconstrução ≠ botox).
+- Comece com elogio genuíno e específico ao que se vê.
+- Reposicione "problemas" como "oportunidades de cuidado" ("seu cabelo está pedindo nutrição", "pedindo cuidado").
+- Use vocabulário positivo, sem inventar percentuais nem trocar mecanismos.
+- 130–220 palavras, 2ª pessoa, SEM CTA explícito. Fechamento acolhedor de confiança no acompanhamento profissional.`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
@@ -123,6 +133,17 @@ serve(async (req) => {
     if (!profile.professional_correction) {
       return json({ skipped: true, reason: "no_correction" }, 200);
     }
+
+    // Carrega perfil de tom configurado pelo salão
+    const { data: access } = await admin
+      .from("edu_access_control")
+      .select("edu_profile")
+      .eq("establishment_id", profile.establishment_id)
+      .maybeSingle();
+    const eduProfile: "tecnico" | "acolhedor" =
+      (access as any)?.edu_profile === "acolhedor" ? "acolhedor" : "tecnico";
+    const toneOverlay = eduProfile === "acolhedor" ? TONE_OVERLAY_ACOLHEDOR : TONE_OVERLAY_TECNICO;
+    const finalSystemPrompt = `${SYSTEM_PROMPT}\n\n${toneOverlay}`;
 
     // Carrega histórico anterior + padrões + catálogo de serviços ativos do salão
     const [{ data: history }, { data: services }, { data: patterns }] = await Promise.all([
@@ -187,7 +208,7 @@ Reescreva a seção "Edu e Você" consolidando tudo conforme as regras.`;
         body: JSON.stringify({
           model,
           max_tokens: 1500,
-          system: SYSTEM_PROMPT,
+          system: finalSystemPrompt,
           messages: [{ role: "user", content: userMsg }],
         }),
       });
