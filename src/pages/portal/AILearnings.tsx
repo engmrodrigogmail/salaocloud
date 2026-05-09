@@ -253,10 +253,10 @@ export default function AILearnings() {
           <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <Brain className="h-6 w-6 text-primary" />
-              Aprendizados da IA
+              Aprendizados Silvia
             </h1>
             <p className="text-muted-foreground">
-              Gerencie como a assistente virtual aprende e melhora suas respostas
+              Gerencie como a Silvia aprende e melhora suas respostas
             </p>
           </div>
 
