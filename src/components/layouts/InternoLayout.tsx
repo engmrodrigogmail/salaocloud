@@ -72,11 +72,12 @@ export function InternoLayout({ children }: InternoLayoutProps) {
       // Buscar professional vinculado a este user neste estabelecimento
       const { data: prof } = await supabase
         .from("professionals")
-        .select("id")
+        .select("id, is_manager")
         .eq("establishment_id", data.id)
         .eq("user_id", user?.id ?? "")
         .maybeSingle();
       if (prof?.id) setProfessionalId(prof.id);
+      if (prof?.is_manager) setIsManager(true);
     }
   };
 
