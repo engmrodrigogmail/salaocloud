@@ -23,6 +23,7 @@ import { BlockedTimesList } from "@/components/schedule/BlockedTimesList";
 import { ConfirmedIndicator } from "@/components/schedule/ConfirmedIndicator";
 import { CancelledHistoryDialog } from "@/components/schedule/CancelledHistoryDialog";
 import { AgendaTimeSlots } from "@/components/schedule/AgendaTimeSlots";
+import { DayScheduleDialog } from "@/components/schedule/DayScheduleDialog";
 import { NewAppointmentDialog } from "@/components/schedule/NewAppointmentDialog";
 import { 
   format, addDays, addMonths, addYears, startOfWeek, endOfWeek, 
