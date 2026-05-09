@@ -524,11 +524,40 @@ export default function PortalAgenda() {
         {establishment?.id && (
           <NewAppointmentDialog
             open={newApptOpen}
-            onOpenChange={setNewApptOpen}
+            onOpenChange={(o) => {
+              setNewApptOpen(o);
+              if (!o) {
+                setNewApptDefaultDate(undefined);
+                setNewApptDefaultTime(undefined);
+              }
+            }}
             establishmentId={establishment.id}
             services={services}
             professionals={professionals}
+            defaultDate={newApptDefaultDate}
+            defaultTime={newApptDefaultTime}
             onCreated={() => fetchAppointments()}
+          />
+        )}
+
+        {establishment?.id && (
+          <DayScheduleDialog
+            open={dayScheduleOpen}
+            onOpenChange={setDayScheduleOpen}
+            date={dayScheduleDate}
+            appointments={filteredAppointments}
+            professionals={professionals}
+            basePath="/portal/:slug"
+            onAppointmentClick={(apt) => {
+              setDayScheduleOpen(false);
+              openViewDialog(apt);
+            }}
+            onCreateAtSlot={(d, time) => {
+              setNewApptDefaultDate(d);
+              setNewApptDefaultTime(time);
+              setDayScheduleOpen(false);
+              setNewApptOpen(true);
+            }}
           />
         )}
 
