@@ -3597,6 +3597,105 @@ export type Database = {
           },
         ]
       }
+      review_settings: {
+        Row: {
+          created_at: string
+          establishment_id: string
+          google_business_url: string | null
+          id: string
+          reviews_enabled: boolean
+          reward_coupon_validity_days: number
+          reward_deduct_from_commission: boolean
+          reward_description: string | null
+          reward_discount_type: string
+          reward_discount_value: number
+          reward_enabled: boolean
+          reward_target: string
+          reward_target_product_id: string | null
+          reward_target_service_id: string | null
+          show_comments_on_dashboard: boolean
+          show_numeric_rating: boolean
+          show_professional_ratings: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          establishment_id: string
+          google_business_url?: string | null
+          id?: string
+          reviews_enabled?: boolean
+          reward_coupon_validity_days?: number
+          reward_deduct_from_commission?: boolean
+          reward_description?: string | null
+          reward_discount_type?: string
+          reward_discount_value?: number
+          reward_enabled?: boolean
+          reward_target?: string
+          reward_target_product_id?: string | null
+          reward_target_service_id?: string | null
+          show_comments_on_dashboard?: boolean
+          show_numeric_rating?: boolean
+          show_professional_ratings?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          establishment_id?: string
+          google_business_url?: string | null
+          id?: string
+          reviews_enabled?: boolean
+          reward_coupon_validity_days?: number
+          reward_deduct_from_commission?: boolean
+          reward_description?: string | null
+          reward_discount_type?: string
+          reward_discount_value?: number
+          reward_enabled?: boolean
+          reward_target?: string
+          reward_target_product_id?: string | null
+          reward_target_service_id?: string | null
+          show_comments_on_dashboard?: boolean
+          show_numeric_rating?: boolean
+          show_professional_ratings?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "review_settings_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_settings_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "review_settings_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_settings_reward_target_product_id_fkey"
+            columns: ["reward_target_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "review_settings_reward_target_service_id_fkey"
+            columns: ["reward_target_service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       salon_learning_patterns: {
         Row: {
           common_damage_patterns: Json
@@ -4027,6 +4126,155 @@ export type Database = {
             foreignKeyName: "tab_payments_tab_id_fkey"
             columns: ["tab_id"]
             isOneToOne: false
+            referencedRelation: "tabs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tab_review_professionals: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          professional_id: string
+          rating: number | null
+          tab_review_id: string
+          updated_at: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          professional_id: string
+          rating?: number | null
+          tab_review_id: string
+          updated_at?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          professional_id?: string
+          rating?: number | null
+          tab_review_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tab_review_professionals_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tab_review_professionals_tab_review_id_fkey"
+            columns: ["tab_review_id"]
+            isOneToOne: false
+            referencedRelation: "tab_reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tab_reviews: {
+        Row: {
+          client_comment: string | null
+          client_id: string | null
+          client_rating: number | null
+          client_submitted_at: string | null
+          created_at: string
+          establishment_id: string
+          id: string
+          reward_coupon_id: string | null
+          salon_comment: string | null
+          salon_rating: number | null
+          salon_submitted_at: string | null
+          salon_submitted_by: string | null
+          status: string
+          tab_id: string
+          updated_at: string
+        }
+        Insert: {
+          client_comment?: string | null
+          client_id?: string | null
+          client_rating?: number | null
+          client_submitted_at?: string | null
+          created_at?: string
+          establishment_id: string
+          id?: string
+          reward_coupon_id?: string | null
+          salon_comment?: string | null
+          salon_rating?: number | null
+          salon_submitted_at?: string | null
+          salon_submitted_by?: string | null
+          status?: string
+          tab_id: string
+          updated_at?: string
+        }
+        Update: {
+          client_comment?: string | null
+          client_id?: string | null
+          client_rating?: number | null
+          client_submitted_at?: string | null
+          created_at?: string
+          establishment_id?: string
+          id?: string
+          reward_coupon_id?: string | null
+          salon_comment?: string | null
+          salon_rating?: number | null
+          salon_submitted_at?: string | null
+          salon_submitted_by?: string | null
+          status?: string
+          tab_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tab_reviews_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "client_no_show_stats"
+            referencedColumns: ["client_id"]
+          },
+          {
+            foreignKeyName: "tab_reviews_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tab_reviews_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tab_reviews_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "tab_reviews_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tab_reviews_reward_coupon_id_fkey"
+            columns: ["reward_coupon_id"]
+            isOneToOne: false
+            referencedRelation: "discount_coupons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tab_reviews_tab_id_fkey"
+            columns: ["tab_id"]
+            isOneToOne: true
             referencedRelation: "tabs"
             referencedColumns: ["id"]
           },

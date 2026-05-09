@@ -113,6 +113,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
     {
       label: "Gestão & Financeiro",
       items: [
+        { href: `/portal/${slug}/avaliacoes`, label: "Avaliações", icon: Star },
         { href: `/portal/${slug}/financeiro`, label: "Financeiro", icon: TrendingUp },
         { href: `/portal/${slug}/comissoes`, label: "Comissões", icon: DollarSign },
         { href: `/portal/${slug}/assinatura`, label: "Assinatura", icon: Crown },
