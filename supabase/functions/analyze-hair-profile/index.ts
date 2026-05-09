@@ -219,9 +219,11 @@ Auto-percepção da cliente sobre o cabelo (estado atual): ${selfAssessment || "
 Principal resultado esperado pela cliente: ${expectedResult || "(não respondido)"}.`;
 
     // Chamada Claude (Anthropic) — usa modelos atuais com fallback caso um alias seja recusado
+    const toneOverlay = eduProfile === "acolhedor" ? TONE_OVERLAY_ACOLHEDOR : TONE_OVERLAY_TECNICO;
+    const finalSystemPrompt = `${SYSTEM_PROMPT}\n\n${toneOverlay}`;
     const anthropicReqBase = {
       max_tokens: 1800,
-      system: SYSTEM_PROMPT,
+      system: finalSystemPrompt,
       messages: [
         {
           role: "user",
