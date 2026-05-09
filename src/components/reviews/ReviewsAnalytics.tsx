@@ -452,6 +452,29 @@ export function ReviewsHistory({ establishmentId, settings }: { establishmentId:
               </Card>
             );
           })}
+
+          <div className="flex flex-col items-center gap-2 pt-2">
+            {totalCount !== null && (
+              <p className="text-xs text-muted-foreground">
+                Exibindo {filtered.length} de {totalCount} avaliação(ões)
+                {profFilter !== "all" && " (filtrado por profissional)"}
+              </p>
+            )}
+            {hasMore && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Carregando...</>
+                ) : (
+                  "Carregar mais"
+                )}
+              </Button>
+            )}
+          </div>
         </div>
       )}
     </div>
