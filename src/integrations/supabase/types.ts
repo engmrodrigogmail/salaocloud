@@ -1571,6 +1571,7 @@ export type Database = {
       edu_access_control: {
         Row: {
           created_at: string
+          edu_profile: string
           establishment_id: string
           granted_at: string | null
           granted_by: string | null
@@ -1581,6 +1582,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          edu_profile?: string
           establishment_id: string
           granted_at?: string | null
           granted_by?: string | null
@@ -1591,6 +1593,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          edu_profile?: string
           establishment_id?: string
           granted_at?: string | null
           granted_by?: string | null
