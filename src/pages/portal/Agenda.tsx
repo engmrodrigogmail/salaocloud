@@ -81,6 +81,10 @@ export default function PortalAgenda() {
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [blocksRefreshKey, setBlocksRefreshKey] = useState(0);
   const [newApptOpen, setNewApptOpen] = useState(false);
+  const [newApptDefaultDate, setNewApptDefaultDate] = useState<Date | undefined>();
+  const [newApptDefaultTime, setNewApptDefaultTime] = useState<string | undefined>();
+  const [dayScheduleOpen, setDayScheduleOpen] = useState(false);
+  const [dayScheduleDate, setDayScheduleDate] = useState<Date>(new Date());
   
   // Edit form state
   const [editDate, setEditDate] = useState("");
