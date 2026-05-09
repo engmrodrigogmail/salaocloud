@@ -21,7 +21,7 @@ const PAGE_NAMES: Record<string, string> = {
   comunicacao: "Comunicação",
   "assistente-ia": "Assistente IA",
   "conversas-ia": "Conversas IA",
-  "aprendizados-ia": "Aprendizados IA",
+  "aprendizados-ia": "Aprendizados Silvia",
   edu: "Consultor Edu",
   auditoria: "Auditoria",
   configuracoes: "Configurações",
