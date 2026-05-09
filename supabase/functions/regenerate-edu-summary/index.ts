@@ -86,6 +86,16 @@ Se a idade for ambígua, prefira a recomendação MAIS conservadora entre as fai
 
 Retorne APENAS um JSON: {"edu_personal_response": "texto..."}`;
 
+const TONE_OVERLAY_TECNICO = `## TOM DE COMUNICAÇÃO (perfil TÉCNICO — padrão)
+Mantenha o texto com tom clínico, profissional, preciso e informativo. Sem eufemismos, sem celebrações exageradas. Foco em diagnóstico, mecanismo e caminho de cuidado.`;
+
+const TONE_OVERLAY_ACOLHEDOR = `## TOM DE COMUNICAÇÃO (perfil ACOLHEDOR)
+Reescreva com tom acolhedor, celebratório e inspirador, MANTENDO todo o rigor técnico do glossário (não inverter mecanismos: hidratação ≠ nutrição ≠ reconstrução ≠ botox).
+- Comece com elogio genuíno e específico ao que se vê.
+- Reposicione "problemas" como "oportunidades de cuidado" ("seu cabelo está pedindo nutrição", "pedindo cuidado").
+- Use vocabulário positivo, sem inventar percentuais nem trocar mecanismos.
+- 130–220 palavras, 2ª pessoa, SEM CTA explícito. Fechamento acolhedor de confiança no acompanhamento profissional.`;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
