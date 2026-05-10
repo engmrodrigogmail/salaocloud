@@ -843,7 +843,7 @@ export default function PortalAgenda() {
                     <span className="text-muted-foreground">Cliente:</span>
                     {selectedAppointment.client_id ? (
                       <button
-                        onClick={() => navigate(`/portal/${slug}/clientes/${selectedAppointment.client_id}`)}
+                        onClick={() => navigate(`/portal/${slug}/clientes/${selectedAppointment.client_id}`, { state: { from: "agenda" } })}
                         className="font-medium text-primary hover:underline text-right"
                       >
                         {selectedAppointment.client_name}
