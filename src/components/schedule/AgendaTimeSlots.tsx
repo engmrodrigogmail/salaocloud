@@ -220,18 +220,19 @@ export function AgendaTimeSlots({
                       <div className="flex-1 flex flex-wrap gap-1.5">
                         {slotAppointments.map((apt) => {
                           const colors = professionalColorMap[apt.professional_id] || PROFESSIONAL_COLORS[0];
+                          const isInactive = apt.status === "cancelled" || apt.status === "no_show";
                           return (
                             <div
                               key={apt.id}
                               onClick={() => onAppointmentClick(apt)}
-                              className={`flex-1 min-w-[180px] max-w-[300px] p-2 rounded border-l-4 cursor-pointer hover:opacity-80 transition-opacity ${colors.bg} ${colors.border}`}
+                              className={`flex-1 min-w-[180px] max-w-[300px] p-2 rounded border-l-4 cursor-pointer hover:opacity-80 transition-opacity ${colors.bg} ${colors.border} ${isInactive ? "opacity-60" : ""}`}
                             >
                               <div className="flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-1.5 min-w-0">
                                   <ConfirmedIndicator isConfirmed={!!apt.confirmed_at} />
                                   <span
                                     onClick={(e) => goToClient(e, apt.client_id)}
-                                    className={`font-medium truncate text-sm ${colors.text} ${apt.client_id ? "hover:underline cursor-pointer" : ""}`}
+                                    className={`font-medium truncate text-sm ${colors.text} ${apt.client_id ? "hover:underline cursor-pointer" : ""} ${apt.status === "cancelled" ? "line-through" : ""}`}
                                   >
                                     {apt.client_name}
                                   </span>
