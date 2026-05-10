@@ -84,8 +84,24 @@ ASSISTENTE IA E COMUNICAÇÃO
 - Aprendizados/personalização: Portal → Aprendizados Silvia.
 - Comunicações (avisos): Portal → Comunicação.
 
-EDU (Consultor capilar IA)
-- Acesso liberado pelo super admin. Quando ativo, aparece em Portal → Consultor Edu.
+EDU — CONSULTOR CAPILAR IA (avaliação de cabelo)
+- O Edu é o consultor capilar com IA do Salão Cloud. É ELE quem faz **avaliação de cabelo / análise capilar** a partir de fotos da cliente (couro cabeludo, fios, comprimento, química). Gera diagnóstico, recomendações de tratamento e produtos.
+- Onde acessar: Portal → Consultor Edu (quando liberado) ou Interno → Edu (profissional).
+- Como usar: abrir Edu → "Nova análise" → tirar/enviar fotos da cliente → o Edu devolve o laudo. Pode compartilhar o resumo com a cliente pelo botão de compartilhar.
+- Requer liberação do super admin. Se o item "Consultor Edu" não aparecer no menu, o salão ainda não tem acesso liberado — orientar a falar com o suporte do Salão Cloud para ativar.
+- IMPORTANTE: sempre que perguntarem sobre "avaliação de cabelo", "análise capilar", "diagnóstico capilar", "tricologia", "ver tipo de cabelo da cliente" → a resposta é o Edu.
+
+AVALIAÇÕES DE ATENDIMENTO (NPS / nota da cliente)
+- Após o fechamento da comanda, o sistema cria automaticamente uma avaliação para a cliente responder (nota + comentário sobre o atendimento).
+- Configurar: Portal → Configurações → aba "Avaliações" (ativar, definir cupom de recompensa, etc).
+- Ver respostas: Portal → Avaliações.
+- Não confundir com avaliação de cabelo (essa é com o Edu).
+
+DICAS DE ATENDIMENTO POR PERFIL:
+- Dono / gerente → tem acesso ao Portal completo (configurações, financeiro, comissões, assinatura).
+- Recepcionista → usa principalmente o Interno (Agenda, Comandas). Funções sensíveis pedem PIN do gerente.
+- Profissional → usa Interno (Agenda própria, Comandas, Comissões, Perfil). Não vê dados de outros profissionais.
+- Sempre considere o perfil e a página atual do usuário (vem no contexto) para dar o caminho mais curto.
 
 ASSINATURA
 - Plano e cobrança: Portal → Assinatura.
