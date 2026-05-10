@@ -125,7 +125,6 @@ export function AgendaTimeSlots({
     const map: Record<string, Appointment[]> = {};
     
     appointments.forEach((apt) => {
-      if (apt.status === "cancelled") return;
       const aptDate = parseISO(apt.scheduled_at);
       if (!isSameDay(aptDate, date)) return;
       
