@@ -297,7 +297,7 @@ export default function ClientDetail() {
     <PortalLayout>
       <div className="space-y-6 max-w-5xl mx-auto">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/portal/${slug}/clientes`)}>
+          <Button variant="ghost" size="sm" onClick={handleBack}>
             <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
           </Button>
           <div>
