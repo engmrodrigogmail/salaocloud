@@ -342,24 +342,24 @@ export default function PortalSettings() {
                     </div>
                     
                     {workingHours[key]?.enabled && (
-                      <div className="flex items-center gap-2 flex-1">
-                        <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2 flex-1 w-full">
+                        <div className="flex items-center gap-2 min-w-0">
                           <Label className="text-sm text-muted-foreground whitespace-nowrap">Abre às</Label>
                           <Input
                             type="time"
                             value={workingHours[key]?.open || "09:00"}
                             onChange={(e) => handleWorkingHoursChange(key, "open", e.target.value)}
-                            className="w-28"
+                            className="w-[110px] flex-shrink-0"
                           />
                         </div>
-                        <span className="text-muted-foreground">—</span>
-                        <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground hidden sm:inline">—</span>
+                        <div className="flex items-center gap-2 min-w-0">
                           <Label className="text-sm text-muted-foreground whitespace-nowrap">Fecha às</Label>
                           <Input
                             type="time"
                             value={workingHours[key]?.close || "20:00"}
                             onChange={(e) => handleWorkingHoursChange(key, "close", e.target.value)}
-                            className="w-28"
+                            className="w-[110px] flex-shrink-0"
                           />
                         </div>
                       </div>
