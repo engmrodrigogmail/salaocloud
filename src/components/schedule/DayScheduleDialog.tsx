@@ -250,6 +250,7 @@ export function DayScheduleDialog({
                         {apts.map((apt) => {
                           const colors = professionalColorMap[apt.professional_id] ?? PROFESSIONAL_COLORS[0];
                           const dur = apt.duration_minutes || 30;
+                          const isInactive = apt.status === "cancelled" || apt.status === "no_show";
                           return (
                             <button
                               key={apt.id}
@@ -261,6 +262,7 @@ export function DayScheduleDialog({
                                 "snap-start text-left shrink-0 w-[160px] sm:w-[200px] rounded-md border-l-4 px-2 py-1 hover:opacity-90 transition-opacity",
                                 colors.bg,
                                 colors.border,
+                                isInactive && "opacity-60",
                               )}
                             >
                               <div className="flex items-center justify-between gap-1 mb-0.5">
@@ -272,6 +274,7 @@ export function DayScheduleDialog({
                                       "font-semibold text-xs truncate",
                                       colors.text,
                                       apt.client_id && "hover:underline",
+                                      apt.status === "cancelled" && "line-through",
                                     )}
                                   >
                                     {apt.client_name}
