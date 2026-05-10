@@ -268,7 +268,7 @@ export function AgendaTimeSlots({
 
   // Week view - compact cards
   const dayAppointments = appointments.filter(
-    (apt) => apt.status !== "cancelled" && isSameDay(parseISO(apt.scheduled_at), date)
+    (apt) => isSameDay(parseISO(apt.scheduled_at), date)
   );
 
   return (
@@ -276,21 +276,25 @@ export function AgendaTimeSlots({
       {dayAppointments.length > 0 ? (
         dayAppointments.map((apt) => {
           const colors = professionalColorMap[apt.professional_id] || PROFESSIONAL_COLORS[0];
+          const isInactive = apt.status === "cancelled" || apt.status === "no_show";
           return (
             <div
               key={apt.id}
               onClick={() => onAppointmentClick(apt)}
-              className={`p-1.5 rounded border-l-2 text-xs cursor-pointer hover:opacity-80 transition-opacity ${colors.bg} ${colors.border}`}
+              className={`p-1.5 rounded border-l-2 text-xs cursor-pointer hover:opacity-80 transition-opacity ${colors.bg} ${colors.border} ${isInactive ? "opacity-60" : ""}`}
             >
-              <div className="flex items-center gap-1">
-                <ConfirmedIndicator isConfirmed={!!apt.confirmed_at} />
-                <span className={`font-medium ${colors.text}`}>
-                  {format(parseISO(apt.scheduled_at), "HH:mm")}
-                </span>
+              <div className="flex items-center justify-between gap-1">
+                <div className="flex items-center gap-1">
+                  <ConfirmedIndicator isConfirmed={!!apt.confirmed_at} />
+                  <span className={`font-medium ${colors.text}`}>
+                    {format(parseISO(apt.scheduled_at), "HH:mm")}
+                  </span>
+                </div>
+                {getStatusBadge(apt.status)}
               </div>
               <div
                 onClick={(e) => goToClient(e, apt.client_id)}
-                className={`truncate ${colors.text} ${apt.client_id ? "hover:underline cursor-pointer" : ""}`}
+                className={`truncate ${colors.text} ${apt.client_id ? "hover:underline cursor-pointer" : ""} ${apt.status === "cancelled" ? "line-through" : ""}`}
               >
                 {apt.client_name}
               </div>
