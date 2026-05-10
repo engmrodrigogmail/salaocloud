@@ -56,6 +56,12 @@ interface CrossTab {
 export default function ClientDetail() {
   const { slug, clientId } = useParams<{ slug: string; clientId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromAgenda = (location.state as any)?.from === "agenda";
+  const handleBack = () => {
+    if (fromAgenda) navigate(`/portal/${slug}/agenda`);
+    else navigate(`/portal/${slug}/clientes`);
+  };
   const { user, loading: authLoading } = useAuth();
 
   const [loading, setLoading] = useState(true);
