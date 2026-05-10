@@ -143,6 +143,7 @@ export function DayScheduleDialog({
       in_service: { label: "Atend.", className: "bg-violet-500/20 text-violet-700 dark:text-violet-300 border-violet-500/40" },
       completed: { label: "Conc.", className: "bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/40" },
       no_show: { label: "Faltou", className: "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/40" },
+      cancelled: { label: "Canc.", className: "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/40" },
     };
     const v = variants[status] ?? { label: status, className: "" };
     return <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-4 font-medium border", v.className)}>{v.label}</Badge>;
