@@ -95,7 +95,7 @@ export function DayScheduleDialog({
   const dayAppointments = useMemo(
     () =>
       appointments
-        .filter((a) => a.status !== "cancelled" && isSameDay(parseISO(a.scheduled_at), selectedDate))
+        .filter((a) => isSameDay(parseISO(a.scheduled_at), selectedDate))
         .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at)),
     [appointments, selectedDate],
   );
@@ -143,6 +143,7 @@ export function DayScheduleDialog({
       in_service: { label: "Atend.", className: "bg-violet-500/20 text-violet-700 dark:text-violet-300 border-violet-500/40" },
       completed: { label: "Conc.", className: "bg-green-500/20 text-green-700 dark:text-green-300 border-green-500/40" },
       no_show: { label: "Faltou", className: "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/40" },
+      cancelled: { label: "Canc.", className: "bg-red-500/20 text-red-700 dark:text-red-300 border-red-500/40" },
     };
     const v = variants[status] ?? { label: status, className: "" };
     return <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 h-4 font-medium border", v.className)}>{v.label}</Badge>;
@@ -249,6 +250,7 @@ export function DayScheduleDialog({
                         {apts.map((apt) => {
                           const colors = professionalColorMap[apt.professional_id] ?? PROFESSIONAL_COLORS[0];
                           const dur = apt.duration_minutes || 30;
+                          const isInactive = apt.status === "cancelled" || apt.status === "no_show";
                           return (
                             <button
                               key={apt.id}
@@ -260,6 +262,7 @@ export function DayScheduleDialog({
                                 "snap-start text-left shrink-0 w-[160px] sm:w-[200px] rounded-md border-l-4 px-2 py-1 hover:opacity-90 transition-opacity",
                                 colors.bg,
                                 colors.border,
+                                isInactive && "opacity-60",
                               )}
                             >
                               <div className="flex items-center justify-between gap-1 mb-0.5">
@@ -271,6 +274,7 @@ export function DayScheduleDialog({
                                       "font-semibold text-xs truncate",
                                       colors.text,
                                       apt.client_id && "hover:underline",
+                                      apt.status === "cancelled" && "line-through",
                                     )}
                                   >
                                     {apt.client_name}
