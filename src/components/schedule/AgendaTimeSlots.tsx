@@ -142,6 +142,8 @@ export function AgendaTimeSlots({
       confirmed: { label: "Conf.", className: "bg-blue-200 text-blue-900 text-[10px] px-1" },
       in_service: { label: "Atend.", className: "bg-violet-200 text-violet-900 text-[10px] px-1" },
       completed: { label: "Conc.", className: "bg-green-200 text-green-900 text-[10px] px-1" },
+      cancelled: { label: "Canc.", className: "bg-red-200 text-red-900 text-[10px] px-1" },
+      no_show: { label: "Faltou", className: "bg-red-200 text-red-900 text-[10px] px-1" },
     };
     const config = variants[status] || { label: status, className: "" };
     return <Badge className={config.className}>{config.label}</Badge>;
