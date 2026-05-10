@@ -95,7 +95,7 @@ export function DayScheduleDialog({
   const dayAppointments = useMemo(
     () =>
       appointments
-        .filter((a) => a.status !== "cancelled" && isSameDay(parseISO(a.scheduled_at), selectedDate))
+        .filter((a) => isSameDay(parseISO(a.scheduled_at), selectedDate))
         .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at)),
     [appointments, selectedDate],
   );
