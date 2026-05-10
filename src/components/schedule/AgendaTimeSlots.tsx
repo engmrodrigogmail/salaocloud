@@ -70,7 +70,7 @@ export function AgendaTimeSlots({
   const goToClient = (e: React.MouseEvent, clientId: string | null) => {
     if (!clientId || !slug) return;
     e.stopPropagation();
-    navigate(`/portal/${slug}/clientes/${clientId}`);
+    navigate(`/portal/${slug}/clientes/${clientId}`, { state: { from: "agenda" } });
   };
 
   // Mapear profissionais para cores

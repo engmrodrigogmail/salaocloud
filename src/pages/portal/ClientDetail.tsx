@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { PortalLayout } from "@/components/layouts/PortalLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -56,6 +56,12 @@ interface CrossTab {
 export default function ClientDetail() {
   const { slug, clientId } = useParams<{ slug: string; clientId: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromAgenda = (location.state as any)?.from === "agenda";
+  const handleBack = () => {
+    if (fromAgenda) navigate(`/portal/${slug}/agenda`);
+    else navigate(`/portal/${slug}/clientes`);
+  };
   const { user, loading: authLoading } = useAuth();
 
   const [loading, setLoading] = useState(true);
@@ -291,7 +297,7 @@ export default function ClientDetail() {
     <PortalLayout>
       <div className="space-y-6 max-w-5xl mx-auto">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate(`/portal/${slug}/clientes`)}>
+          <Button variant="ghost" size="sm" onClick={handleBack}>
             <ArrowLeft className="h-4 w-4 mr-1" /> Voltar
           </Button>
           <div>
