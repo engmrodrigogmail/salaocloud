@@ -196,6 +196,48 @@ export function CheckoutDialog({
     })();
   }, [open, establishmentId, tab?.id]);
 
+  // Fetch available reward coupons for this client (from past 5⭐ reviews)
+  useEffect(() => {
+    if (!open || !establishmentId || !tab?.client_id) {
+      setAvailableRewards([]);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from("tab_reviews")
+        .select("reward_coupon_id, discount_coupons!tab_reviews_reward_coupon_id_fkey(id, code, description, discount_type, discount_value, discount_target, applicable_service_ids, applicable_product_ids, calculate_commission_after_discount, min_purchase_value, valid_until, max_uses, current_uses, is_active)")
+        .eq("client_id", tab.client_id)
+        .eq("establishment_id", establishmentId)
+        .not("reward_coupon_id", "is", null);
+      const now = Date.now();
+      const rewards = (data ?? [])
+        .map((r: any) => r.discount_coupons)
+        .filter((c: any) => c && c.is_active && (!c.valid_until || new Date(c.valid_until).getTime() > now) && (!c.max_uses || c.current_uses < c.max_uses))
+        .map((c: any) => ({
+          id: c.id,
+          code: c.code,
+          description: c.description,
+          discount_type: c.discount_type,
+          discount_value: c.discount_value,
+          discount_target: c.discount_target || "total",
+          applicable_service_ids: c.applicable_service_ids || [],
+          applicable_product_ids: c.applicable_product_ids || [],
+          calculate_commission_after_discount: c.calculate_commission_after_discount ?? true,
+          min_purchase_value: c.min_purchase_value,
+        })) as ValidatedCoupon[];
+      // dedupe by id
+      const uniq = Array.from(new Map(rewards.map((r) => [r.id, r])).values());
+      setAvailableRewards(uniq);
+    })();
+  }, [open, establishmentId, tab?.client_id]);
+
+  const applyRewardCoupon = (c: ValidatedCoupon) => {
+    setAppliedCoupon(c);
+    setCouponCode(c.code);
+    setCouponError(null);
+    toast.success(`Recompensa "${c.code}" aplicada!`);
+  };
+
   const validateCoupon = async () => {
     if (!couponCode.trim() || !establishmentId) return;
     
