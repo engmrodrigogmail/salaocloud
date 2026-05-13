@@ -28,6 +28,7 @@ import { ManualDiscountDialog } from "./ManualDiscountDialog";
 import { SalonReviewDialog } from "./SalonReviewDialog";
 
 interface AppointmentSuggestion {
+  appointment_id: string;
   service_id: string;
   service_name: string;
   professional_id: string | null;
@@ -49,9 +50,9 @@ interface TabDetailsCardProps {
   onUndoOpening?: () => Promise<void> | void;
   onRecalculate: () => Promise<void>;
   onDiscountChanged?: () => Promise<void> | void;
-  appointmentSuggestion?: AppointmentSuggestion | null;
-  onConfirmAppointmentService?: () => Promise<void> | void;
-  onDismissAppointmentSuggestion?: () => void;
+  appointmentSuggestions?: AppointmentSuggestion[];
+  onConfirmAppointmentService?: (suggestion: AppointmentSuggestion) => Promise<void> | void;
+  onDismissAppointmentSuggestion?: (appointmentId: string) => void;
 }
 
 export function TabDetailsCard({
