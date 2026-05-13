@@ -434,6 +434,26 @@ export function CheckoutDialog({
                   </div>
                 ) : (
                   <div className="space-y-2">
+                    {availableRewards.length > 0 && (
+                      <div className="rounded-lg border border-primary/30 bg-primary/5 p-2.5 space-y-2">
+                        <p className="text-xs font-medium text-primary flex items-center gap-1">
+                          🎁 Recompensa(s) disponível(is) deste cliente
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {availableRewards.map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => applyRewardCoupon(c)}
+                              className="text-xs font-mono font-semibold bg-background border border-primary/40 hover:bg-primary hover:text-primary-foreground transition-colors px-2 py-1 rounded"
+                              title={c.description ?? ""}
+                            >
+                              {c.code} · {c.discount_type === "percentage" ? `${c.discount_value}%` : formatCurrency(c.discount_value)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <div className="relative flex-1">
                         <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
