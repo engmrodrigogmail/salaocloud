@@ -532,7 +532,7 @@ export function useTabItems(tabId: string | null) {
     try {
       const { data, error } = await supabase
         .from("tab_items")
-        .select("*")
+        .select("*, professionals:professional_id(name)")
         .eq("tab_id", tabId)
         .order("created_at", { ascending: true });
 

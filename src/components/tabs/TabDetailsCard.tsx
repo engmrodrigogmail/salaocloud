@@ -146,6 +146,12 @@ export function TabDetailsCard({
               <div className="text-sm text-muted-foreground mt-1">
                 {formatCurrency(item.unit_price)} x {item.quantity} = {formatCurrency(item.total_price)}
               </div>
+              {(item as any).professionals?.name && (
+                <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                  <User className="h-3 w-3" />
+                  {(item as any).professionals.name}
+                </div>
+              )}
               {item.description && (
                 <div className="text-xs text-muted-foreground italic mt-1">
                   {item.description}
@@ -216,11 +222,7 @@ export function TabDetailsCard({
             <Clock className="h-4 w-4" />
             Aberta em {format(parseISO(tab.opened_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
           </div>
-          {tab.professionals?.name && (
-            <div className="text-sm text-muted-foreground mt-1">
-              Profissional: {tab.professionals.name}
-            </div>
-          )}
+          
           {tab.notes && (
             <div className="text-sm text-muted-foreground mt-1 italic">
               {tab.notes}
