@@ -27,6 +27,14 @@ import type { TabWithDetails, TabItem, PaymentMethod } from "@/types/tabs";
 import { ManualDiscountDialog } from "./ManualDiscountDialog";
 import { SalonReviewDialog } from "./SalonReviewDialog";
 
+interface AppointmentSuggestion {
+  service_id: string;
+  service_name: string;
+  professional_id: string | null;
+  professional_name: string | null;
+  price: number;
+}
+
 interface TabDetailsCardProps {
   tab: TabWithDetails;
   items: TabItem[];
@@ -41,6 +49,9 @@ interface TabDetailsCardProps {
   onUndoOpening?: () => Promise<void> | void;
   onRecalculate: () => Promise<void>;
   onDiscountChanged?: () => Promise<void> | void;
+  appointmentSuggestion?: AppointmentSuggestion | null;
+  onConfirmAppointmentService?: () => Promise<void> | void;
+  onDismissAppointmentSuggestion?: () => void;
 }
 
 export function TabDetailsCard({
@@ -57,6 +68,9 @@ export function TabDetailsCard({
   onUndoOpening,
   onRecalculate,
   onDiscountChanged,
+  appointmentSuggestion,
+  onConfirmAppointmentService,
+  onDismissAppointmentSuggestion,
 }: TabDetailsCardProps) {
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [confirmUndoOpen, setConfirmUndoOpen] = useState(false);
