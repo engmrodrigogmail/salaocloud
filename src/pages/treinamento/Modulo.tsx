@@ -85,16 +85,35 @@ export default function ModuloPage() {
   const allChecked = checklist.length === 0 || checklist.every(Boolean);
   const canComplete = allChecked && quizPassed && !completed;
 
+  const PROFILE_LABEL: Record<string, string> = {
+    admin: "Dono / Admin",
+    professional: "Profissional",
+    receptionist: "Recepcionista",
+    client: "Cliente",
+  };
+
   const complete = async () => {
     if (!progressId) return;
     setSaving(true);
     const { error } = await supabase.from("training_user_progress").update({
       status: "completed", completed_at: new Date().toISOString(), score: 100,
     }).eq("id", progressId);
-    setSaving(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) { setSaving(false); toast.error(error.message); return; }
     setCompleted(true);
     toast.success("Módulo concluído!");
+
+    // Trigger certificate evaluation as a safety net (DB trigger also handles it)
+    try {
+      const { data } = await supabase.functions.invoke("training-issue-certificate");
+      const newly: string[] = (data as any)?.newly_issued ?? [];
+      newly.forEach((profile) => {
+        toast.success(`🎉 Certificado emitido: ${PROFILE_LABEL[profile] ?? profile}`, {
+          description: "Acesse seu painel para visualizar.",
+          duration: 6000,
+        });
+      });
+    } catch { /* no-op — trigger already covers it */ }
+    setSaving(false);
   };
 
   if (loading) return <TrainingLayout><div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div></TrainingLayout>;
