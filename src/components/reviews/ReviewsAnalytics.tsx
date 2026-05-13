@@ -14,8 +14,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Star, Loader2, MessageSquare, TrendingUp, Users, ExternalLink } from "lucide-react";
+import { Star, Loader2, MessageSquare, TrendingUp, Users, ExternalLink, Scissors, Clock, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type ReviewRow = {
   id: string;
