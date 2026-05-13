@@ -413,9 +413,39 @@ export function useTabs(establishmentId: string | null) {
   };
 
   useEffect(() => {
-    if (establishmentId) {
-      fetchTabs("open");
-    }
+    if (!establishmentId) return;
+    fetchTabs("open");
+
+    // Realtime: atualiza a lista quando qualquer comanda do estabelecimento muda
+    const channel = supabase
+      .channel(`tabs-${establishmentId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "tabs",
+          filter: `establishment_id=eq.${establishmentId}`,
+        },
+        () => {
+          fetchTabs("open");
+        }
+      )
+      .subscribe();
+
+    // Refetch ao voltar pra aba/janela (sem precisar dar refresh)
+    const onVisible = () => {
+      if (document.visibilityState === "visible") fetchTabs("open");
+    };
+    const onFocus = () => fetchTabs("open");
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      supabase.removeChannel(channel);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onFocus);
+    };
   }, [establishmentId, fetchTabs]);
 
   return {
