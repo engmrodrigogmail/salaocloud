@@ -69,7 +69,7 @@ export function TabDetailsCard({
   onUndoOpening,
   onRecalculate,
   onDiscountChanged,
-  appointmentSuggestion,
+  appointmentSuggestions,
   onConfirmAppointmentService,
   onDismissAppointmentSuggestion,
 }: TabDetailsCardProps) {
