@@ -31,7 +31,7 @@ export default function ClientReviewSubmit() {
   const [salonRating, setSalonRating] = useState(0);
   const [salonComment, setSalonComment] = useState("");
   const [profRatings, setProfRatings] = useState<Record<string, { rating: number; comment: string }>>({});
-  const [done, setDone] = useState<{ coupon: any; google_url: string | null } | null>(null);
+  const [done, setDone] = useState<{ coupon: any; google_url: string | null; rating: number } | null>(null);
 
   const session = useMemo(() => (slug ? readClientSession(slug) : null), [slug]);
 
