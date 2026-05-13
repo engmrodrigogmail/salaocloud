@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { 
   Plus, Trash2, User, Clock, Package, Scissors, PenLine, 
-  CreditCard, Receipt, ArrowLeft, Minus, Undo2, Tag, AlertCircle, Star
+  CreditCard, Receipt, ArrowLeft, Minus, Undo2, Tag, AlertCircle, Star, CalendarCheck, X
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, parseISO } from "date-fns";
