@@ -2129,6 +2129,7 @@ export type Database = {
           discount_pin_threshold_percent: number
           email: string | null
           id: string
+          is_demo: boolean
           is_showcase_enabled: boolean
           logo_url: string | null
           name: string
@@ -2169,6 +2170,7 @@ export type Database = {
           discount_pin_threshold_percent?: number
           email?: string | null
           id?: string
+          is_demo?: boolean
           is_showcase_enabled?: boolean
           logo_url?: string | null
           name: string
@@ -2209,6 +2211,7 @@ export type Database = {
           discount_pin_threshold_percent?: number
           email?: string | null
           id?: string
+          is_demo?: boolean
           is_showcase_enabled?: boolean
           logo_url?: string | null
           name?: string
@@ -4426,6 +4429,208 @@ export type Database = {
           },
         ]
       }
+      training_certificates: {
+        Row: {
+          code: string
+          id: string
+          issued_at: string
+          profile: string
+          user_id: string
+        }
+        Insert: {
+          code?: string
+          id?: string
+          issued_at?: string
+          profile: string
+          user_id: string
+        }
+        Update: {
+          code?: string
+          id?: string
+          issued_at?: string
+          profile?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      training_modules: {
+        Row: {
+          content: Json
+          created_at: string
+          display_order: number
+          id: number
+          iframe_path: string | null
+          is_active: boolean
+          profile: string
+          screenshot_url: string | null
+          title: string
+          updated_at: string
+          view: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          display_order: number
+          id: number
+          iframe_path?: string | null
+          is_active?: boolean
+          profile: string
+          screenshot_url?: string | null
+          title: string
+          updated_at?: string
+          view: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          display_order?: number
+          id?: number
+          iframe_path?: string | null
+          is_active?: boolean
+          profile?: string
+          screenshot_url?: string | null
+          title?: string
+          updated_at?: string
+          view?: string
+        }
+        Relationships: []
+      }
+      training_quiz_attempts: {
+        Row: {
+          answers: Json
+          attempted_at: string
+          id: string
+          module_id: number
+          passed: boolean
+          score: number
+          total: number
+          user_id: string
+        }
+        Insert: {
+          answers: Json
+          attempted_at?: string
+          id?: string
+          module_id: number
+          passed: boolean
+          score: number
+          total: number
+          user_id: string
+        }
+        Update: {
+          answers?: Json
+          attempted_at?: string
+          id?: string
+          module_id?: number
+          passed?: boolean
+          score?: number
+          total?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_quiz_attempts_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "training_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_user_progress: {
+        Row: {
+          checklist_state: Json
+          completed_at: string | null
+          created_at: string
+          id: string
+          module_id: number
+          score: number | null
+          started_at: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checklist_state?: Json
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          module_id: number
+          score?: number | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checklist_state?: Json
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          module_id?: number
+          score?: number | null
+          started_at?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_user_progress_module_id_fkey"
+            columns: ["module_id"]
+            isOneToOne: false
+            referencedRelation: "training_modules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_vendor_profiles: {
+        Row: {
+          city: string | null
+          cpf: string | null
+          created_at: string
+          failed_attempts: number
+          full_name: string | null
+          id: string
+          last_login_at: string | null
+          locked_until: string | null
+          must_change_password: boolean
+          phone: string | null
+          uf: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          city?: string | null
+          cpf?: string | null
+          created_at?: string
+          failed_attempts?: number
+          full_name?: string | null
+          id?: string
+          last_login_at?: string | null
+          locked_until?: string | null
+          must_change_password?: boolean
+          phone?: string | null
+          uf?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          city?: string | null
+          cpf?: string | null
+          created_at?: string
+          failed_attempts?: number
+          full_name?: string | null
+          id?: string
+          last_login_at?: string | null
+          locked_until?: string | null
+          must_change_password?: boolean
+          phone?: string | null
+          uf?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -4787,7 +4992,12 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "super_admin" | "establishment" | "client" | "professional"
+      app_role:
+        | "super_admin"
+        | "establishment"
+        | "client"
+        | "professional"
+        | "sales_trainee"
       appointment_status:
         | "pending"
         | "confirmed"
@@ -4940,7 +5150,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "establishment", "client", "professional"],
+      app_role: [
+        "super_admin",
+        "establishment",
+        "client",
+        "professional",
+        "sales_trainee",
+      ],
       appointment_status: [
         "pending",
         "confirmed",
