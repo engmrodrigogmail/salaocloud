@@ -87,7 +87,7 @@ export default function ClientReviewSubmit() {
       toast.error(data?.error || error?.message || "Erro ao enviar", { position: "top-center", duration: 2000 });
       return;
     }
-    setDone({ coupon: data.coupon, google_url: data.google_url });
+    setDone({ coupon: data.coupon, google_url: data.google_url, rating: salonRating });
   };
 
   if (loading) {
