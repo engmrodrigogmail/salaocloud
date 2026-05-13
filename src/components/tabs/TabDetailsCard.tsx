@@ -28,6 +28,7 @@ import { ManualDiscountDialog } from "./ManualDiscountDialog";
 import { SalonReviewDialog } from "./SalonReviewDialog";
 
 interface AppointmentSuggestion {
+  appointment_id: string;
   service_id: string;
   service_name: string;
   professional_id: string | null;
@@ -49,9 +50,9 @@ interface TabDetailsCardProps {
   onUndoOpening?: () => Promise<void> | void;
   onRecalculate: () => Promise<void>;
   onDiscountChanged?: () => Promise<void> | void;
-  appointmentSuggestion?: AppointmentSuggestion | null;
-  onConfirmAppointmentService?: () => Promise<void> | void;
-  onDismissAppointmentSuggestion?: () => void;
+  appointmentSuggestions?: AppointmentSuggestion[];
+  onConfirmAppointmentService?: (suggestion: AppointmentSuggestion) => Promise<void> | void;
+  onDismissAppointmentSuggestion?: (appointmentId: string) => void;
 }
 
 export function TabDetailsCard({
@@ -68,7 +69,7 @@ export function TabDetailsCard({
   onUndoOpening,
   onRecalculate,
   onDiscountChanged,
-  appointmentSuggestion,
+  appointmentSuggestions,
   onConfirmAppointmentService,
   onDismissAppointmentSuggestion,
 }: TabDetailsCardProps) {
@@ -245,54 +246,58 @@ export function TabDetailsCard({
         </CardContent>
       </Card>
 
-      {/* Appointment suggestion (pre-populated from booking) */}
-      {tab.status === "open" && appointmentSuggestion && (
-        <Card className="border-primary/40 bg-primary/5">
-          <CardHeader className="pb-2">
-            <div className="flex items-start justify-between gap-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <CalendarCheck className="h-5 w-5 text-primary" />
-                Serviço agendado
-              </CardTitle>
-              {onDismissAppointmentSuggestion && (
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-7 w-7"
-                  onClick={onDismissAppointmentSuggestion}
-                  aria-label="Descartar sugestão"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="text-sm">
-              <div className="font-medium">{appointmentSuggestion.service_name}</div>
-              <div className="text-muted-foreground mt-0.5">
-                {formatCurrency(appointmentSuggestion.price)}
-              </div>
-              {appointmentSuggestion.professional_name && (
-                <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-                  <User className="h-3 w-3" />
-                  {appointmentSuggestion.professional_name}
+      {/* Appointment suggestions (pre-populated from booking — one card per service) */}
+      {tab.status === "open" && appointmentSuggestions && appointmentSuggestions.length > 0 && (
+        <div className="space-y-2">
+          {appointmentSuggestions.map((suggestion) => (
+            <Card key={suggestion.appointment_id} className="border-primary/40 bg-primary/5">
+              <CardHeader className="pb-2">
+                <div className="flex items-start justify-between gap-2">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <CalendarCheck className="h-5 w-5 text-primary" />
+                    Serviço agendado
+                  </CardTitle>
+                  {onDismissAppointmentSuggestion && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7"
+                      onClick={() => onDismissAppointmentSuggestion(suggestion.appointment_id)}
+                      aria-label="Descartar sugestão"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
                 </div>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Pré-preenchido do agendamento. Clique em confirmar para lançar na comanda.
-            </p>
-            <Button
-              size="sm"
-              className="w-full"
-              onClick={() => onConfirmAppointmentService?.()}
-            >
-              <CalendarCheck className="h-4 w-4 mr-2" />
-              Confirmar serviço agendado
-            </Button>
-          </CardContent>
-        </Card>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="text-sm">
+                  <div className="font-medium">{suggestion.service_name}</div>
+                  <div className="text-muted-foreground mt-0.5">
+                    {formatCurrency(suggestion.price)}
+                  </div>
+                  {suggestion.professional_name && (
+                    <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      {suggestion.professional_name}
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Pré-preenchido do agendamento. Clique em confirmar para lançar na comanda.
+                </p>
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={() => onConfirmAppointmentService?.(suggestion)}
+                >
+                  <CalendarCheck className="h-4 w-4 mr-2" />
+                  Confirmar serviço agendado
+                </Button>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       )}
 
       {/* Items */}

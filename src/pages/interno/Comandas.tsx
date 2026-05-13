@@ -79,54 +79,100 @@ export default function InternoComandas() {
     }
   }, [pendingOpenTabId, tabs]);
 
-  // Appointment suggestion (pre-populated service from booking, awaits confirmation)
-  const [appointmentSuggestion, setAppointmentSuggestion] = useState<{
+  // Appointment suggestions (pre-populated services from booking; client may have multiple
+  // simultaneous appointments — load all sibling appointments and let the salon confirm one by one)
+  type AppointmentSuggestion = {
+    appointment_id: string;
     service_id: string;
     service_name: string;
     professional_id: string | null;
     professional_name: string | null;
     price: number;
-  } | null>(null);
+  };
+  const [appointmentSuggestions, setAppointmentSuggestions] = useState<AppointmentSuggestion[]>([]);
+  const [dismissedSuggestionIds, setDismissedSuggestionIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    // Reset dismissals when switching tabs
+    setDismissedSuggestionIds(new Set());
+  }, [selectedTab?.id]);
 
   useEffect(() => {
     let cancelled = false;
-    const loadSuggestion = async () => {
-      setAppointmentSuggestion(null);
-      if (!selectedTab?.appointment_id || selectedTab.status !== "open") return;
-      // If items already include this appointment's service, skip
-      const { data: appt } = await supabase
+    const loadSuggestions = async () => {
+      setAppointmentSuggestions([]);
+      if (!selectedTab?.appointment_id || selectedTab.status !== "open" || !establishmentId) return;
+
+      // Load the originating appointment to discover the client + scheduled time
+      const { data: rootAppt } = await supabase
         .from("appointments")
-        .select("service_id, professional_id, price, services:service_id(name), professionals:professional_id(name)")
+        .select("client_id, client_phone, scheduled_at")
         .eq("id", selectedTab.appointment_id)
         .maybeSingle();
-      if (cancelled || !appt) return;
-      const alreadyAdded = items.some(
-        (it) => it.item_type === "service" && it.service_id === (appt as any).service_id,
-      );
-      if (alreadyAdded) return;
-      setAppointmentSuggestion({
-        service_id: (appt as any).service_id,
-        service_name: (appt as any).services?.name ?? "Serviço agendado",
-        professional_id: (appt as any).professional_id ?? null,
-        professional_name: (appt as any).professionals?.name ?? null,
-        price: Number((appt as any).price) || 0,
-      });
-    };
-    loadSuggestion();
-    return () => { cancelled = true; };
-  }, [selectedTab?.id, selectedTab?.appointment_id, selectedTab?.status, items]);
+      if (cancelled || !rootAppt) return;
 
-  const handleConfirmAppointmentService = async () => {
-    if (!appointmentSuggestion || !selectedTab) return;
+      // Build query for sibling appointments (same client, same exact scheduled time)
+      // Exclude cancelled/completed; include the root appointment itself.
+      let q = supabase
+        .from("appointments")
+        .select("id, service_id, professional_id, price, scheduled_at, services:service_id(name), professionals:professional_id(name)")
+        .eq("establishment_id", establishmentId)
+        .eq("scheduled_at", (rootAppt as any).scheduled_at)
+        .not("status", "in", "(cancelled,completed,no_show)");
+
+      if ((rootAppt as any).client_id) {
+        q = q.eq("client_id", (rootAppt as any).client_id);
+      } else if ((rootAppt as any).client_phone) {
+        q = q.eq("client_phone", (rootAppt as any).client_phone);
+      } else {
+        q = q.eq("id", selectedTab.appointment_id);
+      }
+
+      const { data: appts } = await q;
+      if (cancelled || !appts) return;
+
+      const list: AppointmentSuggestion[] = (appts as any[])
+        .filter((a) => !!a.service_id)
+        .map((a) => ({
+          appointment_id: a.id as string,
+          service_id: a.service_id as string,
+          service_name: a.services?.name ?? "Serviço agendado",
+          professional_id: a.professional_id ?? null,
+          professional_name: a.professionals?.name ?? null,
+          price: Number(a.price) || 0,
+        }))
+        // Skip ones already added to the tab (matched by service+professional)
+        .filter((s) => !items.some(
+          (it) => it.item_type === "service"
+            && it.service_id === s.service_id
+            && (it.professional_id ?? null) === (s.professional_id ?? null),
+        ))
+        .filter((s) => !dismissedSuggestionIds.has(s.appointment_id));
+
+      setAppointmentSuggestions(list);
+    };
+    loadSuggestions();
+    return () => { cancelled = true; };
+  }, [selectedTab?.id, selectedTab?.appointment_id, selectedTab?.status, establishmentId, items, dismissedSuggestionIds]);
+
+  const handleConfirmAppointmentService = async (suggestion: AppointmentSuggestion) => {
+    if (!selectedTab) return;
     await handleAddItem({
-      name: appointmentSuggestion.service_name,
-      unit_price: appointmentSuggestion.price,
+      name: suggestion.service_name,
+      unit_price: suggestion.price,
       quantity: 1,
       item_type: "service",
-      service_id: appointmentSuggestion.service_id,
-      professional_id: appointmentSuggestion.professional_id ?? undefined,
+      service_id: suggestion.service_id,
+      professional_id: suggestion.professional_id ?? undefined,
     });
-    setAppointmentSuggestion(null);
+  };
+
+  const handleDismissSuggestion = (appointmentId: string) => {
+    setDismissedSuggestionIds((prev) => {
+      const next = new Set(prev);
+      next.add(appointmentId);
+      return next;
+    });
   };
 
 
@@ -310,9 +356,9 @@ export default function InternoComandas() {
               const { data } = await supabase.from("tabs").select("*").eq("id", selectedTab.id).single();
               if (data) setSelectedTab({ ...selectedTab, ...data, status: data.status as TabWithDetails['status'] });
             }}
-            appointmentSuggestion={appointmentSuggestion}
+            appointmentSuggestions={appointmentSuggestions}
             onConfirmAppointmentService={handleConfirmAppointmentService}
-            onDismissAppointmentSuggestion={() => setAppointmentSuggestion(null)}
+            onDismissAppointmentSuggestion={handleDismissSuggestion}
           />
         )}
 
