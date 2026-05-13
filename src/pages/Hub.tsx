@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, Loader2, LogOut, ShieldCheck, User, Users } from "lucide-react";
+import { Building2, GraduationCap, Loader2, LogOut, ShieldCheck, User, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
