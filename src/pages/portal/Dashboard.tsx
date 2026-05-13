@@ -21,6 +21,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { NoShowReportCard } from "@/components/agenda/NoShowReportCard";
+import { ReviewsSummaryCard } from "@/components/reviews/ReviewsSummaryCard";
 
 interface Establishment {
   id: string;
@@ -252,6 +253,10 @@ export default function PortalDashboard() {
               <p className="text-xs text-muted-foreground">profissionais ativos</p>
             </CardContent>
           </Card>
+
+          {establishment && slug && (
+            <ReviewsSummaryCard establishmentId={establishment.id} slug={slug} />
+          )}
         </div>
 
         {/* AI Assistant Metrics */}
