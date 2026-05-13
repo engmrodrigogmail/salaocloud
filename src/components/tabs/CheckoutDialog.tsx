@@ -89,6 +89,7 @@ export function CheckoutDialog({
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<ValidatedCoupon | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
+  const [availableRewards, setAvailableRewards] = useState<ValidatedCoupon[]>([]);
 
   // Commission discount policies (from establishment) + per-checkout flags
   const [policyManual, setPolicyManual] = useState<Policy>('ask');
