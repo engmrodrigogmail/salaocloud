@@ -73,6 +73,17 @@ import AdminEdu from "./pages/admin/Edu";
 // Portal Edu
 import PortalEdu from "./pages/portal/Edu";
 
+// Treinamento (Vendedores)
+import TrainingLogin from "./pages/treinamento/Login";
+import TrainingPrimeiroAcesso from "./pages/treinamento/PrimeiroAcesso";
+import TrainingRecuperar from "./pages/treinamento/RecuperarSenha";
+import TrainingResetar from "./pages/treinamento/ResetarSenha";
+import TrainingDashboard from "./pages/treinamento/Dashboard";
+import TrainingPerfil from "./pages/treinamento/Perfil";
+import TrainingModulo from "./pages/treinamento/Modulo";
+import TrainingAdmin from "./pages/treinamento/Admin";
+import { TrainingProtectedRoute } from "./components/training/TrainingProtectedRoute";
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -252,6 +263,26 @@ const App = () => (
 
               {/* Client review submission */}
               <Route path="/:slug/avaliar/:reviewId" element={<ClientReviewSubmit />} />
+
+              {/* Treinamento */}
+              <Route path="/treinamento" element={<TrainingLogin />} />
+              <Route path="/treinamento/recuperar-senha" element={<TrainingRecuperar />} />
+              <Route path="/treinamento/resetar-senha" element={<TrainingResetar />} />
+              <Route path="/treinamento/primeiro-acesso" element={
+                <TrainingProtectedRoute requireMustChangePasswordCleared={false}><TrainingPrimeiroAcesso /></TrainingProtectedRoute>
+              } />
+              <Route path="/treinamento/dashboard" element={
+                <TrainingProtectedRoute><TrainingDashboard /></TrainingProtectedRoute>
+              } />
+              <Route path="/treinamento/perfil" element={
+                <TrainingProtectedRoute><TrainingPerfil /></TrainingProtectedRoute>
+              } />
+              <Route path="/treinamento/modulo/:id" element={
+                <TrainingProtectedRoute><TrainingModulo /></TrainingProtectedRoute>
+              } />
+              <Route path="/treinamento/admin" element={
+                <TrainingProtectedRoute><TrainingAdmin /></TrainingProtectedRoute>
+              } />
 
               {/* Public client portal - /{slug} opens client booking page */}
               <Route path="/:slug" element={<ClientPortal />} />
