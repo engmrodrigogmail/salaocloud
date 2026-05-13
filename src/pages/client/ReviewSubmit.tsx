@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Star, Loader2, Check, Gift, ExternalLink } from "lucide-react";
+import { Star, Loader2, Check, Gift } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { readClientSession } from "@/lib/clientSession";
+import { ReviewSubmitSuccess } from "@/components/reviews/ReviewSubmitSuccess";
 
 type Professional = {
   id: string;
@@ -30,7 +31,7 @@ export default function ClientReviewSubmit() {
   const [salonRating, setSalonRating] = useState(0);
   const [salonComment, setSalonComment] = useState("");
   const [profRatings, setProfRatings] = useState<Record<string, { rating: number; comment: string }>>({});
-  const [done, setDone] = useState<{ coupon: any; google_url: string | null } | null>(null);
+  const [done, setDone] = useState<{ coupon: any; google_url: string | null; rating: number } | null>(null);
 
   const session = useMemo(() => (slug ? readClientSession(slug) : null), [slug]);
 
@@ -86,7 +87,7 @@ export default function ClientReviewSubmit() {
       toast.error(data?.error || error?.message || "Erro ao enviar", { position: "top-center", duration: 2000 });
       return;
     }
-    setDone({ coupon: data.coupon, google_url: data.google_url });
+    setDone({ coupon: data.coupon, google_url: data.google_url, rating: salonRating });
   };
 
   if (loading) {
@@ -131,50 +132,13 @@ export default function ClientReviewSubmit() {
 
   if (done) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6">
-        <Card className="max-w-md w-full">
-          <CardContent className="p-6 text-center space-y-4">
-            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
-              <Check className="h-8 w-8 text-primary" />
-            </div>
-            <h2 className="text-2xl font-bold">Obrigado!</h2>
-            <p className="text-muted-foreground">Sua avaliação ajuda muito o {establishment?.name}.</p>
-
-            {done.coupon && (
-              <div className="border-2 border-dashed border-primary rounded-lg p-4 bg-primary/5 text-left">
-                <div className="flex items-center gap-2 mb-2">
-                  <Gift className="h-5 w-5 text-primary" />
-                  <span className="font-semibold">Sua recompensa</span>
-                </div>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {done.coupon.description}
-                </p>
-                <div className="font-mono text-2xl font-bold text-primary tracking-wider text-center py-2 bg-background rounded">
-                  {done.coupon.code}
-                </div>
-                <p className="text-xs text-muted-foreground mt-2 text-center">
-                  Apresente este código no caixa na próxima visita.
-                </p>
-              </div>
-            )}
-
-            {done.google_url && (
-              <div className="space-y-2">
-                <p className="text-sm">Que tal compartilhar essa experiência no Google? ⭐⭐⭐⭐⭐</p>
-                <Button asChild className="w-full gap-2">
-                  <a href={done.google_url} target="_blank" rel="noopener noreferrer">
-                    Avaliar no Google <ExternalLink className="h-4 w-4" />
-                  </a>
-                </Button>
-              </div>
-            )}
-
-            <Button variant="outline" asChild className="w-full">
-              <Link to={`/${slug}`}>Voltar para o salão</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
+      <ReviewSubmitSuccess
+        rating={done.rating}
+        salonName={establishment?.name ?? "nosso salão"}
+        slug={slug ?? ""}
+        coupon={done.coupon}
+        googleUrl={done.google_url}
+      />
     );
   }
 

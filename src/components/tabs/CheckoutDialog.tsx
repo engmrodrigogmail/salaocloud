@@ -89,6 +89,7 @@ export function CheckoutDialog({
   const [validatingCoupon, setValidatingCoupon] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<ValidatedCoupon | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
+  const [availableRewards, setAvailableRewards] = useState<ValidatedCoupon[]>([]);
 
   // Commission discount policies (from establishment) + per-checkout flags
   const [policyManual, setPolicyManual] = useState<Policy>('ask');
@@ -194,6 +195,48 @@ export function CheckoutDialog({
       setFlagLoyalty(pl === 'always' ? true : pl === 'never' ? false : (tabAny?.commission_discount_on_loyalty === true));
     })();
   }, [open, establishmentId, tab?.id]);
+
+  // Fetch available reward coupons for this client (from past 5⭐ reviews)
+  useEffect(() => {
+    if (!open || !establishmentId || !tab?.client_id) {
+      setAvailableRewards([]);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from("tab_reviews")
+        .select("reward_coupon_id, discount_coupons!tab_reviews_reward_coupon_id_fkey(id, code, description, discount_type, discount_value, discount_target, applicable_service_ids, applicable_product_ids, calculate_commission_after_discount, min_purchase_value, valid_until, max_uses, current_uses, is_active)")
+        .eq("client_id", tab.client_id)
+        .eq("establishment_id", establishmentId)
+        .not("reward_coupon_id", "is", null);
+      const now = Date.now();
+      const rewards = (data ?? [])
+        .map((r: any) => r.discount_coupons)
+        .filter((c: any) => c && c.is_active && (!c.valid_until || new Date(c.valid_until).getTime() > now) && (!c.max_uses || c.current_uses < c.max_uses))
+        .map((c: any) => ({
+          id: c.id,
+          code: c.code,
+          description: c.description,
+          discount_type: c.discount_type,
+          discount_value: c.discount_value,
+          discount_target: c.discount_target || "total",
+          applicable_service_ids: c.applicable_service_ids || [],
+          applicable_product_ids: c.applicable_product_ids || [],
+          calculate_commission_after_discount: c.calculate_commission_after_discount ?? true,
+          min_purchase_value: c.min_purchase_value,
+        })) as ValidatedCoupon[];
+      // dedupe by id
+      const uniq = Array.from(new Map(rewards.map((r) => [r.id, r])).values());
+      setAvailableRewards(uniq);
+    })();
+  }, [open, establishmentId, tab?.client_id]);
+
+  const applyRewardCoupon = (c: ValidatedCoupon) => {
+    setAppliedCoupon(c);
+    setCouponCode(c.code);
+    setCouponError(null);
+    toast.success(`Recompensa "${c.code}" aplicada!`);
+  };
 
   const validateCoupon = async () => {
     if (!couponCode.trim() || !establishmentId) return;
@@ -391,6 +434,26 @@ export function CheckoutDialog({
                   </div>
                 ) : (
                   <div className="space-y-2">
+                    {availableRewards.length > 0 && (
+                      <div className="rounded-lg border border-primary/30 bg-primary/5 p-2.5 space-y-2">
+                        <p className="text-xs font-medium text-primary flex items-center gap-1">
+                          🎁 Recompensa(s) disponível(is) deste cliente
+                        </p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {availableRewards.map((c) => (
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => applyRewardCoupon(c)}
+                              className="text-xs font-mono font-semibold bg-background border border-primary/40 hover:bg-primary hover:text-primary-foreground transition-colors px-2 py-1 rounded"
+                              title={c.description ?? ""}
+                            >
+                              {c.code} · {c.discount_type === "percentage" ? `${c.discount_value}%` : formatCurrency(c.discount_value)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <div className="flex gap-2">
                       <div className="relative flex-1">
                         <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
