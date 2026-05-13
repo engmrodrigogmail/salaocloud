@@ -255,6 +255,34 @@ export default function Hub() {
               </button>
             );
           })}
+          {role === "super_admin" && (
+            <>
+              <button
+                onClick={() => navigate("/treinamento/admin")}
+                className="w-full flex items-center gap-4 p-4 rounded-xl border bg-card hover:border-primary hover:shadow-md transition-all text-left"
+              >
+                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <GraduationCap className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold truncate">Gerenciar Treinamento</div>
+                  <div className="text-sm text-muted-foreground">CRUD de vendedores e módulos</div>
+                </div>
+              </button>
+              <button
+                onClick={() => navigate("/treinamento/dashboard")}
+                className="w-full flex items-center gap-4 p-4 rounded-xl border bg-card hover:border-primary hover:shadow-md transition-all text-left"
+              >
+                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <GraduationCap className="h-6 w-6 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-semibold truncate">Acessar como Vendedor</div>
+                  <div className="text-sm text-muted-foreground">Ver portal pelo lado do vendedor</div>
+                </div>
+              </button>
+            </>
+          )}
         </div>
 
         <div className="mt-6 pt-6 border-t flex justify-center">
