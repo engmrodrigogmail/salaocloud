@@ -310,6 +310,9 @@ export default function InternoComandas() {
               const { data } = await supabase.from("tabs").select("*").eq("id", selectedTab.id).single();
               if (data) setSelectedTab({ ...selectedTab, ...data, status: data.status as TabWithDetails['status'] });
             }}
+            appointmentSuggestion={appointmentSuggestion}
+            onConfirmAppointmentService={handleConfirmAppointmentService}
+            onDismissAppointmentSuggestion={() => setAppointmentSuggestion(null)}
           />
         )}
 
