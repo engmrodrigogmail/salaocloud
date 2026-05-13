@@ -72,8 +72,10 @@ export function TabDetailsCard({
   onRecalculate,
   onDiscountChanged,
   appointmentSuggestions,
+  dismissedAppointmentSuggestions,
   onConfirmAppointmentService,
   onDismissAppointmentSuggestion,
+  onRestoreAppointmentSuggestion,
 }: TabDetailsCardProps) {
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [confirmUndoOpen, setConfirmUndoOpen] = useState(false);
