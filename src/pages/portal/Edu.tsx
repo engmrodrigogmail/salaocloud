@@ -206,13 +206,21 @@ export default function PortalEdu() {
         },
       });
 
-      // Mesmo em respostas não-2xx, tenta ler o body retornado pela edge function
+      // Mesmo em respostas não-2xx, tenta ler o body retornado pela edge function.
+      // O supabase-js v2 expõe a Response em error.context — tentamos clone+json,
+      // depois clone+text, e por fim parse manual do texto.
       let payload: any = data;
-      if (error && (error as any)?.context?.json) {
-        try {
-          payload = await (error as any).context.json();
-        } catch {
-          /* noop */
+      if (error) {
+        const ctx: any = (error as any)?.context;
+        if (ctx && typeof ctx.clone === "function") {
+          try {
+            payload = await ctx.clone().json();
+          } catch {
+            try {
+              const txt = await ctx.clone().text();
+              try { payload = JSON.parse(txt); } catch { payload = { error: "edge_error", user_message: txt }; }
+            } catch { /* noop */ }
+          }
         }
       }
 

@@ -2,7 +2,7 @@
 // Redimensiona mantendo proporção (lado maior <= maxDim) e exporta JPEG com qualidade ajustável.
 // Claude limita 5MB no payload base64. Como base64 infla ~33%, mantemos folga ampla
 // para metadados/payload e variações de conversão do navegador.
-export const AI_IMAGE_MAX_BYTES = 2_800_000;
+export const AI_IMAGE_MAX_BYTES = 2_500_000;
 
 export async function compressImageForAI(
   file: File,
@@ -11,8 +11,9 @@ export async function compressImageForAI(
   const maxDim = opts.maxDim ?? 1200;
   let quality = opts.quality ?? 0.72;
 
-  // Se já é pequeno o suficiente e não é HEIC, retorna direto
-  if (file.size <= AI_IMAGE_MAX_BYTES && /jpe?g|png|webp/i.test(file.type) && !/heic|heif/i.test(file.type)) {
+  // Sempre re-encoda via canvas (limpa EXIF e garante <= AI_IMAGE_MAX_BYTES).
+  // Só pula se já é JPEG/PNG/WebP pequeno E NÃO veio do celular (heurística: < 800KB).
+  if (file.size <= 800_000 && /jpe?g|png|webp/i.test(file.type) && !/heic|heif/i.test(file.type)) {
     return file;
   }
 
