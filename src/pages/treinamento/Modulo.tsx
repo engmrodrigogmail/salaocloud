@@ -213,7 +213,9 @@ export default function ModuloPage() {
                 setQuizPassed(true);
                 if (user && module) {
                   await supabase.from("training_quiz_attempts").insert({
-                    user_id: user.id, module_id: module.id, score, passed: true, answers: {},
+                    user_id: user.id, module_id: module.id, score,
+                    total: (module.content.quiz ?? []).length,
+                    passed: true, answers: {},
                   });
                 }
               }}
