@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { InternoLayout } from "@/components/layouts/InternoLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,6 +27,7 @@ type Professional = Tables<"professionals">;
 export default function InternoComandas() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading: authLoading } = useAuth();
   
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
@@ -62,6 +63,72 @@ export default function InternoComandas() {
       fetchProfessionals();
     }
   }, [establishmentId]);
+
+  // Auto-select tab when navigated from Agenda with state.openTabId
+  const [pendingOpenTabId, setPendingOpenTabId] = useState<string | null>(
+    (location.state as any)?.openTabId ?? null
+  );
+  useEffect(() => {
+    if (!pendingOpenTabId || !tabs.length) return;
+    const t = tabs.find(x => x.id === pendingOpenTabId);
+    if (t) {
+      setSelectedTab(t as TabWithDetails);
+      setPendingOpenTabId(null);
+      // Clear navigation state so refresh doesn't reselect
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [pendingOpenTabId, tabs]);
+
+  // Appointment suggestion (pre-populated service from booking, awaits confirmation)
+  const [appointmentSuggestion, setAppointmentSuggestion] = useState<{
+    service_id: string;
+    service_name: string;
+    professional_id: string | null;
+    professional_name: string | null;
+    price: number;
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadSuggestion = async () => {
+      setAppointmentSuggestion(null);
+      if (!selectedTab?.appointment_id || selectedTab.status !== "open") return;
+      // If items already include this appointment's service, skip
+      const { data: appt } = await supabase
+        .from("appointments")
+        .select("service_id, professional_id, price, services:service_id(name), professionals:professional_id(name)")
+        .eq("id", selectedTab.appointment_id)
+        .maybeSingle();
+      if (cancelled || !appt) return;
+      const alreadyAdded = items.some(
+        (it) => it.item_type === "service" && it.service_id === (appt as any).service_id,
+      );
+      if (alreadyAdded) return;
+      setAppointmentSuggestion({
+        service_id: (appt as any).service_id,
+        service_name: (appt as any).services?.name ?? "Serviço agendado",
+        professional_id: (appt as any).professional_id ?? null,
+        professional_name: (appt as any).professionals?.name ?? null,
+        price: Number((appt as any).price) || 0,
+      });
+    };
+    loadSuggestion();
+    return () => { cancelled = true; };
+  }, [selectedTab?.id, selectedTab?.appointment_id, selectedTab?.status, items]);
+
+  const handleConfirmAppointmentService = async () => {
+    if (!appointmentSuggestion || !selectedTab) return;
+    await handleAddItem({
+      name: appointmentSuggestion.service_name,
+      unit_price: appointmentSuggestion.price,
+      quantity: 1,
+      item_type: "service",
+      service_id: appointmentSuggestion.service_id,
+      professional_id: appointmentSuggestion.professional_id ?? undefined,
+    });
+    setAppointmentSuggestion(null);
+  };
+
 
   const fetchEstablishment = async () => {
     try {
@@ -243,6 +310,9 @@ export default function InternoComandas() {
               const { data } = await supabase.from("tabs").select("*").eq("id", selectedTab.id).single();
               if (data) setSelectedTab({ ...selectedTab, ...data, status: data.status as TabWithDetails['status'] });
             }}
+            appointmentSuggestion={appointmentSuggestion}
+            onConfirmAppointmentService={handleConfirmAppointmentService}
+            onDismissAppointmentSuggestion={() => setAppointmentSuggestion(null)}
           />
         )}
 

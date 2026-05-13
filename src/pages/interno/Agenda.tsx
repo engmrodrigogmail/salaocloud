@@ -336,7 +336,7 @@ export default function InternoAgenda() {
       toast.success("Comanda aberta. Agenda bloqueada até o fechamento.");
       setDialogOpen(false);
       fetchAppointments();
-      navigate(`/interno/${slug}/comandas`);
+      navigate(`/interno/${slug}/comandas`, { state: { openTabId: tab.id } });
     } catch (error) {
       console.error("Error opening tab from appointment:", error);
       toast.error("Erro ao abrir comanda");
