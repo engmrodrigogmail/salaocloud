@@ -51,8 +51,10 @@ interface TabDetailsCardProps {
   onRecalculate: () => Promise<void>;
   onDiscountChanged?: () => Promise<void> | void;
   appointmentSuggestions?: AppointmentSuggestion[];
+  dismissedAppointmentSuggestions?: AppointmentSuggestion[];
   onConfirmAppointmentService?: (suggestion: AppointmentSuggestion) => Promise<void> | void;
   onDismissAppointmentSuggestion?: (appointmentId: string) => void;
+  onRestoreAppointmentSuggestion?: (appointmentId: string) => void;
 }
 
 export function TabDetailsCard({
@@ -70,8 +72,10 @@ export function TabDetailsCard({
   onRecalculate,
   onDiscountChanged,
   appointmentSuggestions,
+  dismissedAppointmentSuggestions,
   onConfirmAppointmentService,
   onDismissAppointmentSuggestion,
+  onRestoreAppointmentSuggestion,
 }: TabDetailsCardProps) {
   const [confirmCancelOpen, setConfirmCancelOpen] = useState(false);
   const [confirmUndoOpen, setConfirmUndoOpen] = useState(false);
@@ -298,6 +302,47 @@ export function TabDetailsCard({
             </Card>
           ))}
         </div>
+      )}
+
+      {/* Dismissed appointment suggestions — allow undo */}
+      {tab.status === "open"
+        && dismissedAppointmentSuggestions
+        && dismissedAppointmentSuggestions.length > 0 && (
+        <Card className="border-dashed">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground">
+              Sugestões descartadas
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {dismissedAppointmentSuggestions.map((suggestion) => (
+              <div
+                key={suggestion.appointment_id}
+                className="flex items-center justify-between gap-2 text-sm"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium text-muted-foreground line-through">
+                    {suggestion.service_name}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {formatCurrency(suggestion.price)}
+                    {suggestion.professional_name && ` · ${suggestion.professional_name}`}
+                  </div>
+                </div>
+                {onRestoreAppointmentSuggestion && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onRestoreAppointmentSuggestion(suggestion.appointment_id)}
+                  >
+                    <Undo2 className="h-4 w-4 mr-1" />
+                    Restaurar
+                  </Button>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
       )}
 
       {/* Items */}
