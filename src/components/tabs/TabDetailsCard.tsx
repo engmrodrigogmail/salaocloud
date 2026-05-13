@@ -216,7 +216,7 @@ export function TabDetailsCard({
             <Clock className="h-4 w-4" />
             Aberta em {format(parseISO(tab.opened_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
           </div>
-          {tab.notes && null}
+          
           {tab.notes && (
             <div className="text-sm text-muted-foreground mt-1 italic">
               {tab.notes}
