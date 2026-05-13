@@ -27,6 +27,7 @@ type Professional = Tables<"professionals">;
 export default function InternoComandas() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading: authLoading } = useAuth();
   
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
