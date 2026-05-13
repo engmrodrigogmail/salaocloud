@@ -89,7 +89,7 @@ export default function InternoComandas() {
     professional_name: string | null;
     price: number;
   };
-  const [appointmentSuggestions, setAppointmentSuggestions] = useState<AppointmentSuggestion[]>([]);
+  const [allAppointmentSuggestions, setAllAppointmentSuggestions] = useState<AppointmentSuggestion[]>([]);
   const [dismissedSuggestionIds, setDismissedSuggestionIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -100,7 +100,7 @@ export default function InternoComandas() {
   useEffect(() => {
     let cancelled = false;
     const loadSuggestions = async () => {
-      setAppointmentSuggestions([]);
+      setAllAppointmentSuggestions([]);
       if (!selectedTab?.appointment_id || selectedTab.status !== "open" || !establishmentId) return;
 
       // Load the originating appointment to discover the client + scheduled time
@@ -140,20 +140,28 @@ export default function InternoComandas() {
           professional_id: a.professional_id ?? null,
           professional_name: a.professionals?.name ?? null,
           price: Number(a.price) || 0,
-        }))
-        // Skip ones already added to the tab (matched by service+professional)
-        .filter((s) => !items.some(
-          (it) => it.item_type === "service"
-            && it.service_id === s.service_id
-            && (it.professional_id ?? null) === (s.professional_id ?? null),
-        ))
-        .filter((s) => !dismissedSuggestionIds.has(s.appointment_id));
+        }));
 
-      setAppointmentSuggestions(list);
+      setAllAppointmentSuggestions(list);
     };
     loadSuggestions();
     return () => { cancelled = true; };
-  }, [selectedTab?.id, selectedTab?.appointment_id, selectedTab?.status, establishmentId, items, dismissedSuggestionIds]);
+  }, [selectedTab?.id, selectedTab?.appointment_id, selectedTab?.status, establishmentId]);
+
+  // Hide suggestions whose service+professional is already in the tab items
+  const isAlreadyAdded = (s: AppointmentSuggestion) => items.some(
+    (it) => it.item_type === "service"
+      && it.service_id === s.service_id
+      && (it.professional_id ?? null) === (s.professional_id ?? null),
+  );
+
+  const appointmentSuggestions = allAppointmentSuggestions
+    .filter((s) => !isAlreadyAdded(s))
+    .filter((s) => !dismissedSuggestionIds.has(s.appointment_id));
+
+  const dismissedSuggestions = allAppointmentSuggestions
+    .filter((s) => !isAlreadyAdded(s))
+    .filter((s) => dismissedSuggestionIds.has(s.appointment_id));
 
   const handleConfirmAppointmentService = async (suggestion: AppointmentSuggestion) => {
     if (!selectedTab) return;
@@ -165,12 +173,28 @@ export default function InternoComandas() {
       service_id: suggestion.service_id,
       professional_id: suggestion.professional_id ?? undefined,
     });
+    // If it was previously dismissed, clear that flag too
+    setDismissedSuggestionIds((prev) => {
+      if (!prev.has(suggestion.appointment_id)) return prev;
+      const next = new Set(prev);
+      next.delete(suggestion.appointment_id);
+      return next;
+    });
   };
 
   const handleDismissSuggestion = (appointmentId: string) => {
     setDismissedSuggestionIds((prev) => {
       const next = new Set(prev);
       next.add(appointmentId);
+      return next;
+    });
+  };
+
+  const handleRestoreSuggestion = (appointmentId: string) => {
+    setDismissedSuggestionIds((prev) => {
+      if (!prev.has(appointmentId)) return prev;
+      const next = new Set(prev);
+      next.delete(appointmentId);
       return next;
     });
   };
