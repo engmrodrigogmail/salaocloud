@@ -381,8 +381,10 @@ export default function InternoComandas() {
               if (data) setSelectedTab({ ...selectedTab, ...data, status: data.status as TabWithDetails['status'] });
             }}
             appointmentSuggestions={appointmentSuggestions}
+            dismissedAppointmentSuggestions={dismissedSuggestions}
             onConfirmAppointmentService={handleConfirmAppointmentService}
             onDismissAppointmentSuggestion={handleDismissSuggestion}
+            onRestoreAppointmentSuggestion={handleRestoreSuggestion}
           />
         )}
 
