@@ -2129,6 +2129,7 @@ export type Database = {
           discount_pin_threshold_percent: number
           email: string | null
           id: string
+          is_demo: boolean
           is_showcase_enabled: boolean
           logo_url: string | null
           name: string
@@ -2169,6 +2170,7 @@ export type Database = {
           discount_pin_threshold_percent?: number
           email?: string | null
           id?: string
+          is_demo?: boolean
           is_showcase_enabled?: boolean
           logo_url?: string | null
           name: string
@@ -2209,6 +2211,7 @@ export type Database = {
           discount_pin_threshold_percent?: number
           email?: string | null
           id?: string
+          is_demo?: boolean
           is_showcase_enabled?: boolean
           logo_url?: string | null
           name?: string
@@ -4787,7 +4790,12 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "super_admin" | "establishment" | "client" | "professional"
+      app_role:
+        | "super_admin"
+        | "establishment"
+        | "client"
+        | "professional"
+        | "sales_trainee"
       appointment_status:
         | "pending"
         | "confirmed"
@@ -4940,7 +4948,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "establishment", "client", "professional"],
+      app_role: [
+        "super_admin",
+        "establishment",
+        "client",
+        "professional",
+        "sales_trainee",
+      ],
       appointment_status: [
         "pending",
         "confirmed",
