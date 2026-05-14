@@ -34,6 +34,7 @@ const BookingPage = () => {
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const [profServices, setProfServices] = useState<Array<{ professional_id: string; service_id: string }>>([]);
   
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
@@ -86,6 +87,15 @@ const BookingPage = () => {
         .order("name");
 
       setProfessionals(professionalsData || []);
+
+      const profIds = (professionalsData || []).map((p) => p.id);
+      if (profIds.length) {
+        const { data: psData } = await supabase
+          .from("professional_services")
+          .select("professional_id, service_id")
+          .in("professional_id", profIds);
+        setProfServices(psData || []);
+      }
     } catch (error) {
       console.error("Error fetching establishment:", error);
       toast.error("Erro ao carregar dados");
