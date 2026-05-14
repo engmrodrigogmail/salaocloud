@@ -74,7 +74,7 @@ export function resolveSandboxPath(
 
   // Caminhos que já carregam slug do salão demo
   if (iframePath.includes("demo-treinamento")) {
-    return iframePath.replaceAll("demo-treinamento", sandboxSlug);
+    return iframePath.split("demo-treinamento").join(sandboxSlug);
   }
 
   // Caminhos relativos (sem slug): prefixa de acordo com a view
