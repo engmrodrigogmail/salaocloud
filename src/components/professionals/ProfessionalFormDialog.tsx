@@ -529,13 +529,13 @@ export function ProfessionalFormDialog({
                     {formData.leasing_type === "fixed_monthly" && (
                       <div className="space-y-2">
                         <Label>Data Base do Fechamento</Label>
-                        <Input
-                          type="date"
+                        <DatePickerBR
                           value={formData.leasing_base_date}
-                          onChange={(e) => setFormData({ 
-                            ...formData, 
-                            leasing_base_date: e.target.value 
+                          onChange={(v) => setFormData({
+                            ...formData,
+                            leasing_base_date: v
                           })}
+                          className="w-full"
                         />
                         <p className="text-xs text-muted-foreground">
                           Dia do mês para contabilizar o fechamento (ex: dia 01 ou dia 15)
