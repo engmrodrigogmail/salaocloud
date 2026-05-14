@@ -132,7 +132,7 @@ export function EntryFormDialog({
             </div>
             <div>
               <Label>Data</Label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              <DatePickerBR value={date} onChange={setDate} className="w-full" />
             </div>
           </div>
 
