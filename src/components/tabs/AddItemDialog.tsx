@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Package, Scissors, PenLine, ShieldAlert } from "lucide-react";
+import { Loader2, Package, Scissors, PenLine, ShieldAlert, AlertTriangle } from "lucide-react";
 import type { Product } from "@/types/tabs";
 import type { Tables } from "@/integrations/supabase/types";
 import { ManagerPinDialog, logManagerOverride } from "@/components/security/ManagerPinDialog";
@@ -37,6 +37,8 @@ interface AddItemDialogProps {
   products: Product[];
   services: Service[];
   professionals: Professional[];
+  /** Matrix of professional×service pairs registered for the establishment */
+  professionalServices?: Array<{ professional_id: string; service_id: string }>;
   loading?: boolean;
   /** Required to open the manager PIN dialog when overriding catalog price */
   establishmentId?: string;
@@ -51,6 +53,7 @@ export function AddItemDialog({
   products,
   services,
   professionals,
+  professionalServices = [],
   loading = false,
   establishmentId,
   defaultProfessionalId,
