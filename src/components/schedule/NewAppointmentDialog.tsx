@@ -609,13 +609,12 @@ export function NewAppointmentDialog({
               {/* Data */}
               <div className="space-y-2">
                 <Label htmlFor="appt-date">Data *</Label>
-                <Input
+                <DatePickerBR
                   id="appt-date"
-                  type="date"
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                  onChange={setDate}
                   min={format(new Date(), "yyyy-MM-dd")}
-                  required
+                  className="w-full"
                 />
               </div>
 
