@@ -274,7 +274,7 @@ export function NewAppointmentDialog({
           if (isProfFree(day, time, professionalId, dur)) out.push({ time, profId: professionalId });
         } else {
           // any professional
-          const free = professionals.find((p) => isProfFree(day, time, p.id, dur));
+          const free = eligibleProfessionals.find((p) => isProfFree(day, time, p.id, dur));
           if (free) out.push({ time, profId: free.id });
         }
       }
@@ -310,7 +310,7 @@ export function NewAppointmentDialog({
           if (isBefore(sd, now)) continue;
           const endStr = format(addMinutes(sd, selectedService.duration_minutes), "HH:mm");
           if (endStr > wh.close) continue;
-          const free = professionals.find((p) => isProfFree(probe, t, p.id, selectedService.duration_minutes));
+          const free = eligibleProfessionals.find((p) => isProfFree(probe, t, p.id, selectedService.duration_minutes));
           if (free) {
             setDate(format(probe, "yyyy-MM-dd"));
             setTime(t);
@@ -578,7 +578,7 @@ export function NewAppointmentDialog({
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
-                        {professionals.map((p) => (
+                        {eligibleProfessionals.map((p) => (
                           <SelectItem key={p.id} value={p.id}>
                             {p.name}
                           </SelectItem>
