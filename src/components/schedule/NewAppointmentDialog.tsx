@@ -125,7 +125,7 @@ export function NewAppointmentDialog({
         const horizonStart = new Date();
         const horizonEnd = addDays(horizonStart, 60);
 
-        const [estRes, blkRes, clRes, apRes] = await Promise.all([
+        const [estRes, blkRes, clRes, apRes, psRes] = await Promise.all([
           supabase.from("establishments").select("working_hours").eq("id", establishmentId).maybeSingle(),
           profIds.length
             ? supabase
@@ -146,6 +146,12 @@ export function NewAppointmentDialog({
             .gte("scheduled_at", horizonStart.toISOString())
             .lte("scheduled_at", horizonEnd.toISOString())
             .neq("status", "cancelled"),
+          profIds.length
+            ? supabase
+                .from("professional_services")
+                .select("professional_id, service_id")
+                .in("professional_id", profIds)
+            : Promise.resolve({ data: [] as any[] }),
         ]);
 
         if (cancelled) return;
