@@ -91,6 +91,7 @@ export function NewAppointmentDialog({
   const [appointments, setAppointments] = useState<Array<{ id: string; scheduled_at: string; duration_minutes: number; professional_id: string; status: string }>>([]);
   const [blocks, setBlocks] = useState<Array<{ professional_id: string; start_time: string; end_time: string }>>([]);
   const [closures, setClosures] = useState<Array<{ start_date: string; end_date: string; start_time: string | null; end_time: string | null }>>([]);
+  const [profServices, setProfServices] = useState<Array<{ professional_id: string; service_id: string }>>([]);
   const [loadingAvail, setLoadingAvail] = useState(false);
 
   const reset = () => {
