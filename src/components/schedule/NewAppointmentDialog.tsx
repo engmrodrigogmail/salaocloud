@@ -598,6 +598,11 @@ export function NewAppointmentDialog({
                     Qualquer um
                   </Button>
                 </div>
+                {serviceId && eligibleProfessionals.length === 0 && (
+                  <p className="text-xs text-destructive">
+                    Nenhum profissional possui este serviço cadastrado. Vincule o serviço ao profissional em Profissionais.
+                  </p>
+                )}
               </div>
 
               {/* Data */}
