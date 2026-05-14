@@ -8,7 +8,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Trash2, CreditCard, Check, AlertCircle, Tag, X, Percent, DollarSign, Pencil } from "lucide-react";
+import { Loader2, Plus, Trash2, CreditCard, Check, AlertCircle, Tag, X, Percent, DollarSign, Pencil, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { TabWithDetails, TabItem, PaymentMethod, TabPayment } from "@/types/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -40,6 +41,8 @@ interface CheckoutDialogProps {
   loading?: boolean;
   establishmentId?: string;
   discountPinThreshold?: number;
+  /** Matrix of professional×service pairs to detect inconsistent items */
+  professionalServices?: Array<{ professional_id: string; service_id: string }>;
   onTabRefresh?: () => Promise<void> | void;
 }
 
@@ -76,6 +79,7 @@ export function CheckoutDialog({
   loading = false,
   establishmentId,
   discountPinThreshold = 10,
+  professionalServices = [],
   onTabRefresh,
 }: CheckoutDialogProps) {
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
