@@ -29,6 +29,17 @@ interface Module {
   iframe_path: string | null; screenshot_url: string | null; content: ModuleContent;
 }
 
+const REQUEST_TIMEOUT_MS = 15000;
+
+function withTimeout<T>(promise: PromiseLike<T>, message: string): Promise<T> {
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise<T>((_, reject) => {
+      setTimeout(() => reject(new Error(message)), REQUEST_TIMEOUT_MS);
+    }),
+  ]);
+}
+
 export default function ModuloPage() {
   const { id } = useParams();
   const moduleId = Number(id);
@@ -41,41 +52,96 @@ export default function ModuloPage() {
   const [progressId, setProgressId] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
+
     const load = async () => {
       setLoading(true);
-      const { data: mods } = await supabase.from("training_modules")
-        .select("*").eq("is_active", true).order("display_order");
-      const list = (mods ?? []) as Module[];
-      setAllModules(list);
-      const m = list.find((x) => x.id === moduleId);
-      setModule(m ?? null);
+      setLoadError(null);
+      setProgressId(null);
+      setCompleted(false);
+      setQuizPassed(false);
 
-      if (m && user) {
-        const { data: p } = await supabase.from("training_user_progress")
-          .select("*").eq("user_id", user.id).eq("module_id", m.id).maybeSingle();
-        const cl = (m.content?.checklist ?? []) as string[];
-        if (p) {
-          setProgressId(p.id);
-          setCompleted(p.status === "completed");
-          const state = (p.checklist_state ?? {}) as Record<string, boolean>;
-          setChecklist(cl.map((_, i) => !!state[i]));
-          if (p.status === "completed") setQuizPassed(true);
-        } else {
-          // create in_progress
-          const { data: created } = await supabase.from("training_user_progress").insert({
-            user_id: user.id, module_id: m.id, status: "in_progress",
-            started_at: new Date().toISOString(),
-          }).select().single();
-          if (created) setProgressId(created.id);
-          setChecklist(cl.map(() => false));
-        }
+      if (!Number.isFinite(moduleId)) {
+        setModule(null);
+        setLoading(false);
+        return;
       }
-      setLoading(false);
+
+      try {
+        const { data: mods, error } = await withTimeout(
+          supabase.from("training_modules").select("*").eq("is_active", true).order("display_order"),
+          "Tempo esgotado ao carregar o módulo."
+        );
+
+        if (cancelled) return;
+        if (error) throw error;
+
+        const list = ((mods ?? []) as Module[]).map((item) => ({
+          ...item,
+          content: (item.content ?? {}) as ModuleContent,
+        }));
+        const selectedModule = list.find((x) => x.id === moduleId) ?? null;
+        const checklistItems = (selectedModule?.content?.checklist ?? []) as string[];
+
+        setAllModules(list);
+        setModule(selectedModule);
+        setChecklist(checklistItems.map(() => false));
+        setLoading(false);
+
+        if (!selectedModule || !user) return;
+
+        try {
+          const { data: p, error: progressError } = await withTimeout(
+            supabase.from("training_user_progress")
+              .select("*")
+              .eq("user_id", user.id)
+              .eq("module_id", selectedModule.id)
+              .maybeSingle(),
+            "Tempo esgotado ao carregar o progresso."
+          );
+
+          if (cancelled) return;
+          if (progressError) throw progressError;
+
+          if (p) {
+            setProgressId(p.id);
+            setCompleted(p.status === "completed");
+            const state = (p.checklist_state ?? {}) as Record<string, boolean>;
+            setChecklist(checklistItems.map((_, i) => !!state[i]));
+            setQuizPassed(p.status === "completed");
+            return;
+          }
+
+          const { data: created, error: createError } = await withTimeout(
+            supabase.from("training_user_progress").insert({
+              user_id: user.id,
+              module_id: selectedModule.id,
+              status: "in_progress",
+              started_at: new Date().toISOString(),
+            }).select().single(),
+            "Tempo esgotado ao iniciar o progresso."
+          );
+
+          if (cancelled) return;
+          if (createError) throw createError;
+          if (created) setProgressId(created.id);
+        } catch (progressErr) {
+          console.error("Erro ao sincronizar progresso do treinamento", progressErr);
+        }
+      } catch (err) {
+        if (cancelled) return;
+        console.error("Erro ao carregar módulo de treinamento", err);
+        setModule(null);
+        setLoadError(err instanceof Error ? err.message : "Não foi possível carregar este módulo.");
+        setLoading(false);
+      }
     };
-    if (user && moduleId) load();
+    if (user) load();
+    return () => { cancelled = true; };
   }, [user, moduleId]);
 
   const persistChecklist = async (next: boolean[]) => {
@@ -86,7 +152,7 @@ export default function ModuloPage() {
   };
 
   const allChecked = checklist.length === 0 || checklist.every(Boolean);
-  const canComplete = allChecked && quizPassed && !completed;
+  const canComplete = !!progressId && allChecked && quizPassed && !completed;
 
   const PROFILE_LABEL: Record<string, string> = {
     admin: "Dono / Admin",
@@ -120,6 +186,7 @@ export default function ModuloPage() {
   };
 
   if (loading) return <TrainingLayout><div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div></TrainingLayout>;
+  if (loadError) return <TrainingLayout><Card className="p-4"><p className="text-sm text-destructive">{loadError}</p></Card></TrainingLayout>;
   if (!module) return <TrainingLayout><p>Módulo não encontrado.</p></TrainingLayout>;
 
   const c = module.content;
