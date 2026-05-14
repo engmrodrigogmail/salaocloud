@@ -91,6 +91,7 @@ export function NewAppointmentDialog({
   const [appointments, setAppointments] = useState<Array<{ id: string; scheduled_at: string; duration_minutes: number; professional_id: string; status: string }>>([]);
   const [blocks, setBlocks] = useState<Array<{ professional_id: string; start_time: string; end_time: string }>>([]);
   const [closures, setClosures] = useState<Array<{ start_date: string; end_date: string; start_time: string | null; end_time: string | null }>>([]);
+  const [profServices, setProfServices] = useState<Array<{ professional_id: string; service_id: string }>>([]);
   const [loadingAvail, setLoadingAvail] = useState(false);
 
   const reset = () => {
@@ -124,7 +125,7 @@ export function NewAppointmentDialog({
         const horizonStart = new Date();
         const horizonEnd = addDays(horizonStart, 60);
 
-        const [estRes, blkRes, clRes, apRes] = await Promise.all([
+        const [estRes, blkRes, clRes, apRes, psRes] = await Promise.all([
           supabase.from("establishments").select("working_hours").eq("id", establishmentId).maybeSingle(),
           profIds.length
             ? supabase
@@ -145,6 +146,12 @@ export function NewAppointmentDialog({
             .gte("scheduled_at", horizonStart.toISOString())
             .lte("scheduled_at", horizonEnd.toISOString())
             .neq("status", "cancelled"),
+          profIds.length
+            ? supabase
+                .from("professional_services")
+                .select("professional_id, service_id")
+                .in("professional_id", profIds)
+            : Promise.resolve({ data: [] as any[] }),
         ]);
 
         if (cancelled) return;
@@ -161,6 +168,7 @@ export function NewAppointmentDialog({
         setBlocks((blkRes.data || []) as any);
         setClosures((clRes.data || []) as any);
         setAppointments((apRes.data || []) as any);
+        setProfServices((psRes.data || []) as any);
       } catch (e) {
         console.error("availability load error", e);
       } finally {
@@ -177,6 +185,19 @@ export function NewAppointmentDialog({
     () => (professionalId && professionalId !== ANY_PRO ? professionals.find((p) => p.id === professionalId) : null),
     [professionalId, professionals],
   );
+
+  const eligibleProfessionals = useMemo(() => {
+    if (!serviceId) return professionals;
+    const ids = new Set(profServices.filter((ps) => ps.service_id === serviceId).map((ps) => ps.professional_id));
+    if (ids.size === 0) return professionals; // sem matriz cadastrada: não filtra (evita travar)
+    return professionals.filter((p) => ids.has(p.id));
+  }, [professionals, profServices, serviceId]);
+
+  // Reset professional if not eligible after service change
+  useEffect(() => {
+    if (!serviceId || !professionalId || professionalId === ANY_PRO) return;
+    if (!eligibleProfessionals.some((p) => p.id === professionalId)) setProfessionalId("");
+  }, [serviceId, eligibleProfessionals, professionalId]);
 
   // === Availability helpers ===
   const getWHForDay = (d: Date, profId?: string) => {
@@ -253,7 +274,7 @@ export function NewAppointmentDialog({
           if (isProfFree(day, time, professionalId, dur)) out.push({ time, profId: professionalId });
         } else {
           // any professional
-          const free = professionals.find((p) => isProfFree(day, time, p.id, dur));
+          const free = eligibleProfessionals.find((p) => isProfFree(day, time, p.id, dur));
           if (free) out.push({ time, profId: free.id });
         }
       }
@@ -289,7 +310,7 @@ export function NewAppointmentDialog({
           if (isBefore(sd, now)) continue;
           const endStr = format(addMinutes(sd, selectedService.duration_minutes), "HH:mm");
           if (endStr > wh.close) continue;
-          const free = professionals.find((p) => isProfFree(probe, t, p.id, selectedService.duration_minutes));
+          const free = eligibleProfessionals.find((p) => isProfFree(probe, t, p.id, selectedService.duration_minutes));
           if (free) {
             setDate(format(probe, "yyyy-MM-dd"));
             setTime(t);
@@ -557,7 +578,7 @@ export function NewAppointmentDialog({
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
-                        {professionals.map((p) => (
+                        {eligibleProfessionals.map((p) => (
                           <SelectItem key={p.id} value={p.id}>
                             {p.name}
                           </SelectItem>
@@ -577,6 +598,11 @@ export function NewAppointmentDialog({
                     Qualquer um
                   </Button>
                 </div>
+                {serviceId && eligibleProfessionals.length === 0 && (
+                  <p className="text-xs text-destructive">
+                    Nenhum profissional possui este serviço cadastrado. Vincule o serviço ao profissional em Profissionais.
+                  </p>
+                )}
               </div>
 
               {/* Data */}

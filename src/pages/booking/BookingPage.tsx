@@ -34,6 +34,7 @@ const BookingPage = () => {
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [services, setServices] = useState<Service[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const [profServices, setProfServices] = useState<Array<{ professional_id: string; service_id: string }>>([]);
   
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedProfessional, setSelectedProfessional] = useState<Professional | null>(null);
@@ -86,6 +87,15 @@ const BookingPage = () => {
         .order("name");
 
       setProfessionals(professionalsData || []);
+
+      const profIds = (professionalsData || []).map((p) => p.id);
+      if (profIds.length) {
+        const { data: psData } = await supabase
+          .from("professional_services")
+          .select("professional_id, service_id")
+          .in("professional_id", profIds);
+        setProfServices(psData || []);
+      }
     } catch (error) {
       console.error("Error fetching establishment:", error);
       toast.error("Erro ao carregar dados");
@@ -347,12 +357,21 @@ const BookingPage = () => {
               <CardDescription>Selecione o profissional de sua preferência</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
-              {professionals.length === 0 ? (
-                <p className="text-muted-foreground text-center py-4">
-                  Nenhum profissional disponível no momento
-                </p>
-              ) : (
-                professionals.map((professional) => (
+              {(() => {
+                const eligibleIds = new Set(
+                  profServices.filter((ps) => ps.service_id === selectedService?.id).map((ps) => ps.professional_id),
+                );
+                const eligible = selectedService
+                  ? (eligibleIds.size === 0 ? professionals : professionals.filter((p) => eligibleIds.has(p.id)))
+                  : professionals;
+                if (eligible.length === 0) {
+                  return (
+                    <p className="text-muted-foreground text-center py-4">
+                      Nenhum profissional disponível para este serviço no momento
+                    </p>
+                  );
+                }
+                return eligible.map((professional) => (
                   <div
                     key={professional.id}
                     onClick={() => setSelectedProfessional(professional)}
@@ -379,8 +398,8 @@ const BookingPage = () => {
                       </div>
                     </div>
                   </div>
-                ))
-              )}
+                ));
+              })()}
               <div className="flex justify-between mt-6">
                 <Button variant="outline" onClick={() => setStep(1)}>
                   <ArrowLeft className="mr-2 h-4 w-4" /> Voltar
