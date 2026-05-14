@@ -186,6 +186,19 @@ export function NewAppointmentDialog({
     [professionalId, professionals],
   );
 
+  const eligibleProfessionals = useMemo(() => {
+    if (!serviceId) return professionals;
+    const ids = new Set(profServices.filter((ps) => ps.service_id === serviceId).map((ps) => ps.professional_id));
+    if (ids.size === 0) return professionals; // sem matriz cadastrada: não filtra (evita travar)
+    return professionals.filter((p) => ids.has(p.id));
+  }, [professionals, profServices, serviceId]);
+
+  // Reset professional if not eligible after service change
+  useEffect(() => {
+    if (!serviceId || !professionalId || professionalId === ANY_PRO) return;
+    if (!eligibleProfessionals.some((p) => p.id === professionalId)) setProfessionalId("");
+  }, [serviceId, eligibleProfessionals, professionalId]);
+
   // === Availability helpers ===
   const getWHForDay = (d: Date, profId?: string) => {
     const day = getDay(d).toString();
