@@ -4879,8 +4879,8 @@ export type Database = {
       }
       close_tab_atomic: {
         Args: {
-          _commissions: Json
-          _flags: Json
+          _commissions?: Json
+          _flags?: Json
           _payments: Json
           _tab_id: string
         }
