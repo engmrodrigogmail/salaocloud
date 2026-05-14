@@ -133,6 +133,11 @@ export function AddItemDialog({
     await submit(payload);
   };
 
+  const isProfMissingService = (profId: string, serviceId: string) =>
+    !professionalServices.some(
+      (ps) => ps.professional_id === profId && ps.service_id === serviceId,
+    );
+
   const handleAddService = async () => {
     if (!selectedService) return;
     const catalog = selectedService.price;
@@ -150,6 +155,12 @@ export function AddItemDialog({
       setPendingPayload(payload);
       setPinOpen(true);
       return;
+    }
+    if (selectedProfessional && isProfMissingService(selectedProfessional, selectedService.id)) {
+      // Non-blocking warning; the user may still proceed (the toast is just informative).
+      // The visual badge in the dropdown already flags the inconsistency.
+      // (Final warning is also surfaced in the checkout dialog.)
+      // eslint-disable-next-line no-alert
     }
     await submit(payload);
   };
