@@ -76,6 +76,47 @@ export default function TrainingPerfil() {
           <div><Label>Nova senha</Label><Input type="password" value={pwd} onChange={(e) => setPwd(e.target.value)} /></div>
           <Button onClick={changePwd} variant="outline">Alterar senha</Button>
         </Card>
+
+        <Card className="p-5 space-y-3">
+          <h2 className="font-semibold">Salão de treino</h2>
+          <p className="text-sm text-muted-foreground">
+            Cada vendedor pratica em um salão isolado. Suas alterações não afetam outros vendedores.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Slug: <code className="px-1.5 py-0.5 bg-muted rounded">{sandboxLoading ? "carregando…" : (sandboxSlug ?? "—")}</code>
+          </p>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" disabled={resetting || sandboxLoading}>
+                {resetting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <RotateCcw className="h-4 w-4 mr-2" />}
+                Resetar meu salão de treino
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Resetar salão de treino?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Todos os dados do seu salão de prática (clientes, agendamentos, comandas etc.)
+                  serão apagados e recriados a partir do template original.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={async () => {
+                    setResetting(true);
+                    const ok = await resetSandbox();
+                    setResetting(false);
+                    if (ok) toast.success("Salão de treino resetado!");
+                    else toast.error("Falha ao resetar.");
+                  }}
+                >
+                  Resetar
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </Card>
       </div>
     </TrainingLayout>
   );
