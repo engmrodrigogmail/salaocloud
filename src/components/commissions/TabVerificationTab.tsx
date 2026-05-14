@@ -358,16 +358,14 @@ export function TabVerificationTab({ establishmentId }: TabVerificationTabProps)
               </SelectContent>
             </Select>
             <div className="flex gap-2">
-              <Input
-                type="date"
+              <DatePickerBR
                 value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+                onChange={setDateFrom}
                 className="w-36"
               />
-              <Input
-                type="date"
+              <DatePickerBR
                 value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
+                onChange={setDateTo}
                 className="w-36"
               />
             </div>
