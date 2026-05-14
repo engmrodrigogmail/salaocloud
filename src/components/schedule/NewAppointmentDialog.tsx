@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePickerBR } from "@/components/ui/date-picker-br";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -608,13 +609,12 @@ export function NewAppointmentDialog({
               {/* Data */}
               <div className="space-y-2">
                 <Label htmlFor="appt-date">Data *</Label>
-                <Input
+                <DatePickerBR
                   id="appt-date"
-                  type="date"
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                  onChange={setDate}
                   min={format(new Date(), "yyyy-MM-dd")}
-                  required
+                  className="w-full"
                 />
               </div>
 

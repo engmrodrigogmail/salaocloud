@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePickerBR } from "@/components/ui/date-picker-br";
 import {
   Table,
   TableBody,
@@ -357,16 +358,14 @@ export function TabVerificationTab({ establishmentId }: TabVerificationTabProps)
               </SelectContent>
             </Select>
             <div className="flex gap-2">
-              <Input
-                type="date"
+              <DatePickerBR
                 value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+                onChange={setDateFrom}
                 className="w-36"
               />
-              <Input
-                type="date"
+              <DatePickerBR
                 value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
+                onChange={setDateTo}
                 className="w-36"
               />
             </div>

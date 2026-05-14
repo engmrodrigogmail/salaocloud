@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePickerBR } from "@/components/ui/date-picker-br";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -803,7 +804,7 @@ export default function PortalAgenda() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label>Data</Label>
-                      <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
+                      <DatePickerBR value={editDate} onChange={setEditDate} className="w-full" />
                     </div>
                     <div>
                       <Label>Horário</Label>

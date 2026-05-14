@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePickerBR } from "@/components/ui/date-picker-br";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -131,7 +132,7 @@ export function EntryFormDialog({
             </div>
             <div>
               <Label>Data</Label>
-              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+              <DatePickerBR value={date} onChange={setDate} className="w-full" />
             </div>
           </div>
 

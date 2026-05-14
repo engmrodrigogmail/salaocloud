@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePickerBR } from "@/components/ui/date-picker-br";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -528,13 +529,13 @@ export function ProfessionalFormDialog({
                     {formData.leasing_type === "fixed_monthly" && (
                       <div className="space-y-2">
                         <Label>Data Base do Fechamento</Label>
-                        <Input
-                          type="date"
+                        <DatePickerBR
                           value={formData.leasing_base_date}
-                          onChange={(e) => setFormData({ 
-                            ...formData, 
-                            leasing_base_date: e.target.value 
+                          onChange={(v) => setFormData({
+                            ...formData,
+                            leasing_base_date: v
                           })}
+                          className="w-full"
                         />
                         <p className="text-xs text-muted-foreground">
                           Dia do mês para contabilizar o fechamento (ex: dia 01 ou dia 15)

@@ -18,8 +18,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePickerBR } from "@/components/ui/date-picker-br";
 import { 
   FileText, 
   Download, 
@@ -275,19 +275,19 @@ export function CommissionReportTab({ establishmentId }: CommissionReportTabProp
 
             <div className="space-y-2">
               <Label>Data Início</Label>
-              <Input
-                type="date"
+              <DatePickerBR
                 value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
+                onChange={setDateFrom}
+                className="w-full"
               />
             </div>
 
             <div className="space-y-2">
               <Label>Data Fim</Label>
-              <Input
-                type="date"
+              <DatePickerBR
                 value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
+                onChange={setDateTo}
+                className="w-full"
               />
             </div>
 
