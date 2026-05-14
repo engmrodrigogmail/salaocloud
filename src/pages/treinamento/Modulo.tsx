@@ -11,12 +11,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
+type Differential = string | { salaocloud?: string; competitor_a?: string; competitor_b?: string; [k: string]: any };
+type UseCase = string | { salon?: string; before?: string; after?: string; result?: string; roi?: string; [k: string]: any };
+
 interface ModuleContent {
   technical?: string;
   commercial?: string;
   arguments?: { small?: string[]; medium?: string[]; large?: string[] };
-  differentials?: string[];
-  use_cases?: string[];
+  differentials?: Differential[];
+  use_cases?: UseCase[];
   checklist?: string[];
   quiz?: QuizQuestion[];
 }
