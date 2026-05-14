@@ -168,6 +168,7 @@ export function NewAppointmentDialog({
         setBlocks((blkRes.data || []) as any);
         setClosures((clRes.data || []) as any);
         setAppointments((apRes.data || []) as any);
+        setProfServices((psRes.data || []) as any);
       } catch (e) {
         console.error("availability load error", e);
       } finally {
