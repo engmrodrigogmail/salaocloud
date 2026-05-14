@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useTrainingSandbox, resolveSandboxPath } from "@/hooks/useTrainingSandbox";
 
 type Differential = string | { salaocloud?: string; competitor_a?: string; competitor_b?: string; [k: string]: any };
 type UseCase = string | { salon?: string; before?: string; after?: string; result?: string; roi?: string; [k: string]: any };
@@ -45,6 +46,7 @@ export default function ModuloPage() {
   const moduleId = Number(id);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { slug: sandboxSlug } = useTrainingSandbox();
   const [module, setModule] = useState<Module | null>(null);
   const [allModules, setAllModules] = useState<Module[]>([]);
   const [checklist, setChecklist] = useState<boolean[]>([]);
@@ -194,8 +196,9 @@ export default function ModuloPage() {
   const prev = idx > 0 ? allModules[idx - 1] : null;
   const next = idx < allModules.length - 1 ? allModules[idx + 1] : null;
 
-  // Build live URL — opens in new tab; iframe of the same site is blocked
-  const liveUrl = module.iframe_path ? `${window.location.origin}${module.iframe_path}` : null;
+  // Build live URL pointing to the vendor's sandbox; opens in new tab
+  const resolvedPath = resolveSandboxPath(module.iframe_path, module.view, sandboxSlug);
+  const liveUrl = resolvedPath ? `${window.location.origin}${resolvedPath}` : null;
 
   return (
     <TrainingLayout>
