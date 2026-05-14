@@ -519,7 +519,7 @@ function UploadDialog({
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <Label htmlFor="sd" className="text-xs">Data</Label>
-                  <Input id="sd" type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} />
+                  <DatePickerBR value={scheduleDate} onChange={setScheduleDate} className="w-full" />
                 </div>
                 <div>
                   <Label htmlFor="st" className="text-xs">Hora</Label>
