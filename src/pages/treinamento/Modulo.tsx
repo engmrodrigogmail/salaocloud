@@ -11,12 +11,15 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
+type Differential = string | { salaocloud?: string; competitor_a?: string; competitor_b?: string; [k: string]: any };
+type UseCase = string | { salon?: string; before?: string; after?: string; result?: string; roi?: string; [k: string]: any };
+
 interface ModuleContent {
   technical?: string;
   commercial?: string;
   arguments?: { small?: string[]; medium?: string[]; large?: string[] };
-  differentials?: string[];
-  use_cases?: string[];
+  differentials?: Differential[];
+  use_cases?: UseCase[];
   checklist?: string[];
   quiz?: QuizQuestion[];
 }
@@ -172,15 +175,37 @@ export default function ModuloPage() {
           <Card className="p-4">
             <h2 className="font-semibold mb-2">Diferenciais</h2>
             <ul className="list-disc pl-5 text-sm space-y-1">
-              {c.differentials.map((d, i) => <li key={i}>{d}</li>)}
+              {c.differentials.map((d, i) => (
+                <li key={i}>
+                  {typeof d === "string" ? d : (
+                    <div className="space-y-0.5">
+                      {d.salaocloud && <div><strong>SalãoCloud:</strong> {d.salaocloud}</div>}
+                      {d.competitor_a && <div className="text-muted-foreground">Concorrente A: {d.competitor_a}</div>}
+                      {d.competitor_b && <div className="text-muted-foreground">Concorrente B: {d.competitor_b}</div>}
+                    </div>
+                  )}
+                </li>
+              ))}
             </ul>
           </Card>
         )}
         {c.use_cases && c.use_cases.length > 0 && (
           <Card className="p-4">
             <h2 className="font-semibold mb-2">Casos de uso</h2>
-            <ul className="list-disc pl-5 text-sm space-y-1">
-              {c.use_cases.map((u, i) => <li key={i}>{u}</li>)}
+            <ul className="space-y-2 text-sm">
+              {c.use_cases.map((u, i) => (
+                <li key={i} className="border-l-2 border-primary/40 pl-3">
+                  {typeof u === "string" ? u : (
+                    <div className="space-y-0.5">
+                      {u.salon && <div className="font-medium">{u.salon}</div>}
+                      {u.before && <div><span className="text-muted-foreground">Antes:</span> {u.before}</div>}
+                      {u.after && <div><span className="text-muted-foreground">Depois:</span> {u.after}</div>}
+                      {u.result && <div><span className="text-muted-foreground">Resultado:</span> {u.result}</div>}
+                      {u.roi && <div className="text-primary font-medium">ROI: {u.roi}</div>}
+                    </div>
+                  )}
+                </li>
+              ))}
             </ul>
           </Card>
         )}
