@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { DatePickerBR } from "@/components/ui/date-picker-br";
 import { ManagerPinDialog, type ManagerPinAuthorization } from "@/components/security/ManagerPinDialog";
 import { EntryFormDialog } from "@/components/finance/EntryFormDialog";
 import {
