@@ -215,9 +215,9 @@ function FinanceContent({
           </Select>
           {period === "custom" && (
             <div className="flex items-center gap-1">
-              <Input type="date" className="w-[140px]" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} />
+              <DatePickerBR value={customFrom} onChange={setCustomFrom} className="w-[160px]" />
               <span>–</span>
-              <Input type="date" className="w-[140px]" value={customTo} onChange={(e) => setCustomTo(e.target.value)} />
+              <DatePickerBR value={customTo} onChange={setCustomTo} className="w-[160px]" />
             </div>
           )}
         </div>
