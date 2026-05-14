@@ -36,6 +36,7 @@ export default function InternoComandas() {
   const [clients, setClients] = useState<Client[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
+  const [professionalServices, setProfessionalServices] = useState<Array<{ professional_id: string; service_id: string }>>([]);
   
   const [selectedTab, setSelectedTab] = useState<TabWithDetails | null>(null);
   const [newTabOpen, setNewTabOpen] = useState(false);
@@ -61,6 +62,7 @@ export default function InternoComandas() {
       fetchClients();
       fetchServices();
       fetchProfessionals();
+      fetchProfessionalServices();
     }
   }, [establishmentId]);
 
@@ -233,6 +235,22 @@ export default function InternoComandas() {
     setProfessionals(data || []);
   };
 
+  const fetchProfessionalServices = async () => {
+    if (!establishmentId) return;
+    // RLS already restricts to this establishment via professionals/services join
+    const { data: profs } = await supabase
+      .from("professionals")
+      .select("id")
+      .eq("establishment_id", establishmentId);
+    const ids = (profs || []).map((p: any) => p.id);
+    if (ids.length === 0) { setProfessionalServices([]); return; }
+    const { data } = await supabase
+      .from("professional_services")
+      .select("professional_id, service_id")
+      .in("professional_id", ids);
+    setProfessionalServices((data || []) as any);
+  };
+
   const handleCreateTab = async (data: { client_name: string; client_id?: string; professional_id?: string; service_id?: string; notes?: string }) => {
     const tab = await createTab(data);
     if (tab) { setNewTabOpen(false); setSelectedTab(tab as TabWithDetails); }
@@ -389,7 +407,7 @@ export default function InternoComandas() {
         )}
 
         <NewTabDialog open={newTabOpen} onOpenChange={setNewTabOpen} onSubmit={handleCreateTab} clients={clients} professionals={professionals} services={services} />
-        <AddItemDialog open={addItemOpen} onOpenChange={setAddItemOpen} onAddItem={handleAddItem} products={products} services={services} professionals={professionals} establishmentId={establishmentId || undefined} defaultProfessionalId={selectedTab?.professional_id || null} />
+        <AddItemDialog open={addItemOpen} onOpenChange={setAddItemOpen} onAddItem={handleAddItem} products={products} services={services} professionals={professionals} professionalServices={professionalServices} establishmentId={establishmentId || undefined} defaultProfessionalId={selectedTab?.professional_id || null} />
         <CheckoutDialog
           open={checkoutOpen}
           onOpenChange={setCheckoutOpen}
@@ -399,6 +417,7 @@ export default function InternoComandas() {
           onConfirm={handleCheckout}
           establishmentId={establishmentId || undefined}
           discountPinThreshold={discountPinThreshold}
+          professionalServices={professionalServices}
           onTabRefresh={async () => {
             if (!selectedTab) return;
             // Recalc total first so close_tab_atomic validates against fresh value
