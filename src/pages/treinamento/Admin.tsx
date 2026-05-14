@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { formatInTimeZone } from "@/lib/dateUtils";
+import { formatDateTime } from "@/lib/dateUtils";
 
 interface Vendor {
   id: string; user_id: string; full_name: string | null; phone: string | null;
@@ -164,7 +164,7 @@ export default function TrainingAdmin() {
                       <p className="font-medium">{v.full_name || "(sem nome)"}</p>
                       <p className="text-xs text-muted-foreground">
                         {v.phone ?? "—"} · {v.city ?? "—"}/{v.uf ?? "—"}
-                        {v.last_login_at ? ` · último acesso ${formatInTimeZone(v.last_login_at, "dd/MM HH:mm")}` : " · nunca acessou"}
+                        {v.last_login_at ? ` · último acesso ${formatDateTime(v.last_login_at, "dd/MM HH:mm")}` : " · nunca acessou"}
                       </p>
                     </div>
                     {v.must_change_password && <Badge variant="outline">primeiro acesso</Badge>}
@@ -199,7 +199,7 @@ export default function TrainingAdmin() {
                     <p className="text-xs text-muted-foreground font-mono">{c.code}</p>
                   </div>
                   <Badge variant="secondary">{PROFILE_LABEL[c.profile] ?? c.profile}</Badge>
-                  <span className="text-xs text-muted-foreground">{formatInTimeZone(c.issued_at, "dd/MM/yyyy HH:mm")}</span>
+                  <span className="text-xs text-muted-foreground">{formatDateTime(c.issued_at, "dd/MM/yyyy HH:mm")}</span>
                 </Card>
               );
             })}
@@ -227,9 +227,9 @@ export default function TrainingAdmin() {
             {detailVendor && (
               <div className="space-y-4">
                 <div className="text-xs text-muted-foreground">
-                  Cadastrado em {formatInTimeZone(detailVendor.created_at, "dd/MM/yyyy HH:mm")}
+                  Cadastrado em {formatDateTime(detailVendor.created_at, "dd/MM/yyyy HH:mm")}
                   {detailVendor.last_login_at
-                    ? ` · último acesso em ${formatInTimeZone(detailVendor.last_login_at, "dd/MM/yyyy HH:mm")}`
+                    ? ` · último acesso em ${formatDateTime(detailVendor.last_login_at, "dd/MM/yyyy HH:mm")}`
                     : " · nunca acessou"}
                 </div>
 
@@ -250,7 +250,7 @@ export default function TrainingAdmin() {
                         {cert ? (
                           <Badge className="bg-amber-500/15 text-amber-700 border-amber-500/30">
                             <Award className="h-3 w-3 mr-1" />
-                            {formatInTimeZone(cert.issued_at, "dd/MM/yyyy")}
+                            {formatDateTime(cert.issued_at, "dd/MM/yyyy")}
                           </Badge>
                         ) : (
                           <span className="text-xs text-muted-foreground">sem certificado</span>
@@ -266,7 +266,7 @@ export default function TrainingAdmin() {
                               <span className="truncate">{status} {m.title}</span>
                               {p?.completed_at && (
                                 <span className="text-muted-foreground shrink-0">
-                                  {formatInTimeZone(p.completed_at, "dd/MM HH:mm")}
+                                  {formatDateTime(p.completed_at, "dd/MM HH:mm")}
                                 </span>
                               )}
                             </div>
