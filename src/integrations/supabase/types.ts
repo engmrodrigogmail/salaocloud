@@ -4595,6 +4595,8 @@ export type Database = {
           locked_until: string | null
           must_change_password: boolean
           phone: string | null
+          sandbox_created_at: string | null
+          sandbox_establishment_id: string | null
           uf: string | null
           updated_at: string
           user_id: string
@@ -4610,6 +4612,8 @@ export type Database = {
           locked_until?: string | null
           must_change_password?: boolean
           phone?: string | null
+          sandbox_created_at?: string | null
+          sandbox_establishment_id?: string | null
           uf?: string | null
           updated_at?: string
           user_id: string
@@ -4625,11 +4629,35 @@ export type Database = {
           locked_until?: string | null
           must_change_password?: boolean
           phone?: string | null
+          sandbox_created_at?: string | null
+          sandbox_establishment_id?: string | null
           uf?: string | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "training_vendor_profiles_sandbox_establishment_id_fkey"
+            columns: ["sandbox_establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_vendor_profiles_sandbox_establishment_id_fkey"
+            columns: ["sandbox_establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "training_vendor_profiles_sandbox_establishment_id_fkey"
+            columns: ["sandbox_establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -4968,6 +4996,8 @@ export type Database = {
         }
         Returns: number
       }
+      provision_training_sandbox: { Args: never; Returns: Json }
+      purge_expired_training_sandboxes: { Args: never; Returns: number }
       purge_services_audit_log: { Args: never; Returns: undefined }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
@@ -4977,6 +5007,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      reset_training_sandbox: { Args: never; Returns: Json }
       seed_finance_categories: {
         Args: { _establishment_id: string }
         Returns: undefined
