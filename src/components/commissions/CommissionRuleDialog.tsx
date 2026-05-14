@@ -359,24 +359,24 @@ export function CommissionRuleDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="start_date">Data Início</Label>
-                  <Input
+                  <DatePickerBR
                     id="start_date"
-                    type="date"
                     value={formData.challenge_start_date}
-                    onChange={(e) =>
-                      setFormData({ ...formData, challenge_start_date: e.target.value })
+                    onChange={(v) =>
+                      setFormData({ ...formData, challenge_start_date: v })
                     }
+                    className="w-full"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="end_date">Data Fim</Label>
-                  <Input
+                  <DatePickerBR
                     id="end_date"
-                    type="date"
                     value={formData.challenge_end_date}
-                    onChange={(e) =>
-                      setFormData({ ...formData, challenge_end_date: e.target.value })
+                    onChange={(v) =>
+                      setFormData({ ...formData, challenge_end_date: v })
                     }
+                    className="w-full"
                   />
                 </div>
               </div>
