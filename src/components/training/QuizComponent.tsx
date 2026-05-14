@@ -4,7 +4,13 @@ import { Card } from "@/components/ui/card";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export interface QuizQuestion { q: string; a: string[]; correct: number; }
+export interface QuizQuestion {
+  q?: string;
+  a?: string[];
+  question?: string;
+  options?: string[];
+  correct: number;
+}
 
 interface Props {
   questions: QuizQuestion[];
@@ -12,11 +18,16 @@ interface Props {
 }
 
 export function QuizComponent({ questions, onPass }: Props) {
+  const normalizedQuestions = questions.map((question) => ({
+    prompt: question.q ?? question.question ?? "Pergunta",
+    answers: question.a ?? question.options ?? [],
+    correct: question.correct,
+  }));
   const [answers, setAnswers] = useState<(number | null)[]>(questions.map(() => null));
   const [submitted, setSubmitted] = useState(false);
 
   const correctCount = answers.reduce<number>(
-    (acc, a, i) => (a === questions[i].correct ? acc + 1 : acc), 0
+    (acc, a, i) => (a === normalizedQuestions[i].correct ? acc + 1 : acc), 0
   );
   const allAnswered = answers.every((a) => a !== null);
   const passed = submitted && correctCount === questions.length;
@@ -28,11 +39,11 @@ export function QuizComponent({ questions, onPass }: Props) {
 
   return (
     <div className="space-y-4">
-      {questions.map((q, qi) => (
+      {normalizedQuestions.map((q, qi) => (
         <Card key={qi} className="p-4">
-          <p className="font-medium mb-3">{qi + 1}. {q.q}</p>
+          <p className="font-medium mb-3">{qi + 1}. {q.prompt}</p>
           <div className="space-y-2">
-            {q.a.map((opt, oi) => {
+            {q.answers.map((opt, oi) => {
               const selected = answers[qi] === oi;
               const isCorrect = oi === q.correct;
               return (
