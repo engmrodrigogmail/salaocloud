@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, RotateCcw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { TrainingLayout } from "@/components/training/TrainingLayout";
@@ -8,6 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useTrainingSandbox } from "@/hooks/useTrainingSandbox";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function TrainingPerfil() {
   const { user } = useAuth();
@@ -15,6 +21,8 @@ export default function TrainingPerfil() {
   const [saving, setSaving] = useState(false);
   const [data, setData] = useState({ full_name: "", phone: "", cpf: "", city: "", uf: "" });
   const [pwd, setPwd] = useState("");
+  const { slug: sandboxSlug, loading: sandboxLoading, reset: resetSandbox } = useTrainingSandbox();
+  const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
     const load = async () => {
