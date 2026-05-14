@@ -711,10 +711,10 @@ export default function Agenda() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Data</Label>
-                    <Input
-                      type="date"
+                    <DatePickerBR
                       value={editDate}
-                      onChange={(e) => setEditDate(e.target.value)}
+                      onChange={setEditDate}
+                      className="w-full"
                     />
                   </div>
                   <div className="space-y-2">
