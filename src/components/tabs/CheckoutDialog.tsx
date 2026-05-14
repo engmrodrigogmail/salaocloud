@@ -8,7 +8,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Trash2, CreditCard, Check, AlertCircle, Tag, X, Percent, DollarSign, Pencil } from "lucide-react";
+import { Loader2, Plus, Trash2, CreditCard, Check, AlertCircle, Tag, X, Percent, DollarSign, Pencil, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import type { TabWithDetails, TabItem, PaymentMethod, TabPayment } from "@/types/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -40,6 +41,8 @@ interface CheckoutDialogProps {
   loading?: boolean;
   establishmentId?: string;
   discountPinThreshold?: number;
+  /** Matrix of professional×service pairs to detect inconsistent items */
+  professionalServices?: Array<{ professional_id: string; service_id: string }>;
   onTabRefresh?: () => Promise<void> | void;
 }
 
@@ -76,6 +79,7 @@ export function CheckoutDialog({
   loading = false,
   establishmentId,
   discountPinThreshold = 10,
+  professionalServices = [],
   onTabRefresh,
 }: CheckoutDialogProps) {
   const [payments, setPayments] = useState<PaymentEntry[]>([]);
@@ -395,7 +399,38 @@ export function CheckoutDialog({
 
         <div className="flex-1 overflow-y-auto overscroll-contain pr-2 -mr-2">
           <div className="space-y-4">
-            {/* Coupon Section */}
+            {/* Inconsistency warning: service items where the linked professional doesn't have the service registered */}
+            {(() => {
+              const inconsistent = items.filter(
+                (it) =>
+                  it.item_type === "service" &&
+                  it.service_id &&
+                  it.professional_id &&
+                  !professionalServices.some(
+                    (ps) =>
+                      ps.professional_id === it.professional_id &&
+                      ps.service_id === it.service_id,
+                  ),
+              );
+              if (inconsistent.length === 0) return null;
+              return (
+                <Alert className="border-amber-300 bg-amber-50">
+                  <AlertTriangle className="h-4 w-4 text-amber-700" />
+                  <AlertDescription className="text-xs text-amber-900">
+                    <p className="font-medium mb-1">
+                      Profissional sem este serviço cadastrado. Poderá ocorrer erros na comanda ou no cálculo das comissões.
+                    </p>
+                    <ul className="list-disc pl-4 space-y-0.5">
+                      {inconsistent.map((it) => (
+                        <li key={it.id}>{it.name}</li>
+                      ))}
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              );
+            })()}
+
+
             <Card>
               <CardContent className="pt-4">
                 <Label className="text-sm font-medium mb-2 block">Cupom de Desconto</Label>

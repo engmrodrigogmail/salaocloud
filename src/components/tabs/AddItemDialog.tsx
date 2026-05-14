@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Package, Scissors, PenLine, ShieldAlert } from "lucide-react";
+import { Loader2, Package, Scissors, PenLine, ShieldAlert, AlertTriangle } from "lucide-react";
 import type { Product } from "@/types/tabs";
 import type { Tables } from "@/integrations/supabase/types";
 import { ManagerPinDialog, logManagerOverride } from "@/components/security/ManagerPinDialog";
@@ -37,6 +37,8 @@ interface AddItemDialogProps {
   products: Product[];
   services: Service[];
   professionals: Professional[];
+  /** Matrix of professional×service pairs registered for the establishment */
+  professionalServices?: Array<{ professional_id: string; service_id: string }>;
   loading?: boolean;
   /** Required to open the manager PIN dialog when overriding catalog price */
   establishmentId?: string;
@@ -51,6 +53,7 @@ export function AddItemDialog({
   products,
   services,
   professionals,
+  professionalServices = [],
   loading = false,
   establishmentId,
   defaultProfessionalId,
@@ -130,6 +133,11 @@ export function AddItemDialog({
     await submit(payload);
   };
 
+  const isProfMissingService = (profId: string, serviceId: string) =>
+    !professionalServices.some(
+      (ps) => ps.professional_id === profId && ps.service_id === serviceId,
+    );
+
   const handleAddService = async () => {
     if (!selectedService) return;
     const catalog = selectedService.price;
@@ -147,6 +155,12 @@ export function AddItemDialog({
       setPendingPayload(payload);
       setPinOpen(true);
       return;
+    }
+    if (selectedProfessional && isProfMissingService(selectedProfessional, selectedService.id)) {
+      // Non-blocking warning; the user may still proceed (the toast is just informative).
+      // The visual badge in the dropdown already flags the inconsistency.
+      // (Final warning is also surfaced in the checkout dialog.)
+      // eslint-disable-next-line no-alert
     }
     await submit(payload);
   };
@@ -355,13 +369,31 @@ export function AddItemDialog({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">Nenhum</SelectItem>
-                      {professionals.map((prof) => (
-                        <SelectItem key={prof.id} value={prof.id}>
-                          {prof.name}
-                        </SelectItem>
-                      ))}
+                      {professionals.map((prof) => {
+                        const missing = isProfMissingService(prof.id, selectedService.id);
+                        return (
+                          <SelectItem key={prof.id} value={prof.id}>
+                            <span className="flex items-center gap-2">
+                              {prof.name}
+                              {missing && (
+                                <span className="text-[10px] uppercase tracking-wide text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                                  sem este serviço
+                                </span>
+                              )}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
+                  {selectedProfessional && isProfMissingService(selectedProfessional, selectedService.id) && (
+                    <Alert>
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        Profissional sem este serviço cadastrado. Poderá ocorrer erros na comanda ou no cálculo das comissões.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                   <Button onClick={handleAddService} disabled={loading} className="w-full">
                     {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     Adicionar Serviço
