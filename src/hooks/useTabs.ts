@@ -234,13 +234,24 @@ export function useTabs(establishmentId: string | null) {
       }
 
       // 2) Calculate commissions on the frontend (uses granular flags + scoped pro-rata)
-      let commissionsPayload: Array<{ professional_id: string; tab_item_id: string; amount: number; status: string }> = [];
+      let commissionsPayload: Array<{
+        professional_id: string;
+        tab_item_id: string;
+        commission_rule_id: string | null;
+        reference_value: number;
+        commission_amount: number;
+        description: string;
+        status: string;
+      }> = [];
       if (items.length > 0) {
         const calculated = await calculateCommissionsForTab(tabId, items);
         commissionsPayload = calculated.map(c => ({
           professional_id: c.professional_id,
           tab_item_id: c.tab_item_id,
-          amount: c.commission_amount,
+          commission_rule_id: c.commission_rule_id,
+          reference_value: c.reference_value,
+          commission_amount: c.commission_amount,
+          description: c.description,
           status: "pending",
         }));
       }
