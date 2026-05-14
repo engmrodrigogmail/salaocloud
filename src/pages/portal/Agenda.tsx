@@ -804,7 +804,7 @@ export default function PortalAgenda() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label>Data</Label>
-                      <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} />
+                      <DatePickerBR value={editDate} onChange={setEditDate} className="w-full" />
                     </div>
                     <div>
                       <Label>Horário</Label>
