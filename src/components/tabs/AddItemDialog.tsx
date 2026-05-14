@@ -369,13 +369,31 @@ export function AddItemDialog({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">Nenhum</SelectItem>
-                      {professionals.map((prof) => (
-                        <SelectItem key={prof.id} value={prof.id}>
-                          {prof.name}
-                        </SelectItem>
-                      ))}
+                      {professionals.map((prof) => {
+                        const missing = isProfMissingService(prof.id, selectedService.id);
+                        return (
+                          <SelectItem key={prof.id} value={prof.id}>
+                            <span className="flex items-center gap-2">
+                              {prof.name}
+                              {missing && (
+                                <span className="text-[10px] uppercase tracking-wide text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                                  sem este serviço
+                                </span>
+                              )}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
+                  {selectedProfessional && isProfMissingService(selectedProfessional, selectedService.id) && (
+                    <Alert>
+                      <AlertTriangle className="h-4 w-4" />
+                      <AlertDescription className="text-xs">
+                        Profissional sem este serviço cadastrado. Poderá ocorrer erros na comanda ou no cálculo das comissões.
+                      </AlertDescription>
+                    </Alert>
+                  )}
                   <Button onClick={handleAddService} disabled={loading} className="w-full">
                     {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                     Adicionar Serviço
