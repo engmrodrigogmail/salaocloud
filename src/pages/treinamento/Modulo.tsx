@@ -140,7 +140,7 @@ export default function ModuloPage() {
         setLoading(false);
       }
     };
-    if (user && moduleId) load();
+    if (user) load();
     return () => { cancelled = true; };
   }, [user, moduleId]);
 
