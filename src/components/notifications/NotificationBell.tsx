@@ -53,7 +53,13 @@ export function NotificationBell({
     if (push.permission !== "granted" && sessionStorage.getItem(sessionKey)) return;
     autoTriedRef.current = true;
     sessionStorage.setItem(sessionKey, "1");
-    push.subscribe({ scope: pushScope, client_id: pushClientId }).catch(() => {});
+    push
+      .subscribe({
+        scope: pushScope,
+        client_id: pushClientId,
+        establishment_id: pushScope === "establishment" ? recipientId : undefined,
+      })
+      .catch(() => {});
   }, [push.supported, push.isLoading, push.permission, pushScope, pushClientId, recipientId, push]);
 
   const handleClick = async (id: string, link: string | null, isRead: boolean) => {
@@ -63,7 +69,11 @@ export function NotificationBell({
   };
 
   const handleEnablePush = async () => {
-    const ok = await push.subscribe({ scope: pushScope, client_id: pushClientId });
+    const ok = await push.subscribe({
+      scope: pushScope,
+      client_id: pushClientId,
+      establishment_id: pushScope === "establishment" ? recipientId ?? undefined : undefined,
+    });
     if (ok) toast.success("Notificações ativadas neste dispositivo!", { position: "top-center" });
     else toast.error("Não foi possível ativar as notificações.", { position: "top-center" });
   };

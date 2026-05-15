@@ -43,6 +43,7 @@ interface InternoLayoutProps {
 export function InternoLayout({ children }: InternoLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [establishmentName, setEstablishmentName] = useState("");
+  const [establishmentId, setEstablishmentId] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [professionalId, setProfessionalId] = useState<string | null>(null);
   const [isManager, setIsManager] = useState(false);
@@ -67,6 +68,7 @@ export function InternoLayout({ children }: InternoLayoutProps) {
     
     if (data) {
       setEstablishmentName(data.name);
+      setEstablishmentId(data.id);
       setIsOwner(data.owner_id === user?.id);
 
       // Buscar professional vinculado a este user neste estabelecimento
@@ -167,13 +169,19 @@ export function InternoLayout({ children }: InternoLayoutProps) {
             </Tooltip>
           </TooltipProvider>
           
-          {professionalId && (
+          {isOwner && establishmentId ? (
+            <NotificationBell
+              recipientType="establishment"
+              recipientId={establishmentId}
+              pushScope="establishment"
+            />
+          ) : professionalId ? (
             <NotificationBell
               recipientType="professional"
               recipientId={professionalId}
               pushScope="professional"
             />
-          )}
+          ) : null}
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

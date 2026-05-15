@@ -98,15 +98,20 @@ Deno.serve(async (req) => {
     }
 
     if (scope === "establishment") {
-      const { data: estab } = await admin
+      let estabQuery = admin
         .from("establishments")
         .select("id")
-        .eq("owner_id", userId)
-        .maybeSingle();
+        .eq("owner_id", userId);
+
+      if (body.establishment_id) {
+        estabQuery = estabQuery.eq("id", body.establishment_id);
+      }
+
+      const { data: estab } = await estabQuery.maybeSingle();
       if (!estab) return jsonResponse({ error: "no_establishment" }, 403);
       const { error } = await admin.from("establishment_push_subscriptions").upsert(
         { ...baseRow, user_id: userId, establishment_id: estab.id },
-        { onConflict: "endpoint" },
+        { onConflict: "establishment_id,user_id,endpoint" },
       );
       if (error) return jsonResponse({ error: error.message }, 500);
       return jsonResponse({ ok: true });

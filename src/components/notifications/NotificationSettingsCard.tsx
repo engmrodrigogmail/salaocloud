@@ -101,7 +101,7 @@ export function NotificationSettingsCard({ establishmentId }: { establishmentId:
             ) : (
               <Button
                 size="sm"
-                onClick={() => push.subscribe({ scope: "establishment" })}
+                onClick={() => push.subscribe({ scope: "establishment", establishment_id: establishmentId })}
                 disabled={push.isLoading || push.permission === "denied"}
               >
                 Ativar
