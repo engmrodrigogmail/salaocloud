@@ -4877,6 +4877,7 @@ export type Database = {
           marked_count: number
         }[]
       }
+      clear_must_change_password: { Args: never; Returns: Json }
       close_tab_atomic: {
         Args: {
           _commissions?: Json
