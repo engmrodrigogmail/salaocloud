@@ -137,6 +137,22 @@ Deno.serve(async (req) => {
       // 'all_establishments' = no filter
       const { data } = await q;
       recipients = (data ?? []).map((r) => ({ type: "establishment" as const, id: r.id }));
+
+      // Também adiciona profissionais GERENTES como destinatários in-app,
+      // para que vejam a notificação no sino do /interno.
+      // Profissionais comuns/recepcionistas não recebem (nem in-app nem push).
+      const estIds = recipients.map((r) => r.id);
+      if (estIds.length) {
+        const { data: managers } = await admin
+          .from("professionals")
+          .select("id")
+          .in("establishment_id", estIds)
+          .eq("is_manager", true)
+          .eq("is_active", true);
+        for (const m of managers ?? []) {
+          recipients.push({ type: "professional" as const, id: m.id });
+        }
+      }
     }
 
     if (recipients.length === 0) {
