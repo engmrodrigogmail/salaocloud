@@ -6,6 +6,7 @@ export type PushScope = "admin" | "establishment" | "professional" | "client";
 interface SubscribeArgs {
   scope: PushScope;
   client_id?: string; // required when scope === 'client'
+  establishment_id?: string; // required to disambiguate owners with multiple salons
 }
 
 interface UsePushNotificationsResult {
@@ -74,7 +75,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
   }, [refresh]);
 
   const subscribe = useCallback<UsePushNotificationsResult["subscribe"]>(
-    async ({ scope, client_id }) => {
+    async ({ scope, client_id, establishment_id }) => {
       if (!PUSH_SUPPORTED) {
         setError("not_supported");
         return false;
@@ -130,6 +131,9 @@ export function usePushNotifications(): UsePushNotificationsResult {
             return false;
           }
           payload.client_id = client_id;
+        }
+        if (scope === "establishment" && establishment_id) {
+          payload.establishment_id = establishment_id;
         }
 
         const { error: invokeErr } = await supabase.functions.invoke("push-subscribe", {
