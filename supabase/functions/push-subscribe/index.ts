@@ -98,23 +98,30 @@ Deno.serve(async (req) => {
     }
 
     if (scope === "establishment") {
-      let estabQuery = admin
+      const { data: ownedEstablishments, error: ownedErr } = await admin
         .from("establishments")
         .select("id")
         .eq("owner_id", userId);
 
-      if (body.establishment_id) {
-        estabQuery = estabQuery.eq("id", body.establishment_id);
+      if (ownedErr) return jsonResponse({ error: ownedErr.message }, 500);
+      if (!ownedEstablishments?.length) return jsonResponse({ error: "no_establishment" }, 403);
+
+      if (body.establishment_id && !ownedEstablishments.some((e) => e.id === body.establishment_id)) {
+        return jsonResponse({ error: "forbidden" }, 403);
       }
 
-      const { data: estab } = await estabQuery.maybeSingle();
-      if (!estab) return jsonResponse({ error: "no_establishment" }, 403);
+      const rows = ownedEstablishments.map((estab) => ({
+        ...baseRow,
+        user_id: userId,
+        establishment_id: estab.id,
+      }));
+
       const { error } = await admin.from("establishment_push_subscriptions").upsert(
-        { ...baseRow, user_id: userId, establishment_id: estab.id },
+        rows,
         { onConflict: "establishment_id,user_id,endpoint" },
       );
       if (error) return jsonResponse({ error: error.message }, 500);
-      return jsonResponse({ ok: true });
+      return jsonResponse({ ok: true, synced_establishments: rows.length });
     }
 
     if (scope === "professional") {
