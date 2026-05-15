@@ -48,11 +48,9 @@ export function NotificationBell({
     if (!push.supported || push.isLoading) return;
     if (push.permission === "denied") return;
     if (autoTriedRef.current) return;
-    const sessionKey = `push-auto-${pushScope}-${recipientId}`;
-    // Se permissão ainda é "default" e já tentamos nesta sessão, não insiste
-    if (push.permission !== "granted" && sessionStorage.getItem(sessionKey)) return;
+    // Sempre tenta inscrever quando permission é "default" ou "granted".
+    // autoTriedRef evita múltiplas tentativas simultâneas no mesmo mount.
     autoTriedRef.current = true;
-    sessionStorage.setItem(sessionKey, "1");
     push
       .subscribe({
         scope: pushScope,
