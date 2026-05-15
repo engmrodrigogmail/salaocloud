@@ -53,6 +53,12 @@ export function NotificationBell({
     push.subscribe({ scope: pushScope, client_id: pushClientId }).catch(() => {});
   }, [push.supported, push.isSubscribed, push.isLoading, push.permission, pushScope, pushClientId, recipientId, push]);
 
+  const handleClick = async (id: string, link: string | null, isRead: boolean) => {
+    if (!isRead) await markRead([id]);
+    setOpen(false);
+    if (link) navigate(link);
+  };
+
   const handleEnablePush = async () => {
     const ok = await push.subscribe({ scope: pushScope, client_id: pushClientId });
     if (ok) toast.success("Notificações ativadas neste dispositivo!", { position: "top-center" });
