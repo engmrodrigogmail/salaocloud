@@ -64,10 +64,7 @@ export function ChangePasswordGate({ children }: ChangePasswordGateProps) {
       const { error: pwdErr } = await supabase.auth.updateUser({ password: newPassword });
       if (pwdErr) throw pwdErr;
 
-      const { error: flagErr } = await supabase
-        .from("professionals")
-        .update({ must_change_password: false } as never)
-        .eq("user_id", user!.id);
+      const { error: flagErr } = await supabase.rpc("clear_must_change_password" as never);
       if (flagErr) throw flagErr;
 
       toast.success("Senha atualizada com sucesso!");
