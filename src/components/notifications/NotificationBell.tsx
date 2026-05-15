@@ -39,19 +39,22 @@ export function NotificationBell({
   const push = usePushNotifications();
   const autoTriedRef = useRef(false);
 
-  // Auto-inscrição: se o navegador já concedeu permissão, registra silenciosamente.
-  // Se ainda for "default", tenta uma vez por sessão (browsers modernos exibem o prompt nativo).
+  // Auto-inscrição + ressincronização silenciosa com o backend.
+  // Mesmo quando o navegador já tem subscription (isSubscribed=true), reenviamos
+  // ao backend uma vez por sessão para garantir que a linha exista no banco
+  // (cenários: limpeza do banco, troca de VAPID, falha anterior do upsert).
   useEffect(() => {
     if (!recipientId) return;
-    if (!push.supported || push.isSubscribed || push.isLoading) return;
+    if (!push.supported || push.isLoading) return;
     if (push.permission === "denied") return;
     if (autoTriedRef.current) return;
     const sessionKey = `push-auto-${pushScope}-${recipientId}`;
+    // Se permissão ainda é "default" e já tentamos nesta sessão, não insiste
     if (push.permission !== "granted" && sessionStorage.getItem(sessionKey)) return;
     autoTriedRef.current = true;
     sessionStorage.setItem(sessionKey, "1");
     push.subscribe({ scope: pushScope, client_id: pushClientId }).catch(() => {});
-  }, [push.supported, push.isSubscribed, push.isLoading, push.permission, pushScope, pushClientId, recipientId, push]);
+  }, [push.supported, push.isLoading, push.permission, pushScope, pushClientId, recipientId, push]);
 
   const handleClick = async (id: string, link: string | null, isRead: boolean) => {
     if (!isRead) await markRead([id]);
