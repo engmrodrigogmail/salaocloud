@@ -37,12 +37,21 @@ export function NotificationBell({
     recipientId,
   });
   const push = usePushNotifications();
+  const autoTriedRef = useRef(false);
 
-  const handleClick = async (id: string, link: string | null, isRead: boolean) => {
-    if (!isRead) await markRead([id]);
-    setOpen(false);
-    if (link) navigate(link);
-  };
+  // Auto-inscrição: se o navegador já concedeu permissão, registra silenciosamente.
+  // Se ainda for "default", tenta uma vez por sessão (browsers modernos exibem o prompt nativo).
+  useEffect(() => {
+    if (!recipientId) return;
+    if (!push.supported || push.isSubscribed || push.isLoading) return;
+    if (push.permission === "denied") return;
+    if (autoTriedRef.current) return;
+    const sessionKey = `push-auto-${pushScope}-${recipientId}`;
+    if (push.permission !== "granted" && sessionStorage.getItem(sessionKey)) return;
+    autoTriedRef.current = true;
+    sessionStorage.setItem(sessionKey, "1");
+    push.subscribe({ scope: pushScope, client_id: pushClientId }).catch(() => {});
+  }, [push.supported, push.isSubscribed, push.isLoading, push.permission, pushScope, pushClientId, recipientId, push]);
 
   const handleEnablePush = async () => {
     const ok = await push.subscribe({ scope: pushScope, client_id: pushClientId });
