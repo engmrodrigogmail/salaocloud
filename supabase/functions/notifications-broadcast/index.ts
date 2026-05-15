@@ -170,38 +170,75 @@ Deno.serve(async (req) => {
     let sent = 0;
     let failed = 0;
     let subscriptions = 0;
+
+    type PushTarget = { id: string; endpoint: string; p256dh: string; auth: string; table: string };
+    const targets: PushTarget[] = [];
+
     for (const grp of ["client", "professional", "establishment"] as const) {
       const idsForGrp = recipients.filter((r) => r.type === grp).map((r) => r.id);
       if (!idsForGrp.length) continue;
       const { data: subs } = await admin
         .from(tableMap[grp].table)
-        .select("id, endpoint, p256dh, auth, " + tableMap[grp].col)
+        .select("id, endpoint, p256dh, auth")
         .in(tableMap[grp].col, idsForGrp)
         .eq("is_active", true);
-      if (!subs?.length) continue;
-      subscriptions += subs.length;
-      const goneIds: string[] = [];
-      for (const sub of subs) {
-        const payload: PushPayload = {
-          title: input.title,
-          body: input.body,
-          url: input.link ?? undefined,
-          tag: input.category,
-          data: { category: input.category },
-        };
-        const result = await sendWebPush(
-          { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
-          payload,
-        );
-        if (result.ok) sent++;
-        else {
-          failed++;
-          if (result.gone) goneIds.push(sub.id);
+      for (const s of subs ?? []) {
+        targets.push({ ...s, table: tableMap[grp].table });
+      }
+    }
+
+    // Para super admin enviando a estabelecimentos: também despacha push para
+    // dispositivos de profissionais GERENTES desses salões (além dos donos).
+    if (sender_type === "admin") {
+      const estIds = recipients.filter((r) => r.type === "establishment").map((r) => r.id);
+      if (estIds.length) {
+        const { data: managerSubs } = await admin
+          .from("professional_push_subscriptions")
+          .select("id, endpoint, p256dh, auth, professional_id, professionals!inner(establishment_id, is_manager, is_active)")
+          .eq("is_active", true)
+          .eq("professionals.is_manager", true)
+          .eq("professionals.is_active", true)
+          .in("professionals.establishment_id", estIds);
+        for (const s of managerSubs ?? []) {
+          targets.push({
+            id: s.id,
+            endpoint: s.endpoint,
+            p256dh: s.p256dh,
+            auth: s.auth,
+            table: "professional_push_subscriptions",
+          });
         }
       }
-      if (goneIds.length) {
-        await admin.from(tableMap[grp].table).update({ is_active: false }).in("id", goneIds);
+    }
+
+    // Deduplica por endpoint (caso um gerente também seja dono)
+    const seen = new Set<string>();
+    const unique = targets.filter((t) => (seen.has(t.endpoint) ? false : (seen.add(t.endpoint), true)));
+    subscriptions = unique.length;
+
+    const goneByTable: Record<string, string[]> = {};
+    for (const sub of unique) {
+      const payload: PushPayload = {
+        title: input.title,
+        body: input.body,
+        url: input.link ?? undefined,
+        tag: input.category,
+        data: { category: input.category },
+      };
+      const result = await sendWebPush(
+        { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
+        payload,
+      );
+      if (result.ok) sent++;
+      else {
+        failed++;
+        if (result.gone) {
+          (goneByTable[sub.table] ??= []).push(sub.id);
+        }
       }
+    }
+    for (const [tbl, ids] of Object.entries(goneByTable)) {
+      if (ids.length) await admin.from(tbl).update({ is_active: false }).in("id", ids);
     }
 
     return json({
