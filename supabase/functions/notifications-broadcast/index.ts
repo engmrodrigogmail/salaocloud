@@ -203,29 +203,8 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Para super admin enviando a estabelecimentos: também despacha push para
-    // dispositivos de profissionais GERENTES desses salões (além dos donos).
-    if (sender_type === "admin") {
-      const estIds = recipients.filter((r) => r.type === "establishment").map((r) => r.id);
-      if (estIds.length) {
-        const { data: managerSubs } = await admin
-          .from("professional_push_subscriptions")
-          .select("id, endpoint, p256dh, auth, professional_id, professionals!inner(establishment_id, is_manager, is_active)")
-          .eq("is_active", true)
-          .eq("professionals.is_manager", true)
-          .eq("professionals.is_active", true)
-          .in("professionals.establishment_id", estIds);
-        for (const s of managerSubs ?? []) {
-          targets.push({
-            id: s.id,
-            endpoint: s.endpoint,
-            p256dh: s.p256dh,
-            auth: s.auth,
-            table: "professional_push_subscriptions",
-          });
-        }
-      }
-    }
+    // (Gerentes já entram como recipients 'professional' acima quando o admin
+    // envia para estabelecimentos, então o loop genérico já busca seus pushes.)
 
     // Deduplica por endpoint (caso um gerente também seja dono)
     const seen = new Set<string>();
