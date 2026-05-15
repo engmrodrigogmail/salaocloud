@@ -125,19 +125,27 @@ Deno.serve(async (req) => {
     }
 
     if (scope === "professional") {
-      const { data: prof } = await admin
+      const { data: profs, error: profErr } = await admin
         .from("professionals")
         .select("id, establishment_id")
         .eq("user_id", userId)
-        .eq("is_active", true)
-        .maybeSingle();
-      if (!prof) return jsonResponse({ error: "no_professional" }, 403);
+        .eq("is_active", true);
+      if (profErr) return jsonResponse({ error: profErr.message }, 500);
+      if (!profs?.length) return jsonResponse({ error: "no_professional" }, 403);
+
+      const rows = profs.map((p) => ({
+        ...baseRow,
+        user_id: userId,
+        professional_id: p.id,
+        establishment_id: p.establishment_id,
+      }));
+
       const { error } = await admin.from("professional_push_subscriptions").upsert(
-        { ...baseRow, user_id: userId, professional_id: prof.id, establishment_id: prof.establishment_id },
-        { onConflict: "endpoint" },
+        rows,
+        { onConflict: "professional_id,endpoint" },
       );
       if (error) return jsonResponse({ error: error.message }, 500);
-      return jsonResponse({ ok: true });
+      return jsonResponse({ ok: true, synced_professionals: rows.length });
     }
 
     return jsonResponse({ error: "invalid_scope" }, 400);
