@@ -40,35 +40,81 @@ self.addEventListener('push', (event) => {
     if (event.data) payload.body = event.data.text();
   }
 
+  const category = (payload.data && payload.data.category) || payload.tag || '';
+  // Categorias críticas pedem interação explícita do usuário
+  const isCritical = [
+    'new_appointment',
+    'cancelled_appointment',
+    'appointment_confirmation',
+    'appointment_reminder',
+    'review_request',
+  ].includes(category);
+
   const options = {
     body: payload.body,
     icon: '/logo-192.png',
     badge: '/logo-192.png',
+    image: payload.image,
     data: { url: payload.url || '/', ...payload.data },
-    tag: payload.tag,
-    requireInteraction: false,
+    tag: payload.tag || category || undefined,
+    renotify: !!(payload.tag || category),
+    requireInteraction: isCritical,
+    vibrate: isCritical ? [200, 100, 200, 100, 200] : [120, 60, 120],
+    timestamp: Date.now(),
   };
 
-  event.waitUntil(self.registration.showNotification(payload.title, options));
+  event.waitUntil(
+    self.registration.showNotification(payload.title || 'Salão Cloud', options)
+  );
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = (event.notification.data && event.notification.data.url) || '/';
+  const absoluteUrl = new URL(targetUrl, self.location.origin).href;
 
-  event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      // Tenta focar uma janela aberta no mesmo domínio
-      for (const client of clients) {
-        try {
-          const url = new URL(client.url);
-          if (url.origin === self.location.origin && 'focus' in client) {
-            client.navigate(targetUrl);
-            return client.focus();
+  event.waitUntil((async () => {
+    const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    // Prioriza janela já no mesmo destino
+    for (const client of clientsList) {
+      try {
+        if (client.url === absoluteUrl && 'focus' in client) return client.focus();
+      } catch {}
+    }
+    // Senão, navega a primeira janela do mesmo domínio
+    for (const client of clientsList) {
+      try {
+        const url = new URL(client.url);
+        if (url.origin === self.location.origin && 'focus' in client) {
+          await client.focus();
+          if ('navigate' in client) {
+            try { await client.navigate(absoluteUrl); } catch {}
           }
-        } catch {}
+          return;
+        }
+      } catch {}
+    }
+    if (self.clients.openWindow) return self.clients.openWindow(absoluteUrl);
+  })());
+});
+
+self.addEventListener('pushsubscriptionchange', (event) => {
+  // Reinscreve automaticamente quando o navegador rotaciona o endpoint
+  event.waitUntil((async () => {
+    try {
+      const oldEndpoint = event.oldSubscription?.endpoint;
+      const appServerKey = event.oldSubscription?.options?.applicationServerKey;
+      if (!appServerKey) return;
+      const newSub = await self.registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: appServerKey,
+      });
+      const clientsList = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      for (const client of clientsList) {
+        client.postMessage({ type: 'PUSH_SUBSCRIPTION_CHANGED', oldEndpoint, newEndpoint: newSub.endpoint });
       }
-      if (self.clients.openWindow) return self.clients.openWindow(targetUrl);
-    })
-  );
+    } catch (e) {
+      // best-effort
+    }
+  })());
 });
