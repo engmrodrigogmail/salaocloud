@@ -112,6 +112,16 @@ export default function PortalSettings() {
       if (error) throw error;
 
       setEstablishment(data);
+      setAboutForm({
+        name: data.name ?? "",
+        phone: data.phone ?? "",
+        email: data.email ?? "",
+        description: data.description ?? "",
+        address: data.address ?? "",
+        city: data.city ?? "",
+        state: data.state ?? "",
+        zip_code: data.zip_code ?? "",
+      });
       
       // Parse working hours
       if (data.working_hours) {
