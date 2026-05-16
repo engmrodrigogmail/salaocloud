@@ -346,7 +346,11 @@ export default function InternoComandas() {
               </Button>
             </div>
 
-            <Tabs value={activeView} onValueChange={(v) => { setActiveView(v as "open" | "history"); fetchTabs(v === "open" ? "open" : "history"); }}>
+            <Tabs value={activeView} onValueChange={(v) => {
+              const next = v as "open" | "history" | "deleted";
+              setActiveView(next);
+              fetchTabs(next === "open" ? "open" : next === "history" ? "history" : "deleted");
+            }}>
               <TabsList>
                 <TabsTrigger value="open" className="flex items-center gap-2">
                   <Receipt className="h-4 w-4" />
@@ -356,6 +360,12 @@ export default function InternoComandas() {
                   <History className="h-4 w-4" />
                   Histórico
                 </TabsTrigger>
+                {userRole === "owner" && (
+                  <TabsTrigger value="deleted" className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    Excluídas
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               <TabsContent value="open" className="space-y-3 mt-4">
@@ -383,6 +393,21 @@ export default function InternoComandas() {
                   ))
                 )}
               </TabsContent>
+
+              {userRole === "owner" && (
+                <TabsContent value="deleted" className="space-y-3 mt-4">
+                  {tabs.length === 0 ? (
+                    <Card><CardContent className="py-12 text-center text-muted-foreground">
+                      <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>Nenhuma comanda excluída</p>
+                    </CardContent></Card>
+                  ) : (
+                    tabs.map(tab => (
+                      <TabListCard key={tab.id} tab={tab} onClick={() => setSelectedTab(tab)} />
+                    ))
+                  )}
+                </TabsContent>
+              )}
             </Tabs>
 
             {paymentMethods.length === 0 && (
@@ -400,6 +425,7 @@ export default function InternoComandas() {
             items={items}
             establishmentId={establishmentId || ""}
             discountPinThreshold={discountPinThreshold}
+            userRole={userRole}
             onAddItem={() => setAddItemOpen(true)}
             onRemoveItem={handleRemoveItem}
             onUpdateQuantity={handleUpdateQuantity}
@@ -408,6 +434,7 @@ export default function InternoComandas() {
             onCancel={handleCancelTab}
             onUndoOpening={handleUndoOpening}
             onRecalculate={async () => { await recalculateTotal(selectedTab.id); }}
+            onTabChanged={async () => { await fetchTabs(activeView === "deleted" ? "deleted" : activeView === "history" ? "history" : "open"); }}
             onDiscountChanged={async () => {
               const { data } = await supabase.from("tabs").select("*").eq("id", selectedTab.id).single();
               if (data) setSelectedTab({ ...selectedTab, ...data, status: data.status as TabWithDetails['status'] });
