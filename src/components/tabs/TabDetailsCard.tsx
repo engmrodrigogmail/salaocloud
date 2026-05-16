@@ -68,6 +68,7 @@ export function TabDetailsCard({
   items,
   establishmentId,
   discountPinThreshold,
+  userRole = "professional",
   onAddItem,
   onRemoveItem,
   onUpdateQuantity,
@@ -77,6 +78,7 @@ export function TabDetailsCard({
   onUndoOpening,
   onRecalculate,
   onDiscountChanged,
+  onTabChanged,
   appointmentSuggestions,
   dismissedAppointmentSuggestions,
   onConfirmAppointmentService,
@@ -87,6 +89,12 @@ export function TabDetailsCard({
   const [confirmUndoOpen, setConfirmUndoOpen] = useState(false);
   const [discountOpen, setDiscountOpen] = useState(false);
   const [salonReviewOpen, setSalonReviewOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [recoverOpen, setRecoverOpen] = useState(false);
+
+  const canDelete = userRole === "owner" || userRole === "manager";
+  const canRecover = userRole === "owner" && (tab as any).is_deleted === true;
+  const isDeleted = (tab as any).is_deleted === true;
 
   // Eligibility for "Desfazer Abertura": tab created < 5 min ago AND no items.
   const ageMs = Date.now() - new Date(tab.opened_at).getTime();
