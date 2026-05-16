@@ -52,6 +52,8 @@ export default function PortalDashboard() {
     periodRevenue: 0,
     aiConversations: 0,
     aiMessagesThisMonth: 0,
+    commissionsPending: 0,
+    commissionsPaid: 0,
   });
 
   useEffect(() => {
