@@ -68,6 +68,15 @@ Deno.serve(async (req) => {
     });
     if (updErr) return json({ error: updErr.message || "update_failed" }, 500);
 
+    // Mantém o email exibido no cadastro do salão igual ao email real de login do dono.
+    // Isso evita o reset funcionar, mas o usuário tentar entrar com outro email cadastral.
+    if (updated.user?.email) {
+      await admin
+        .from("establishments")
+        .update({ email: updated.user.email, updated_at: new Date().toISOString() })
+        .eq("id", establishment_id);
+    }
+
     return json({
       success: true,
       establishment: est.name,
