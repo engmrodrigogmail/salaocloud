@@ -175,27 +175,16 @@ export function CommissionTrackingTab({ establishmentId }: CommissionTrackingTab
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Pendentes
+              Acerto Pendente
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-orange-500">{formatCurrency(stats.pending)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              Aprovadas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-blue-500">{formatCurrency(stats.approved)}</p>
           </CardContent>
         </Card>
         <Card>
