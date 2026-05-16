@@ -131,11 +131,10 @@ export default function InternoComissoes() {
   };
 
   const totals = useMemo(() => {
-    const acc = { pending: 0, approved: 0, paid: 0 };
+    const acc = { pending: 0, paid: 0 };
     for (const c of commissions) {
       const v = Number(c.commission_amount) || 0;
-      if (c.status === "pending") acc.pending += v;
-      else if (c.status === "approved") acc.approved += v;
+      if (c.status === "pending" || c.status === "approved") acc.pending += v;
       else if (c.status === "paid") acc.paid += v;
     }
     return acc;
