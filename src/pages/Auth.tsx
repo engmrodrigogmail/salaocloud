@@ -123,6 +123,25 @@ export default function Auth() {
     await handleLogin(parsed.data);
   };
 
+  const handleForgotPassword = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const email = forgotEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ variant: "destructive", title: "Email inválido", description: "Informe um email válido." });
+      return;
+    }
+    setForgotSending(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/redefinir-senha`,
+    });
+    setForgotSending(false);
+    if (error) {
+      toast({ variant: "destructive", title: "Erro", description: error.message });
+      return;
+    }
+    setForgotSent(true);
+  };
+
   const handleSignup = async (data: SignupFormData) => {
     if (SIGNUPS_DISABLED) {
       toast({
