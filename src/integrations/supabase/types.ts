@@ -2600,10 +2600,11 @@ export type Database = {
       manager_pin_audit: {
         Row: {
           action_type: string
+          authorized_by_owner_user_id: string | null
           created_at: string
           establishment_id: string
           id: string
-          manager_professional_id: string
+          manager_professional_id: string | null
           new_value: Json | null
           old_value: Json | null
           reason: string | null
@@ -2613,10 +2614,11 @@ export type Database = {
         }
         Insert: {
           action_type: string
+          authorized_by_owner_user_id?: string | null
           created_at?: string
           establishment_id: string
           id?: string
-          manager_professional_id: string
+          manager_professional_id?: string | null
           new_value?: Json | null
           old_value?: Json | null
           reason?: string | null
@@ -2626,10 +2628,11 @@ export type Database = {
         }
         Update: {
           action_type?: string
+          authorized_by_owner_user_id?: string | null
           created_at?: string
           establishment_id?: string
           id?: string
-          manager_professional_id?: string
+          manager_professional_id?: string | null
           new_value?: Json | null
           old_value?: Json | null
           reason?: string | null
