@@ -207,14 +207,27 @@ export default function InternoComandas() {
     try {
       const { data } = await supabase
         .from("establishments")
-        .select("id, discount_pin_threshold_percent")
+        .select("id, owner_id, discount_pin_threshold_percent")
         .eq("slug", slug)
         .single();
       if (!data) { navigate("/"); return; }
       setEstablishmentId(data.id);
       const t = (data as any).discount_pin_threshold_percent;
       if (typeof t === "number") setDiscountPinThreshold(t);
-    } catch { navigate("/"); } 
+
+      // Resolve current user role
+      if (user && (data as any).owner_id === user.id) {
+        setUserRole("owner");
+      } else if (user) {
+        const { data: prof } = await supabase
+          .from("professionals")
+          .select("is_manager")
+          .eq("establishment_id", data.id)
+          .eq("user_id", user.id)
+          .maybeSingle();
+        setUserRole(prof?.is_manager ? "manager" : "professional");
+      }
+    } catch { navigate("/"); }
     finally { setLoading(false); }
   };
 
