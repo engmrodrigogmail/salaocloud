@@ -159,8 +159,8 @@ export function CommissionTrackingTab({ establishmentId }: CommissionTrackingTab
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-      pending: { label: "Pendente", variant: "secondary" },
-      approved: { label: "Aprovada", variant: "default" },
+      pending: { label: "Acerto Pendente", variant: "secondary" },
+      approved: { label: "Acerto Pendente", variant: "secondary" },
       paid: { label: "Paga", variant: "outline" },
       cancelled: { label: "Cancelada", variant: "destructive" },
     };
