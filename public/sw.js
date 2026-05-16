@@ -58,9 +58,13 @@ self.addEventListener('push', (event) => {
     data: { url: payload.url || '/', ...payload.data },
     tag: payload.tag || category || undefined,
     renotify: !!(payload.tag || category),
-    requireInteraction: isCritical,
+    requireInteraction: true,
     vibrate: isCritical ? [200, 100, 200, 100, 200] : [120, 60, 120],
     timestamp: Date.now(),
+    actions: [
+      { action: 'open', title: 'Abrir' },
+      { action: 'close', title: 'Fechar' },
+    ],
   };
 
   event.waitUntil(
@@ -70,6 +74,7 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  if (event.action === 'close') return;
   const targetUrl = (event.notification.data && event.notification.data.url) || '/';
   const absoluteUrl = new URL(targetUrl, self.location.origin).href;
 
