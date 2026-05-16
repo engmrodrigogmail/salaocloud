@@ -65,6 +65,13 @@ export default function PortalDashboard() {
     }
   }, [slug, user, authLoading]);
 
+  useEffect(() => {
+    if (establishment?.id) {
+      fetchStats(establishment.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [establishment?.id, range.fromIso, range.toIso]);
+
   const fetchEstablishment = async () => {
     try {
       const { data, error } = await supabase
@@ -96,11 +103,12 @@ export default function PortalDashboard() {
 
   const fetchStats = async (establishmentId: string) => {
     const today = new Date().toISOString().split("T")[0];
-    const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
     const currentMonthYear = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+    const fromIso = range.from.toISOString();
+    const toIso = range.to.toISOString();
 
     const [
-      appointmentsResult,
+      periodAppointmentsResult,
       todayAppointmentsResult,
       clientsResult,
       servicesResult,
@@ -109,25 +117,25 @@ export default function PortalDashboard() {
       aiConversationsResult,
       aiUsageResult,
     ] = await Promise.all([
-      supabase.from("appointments").select("id", { count: "exact" }).eq("establishment_id", establishmentId),
-      supabase.from("appointments").select("id", { count: "exact" }).eq("establishment_id", establishmentId).gte("scheduled_at", today).lt("scheduled_at", today + "T23:59:59"),
-      supabase.from("clients").select("id", { count: "exact" }).eq("establishment_id", establishmentId),
-      supabase.from("services").select("id", { count: "exact" }).eq("establishment_id", establishmentId).eq("is_active", true),
-      supabase.from("professionals").select("id", { count: "exact" }).eq("establishment_id", establishmentId).eq("is_active", true),
-      supabase.from("appointments").select("price").eq("establishment_id", establishmentId).eq("status", "completed").gte("scheduled_at", firstDayOfMonth),
-      supabase.from("ai_assistant_conversations").select("id", { count: "exact" }).eq("establishment_id", establishmentId),
+      supabase.from("appointments").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).gte("scheduled_at", fromIso).lte("scheduled_at", toIso),
+      supabase.from("appointments").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).gte("scheduled_at", today).lt("scheduled_at", today + "T23:59:59"),
+      supabase.from("clients").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId),
+      supabase.from("services").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).eq("is_active", true),
+      supabase.from("professionals").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).eq("is_active", true),
+      supabase.from("appointments").select("price").eq("establishment_id", establishmentId).eq("status", "completed").gte("scheduled_at", fromIso).lte("scheduled_at", toIso),
+      supabase.from("ai_assistant_conversations").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId),
       supabase.from("ai_assistant_usage").select("message_count").eq("establishment_id", establishmentId).eq("month_year", currentMonthYear).single(),
     ]);
 
-    const monthRevenue = revenueResult.data?.reduce((sum, app) => sum + (app.price || 0), 0) || 0;
+    const periodRevenue = revenueResult.data?.reduce((sum, app) => sum + (app.price || 0), 0) || 0;
 
     setStats({
-      totalAppointments: appointmentsResult.count || 0,
+      periodAppointments: periodAppointmentsResult.count || 0,
       todayAppointments: todayAppointmentsResult.count || 0,
       totalClients: clientsResult.count || 0,
       totalServices: servicesResult.count || 0,
       totalProfessionals: professionalsResult.count || 0,
-      monthRevenue,
+      periodRevenue,
       aiConversations: aiConversationsResult.count || 0,
       aiMessagesThisMonth: aiUsageResult.data?.message_count || 0,
     });
