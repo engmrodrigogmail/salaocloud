@@ -484,17 +484,20 @@ export function AddItemDialog({
                 )} (tabela: ${formatCurrency(pendingPayload.original_unit_price ?? 0)})`
               : "Sobrescrever preço de item"
           }
-          onAuthorized={async ({ managerProfessionalId }) => {
+          onAuthorized={async ({ managerProfessionalId, ownerUserId, isOwner }) => {
             if (!pendingPayload) return;
             const payload: AddItemPayload = {
               ...pendingPayload,
-              price_override_by: managerProfessionalId,
-              price_override_reason: "Override autorizado por gerente via PIN",
+              price_override_by: isOwner ? null : managerProfessionalId,
+              price_override_reason: isOwner
+                ? "Override autorizado pelo dono do salão"
+                : "Override autorizado por gerente via PIN",
             };
             await submit(payload);
             await logManagerOverride({
               establishmentId,
-              managerProfessionalId,
+              managerProfessionalId: isOwner ? null : managerProfessionalId,
+              ownerUserId: ownerUserId ?? null,
               actionType: "item_price_override",
               targetType: "tab_item",
               oldValue: { unit_price: payload.original_unit_price },

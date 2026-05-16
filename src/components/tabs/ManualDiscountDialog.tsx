@@ -103,6 +103,7 @@ export function ManualDiscountDialog({
     amount: number,
     reducesFlag: boolean,
     managerProfessionalId: string | null,
+    ownerUserId: string | null = null,
   ) => {
     setSaving(true);
     try {
@@ -128,10 +129,11 @@ export function ManualDiscountDialog({
 
       if (error) throw error;
 
-      if (managerProfessionalId) {
+      if (managerProfessionalId || ownerUserId) {
         await logManagerOverride({
           establishmentId,
-          managerProfessionalId,
+          managerProfessionalId: managerProfessionalId ?? null,
+          ownerUserId,
           actionType: "discount_above_threshold",
           targetType: "tab",
           targetId: tabId,
@@ -296,12 +298,13 @@ export function ManualDiscountDialog({
         reason={`Aplicar ${computedPercent.toFixed(1)}% de desconto (${fmt(
           computedAmount,
         )})`}
-        onAuthorized={async ({ managerProfessionalId }) => {
+        onAuthorized={async ({ managerProfessionalId, ownerUserId, isOwner }) => {
           if (!pendingApply) return;
           await persistDiscount(
             pendingApply.amount,
             pendingApply.reduces,
-            managerProfessionalId,
+            isOwner ? null : managerProfessionalId,
+            ownerUserId ?? null,
           );
         }}
       />
