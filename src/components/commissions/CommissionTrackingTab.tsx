@@ -100,14 +100,11 @@ export function CommissionTrackingTab({ establishmentId }: CommissionTrackingTab
       if (error) throw error;
       setCommissions(commissionsData || []);
 
-      // Calculate stats
+      // Calculate stats (treat legacy 'approved' como pendente de pagamento)
       const allCommissions = commissionsData || [];
       setStats({
         pending: allCommissions
-          .filter((c) => c.status === "pending")
-          .reduce((sum, c) => sum + c.commission_amount, 0),
-        approved: allCommissions
-          .filter((c) => c.status === "approved")
+          .filter((c) => c.status === "pending" || c.status === "approved")
           .reduce((sum, c) => sum + c.commission_amount, 0),
         paid: allCommissions
           .filter((c) => c.status === "paid")
