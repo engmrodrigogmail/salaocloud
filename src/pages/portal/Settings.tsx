@@ -79,6 +79,22 @@ export default function PortalSettings() {
   const [savingCheckout, setSavingCheckout] = useState(false);
   const [activeTab, setActiveTab] = useState("working-hours");
 
+  // Sobre (dados de cadastro + senha)
+  const [aboutForm, setAboutForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    description: "",
+    address: "",
+    city: "",
+    state: "",
+    zip_code: "",
+  });
+  const [savingAbout, setSavingAbout] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
+
   useEffect(() => {
     if (user && slug) {
       fetchEstablishment();
