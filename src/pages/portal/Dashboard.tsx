@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { PortalLayout } from "@/components/layouts/PortalLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PeriodFilter, usePeriodRange, type PeriodKey } from "@/components/ui/period-filter";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 
 import { 
   Calendar, 
@@ -37,13 +39,17 @@ export default function PortalDashboard() {
   const { user, loading: authLoading } = useAuth();
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<PeriodKey>("month");
+  const [customFrom, setCustomFrom] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
+  const [customTo, setCustomTo] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
+  const range = usePeriodRange(period, customFrom, customTo);
   const [stats, setStats] = useState({
-    totalAppointments: 0,
+    periodAppointments: 0,
     todayAppointments: 0,
     totalClients: 0,
     totalServices: 0,
     totalProfessionals: 0,
-    monthRevenue: 0,
+    periodRevenue: 0,
     aiConversations: 0,
     aiMessagesThisMonth: 0,
   });
