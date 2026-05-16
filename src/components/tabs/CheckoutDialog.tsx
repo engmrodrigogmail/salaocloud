@@ -782,7 +782,13 @@ export function CheckoutDialog({
           currentDiscount={existingDiscount}
           currentReducesCommission={(tab as any).commission_discount_on_manual === true}
           pinThresholdPercent={discountPinThreshold}
-          onApplied={async () => {
+          onApplied={async ({ reducesCommission }) => {
+            // Sync local flag with the toggle chosen in ManualDiscountDialog
+            // so the commission calculation respects the user's choice when
+            // the establishment policy is 'ask'. 'always'/'never' override.
+            if (policyManual === 'always') setFlagManual(true);
+            else if (policyManual === 'never') setFlagManual(false);
+            else setFlagManual(reducesCommission);
             if (onTabRefresh) await onTabRefresh();
           }}
         />
