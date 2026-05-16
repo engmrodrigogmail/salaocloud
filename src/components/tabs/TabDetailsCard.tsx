@@ -528,11 +528,68 @@ export function TabDetailsCard({
         </div>
       )}
 
-      {tab.status === "closed" && tab.client_id && (
+      {/* Delete / Recover actions (owner + manager) */}
+      {canDelete && !isDeleted && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+          onClick={() => setDeleteOpen(true)}
+        >
+          <AlertTriangle className="h-4 w-4 mr-2" />
+          Excluir comanda
+        </Button>
+      )}
+      {canRecover && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={() => setRecoverOpen(true)}
+        >
+          <RotateCcw className="h-4 w-4 mr-2" />
+          Recuperar comanda
+        </Button>
+      )}
+      {isDeleted && !canRecover && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 text-destructive p-3 text-xs flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4" />
+          Esta comanda foi excluída. Apenas o dono pode recuperá-la.
+        </div>
+      )}
+
+      {tab.status === "closed" && tab.client_id && !isDeleted && (
         <Button variant="outline" className="w-full" onClick={() => setSalonReviewOpen(true)}>
           <Star className="h-4 w-4 mr-2" />
           Avaliar cliente
         </Button>
+      )}
+
+      {(canDelete || canRecover) && (
+        <>
+          <DeleteTabDialog
+            open={deleteOpen}
+            onOpenChange={setDeleteOpen}
+            tabId={tab.id}
+            establishmentId={establishmentId}
+            clientName={tab.client_name}
+            role={userRole === "owner" ? "owner" : "manager"}
+            onDeleted={async () => {
+              if (onTabChanged) await onTabChanged();
+              onBack();
+            }}
+          />
+          <RecoverTabDialog
+            open={recoverOpen}
+            onOpenChange={setRecoverOpen}
+            tabId={tab.id}
+            clientName={tab.client_name}
+            onRecovered={async () => {
+              if (onTabChanged) await onTabChanged();
+              onBack();
+            }}
+          />
+        </>
       )}
 
       <SalonReviewDialog
