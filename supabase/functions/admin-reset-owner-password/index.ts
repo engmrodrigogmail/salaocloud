@@ -29,15 +29,14 @@ Deno.serve(async (req) => {
     const password = new_password || "123mudar";
     if (password.length < 6) return json({ error: "password_too_short" }, 400);
 
-    // Autenticação: super_admin OU bypass com service role secret (uso interno via curl)
-    const SERVICE_BYPASS = Deno.env.get("ADMIN_RESET_BYPASS_TOKEN");
+    // Autenticação: super_admin OU service_role JWT (uso interno)
     let isAuthorized = false;
-    if (bypass_auth && SERVICE_BYPASS && bypass_auth === SERVICE_BYPASS) {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) return json({ error: "unauthorized" }, 401);
+    const token = authHeader.slice(7);
+    if (token === SERVICE_ROLE) {
       isAuthorized = true;
     } else {
-      const authHeader = req.headers.get("Authorization");
-      if (!authHeader?.startsWith("Bearer ")) return json({ error: "unauthorized" }, 401);
-      const token = authHeader.slice(7);
       const userClient = createClient(SUPABASE_URL, ANON_KEY, {
         global: { headers: { Authorization: `Bearer ${token}` } },
       });
