@@ -313,5 +313,6 @@ export function PortalLayout({ children }: PortalLayoutProps) {
       </main>
       <SilviaHelpButton profile="dono" />
     </div>
+    </ChangePasswordGate>
   );
 }
