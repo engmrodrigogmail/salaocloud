@@ -369,6 +369,19 @@ function DreTab({
         <SummaryCard label="Pendências" value={fmtMoney(totals.pending)} valueClass={totals.pending > 0 ? "text-orange-600" : ""} />
       </div>
 
+      <div className="grid grid-cols-2 lg:grid-cols-2 gap-3">
+        <SummaryCard
+          label="Comissões — Acerto Pendente"
+          value={fmtMoney(totals.commissionsPending)}
+          valueClass={totals.commissionsPending > 0 ? "text-orange-600" : ""}
+        />
+        <SummaryCard
+          label="Comissões pagas"
+          value={fmtMoney(totals.commissionsPaid)}
+          valueClass="text-emerald-600"
+        />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
           <CardHeader><CardTitle className="text-base">Receitas vs Despesas</CardTitle></CardHeader>
