@@ -19,10 +19,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { hashManagerPin } from "@/lib/managerPin";
 
 export interface ManagerPinAuthorization {
-  /** professional id of the gerente that authorized */
+  /** professional id of the gerente that authorized (empty string when authorized by the owner) */
   managerProfessionalId: string;
   /** name for audit/UI */
   managerName: string;
+  /** true when the action was authorized by the salon owner (no PIN required) */
+  isOwner?: boolean;
+  /** user id of the owner when isOwner is true */
+  ownerUserId?: string | null;
 }
 
 interface ManagerPinDialogProps {
