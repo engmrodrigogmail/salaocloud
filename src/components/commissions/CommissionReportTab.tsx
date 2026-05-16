@@ -142,8 +142,7 @@ export function CommissionReportTab({ establishmentId }: CommissionReportTabProp
         summary.total_reference += comm.reference_value;
         summary.total_commission += comm.commission_amount;
 
-        if (comm.status === "pending") summary.pending += comm.commission_amount;
-        else if (comm.status === "approved") summary.approved += comm.commission_amount;
+        if (comm.status === "pending" || comm.status === "approved") summary.pending += comm.commission_amount;
         else if (comm.status === "paid") summary.paid += comm.commission_amount;
       }
 
@@ -165,8 +164,8 @@ export function CommissionReportTab({ establishmentId }: CommissionReportTabProp
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-      pending: { label: "Pendente", variant: "secondary" },
-      approved: { label: "Aprovada", variant: "default" },
+      pending: { label: "Acerto Pendente", variant: "secondary" },
+      approved: { label: "Acerto Pendente", variant: "secondary" },
       paid: { label: "Paga", variant: "outline" },
       cancelled: { label: "Cancelada", variant: "destructive" },
     };
@@ -378,8 +377,7 @@ export function CommissionReportTab({ establishmentId }: CommissionReportTabProp
                   <TableHead>Profissional</TableHead>
                   <TableHead className="text-center">Atendimentos</TableHead>
                   <TableHead className="text-right">Valor Referência</TableHead>
-                  <TableHead className="text-right">Pendente</TableHead>
-                  <TableHead className="text-right">Aprovado</TableHead>
+                  <TableHead className="text-right">Acerto Pendente</TableHead>
                   <TableHead className="text-right">Pago</TableHead>
                   <TableHead className="text-right">Total Comissão</TableHead>
                 </TableRow>
@@ -391,7 +389,6 @@ export function CommissionReportTab({ establishmentId }: CommissionReportTabProp
                     <TableCell className="text-center">{summary.total_services}</TableCell>
                     <TableCell className="text-right">{formatCurrency(summary.total_reference)}</TableCell>
                     <TableCell className="text-right text-orange-500">{formatCurrency(summary.pending)}</TableCell>
-                    <TableCell className="text-right text-blue-500">{formatCurrency(summary.approved)}</TableCell>
                     <TableCell className="text-right text-green-500">{formatCurrency(summary.paid)}</TableCell>
                     <TableCell className="text-right font-bold">{formatCurrency(summary.total_commission)}</TableCell>
                   </TableRow>

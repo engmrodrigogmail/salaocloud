@@ -30,15 +30,15 @@ type CommissionRow = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  pending: "Aguardando aprovação",
-  approved: "Aprovada",
+  pending: "Acerto Pendente",
+  approved: "Acerto Pendente",
   paid: "Paga",
   cancelled: "Cancelada",
 };
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
   pending: "outline",
-  approved: "secondary",
+  approved: "outline",
   paid: "default",
   cancelled: "destructive",
 };
@@ -131,11 +131,10 @@ export default function InternoComissoes() {
   };
 
   const totals = useMemo(() => {
-    const acc = { pending: 0, approved: 0, paid: 0 };
+    const acc = { pending: 0, paid: 0 };
     for (const c of commissions) {
       const v = Number(c.commission_amount) || 0;
-      if (c.status === "pending") acc.pending += v;
-      else if (c.status === "approved") acc.approved += v;
+      if (c.status === "pending" || c.status === "approved") acc.pending += v;
       else if (c.status === "paid") acc.paid += v;
     }
     return acc;
@@ -209,25 +208,15 @@ export default function InternoComissoes() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2 text-muted-foreground">
-                <Clock className="h-4 w-4" /> A aprovar
+                <Clock className="h-4 w-4" /> Acerto Pendente
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">{fmt(totals.pending)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2 text-muted-foreground">
-                <Coins className="h-4 w-4" /> Aprovadas (a pagar)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{fmt(totals.approved)}</p>
             </CardContent>
           </Card>
           <Card>

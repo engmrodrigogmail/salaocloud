@@ -1,0 +1,1 @@
+ALTER TABLE public.finance_settings ALTER COLUMN commission_expense_trigger SET DEFAULT 'on_commission_payment'::finance_commission_trigger;

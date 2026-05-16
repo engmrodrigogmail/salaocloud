@@ -56,7 +56,6 @@ export function CommissionTrackingTab({ establishmentId }: CommissionTrackingTab
   const [dialogOpen, setDialogOpen] = useState(false);
   const [stats, setStats] = useState({
     pending: 0,
-    approved: 0,
     paid: 0,
     total: 0,
   });
@@ -92,7 +91,10 @@ export function CommissionTrackingTab({ establishmentId }: CommissionTrackingTab
         query = query.eq("professional_id", selectedProfessional);
       }
 
-      if (selectedStatus !== "all") {
+      if (selectedStatus === "pending") {
+        // Inclui legado 'approved' (status descontinuado, equivalente a pendente)
+        query = query.in("status", ["pending", "approved"]);
+      } else if (selectedStatus !== "all") {
         query = query.eq("status", selectedStatus);
       }
 
@@ -101,14 +103,11 @@ export function CommissionTrackingTab({ establishmentId }: CommissionTrackingTab
       if (error) throw error;
       setCommissions(commissionsData || []);
 
-      // Calculate stats
+      // Calculate stats (treat legacy 'approved' como pendente de pagamento)
       const allCommissions = commissionsData || [];
       setStats({
         pending: allCommissions
-          .filter((c) => c.status === "pending")
-          .reduce((sum, c) => sum + c.commission_amount, 0),
-        approved: allCommissions
-          .filter((c) => c.status === "approved")
+          .filter((c) => c.status === "pending" || c.status === "approved")
           .reduce((sum, c) => sum + c.commission_amount, 0),
         paid: allCommissions
           .filter((c) => c.status === "paid")
@@ -163,8 +162,8 @@ export function CommissionTrackingTab({ establishmentId }: CommissionTrackingTab
 
   const getStatusBadge = (status: string) => {
     const config: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-      pending: { label: "Pendente", variant: "secondary" },
-      approved: { label: "Aprovada", variant: "default" },
+      pending: { label: "Acerto Pendente", variant: "secondary" },
+      approved: { label: "Acerto Pendente", variant: "secondary" },
       paid: { label: "Paga", variant: "outline" },
       cancelled: { label: "Cancelada", variant: "destructive" },
     };
@@ -179,27 +178,16 @@ export function CommissionTrackingTab({ establishmentId }: CommissionTrackingTab
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              Pendentes
+              Acerto Pendente
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-orange-500">{formatCurrency(stats.pending)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              Aprovadas
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-blue-500">{formatCurrency(stats.approved)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -249,8 +237,7 @@ export function CommissionTrackingTab({ establishmentId }: CommissionTrackingTab
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="pending">Pendentes</SelectItem>
-              <SelectItem value="approved">Aprovadas</SelectItem>
+              <SelectItem value="pending">Acerto Pendente</SelectItem>
               <SelectItem value="paid">Pagas</SelectItem>
               <SelectItem value="cancelled">Canceladas</SelectItem>
             </SelectContent>
@@ -311,16 +298,7 @@ export function CommissionTrackingTab({ establishmentId }: CommissionTrackingTab
                     </TableCell>
                     <TableCell>{getStatusBadge(commission.status)}</TableCell>
                     <TableCell className="text-right">
-                      {commission.status === "pending" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleStatusChange(commission.id, "approved")}
-                        >
-                          Aprovar
-                        </Button>
-                      )}
-                      {commission.status === "approved" && (
+                      {(commission.status === "pending" || commission.status === "approved") && (
                         <Button
                           size="sm"
                           variant="outline"
