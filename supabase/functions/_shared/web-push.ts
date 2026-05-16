@@ -66,7 +66,13 @@ export async function sendWebPush(
     const res = await webpush.sendNotification(
       { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
       JSON.stringify(payload),
-      { TTL: 60 * 60 * 24 },
+      {
+        TTL: 60 * 60 * 24,
+        // "high" garante heads-up + tela de bloqueio + som no Android (FCM).
+        // Sem isso, o Chrome/FCM entrega como "normal" e o sistema pode
+        // suprimir o banner e o som.
+        urgency: "high",
+      },
     );
     return { ok: true, statusCode: res.statusCode };
   } catch (e: any) {
