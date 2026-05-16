@@ -259,6 +259,62 @@ export default function PortalSettings() {
     }
   };
 
+  const handleSaveAbout = async () => {
+    if (!establishment) return;
+    if (!aboutForm.name.trim()) {
+      toast.error("O nome do estabelecimento é obrigatório");
+      return;
+    }
+    setSavingAbout(true);
+    try {
+      const { error } = await supabase
+        .from("establishments")
+        .update({
+          name: aboutForm.name.trim(),
+          phone: aboutForm.phone.trim() || null,
+          email: aboutForm.email.trim() || null,
+          description: aboutForm.description.trim() || null,
+          address: aboutForm.address.trim() || null,
+          city: aboutForm.city.trim() || null,
+          state: aboutForm.state.trim() || null,
+          zip_code: aboutForm.zip_code.trim() || null,
+        })
+        .eq("id", establishment.id);
+      if (error) throw error;
+      setEstablishment({ ...establishment, ...aboutForm } as Establishment);
+      toast.success("Dados atualizados!");
+    } catch (e) {
+      console.error("Error saving about:", e);
+      toast.error("Erro ao salvar");
+    } finally {
+      setSavingAbout(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword.length < 6) {
+      toast.error("A senha deve ter pelo menos 6 caracteres");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setNewPassword("");
+      setConfirmPassword("");
+      toast.success("Senha alterada com sucesso!");
+    } catch (e: any) {
+      console.error("Error changing password:", e);
+      toast.error(e?.message || "Erro ao alterar senha");
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <PortalLayout>
