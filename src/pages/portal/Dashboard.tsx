@@ -118,6 +118,8 @@ export default function PortalDashboard() {
       revenueResult,
       aiConversationsResult,
       aiUsageResult,
+      commissionsPaidResult,
+      commissionsPendingResult,
     ] = await Promise.all([
       supabase.from("appointments").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).gte("scheduled_at", fromIso).lte("scheduled_at", toIso),
       supabase.from("appointments").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).gte("scheduled_at", today).lt("scheduled_at", today + "T23:59:59"),
@@ -127,9 +129,13 @@ export default function PortalDashboard() {
       supabase.from("appointments").select("price").eq("establishment_id", establishmentId).eq("status", "completed").gte("scheduled_at", fromIso).lte("scheduled_at", toIso),
       supabase.from("ai_assistant_conversations").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId),
       supabase.from("ai_assistant_usage").select("message_count").eq("establishment_id", establishmentId).eq("month_year", currentMonthYear).single(),
+      supabase.from("professional_commissions").select("commission_amount").eq("establishment_id", establishmentId).eq("status", "paid").gte("paid_at", fromIso).lte("paid_at", toIso),
+      supabase.from("professional_commissions").select("commission_amount").eq("establishment_id", establishmentId).in("status", ["pending", "approved"]).gte("created_at", fromIso).lte("created_at", toIso),
     ]);
 
     const periodRevenue = revenueResult.data?.reduce((sum, app) => sum + (app.price || 0), 0) || 0;
+    const commissionsPaid = commissionsPaidResult.data?.reduce((s, c) => s + Number(c.commission_amount || 0), 0) || 0;
+    const commissionsPending = commissionsPendingResult.data?.reduce((s, c) => s + Number(c.commission_amount || 0), 0) || 0;
 
     setStats({
       periodAppointments: periodAppointmentsResult.count || 0,
@@ -140,6 +146,8 @@ export default function PortalDashboard() {
       periodRevenue,
       aiConversations: aiConversationsResult.count || 0,
       aiMessagesThisMonth: aiUsageResult.data?.message_count || 0,
+      commissionsPending,
+      commissionsPaid,
     });
   };
 
