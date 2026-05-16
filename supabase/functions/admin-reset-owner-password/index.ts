@@ -19,9 +19,10 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
     const body = await req.json().catch(() => ({}));
-    const { establishment_id, new_password, bypass_auth } = body as {
+    const { establishment_id, new_password, new_email, bypass_auth } = body as {
       establishment_id?: string;
       new_password?: string;
+      new_email?: string;
       bypass_auth?: string;
     };
 
