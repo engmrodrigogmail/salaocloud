@@ -20,6 +20,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DatePickerBR } from "@/components/ui/date-picker-br";
 import { PeriodFilter, usePeriodRange, type PeriodKey } from "@/components/ui/period-filter";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { CommissionDetailsTable } from "@/components/commissions/CommissionDetailsTable";
 import { ManagerPinDialog, type ManagerPinAuthorization } from "@/components/security/ManagerPinDialog";
 import { EntryFormDialog } from "@/components/finance/EntryFormDialog";
 import {
