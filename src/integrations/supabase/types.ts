@@ -3997,6 +3997,89 @@ export type Database = {
         }
         Relationships: []
       }
+      tab_deletions: {
+        Row: {
+          created_at: string
+          deleted_by_role: string
+          deleted_by_user_id: string
+          deletion_notes: string | null
+          deletion_reason: string
+          establishment_id: string
+          id: string
+          ip_address: string | null
+          original_tab_data: Json
+          pin_verified: boolean
+          recovered_at: string | null
+          recovered_by_user_id: string | null
+          tab_id: string
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          deleted_by_role: string
+          deleted_by_user_id: string
+          deletion_notes?: string | null
+          deletion_reason: string
+          establishment_id: string
+          id?: string
+          ip_address?: string | null
+          original_tab_data: Json
+          pin_verified?: boolean
+          recovered_at?: string | null
+          recovered_by_user_id?: string | null
+          tab_id: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          deleted_by_role?: string
+          deleted_by_user_id?: string
+          deletion_notes?: string | null
+          deletion_reason?: string
+          establishment_id?: string
+          id?: string
+          ip_address?: string | null
+          original_tab_data?: Json
+          pin_verified?: boolean
+          recovered_at?: string | null
+          recovered_by_user_id?: string | null
+          tab_id?: string
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tab_deletions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tab_deletions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_client_registration_status"
+            referencedColumns: ["establishment_id"]
+          },
+          {
+            foreignKeyName: "tab_deletions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "vw_last_establishment_access"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tab_deletions_tab_id_fkey"
+            columns: ["tab_id"]
+            isOneToOne: false
+            referencedRelation: "tabs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tab_items: {
         Row: {
           added_by: string | null
@@ -4302,11 +4385,16 @@ export type Database = {
           coupon_id: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
+          deleted_by_user_id: string | null
+          deletion_mark: string | null
+          deletion_reason: string | null
           discount_amount: number | null
           discount_authorized_by: string | null
           discount_type: string | null
           establishment_id: string
           id: string
+          is_deleted: boolean
           loyalty_redemption_id: string | null
           manager_pin_used: boolean
           manager_professional_id: string | null
@@ -4315,6 +4403,7 @@ export type Database = {
           professional_id: string | null
           recognized_at: string | null
           recognized_by: string | null
+          recovered_at: string | null
           status: string
           subtotal: number
           total: number
@@ -4332,11 +4421,16 @@ export type Database = {
           coupon_id?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_by_user_id?: string | null
+          deletion_mark?: string | null
+          deletion_reason?: string | null
           discount_amount?: number | null
           discount_authorized_by?: string | null
           discount_type?: string | null
           establishment_id: string
           id?: string
+          is_deleted?: boolean
           loyalty_redemption_id?: string | null
           manager_pin_used?: boolean
           manager_professional_id?: string | null
@@ -4345,6 +4439,7 @@ export type Database = {
           professional_id?: string | null
           recognized_at?: string | null
           recognized_by?: string | null
+          recovered_at?: string | null
           status?: string
           subtotal?: number
           total?: number
@@ -4362,11 +4457,16 @@ export type Database = {
           coupon_id?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_by_user_id?: string | null
+          deletion_mark?: string | null
+          deletion_reason?: string | null
           discount_amount?: number | null
           discount_authorized_by?: string | null
           discount_type?: string | null
           establishment_id?: string
           id?: string
+          is_deleted?: boolean
           loyalty_redemption_id?: string | null
           manager_pin_used?: boolean
           manager_professional_id?: string | null
@@ -4375,6 +4475,7 @@ export type Database = {
           professional_id?: string | null
           recognized_at?: string | null
           recognized_by?: string | null
+          recovered_at?: string | null
           status?: string
           subtotal?: number
           total?: number

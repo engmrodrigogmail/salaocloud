@@ -33,6 +33,7 @@ export default function InternoComandas() {
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
   const [discountPinThreshold, setDiscountPinThreshold] = useState<number>(10);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<"owner" | "manager" | "professional">("professional");
   const [clients, setClients] = useState<Client[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
@@ -42,7 +43,7 @@ export default function InternoComandas() {
   const [newTabOpen, setNewTabOpen] = useState(false);
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [activeView, setActiveView] = useState<"open" | "history">("open");
+  const [activeView, setActiveView] = useState<"open" | "history" | "deleted">("open");
 
   const { tabs, fetchTabs, createTab, closeTab, cancelTab, undoTabOpening, recalculateTotal } = useTabs(establishmentId);
   const { items, fetchItems, addItem, updateItem, removeItem } = useTabItems(selectedTab?.id || null);
@@ -206,14 +207,27 @@ export default function InternoComandas() {
     try {
       const { data } = await supabase
         .from("establishments")
-        .select("id, discount_pin_threshold_percent")
+        .select("id, owner_id, discount_pin_threshold_percent")
         .eq("slug", slug)
         .single();
       if (!data) { navigate("/"); return; }
       setEstablishmentId(data.id);
       const t = (data as any).discount_pin_threshold_percent;
       if (typeof t === "number") setDiscountPinThreshold(t);
-    } catch { navigate("/"); } 
+
+      // Resolve current user role
+      if (user && (data as any).owner_id === user.id) {
+        setUserRole("owner");
+      } else if (user) {
+        const { data: prof } = await supabase
+          .from("professionals")
+          .select("is_manager")
+          .eq("establishment_id", data.id)
+          .eq("user_id", user.id)
+          .maybeSingle();
+        setUserRole(prof?.is_manager ? "manager" : "professional");
+      }
+    } catch { navigate("/"); }
     finally { setLoading(false); }
   };
 
@@ -332,7 +346,11 @@ export default function InternoComandas() {
               </Button>
             </div>
 
-            <Tabs value={activeView} onValueChange={(v) => { setActiveView(v as "open" | "history"); fetchTabs(v === "open" ? "open" : "history"); }}>
+            <Tabs value={activeView} onValueChange={(v) => {
+              const next = v as "open" | "history" | "deleted";
+              setActiveView(next);
+              fetchTabs(next === "open" ? "open" : next === "history" ? "history" : "deleted");
+            }}>
               <TabsList>
                 <TabsTrigger value="open" className="flex items-center gap-2">
                   <Receipt className="h-4 w-4" />
@@ -342,6 +360,12 @@ export default function InternoComandas() {
                   <History className="h-4 w-4" />
                   Histórico
                 </TabsTrigger>
+                {userRole === "owner" && (
+                  <TabsTrigger value="deleted" className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4" />
+                    Excluídas
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               <TabsContent value="open" className="space-y-3 mt-4">
@@ -369,6 +393,21 @@ export default function InternoComandas() {
                   ))
                 )}
               </TabsContent>
+
+              {userRole === "owner" && (
+                <TabsContent value="deleted" className="space-y-3 mt-4">
+                  {tabs.length === 0 ? (
+                    <Card><CardContent className="py-12 text-center text-muted-foreground">
+                      <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>Nenhuma comanda excluída</p>
+                    </CardContent></Card>
+                  ) : (
+                    tabs.map(tab => (
+                      <TabListCard key={tab.id} tab={tab} onClick={() => setSelectedTab(tab)} />
+                    ))
+                  )}
+                </TabsContent>
+              )}
             </Tabs>
 
             {paymentMethods.length === 0 && (
@@ -386,6 +425,7 @@ export default function InternoComandas() {
             items={items}
             establishmentId={establishmentId || ""}
             discountPinThreshold={discountPinThreshold}
+            userRole={userRole}
             onAddItem={() => setAddItemOpen(true)}
             onRemoveItem={handleRemoveItem}
             onUpdateQuantity={handleUpdateQuantity}
@@ -394,6 +434,7 @@ export default function InternoComandas() {
             onCancel={handleCancelTab}
             onUndoOpening={handleUndoOpening}
             onRecalculate={async () => { await recalculateTotal(selectedTab.id); }}
+            onTabChanged={async () => { await fetchTabs(activeView === "deleted" ? "deleted" : activeView === "history" ? "history" : "open"); }}
             onDiscountChanged={async () => {
               const { data } = await supabase.from("tabs").select("*").eq("id", selectedTab.id).single();
               if (data) setSelectedTab({ ...selectedTab, ...data, status: data.status as TabWithDetails['status'] });

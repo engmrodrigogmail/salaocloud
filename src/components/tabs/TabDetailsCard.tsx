@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { 
   Plus, Trash2, User, Clock, Package, Scissors, PenLine, 
-  CreditCard, Receipt, ArrowLeft, Minus, Undo2, Tag, AlertCircle, Star, CalendarCheck, X
+  CreditCard, Receipt, ArrowLeft, Minus, Undo2, Tag, AlertCircle, Star, CalendarCheck, X,
+  AlertTriangle, RotateCcw,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, parseISO } from "date-fns";
@@ -26,6 +27,8 @@ import { ptBR } from "date-fns/locale";
 import type { TabWithDetails, TabItem, PaymentMethod } from "@/types/tabs";
 import { ManualDiscountDialog } from "./ManualDiscountDialog";
 import { SalonReviewDialog } from "./SalonReviewDialog";
+import { DeleteTabDialog } from "./DeleteTabDialog";
+import { RecoverTabDialog } from "./RecoverTabDialog";
 
 interface AppointmentSuggestion {
   appointment_id: string;
@@ -41,6 +44,8 @@ interface TabDetailsCardProps {
   items: TabItem[];
   establishmentId: string;
   discountPinThreshold: number;
+  /** Role of the current user against this establishment. Defaults to 'professional'. */
+  userRole?: "owner" | "manager" | "professional";
   onAddItem: () => void;
   onRemoveItem: (itemId: string) => Promise<void>;
   onUpdateQuantity: (itemId: string, quantity: number) => Promise<void>;
@@ -50,6 +55,7 @@ interface TabDetailsCardProps {
   onUndoOpening?: () => Promise<void> | void;
   onRecalculate: () => Promise<void>;
   onDiscountChanged?: () => Promise<void> | void;
+  onTabChanged?: () => Promise<void> | void;
   appointmentSuggestions?: AppointmentSuggestion[];
   dismissedAppointmentSuggestions?: AppointmentSuggestion[];
   onConfirmAppointmentService?: (suggestion: AppointmentSuggestion) => Promise<void> | void;
@@ -62,6 +68,7 @@ export function TabDetailsCard({
   items,
   establishmentId,
   discountPinThreshold,
+  userRole = "professional",
   onAddItem,
   onRemoveItem,
   onUpdateQuantity,
@@ -71,6 +78,7 @@ export function TabDetailsCard({
   onUndoOpening,
   onRecalculate,
   onDiscountChanged,
+  onTabChanged,
   appointmentSuggestions,
   dismissedAppointmentSuggestions,
   onConfirmAppointmentService,
@@ -81,6 +89,12 @@ export function TabDetailsCard({
   const [confirmUndoOpen, setConfirmUndoOpen] = useState(false);
   const [discountOpen, setDiscountOpen] = useState(false);
   const [salonReviewOpen, setSalonReviewOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [recoverOpen, setRecoverOpen] = useState(false);
+
+  const canDelete = userRole === "owner" || userRole === "manager";
+  const canRecover = userRole === "owner" && (tab as any).is_deleted === true;
+  const isDeleted = (tab as any).is_deleted === true;
 
   // Eligibility for "Desfazer Abertura": tab created < 5 min ago AND no items.
   const ageMs = Date.now() - new Date(tab.opened_at).getTime();
@@ -223,9 +237,23 @@ export function TabDetailsCard({
           <ArrowLeft className="h-4 w-4 mr-2" />
           Voltar
         </Button>
-        <Badge variant={tab.status === "open" ? "default" : "secondary"}>
-          {tab.status === "open" ? "Aberta" : tab.status === "closed" ? "Fechada" : "Cancelada"}
-        </Badge>
+        <div className="flex items-center gap-2">
+          {isDeleted && (
+            <Badge variant="destructive" className="gap-1">
+              <AlertTriangle className="h-3 w-3" />
+              Excluída
+            </Badge>
+          )}
+          {(tab as any).deletion_mark === "recovered_by_owner" && !isDeleted && (
+            <Badge variant="outline" className="gap-1 border-amber-500 text-amber-700 dark:text-amber-400">
+              <RotateCcw className="h-3 w-3" />
+              Recuperada pelo dono
+            </Badge>
+          )}
+          <Badge variant={tab.status === "open" ? "default" : "secondary"}>
+            {tab.status === "open" ? "Aberta" : tab.status === "closed" ? "Fechada" : "Cancelada"}
+          </Badge>
+        </div>
       </div>
 
       {/* Client Info */}
@@ -500,11 +528,68 @@ export function TabDetailsCard({
         </div>
       )}
 
-      {tab.status === "closed" && tab.client_id && (
+      {/* Delete / Recover actions (owner + manager) */}
+      {canDelete && !isDeleted && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full text-destructive border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+          onClick={() => setDeleteOpen(true)}
+        >
+          <AlertTriangle className="h-4 w-4 mr-2" />
+          Excluir comanda
+        </Button>
+      )}
+      {canRecover && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full"
+          onClick={() => setRecoverOpen(true)}
+        >
+          <RotateCcw className="h-4 w-4 mr-2" />
+          Recuperar comanda
+        </Button>
+      )}
+      {isDeleted && !canRecover && (
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 text-destructive p-3 text-xs flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4" />
+          Esta comanda foi excluída. Apenas o dono pode recuperá-la.
+        </div>
+      )}
+
+      {tab.status === "closed" && tab.client_id && !isDeleted && (
         <Button variant="outline" className="w-full" onClick={() => setSalonReviewOpen(true)}>
           <Star className="h-4 w-4 mr-2" />
           Avaliar cliente
         </Button>
+      )}
+
+      {(canDelete || canRecover) && (
+        <>
+          <DeleteTabDialog
+            open={deleteOpen}
+            onOpenChange={setDeleteOpen}
+            tabId={tab.id}
+            establishmentId={establishmentId}
+            clientName={tab.client_name}
+            role={userRole === "owner" ? "owner" : "manager"}
+            onDeleted={async () => {
+              if (onTabChanged) await onTabChanged();
+              onBack();
+            }}
+          />
+          <RecoverTabDialog
+            open={recoverOpen}
+            onOpenChange={setRecoverOpen}
+            tabId={tab.id}
+            clientName={tab.client_name}
+            onRecovered={async () => {
+              if (onTabChanged) await onTabChanged();
+              onBack();
+            }}
+          />
+        </>
       )}
 
       <SalonReviewDialog

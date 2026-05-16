@@ -10,7 +10,7 @@ export function useTabs(establishmentId: string | null) {
   const [tabs, setTabs] = useState<TabWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchTabs = useCallback(async (status?: 'open' | 'closed' | 'cancelled' | 'history') => {
+  const fetchTabs = useCallback(async (status?: 'open' | 'closed' | 'cancelled' | 'history' | 'deleted') => {
     if (!establishmentId) return;
 
     setLoading(true);
@@ -25,10 +25,16 @@ export function useTabs(establishmentId: string | null) {
         .eq("establishment_id", establishmentId)
         .order("opened_at", { ascending: false });
 
-      if (status === 'history') {
-        query = query.in("status", ["closed", "cancelled"]);
-      } else if (status) {
-        query = query.eq("status", status);
+      if (status === 'deleted') {
+        query = query.eq("is_deleted", true);
+      } else {
+        // Hide soft-deleted tabs from regular views
+        query = query.eq("is_deleted", false);
+        if (status === 'history') {
+          query = query.in("status", ["closed", "cancelled"]);
+        } else if (status) {
+          query = query.eq("status", status);
+        }
       }
 
       const { data, error } = await query;
