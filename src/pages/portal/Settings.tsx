@@ -13,7 +13,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useOwnerEstablishment } from "@/hooks/useOwnerEstablishment";
 import { useAuth } from "@/contexts/AuthContext";
-import { Clock, Save, Loader2, Users, Settings, CalendarDays, Eye, ShieldCheck, Bell, Sparkles } from "lucide-react";
+import { Clock, Save, Loader2, Users, Settings, CalendarDays, Eye, ShieldCheck, Bell, Sparkles, Building2, KeyRound } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { NotificationSettingsCard } from "@/components/notifications/NotificationSettingsCard";
 import type { Tables, Json } from "@/integrations/supabase/types";
 
@@ -78,6 +79,22 @@ export default function PortalSettings() {
   const [savingCheckout, setSavingCheckout] = useState(false);
   const [activeTab, setActiveTab] = useState("working-hours");
 
+  // Sobre (dados de cadastro + senha)
+  const [aboutForm, setAboutForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    description: "",
+    address: "",
+    city: "",
+    state: "",
+    zip_code: "",
+  });
+  const [savingAbout, setSavingAbout] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
+
   useEffect(() => {
     if (user && slug) {
       fetchEstablishment();
@@ -95,6 +112,16 @@ export default function PortalSettings() {
       if (error) throw error;
 
       setEstablishment(data);
+      setAboutForm({
+        name: data.name ?? "",
+        phone: data.phone ?? "",
+        email: data.email ?? "",
+        description: data.description ?? "",
+        address: data.address ?? "",
+        city: data.city ?? "",
+        state: data.state ?? "",
+        zip_code: data.zip_code ?? "",
+      });
       
       // Parse working hours
       if (data.working_hours) {
@@ -232,6 +259,62 @@ export default function PortalSettings() {
     }
   };
 
+  const handleSaveAbout = async () => {
+    if (!establishment) return;
+    if (!aboutForm.name.trim()) {
+      toast.error("O nome do estabelecimento é obrigatório");
+      return;
+    }
+    setSavingAbout(true);
+    try {
+      const { error } = await supabase
+        .from("establishments")
+        .update({
+          name: aboutForm.name.trim(),
+          phone: aboutForm.phone.trim() || null,
+          email: aboutForm.email.trim() || null,
+          description: aboutForm.description.trim() || null,
+          address: aboutForm.address.trim() || null,
+          city: aboutForm.city.trim() || null,
+          state: aboutForm.state.trim() || null,
+          zip_code: aboutForm.zip_code.trim() || null,
+        })
+        .eq("id", establishment.id);
+      if (error) throw error;
+      setEstablishment({ ...establishment, ...aboutForm } as Establishment);
+      toast.success("Dados atualizados!");
+    } catch (e) {
+      console.error("Error saving about:", e);
+      toast.error("Erro ao salvar");
+    } finally {
+      setSavingAbout(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword.length < 6) {
+      toast.error("A senha deve ter pelo menos 6 caracteres");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("As senhas não coincidem");
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setNewPassword("");
+      setConfirmPassword("");
+      toast.success("Senha alterada com sucesso!");
+    } catch (e: any) {
+      console.error("Error changing password:", e);
+      toast.error(e?.message || "Erro ao alterar senha");
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <PortalLayout>
@@ -244,6 +327,7 @@ export default function PortalSettings() {
   }
 
   const SECTIONS = [
+    { value: "about", label: "Sobre", icon: Building2 },
     { value: "working-hours", label: "Horário de Funcionamento", icon: Clock },
     { value: "agenda-settings", label: "Visualização da Agenda", icon: CalendarDays },
     { value: "client-portal", label: "Portal da Cliente", icon: Eye },
@@ -297,7 +381,7 @@ export default function PortalSettings() {
           </div>
 
           {/* Desktop: Grid tabs (no horizontal scroll) */}
-          <TabsList className="hidden md:grid md:grid-cols-5 mb-6 h-auto p-1 w-full">
+          <TabsList className="hidden md:grid md:grid-cols-7 mb-6 h-auto p-1 w-full">
             {SECTIONS.map(({ value, label, icon: Icon }) => (
               <TabsTrigger
                 key={value}
@@ -309,6 +393,98 @@ export default function PortalSettings() {
               </TabsTrigger>
             ))}
           </TabsList>
+
+          <TabsContent value="about" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-primary" />
+                  Dados do Estabelecimento
+                </CardTitle>
+                <CardDescription>
+                  Informações de cadastro do seu salão no SalãoCloud. Mantenha
+                  atualizadas para aparecerem corretamente nos canais com a sua cliente.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="about-name">Nome do salão *</Label>
+                    <Input id="about-name" value={aboutForm.name} onChange={(e) => setAboutForm((p) => ({ ...p, name: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="about-phone">Telefone / WhatsApp</Label>
+                    <Input id="about-phone" value={aboutForm.phone} onChange={(e) => setAboutForm((p) => ({ ...p, phone: e.target.value }))} placeholder="(11) 99999-9999" />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="about-email">E-mail de contato</Label>
+                    <Input id="about-email" type="email" value={aboutForm.email} onChange={(e) => setAboutForm((p) => ({ ...p, email: e.target.value }))} />
+                    <p className="text-xs text-muted-foreground">
+                      Este é o e-mail de contato exibido. Para alterar o e-mail de login da conta, fale com o suporte.
+                    </p>
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="about-description">Descrição</Label>
+                    <Textarea id="about-description" rows={3} value={aboutForm.description} onChange={(e) => setAboutForm((p) => ({ ...p, description: e.target.value }))} placeholder="Conte um pouco sobre o seu salão..." />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="about-address">Endereço</Label>
+                    <Input id="about-address" value={aboutForm.address} onChange={(e) => setAboutForm((p) => ({ ...p, address: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="about-city">Cidade</Label>
+                    <Input id="about-city" value={aboutForm.city} onChange={(e) => setAboutForm((p) => ({ ...p, city: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="about-state">Estado (UF)</Label>
+                    <Input id="about-state" maxLength={2} value={aboutForm.state} onChange={(e) => setAboutForm((p) => ({ ...p, state: e.target.value.toUpperCase() }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="about-zip">CEP</Label>
+                    <Input id="about-zip" value={aboutForm.zip_code} onChange={(e) => setAboutForm((p) => ({ ...p, zip_code: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Link público (slug)</Label>
+                    <Input value={establishment?.slug ?? ""} readOnly className="bg-muted" />
+                  </div>
+                </div>
+                <div className="flex justify-end pt-2">
+                  <Button onClick={handleSaveAbout} disabled={savingAbout}>
+                    {savingAbout ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                    Salvar dados
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <KeyRound className="h-5 w-5 text-primary" />
+                  Alterar senha de acesso
+                </CardTitle>
+                <CardDescription>
+                  Esta é a senha que você usa para entrar no portal{user?.email ? ` (${user.email})` : ""}.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 max-w-md">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">Nova senha</Label>
+                  <Input id="new-password" type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo de 6 caracteres" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirmar nova senha</Label>
+                  <Input id="confirm-password" type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleChangePassword} disabled={savingPassword}>
+                    {savingPassword ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <KeyRound className="h-4 w-4 mr-2" />}
+                    Alterar senha
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="working-hours">
             <Card>
