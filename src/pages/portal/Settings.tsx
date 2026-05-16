@@ -394,6 +394,98 @@ export default function PortalSettings() {
             ))}
           </TabsList>
 
+          <TabsContent value="about" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Building2 className="h-5 w-5 text-primary" />
+                  Dados do Estabelecimento
+                </CardTitle>
+                <CardDescription>
+                  Informações de cadastro do seu salão no SalãoCloud. Mantenha
+                  atualizadas para aparecerem corretamente nos canais com a sua cliente.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="about-name">Nome do salão *</Label>
+                    <Input id="about-name" value={aboutForm.name} onChange={(e) => setAboutForm((p) => ({ ...p, name: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="about-phone">Telefone / WhatsApp</Label>
+                    <Input id="about-phone" value={aboutForm.phone} onChange={(e) => setAboutForm((p) => ({ ...p, phone: e.target.value }))} placeholder="(11) 99999-9999" />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="about-email">E-mail de contato</Label>
+                    <Input id="about-email" type="email" value={aboutForm.email} onChange={(e) => setAboutForm((p) => ({ ...p, email: e.target.value }))} />
+                    <p className="text-xs text-muted-foreground">
+                      Este é o e-mail de contato exibido. Para alterar o e-mail de login da conta, fale com o suporte.
+                    </p>
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="about-description">Descrição</Label>
+                    <Textarea id="about-description" rows={3} value={aboutForm.description} onChange={(e) => setAboutForm((p) => ({ ...p, description: e.target.value }))} placeholder="Conte um pouco sobre o seu salão..." />
+                  </div>
+                  <div className="space-y-2 sm:col-span-2">
+                    <Label htmlFor="about-address">Endereço</Label>
+                    <Input id="about-address" value={aboutForm.address} onChange={(e) => setAboutForm((p) => ({ ...p, address: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="about-city">Cidade</Label>
+                    <Input id="about-city" value={aboutForm.city} onChange={(e) => setAboutForm((p) => ({ ...p, city: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="about-state">Estado (UF)</Label>
+                    <Input id="about-state" maxLength={2} value={aboutForm.state} onChange={(e) => setAboutForm((p) => ({ ...p, state: e.target.value.toUpperCase() }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="about-zip">CEP</Label>
+                    <Input id="about-zip" value={aboutForm.zip_code} onChange={(e) => setAboutForm((p) => ({ ...p, zip_code: e.target.value }))} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Link público (slug)</Label>
+                    <Input value={establishment?.slug ?? ""} readOnly className="bg-muted" />
+                  </div>
+                </div>
+                <div className="flex justify-end pt-2">
+                  <Button onClick={handleSaveAbout} disabled={savingAbout}>
+                    {savingAbout ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                    Salvar dados
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <KeyRound className="h-5 w-5 text-primary" />
+                  Alterar senha de acesso
+                </CardTitle>
+                <CardDescription>
+                  Esta é a senha que você usa para entrar no portal{user?.email ? ` (${user.email})` : ""}.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 max-w-md">
+                <div className="space-y-2">
+                  <Label htmlFor="new-password">Nova senha</Label>
+                  <Input id="new-password" type="password" autoComplete="new-password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} placeholder="Mínimo de 6 caracteres" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirmar nova senha</Label>
+                  <Input id="confirm-password" type="password" autoComplete="new-password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                </div>
+                <div className="flex justify-end">
+                  <Button onClick={handleChangePassword} disabled={savingPassword}>
+                    {savingPassword ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <KeyRound className="h-4 w-4 mr-2" />}
+                    Alterar senha
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
           <TabsContent value="working-hours">
             <Card>
               <CardHeader>
