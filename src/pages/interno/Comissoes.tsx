@@ -30,15 +30,15 @@ type CommissionRow = {
 };
 
 const STATUS_LABEL: Record<string, string> = {
-  pending: "Aguardando aprovação",
-  approved: "Aprovada",
+  pending: "Acerto Pendente",
+  approved: "Acerto Pendente",
   paid: "Paga",
   cancelled: "Cancelada",
 };
 
 const STATUS_VARIANT: Record<string, "default" | "secondary" | "outline" | "destructive"> = {
   pending: "outline",
-  approved: "secondary",
+  approved: "outline",
   paid: "default",
   cancelled: "destructive",
 };
