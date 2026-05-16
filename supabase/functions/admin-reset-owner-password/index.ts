@@ -30,21 +30,18 @@ Deno.serve(async (req) => {
     if (password.length < 6) return json({ error: "password_too_short" }, 400);
 
     // Autenticação: super_admin OU service_role JWT (uso interno)
-    let isAuthorized = false;
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) return json({ error: "unauthorized" }, 401);
+    console.log("[admin-reset-owner-password] authHeader present:", !!authHeader, "starts with Bearer:", authHeader?.startsWith("Bearer "));
+    if (!authHeader?.startsWith("Bearer ")) return json({ error: "unauthorized", reason: "no_bearer" }, 401);
     const token = authHeader.slice(7);
-    if (token === SERVICE_ROLE) {
-      isAuthorized = true;
-    } else {
-      const userClient = createClient(SUPABASE_URL, ANON_KEY, {
-        global: { headers: { Authorization: `Bearer ${token}` } },
-      });
-      const { data: userData, error: userErr } = await userClient.auth.getUser();
-      if (userErr || !userData?.user) return json({ error: "invalid_token" }, 401);
-      const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", userData.user.id);
-      isAuthorized = !!roles?.some((r: any) => r.role === "super_admin");
-      if (!isAuthorized) return json({ error: "forbidden" }, 403);
+    if (token !== SERVICE_ROLE) {
+      const { data: userData, error: userErr } = await admin.auth.getUser(token);
+      console.log("[admin-reset-owner-password] getUser err:", userErr?.message, "uid:", userData?.user?.id);
+      if (userErr || !userData?.user) return json({ error: "invalid_token", detail: userErr?.message }, 401);
+      const { data: roles, error: rolesErr } = await admin.from("user_roles").select("role").eq("user_id", userData.user.id);
+      console.log("[admin-reset-owner-password] roles:", JSON.stringify(roles), "err:", rolesErr?.message);
+      const isAuthorized = !!roles?.some((r: any) => r.role === "super_admin");
+      if (!isAuthorized) return json({ error: "forbidden", roles }, 403);
     }
 
     const { data: est, error: estErr } = await admin
