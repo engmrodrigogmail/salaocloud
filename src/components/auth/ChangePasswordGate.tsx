@@ -22,6 +22,7 @@ export function ChangePasswordGate({ children }: ChangePasswordGateProps) {
   const { user, loading: authLoading } = useAuth();
   const [checking, setChecking] = useState(true);
   const [mustChange, setMustChange] = useState(false);
+  const [source, setSource] = useState<"professional" | "owner_metadata" | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
@@ -36,13 +37,24 @@ export function ChangePasswordGate({ children }: ChangePasswordGateProps) {
     }
     let cancelled = false;
     (async () => {
+      // 1) Profissional com flag na tabela professionals
       const { data } = await supabase
         .from("professionals")
         .select("must_change_password")
         .eq("user_id", user.id)
         .maybeSingle();
       if (cancelled) return;
-      setMustChange(Boolean((data as any)?.must_change_password));
+      if ((data as any)?.must_change_password) {
+        setSource("professional");
+        setMustChange(true);
+        setChecking(false);
+        return;
+      }
+      // 2) Dono do salão (ou qualquer outro) com flag no user_metadata
+      if ((user.user_metadata as any)?.must_change_password) {
+        setSource("owner_metadata");
+        setMustChange(true);
+      }
       setChecking(false);
     })();
     return () => {
@@ -61,11 +73,16 @@ export function ChangePasswordGate({ children }: ChangePasswordGateProps) {
     }
     setSaving(true);
     try {
-      const { error: pwdErr } = await supabase.auth.updateUser({ password: newPassword });
+      const { error: pwdErr } = await supabase.auth.updateUser({
+        password: newPassword,
+        data: { must_change_password: false },
+      });
       if (pwdErr) throw pwdErr;
 
-      const { error: flagErr } = await supabase.rpc("clear_must_change_password" as never);
-      if (flagErr) throw flagErr;
+      if (source === "professional") {
+        const { error: flagErr } = await supabase.rpc("clear_must_change_password" as never);
+        if (flagErr) throw flagErr;
+      }
 
       toast.success("Senha atualizada com sucesso!");
       setMustChange(false);

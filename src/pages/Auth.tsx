@@ -16,6 +16,15 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSignupsEnabled } from "@/hooks/useSignupsEnabled";
@@ -52,6 +61,10 @@ export default function Auth() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSending, setForgotSending] = useState(false);
+  const [forgotSent, setForgotSent] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { signIn, signUp, user, loading } = useAuth();
@@ -108,6 +121,25 @@ export default function Auth() {
     }
 
     await handleLogin(parsed.data);
+  };
+
+  const handleForgotPassword = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const email = forgotEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ variant: "destructive", title: "Email inválido", description: "Informe um email válido." });
+      return;
+    }
+    setForgotSending(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/redefinir-senha`,
+    });
+    setForgotSending(false);
+    if (error) {
+      toast({ variant: "destructive", title: "Erro", description: error.message });
+      return;
+    }
+    setForgotSent(true);
   };
 
   const handleSignup = async (data: SignupFormData) => {
@@ -342,6 +374,16 @@ export default function Auth() {
                   "Entrar"
                 )}
               </Button>
+
+              <div className="text-center -mt-1">
+                <button
+                  type="button"
+                  onClick={() => { setForgotEmail(loginEmail); setForgotSent(false); setForgotOpen(true); }}
+                  className="text-sm text-primary hover:underline"
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
             </form>
           )}
 
@@ -395,6 +437,46 @@ export default function Auth() {
           </div>
         </div>
       </div>
+
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Recuperar senha</DialogTitle>
+            <DialogDescription>
+              {forgotSent
+                ? "Se este email estiver cadastrado, enviaremos um link para redefinir sua senha em instantes."
+                : "Informe o email do dono do salão. Enviaremos um link para criar uma nova senha."}
+            </DialogDescription>
+          </DialogHeader>
+          {forgotSent ? (
+            <DialogFooter>
+              <Button onClick={() => setForgotOpen(false)} className="w-full">Fechar</Button>
+            </DialogFooter>
+          ) : (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="forgot-email">Email</Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  autoComplete="email"
+                  required
+                />
+              </div>
+              <DialogFooter className="gap-2">
+                <Button type="button" variant="outline" onClick={() => setForgotOpen(false)}>Cancelar</Button>
+                <Button type="submit" disabled={forgotSending}>
+                  {forgotSending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Enviar link
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -48,6 +48,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { useImpersonation } from "@/contexts/ImpersonationContext";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
+import { ChangePasswordGate } from "@/components/auth/ChangePasswordGate";
 import { supabase } from "@/integrations/supabase/client";
 import { usePortalTour } from "@/hooks/usePortalTour";
 import { useEduAccess } from "@/hooks/useEduAccess";
@@ -153,6 +154,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
   };
 
   return (
+    <ChangePasswordGate>
     <div className="min-h-screen bg-background">
       {/* Impersonation Banner */}
       <ImpersonationBanner />
@@ -311,5 +313,6 @@ export function PortalLayout({ children }: PortalLayoutProps) {
       </main>
       <SilviaHelpButton profile="dono" />
     </div>
+    </ChangePasswordGate>
   );
 }

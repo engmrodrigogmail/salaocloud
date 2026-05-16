@@ -20,6 +20,7 @@ import {
   ClipboardCheck,
   Crown,
   Sparkles,
+  KeyRound,
 } from "lucide-react";
 import { EditSubscriptionDialog } from "@/components/admin/EditSubscriptionDialog";
 import { Button } from "@/components/ui/button";
@@ -472,6 +473,22 @@ export default function AdminEstablishments() {
                           >
                             <Crown className="h-4 w-4 mr-2 text-primary" />
                             Editar assinatura
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={async () => {
+                              if (!confirm(`Resetar a senha do dono de "${establishment.name}" para "123mudar"? O usuário precisará trocar no próximo login.`)) return;
+                              const { data, error } = await supabase.functions.invoke("admin-reset-owner-password", {
+                                body: { establishment_id: establishment.id, new_password: "123mudar" },
+                              });
+                              if (error || (data as any)?.error) {
+                                toast({ variant: "destructive", title: "Erro", description: (data as any)?.error || error?.message || "Falha ao resetar" });
+                              } else {
+                                toast({ title: "Senha resetada", description: `Nova senha: 123mudar (${(data as any)?.email || "dono"})` });
+                              }
+                            }}
+                          >
+                            <KeyRound className="h-4 w-4 mr-2 text-warning" />
+                            Resetar senha do dono
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           {establishment.status !== "active" && (
