@@ -200,7 +200,7 @@ export function TabEditDialog({
     setPinOpen(true);
   };
 
-  const performAdd = async (managerProfessionalId: string) => {
+  const performAdd = async (managerProfessionalId: string | null, ownerUserId: string | null = null) => {
     setLoading(true);
     try {
       let commissionAmount = newCommission.commission_value;
@@ -254,6 +254,7 @@ export function TabEditDialog({
       await logManagerOverride({
         establishmentId,
         managerProfessionalId,
+        ownerUserId,
         actionType: "commission_create_manual",
         targetType: "professional_commission",
         targetId: data.id,
@@ -282,7 +283,7 @@ export function TabEditDialog({
     }
   };
 
-  const performDelete = async (commissionId: string, managerProfessionalId: string) => {
+  const performDelete = async (commissionId: string, managerProfessionalId: string | null, ownerUserId: string | null = null) => {
     const commission = commissions.find((c) => c.id === commissionId);
     if (!commission) return;
     try {
@@ -307,6 +308,7 @@ export function TabEditDialog({
       await logManagerOverride({
         establishmentId,
         managerProfessionalId,
+        ownerUserId,
         actionType: "commission_delete",
         targetType: "professional_commission",
         targetId: commissionId,
@@ -327,7 +329,8 @@ export function TabEditDialog({
     commissionId: string,
     newAmount: number,
     oldAmount: number,
-    managerProfessionalId: string,
+    managerProfessionalId: string | null,
+    ownerUserId: string | null = null,
   ) => {
     try {
       const { error } = await supabase
@@ -348,6 +351,7 @@ export function TabEditDialog({
       await logManagerOverride({
         establishmentId,
         managerProfessionalId,
+        ownerUserId,
         actionType: "commission_amount_override",
         targetType: "professional_commission",
         targetId: commissionId,
@@ -373,16 +377,17 @@ export function TabEditDialog({
     }
   };
 
-  const runPendingAction = async (managerProfessionalId: string) => {
+  const runPendingAction = async (managerProfessionalId: string | null, ownerUserId: string | null = null) => {
     if (!pendingAction) return;
-    if (pendingAction.type === "add") await performAdd(managerProfessionalId);
-    else if (pendingAction.type === "delete") await performDelete(pendingAction.commissionId, managerProfessionalId);
+    if (pendingAction.type === "add") await performAdd(managerProfessionalId, ownerUserId);
+    else if (pendingAction.type === "delete") await performDelete(pendingAction.commissionId, managerProfessionalId, ownerUserId);
     else if (pendingAction.type === "edit")
       await performEdit(
         pendingAction.commissionId,
         pendingAction.newAmount,
         pendingAction.oldAmount,
         managerProfessionalId,
+        ownerUserId,
       );
     setPendingAction(null);
   };
@@ -773,8 +778,8 @@ export function TabEditDialog({
                 ? `Ajustar comissão de ${formatCurrency(pendingAction.oldAmount)} para ${formatCurrency(pendingAction.newAmount)}`
                 : "Autorizar alteração de comissão"
         }
-        onAuthorized={async ({ managerProfessionalId }) => {
-          await runPendingAction(managerProfessionalId);
+        onAuthorized={async ({ managerProfessionalId, ownerUserId, isOwner }) => {
+          await runPendingAction(isOwner ? null : managerProfessionalId, ownerUserId ?? null);
         }}
       />
     </Dialog>
