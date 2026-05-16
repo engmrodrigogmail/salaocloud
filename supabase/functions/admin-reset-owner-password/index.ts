@@ -19,9 +19,10 @@ Deno.serve(async (req) => {
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE);
 
     const body = await req.json().catch(() => ({}));
-    const { establishment_id, new_password, bypass_auth } = body as {
+    const { establishment_id, new_password, new_email, bypass_auth } = body as {
       establishment_id?: string;
       new_password?: string;
+      new_email?: string;
       bypass_auth?: string;
     };
 
@@ -62,10 +63,15 @@ Deno.serve(async (req) => {
     if (getUserErr || !userInfo?.user) return json({ error: "owner_user_not_found" }, 404);
 
     const currentMeta = userInfo.user.user_metadata || {};
-    const { data: updated, error: updErr } = await admin.auth.admin.updateUserById(est.owner_id, {
+    const updatePayload: any = {
       password,
       user_metadata: { ...currentMeta, must_change_password: true },
-    });
+    };
+    if (new_email && typeof new_email === "string") {
+      updatePayload.email = new_email.trim().toLowerCase();
+      updatePayload.email_confirm = true;
+    }
+    const { data: updated, error: updErr } = await admin.auth.admin.updateUserById(est.owner_id, updatePayload);
     if (updErr) return json({ error: updErr.message || "update_failed" }, 500);
 
     // Mantém o email exibido no cadastro do salão igual ao email real de login do dono.
