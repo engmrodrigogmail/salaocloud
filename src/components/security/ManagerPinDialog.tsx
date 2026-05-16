@@ -72,8 +72,34 @@ export function ManagerPinDialog({
       setPin("");
       setError(null);
       setVerifying(false);
+
+      // Owner bypass: if the logged-in user is the salon owner, authorize
+      // the action immediately without asking for a PIN.
+      (async () => {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+          const { data: est } = await supabase
+            .from("establishments")
+            .select("owner_id")
+            .eq("id", establishmentId)
+            .maybeSingle();
+          if (est?.owner_id && est.owner_id === user.id) {
+            await onAuthorized({
+              managerProfessionalId: "",
+              managerName: "Dono do salão",
+              isOwner: true,
+              ownerUserId: user.id,
+            });
+            onOpenChange(false);
+          }
+        } catch (e) {
+          console.error("Owner bypass check failed:", e);
+        }
+      })();
     }
-  }, [open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, establishmentId]);
 
   const handleVerify = async () => {
     setError(null);
@@ -193,7 +219,8 @@ export function ManagerPinDialog({
  */
 export async function logManagerOverride(params: {
   establishmentId: string;
-  managerProfessionalId: string;
+  managerProfessionalId?: string | null;
+  ownerUserId?: string | null;
   actionType: string;
   targetType?: string;
   targetId?: string;
@@ -203,9 +230,18 @@ export async function logManagerOverride(params: {
   reason?: string;
 }) {
   try {
+    const managerId = params.managerProfessionalId && params.managerProfessionalId.length > 0
+      ? params.managerProfessionalId
+      : null;
+    const ownerId = params.ownerUserId ?? null;
+    if (!managerId && !ownerId) {
+      console.warn("logManagerOverride called without manager nor owner authorizer");
+      return;
+    }
     await supabase.from("manager_pin_audit").insert({
       establishment_id: params.establishmentId,
-      manager_professional_id: params.managerProfessionalId,
+      manager_professional_id: managerId,
+      authorized_by_owner_user_id: ownerId,
       action_type: params.actionType,
       target_type: params.targetType ?? null,
       target_id: params.targetId ?? null,
@@ -213,7 +249,7 @@ export async function logManagerOverride(params: {
       old_value: (params.oldValue ?? null) as any,
       new_value: (params.newValue ?? null) as any,
       reason: params.reason ?? null,
-    });
+    } as any);
   } catch (e) {
     console.error("Failed to log manager override:", e);
   }
