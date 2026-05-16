@@ -13,7 +13,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useOwnerEstablishment } from "@/hooks/useOwnerEstablishment";
 import { useAuth } from "@/contexts/AuthContext";
-import { Clock, Save, Loader2, Users, Settings, CalendarDays, Eye, ShieldCheck, Bell, Sparkles } from "lucide-react";
+import { Clock, Save, Loader2, Users, Settings, CalendarDays, Eye, ShieldCheck, Bell, Sparkles, Building2, KeyRound } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { NotificationSettingsCard } from "@/components/notifications/NotificationSettingsCard";
 import type { Tables, Json } from "@/integrations/supabase/types";
 
