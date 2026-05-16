@@ -477,11 +477,26 @@ export default function AdminEstablishments() {
                           <DropdownMenuItem
                             onClick={async () => {
                               if (!confirm(`Resetar a senha do dono de "${establishment.name}" para "123mudar"? O usuário precisará trocar no próximo login.`)) return;
+                              const { data: refreshedSession, error: refreshError } = await supabase.auth.refreshSession();
+                              if (refreshError || !refreshedSession.session) {
+                                toast({
+                                  variant: "destructive",
+                                  title: "Sessão expirada",
+                                  description: "Entre novamente como superadmin e tente resetar a senha.",
+                                });
+                                return;
+                              }
                               const { data, error } = await supabase.functions.invoke("admin-reset-owner-password", {
                                 body: { establishment_id: establishment.id, new_password: "123mudar" },
                               });
                               if (error || (data as any)?.error) {
-                                toast({ variant: "destructive", title: "Erro", description: (data as any)?.error || error?.message || "Falha ao resetar" });
+                                const message =
+                                  (data as any)?.message ||
+                                  (data as any)?.detail ||
+                                  (data as any)?.error ||
+                                  error?.message ||
+                                  "Falha ao resetar";
+                                toast({ variant: "destructive", title: "Erro", description: message });
                               } else {
                                 toast({ title: "Senha resetada", description: `Nova senha: 123mudar (${(data as any)?.email || "dono"})` });
                               }
