@@ -18,7 +18,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { 
   Plus, Trash2, User, Clock, Package, Scissors, PenLine, 
-  CreditCard, Receipt, ArrowLeft, Minus, Undo2, Tag, AlertCircle, Star, CalendarCheck, X
+  CreditCard, Receipt, ArrowLeft, Minus, Undo2, Tag, AlertCircle, Star, CalendarCheck, X,
+  AlertTriangle, RotateCcw,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, parseISO } from "date-fns";
@@ -26,6 +27,8 @@ import { ptBR } from "date-fns/locale";
 import type { TabWithDetails, TabItem, PaymentMethod } from "@/types/tabs";
 import { ManualDiscountDialog } from "./ManualDiscountDialog";
 import { SalonReviewDialog } from "./SalonReviewDialog";
+import { DeleteTabDialog } from "./DeleteTabDialog";
+import { RecoverTabDialog } from "./RecoverTabDialog";
 
 interface AppointmentSuggestion {
   appointment_id: string;
