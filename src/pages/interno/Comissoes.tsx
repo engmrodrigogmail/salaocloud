@@ -208,25 +208,15 @@ export default function InternoComissoes() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2 text-muted-foreground">
-                <Clock className="h-4 w-4" /> A aprovar
+                <Clock className="h-4 w-4" /> Acerto Pendente
               </CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">{fmt(totals.pending)}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2 text-muted-foreground">
-                <Coins className="h-4 w-4" /> Aprovadas (a pagar)
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{fmt(totals.approved)}</p>
             </CardContent>
           </Card>
           <Card>
