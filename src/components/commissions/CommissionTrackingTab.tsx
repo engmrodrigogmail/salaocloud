@@ -234,8 +234,7 @@ export function CommissionTrackingTab({ establishmentId }: CommissionTrackingTab
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos</SelectItem>
-              <SelectItem value="pending">Pendentes</SelectItem>
-              <SelectItem value="approved">Aprovadas</SelectItem>
+              <SelectItem value="pending">Acerto Pendente</SelectItem>
               <SelectItem value="paid">Pagas</SelectItem>
               <SelectItem value="cancelled">Canceladas</SelectItem>
             </SelectContent>
