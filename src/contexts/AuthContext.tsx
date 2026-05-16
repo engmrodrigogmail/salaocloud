@@ -111,10 +111,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const normalizeEmail = (email: string) => email.trim().toLowerCase();
+
   const signUp = async (email: string, password: string, fullName?: string) => {
     const redirectUrl = `${window.location.origin}/`;
     const { error } = await supabase.auth.signUp({
-      email,
+      email: normalizeEmail(email),
       password,
       options: {
         emailRedirectTo: redirectUrl,
@@ -125,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: normalizeEmail(email), password });
 
     if (!error) {
       const { data: { user } } = await supabase.auth.getUser();

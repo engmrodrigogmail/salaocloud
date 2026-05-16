@@ -498,7 +498,11 @@ export default function AdminEstablishments() {
                                   "Falha ao resetar";
                                 toast({ variant: "destructive", title: "Erro", description: message });
                               } else {
-                                toast({ title: "Senha resetada", description: `Nova senha: 123mudar (${(data as any)?.email || "dono"})` });
+                                toast({
+                                  title: "Senha resetada",
+                                  description: `Login: ${(data as any)?.email || establishment.email || "email do dono"} · Senha: 123mudar`,
+                                });
+                                fetchEstablishments();
                               }
                             }}
                           >
