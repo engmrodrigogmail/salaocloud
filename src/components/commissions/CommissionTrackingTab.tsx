@@ -91,7 +91,10 @@ export function CommissionTrackingTab({ establishmentId }: CommissionTrackingTab
         query = query.eq("professional_id", selectedProfessional);
       }
 
-      if (selectedStatus !== "all") {
+      if (selectedStatus === "pending") {
+        // Inclui legado 'approved' (status descontinuado, equivalente a pendente)
+        query = query.in("status", ["pending", "approved"]);
+      } else if (selectedStatus !== "all") {
         query = query.eq("status", selectedStatus);
       }
 
