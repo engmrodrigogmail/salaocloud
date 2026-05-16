@@ -327,6 +327,7 @@ export default function PortalSettings() {
   }
 
   const SECTIONS = [
+    { value: "about", label: "Sobre", icon: Building2 },
     { value: "working-hours", label: "Horário de Funcionamento", icon: Clock },
     { value: "agenda-settings", label: "Visualização da Agenda", icon: CalendarDays },
     { value: "client-portal", label: "Portal da Cliente", icon: Eye },
