@@ -192,11 +192,21 @@ export default function PortalDashboard() {
           </Alert>
         )}
         
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Visão geral do {establishment?.name}
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Visão geral do {establishment?.name} <span className="text-xs">({range.label})</span>
+            </p>
+          </div>
+          <PeriodFilter
+            period={period}
+            onPeriodChange={setPeriod}
+            customFrom={customFrom}
+            customTo={customTo}
+            onCustomFromChange={setCustomFrom}
+            onCustomToChange={setCustomTo}
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -213,23 +223,23 @@ export default function PortalDashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total de Agendamentos</CardTitle>
+              <CardTitle className="text-sm font-medium">Agendamentos no período</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalAppointments}</div>
-              <p className="text-xs text-muted-foreground">agendamentos realizados</p>
+              <div className="text-2xl font-bold">{stats.periodAppointments}</div>
+              <p className="text-xs text-muted-foreground">agendamentos no intervalo</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Faturamento do Mês</CardTitle>
+              <CardTitle className="text-sm font-medium">Faturamento no período</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(stats.monthRevenue)}
+                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(stats.periodRevenue)}
               </div>
               <p className="text-xs text-muted-foreground">em serviços concluídos</p>
             </CardContent>
