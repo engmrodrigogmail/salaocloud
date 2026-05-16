@@ -33,6 +33,7 @@ export default function InternoComandas() {
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
   const [discountPinThreshold, setDiscountPinThreshold] = useState<number>(10);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<"owner" | "manager" | "professional">("professional");
   const [clients, setClients] = useState<Client[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
@@ -42,7 +43,7 @@ export default function InternoComandas() {
   const [newTabOpen, setNewTabOpen] = useState(false);
   const [addItemOpen, setAddItemOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const [activeView, setActiveView] = useState<"open" | "history">("open");
+  const [activeView, setActiveView] = useState<"open" | "history" | "deleted">("open");
 
   const { tabs, fetchTabs, createTab, closeTab, cancelTab, undoTabOpening, recalculateTotal } = useTabs(establishmentId);
   const { items, fetchItems, addItem, updateItem, removeItem } = useTabItems(selectedTab?.id || null);
