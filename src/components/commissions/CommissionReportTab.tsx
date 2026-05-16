@@ -142,8 +142,7 @@ export function CommissionReportTab({ establishmentId }: CommissionReportTabProp
         summary.total_reference += comm.reference_value;
         summary.total_commission += comm.commission_amount;
 
-        if (comm.status === "pending") summary.pending += comm.commission_amount;
-        else if (comm.status === "approved") summary.approved += comm.commission_amount;
+        if (comm.status === "pending" || comm.status === "approved") summary.pending += comm.commission_amount;
         else if (comm.status === "paid") summary.paid += comm.commission_amount;
       }
 
