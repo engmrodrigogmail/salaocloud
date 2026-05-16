@@ -272,11 +272,16 @@ function FinanceContent({
 
 function computeTotals(rows: ConsolidatedRow[]) {
   let revenue = 0, expense = 0, pending = 0;
+  let commissionsPending = 0, commissionsPaid = 0;
   const byCat: Record<string, number> = {};
   const byPayment: Record<string, { rev: number; exp: number }> = {};
   const byDay: Record<string, { rev: number; exp: number }> = {};
   for (const r of rows) {
     const paid = r.status === "paid";
+    if (r.source === "commission") {
+      if (paid) commissionsPaid += Number(r.amount);
+      else commissionsPending += Number(r.amount);
+    }
     if (r.type === "revenue") {
       if (paid) revenue += Number(r.amount);
     } else {
@@ -297,7 +302,7 @@ function computeTotals(rows: ConsolidatedRow[]) {
   }
   const profit = revenue - expense;
   const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
-  return { revenue, expense, pending, profit, margin, byCat, byPayment, byDay };
+  return { revenue, expense, pending, profit, margin, byCat, byPayment, byDay, commissionsPending, commissionsPaid };
 }
 
 function Delta({ current, prev }: { current: number; prev: number }) {
@@ -362,6 +367,19 @@ function DreTab({
         <SummaryCard label="Lucro líquido" value={fmtMoney(totals.profit)} valueClass={totals.profit >= 0 ? "text-emerald-600" : "text-destructive"} />
         <SummaryCard label="Margem" value={`${totals.margin.toFixed(1)}%`} />
         <SummaryCard label="Pendências" value={fmtMoney(totals.pending)} valueClass={totals.pending > 0 ? "text-orange-600" : ""} />
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-2 gap-3">
+        <SummaryCard
+          label="Comissões — Acerto Pendente"
+          value={fmtMoney(totals.commissionsPending)}
+          valueClass={totals.commissionsPending > 0 ? "text-orange-600" : ""}
+        />
+        <SummaryCard
+          label="Comissões pagas"
+          value={fmtMoney(totals.commissionsPaid)}
+          valueClass="text-emerald-600"
+        />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
