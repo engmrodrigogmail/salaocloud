@@ -44,6 +44,8 @@ interface TabDetailsCardProps {
   items: TabItem[];
   establishmentId: string;
   discountPinThreshold: number;
+  /** Role of the current user against this establishment. Defaults to 'professional'. */
+  userRole?: "owner" | "manager" | "professional";
   onAddItem: () => void;
   onRemoveItem: (itemId: string) => Promise<void>;
   onUpdateQuantity: (itemId: string, quantity: number) => Promise<void>;
@@ -53,6 +55,7 @@ interface TabDetailsCardProps {
   onUndoOpening?: () => Promise<void> | void;
   onRecalculate: () => Promise<void>;
   onDiscountChanged?: () => Promise<void> | void;
+  onTabChanged?: () => Promise<void> | void;
   appointmentSuggestions?: AppointmentSuggestion[];
   dismissedAppointmentSuggestions?: AppointmentSuggestion[];
   onConfirmAppointmentService?: (suggestion: AppointmentSuggestion) => Promise<void> | void;
