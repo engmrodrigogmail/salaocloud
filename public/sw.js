@@ -59,7 +59,10 @@ self.addEventListener('push', (event) => {
     tag: payload.tag || category || undefined,
     renotify: !!(payload.tag || category),
     requireInteraction: true,
-    vibrate: isCritical ? [200, 100, 200, 100, 200] : [120, 60, 120],
+    // silent: false força o sistema a usar o som/vibração padrão do canal.
+    // Sem isto, alguns navegadores tratam como "silent" por padrão.
+    silent: false,
+    vibrate: isCritical ? [200, 100, 200, 100, 200] : [200, 100, 200],
     timestamp: Date.now(),
     actions: [
       { action: 'open', title: 'Abrir' },
