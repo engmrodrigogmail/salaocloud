@@ -74,6 +74,7 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  if (event.action === 'close') return;
   const targetUrl = (event.notification.data && event.notification.data.url) || '/';
   const absoluteUrl = new URL(targetUrl, self.location.origin).href;
 
