@@ -56,7 +56,6 @@ export function CommissionTrackingTab({ establishmentId }: CommissionTrackingTab
   const [dialogOpen, setDialogOpen] = useState(false);
   const [stats, setStats] = useState({
     pending: 0,
-    approved: 0,
     paid: 0,
     total: 0,
   });
