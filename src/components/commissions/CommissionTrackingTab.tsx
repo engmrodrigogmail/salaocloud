@@ -298,16 +298,7 @@ export function CommissionTrackingTab({ establishmentId }: CommissionTrackingTab
                     </TableCell>
                     <TableCell>{getStatusBadge(commission.status)}</TableCell>
                     <TableCell className="text-right">
-                      {commission.status === "pending" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleStatusChange(commission.id, "approved")}
-                        >
-                          Aprovar
-                        </Button>
-                      )}
-                      {commission.status === "approved" && (
+                      {(commission.status === "pending" || commission.status === "approved") && (
                         <Button
                           size="sm"
                           variant="outline"
