@@ -237,9 +237,23 @@ export function TabDetailsCard({
           <ArrowLeft className="h-4 w-4 mr-2" />
           Voltar
         </Button>
-        <Badge variant={tab.status === "open" ? "default" : "secondary"}>
-          {tab.status === "open" ? "Aberta" : tab.status === "closed" ? "Fechada" : "Cancelada"}
-        </Badge>
+        <div className="flex items-center gap-2">
+          {isDeleted && (
+            <Badge variant="destructive" className="gap-1">
+              <AlertTriangle className="h-3 w-3" />
+              Excluída
+            </Badge>
+          )}
+          {(tab as any).deletion_mark === "recovered_by_owner" && !isDeleted && (
+            <Badge variant="outline" className="gap-1 border-amber-500 text-amber-700 dark:text-amber-400">
+              <RotateCcw className="h-3 w-3" />
+              Recuperada pelo dono
+            </Badge>
+          )}
+          <Badge variant={tab.status === "open" ? "default" : "secondary"}>
+            {tab.status === "open" ? "Aberta" : tab.status === "closed" ? "Fechada" : "Cancelada"}
+          </Badge>
+        </div>
       </div>
 
       {/* Client Info */}
