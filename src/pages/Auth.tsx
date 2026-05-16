@@ -374,6 +374,16 @@ export default function Auth() {
                   "Entrar"
                 )}
               </Button>
+
+              <div className="text-center -mt-1">
+                <button
+                  type="button"
+                  onClick={() => { setForgotEmail(loginEmail); setForgotSent(false); setForgotOpen(true); }}
+                  className="text-sm text-primary hover:underline"
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
             </form>
           )}
 
