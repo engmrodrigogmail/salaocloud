@@ -437,6 +437,46 @@ export default function Auth() {
           </div>
         </div>
       </div>
+
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Recuperar senha</DialogTitle>
+            <DialogDescription>
+              {forgotSent
+                ? "Se este email estiver cadastrado, enviaremos um link para redefinir sua senha em instantes."
+                : "Informe o email do dono do salão. Enviaremos um link para criar uma nova senha."}
+            </DialogDescription>
+          </DialogHeader>
+          {forgotSent ? (
+            <DialogFooter>
+              <Button onClick={() => setForgotOpen(false)} className="w-full">Fechar</Button>
+            </DialogFooter>
+          ) : (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="forgot-email">Email</Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  autoComplete="email"
+                  required
+                />
+              </div>
+              <DialogFooter className="gap-2">
+                <Button type="button" variant="outline" onClick={() => setForgotOpen(false)}>Cancelar</Button>
+                <Button type="submit" disabled={forgotSending}>
+                  {forgotSending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Enviar link
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
