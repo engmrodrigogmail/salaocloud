@@ -223,6 +223,9 @@ function FinanceContent({
             prevTotals={prevTotals}
             consolidated={finance.consolidated}
             onExport={exportCsv}
+            establishmentId={establishmentId}
+            periodFrom={from}
+            periodTo={to}
           />
         </TabsContent>
 
@@ -318,13 +321,17 @@ function Delta({ current, prev }: { current: number; prev: number }) {
 }
 
 function DreTab({
-  totals, prevTotals, consolidated, onExport,
+  totals, prevTotals, consolidated, onExport, establishmentId, periodFrom, periodTo,
 }: {
   totals: ReturnType<typeof computeTotals>;
   prevTotals: ReturnType<typeof computeTotals>;
   consolidated: ConsolidatedRow[];
   onExport: () => void;
+  establishmentId: string;
+  periodFrom: string;
+  periodTo: string;
 }) {
+  const [commissionsModalOpen, setCommissionsModalOpen] = useState(false);
   const barData = Object.entries(totals.byDay)
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, v]) => ({ date: format(new Date(date + "T00:00:00"), "dd/MM"), Receitas: v.rev, Despesas: v.exp }));
@@ -369,18 +376,37 @@ function DreTab({
         <SummaryCard label="Pendências" value={fmtMoney(totals.pending)} valueClass={totals.pending > 0 ? "text-orange-600" : ""} />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-2 gap-3">
-        <SummaryCard
-          label="Comissões — Acerto Pendente"
-          value={fmtMoney(totals.commissionsPending)}
-          valueClass={totals.commissionsPending > 0 ? "text-orange-600" : ""}
-        />
-        <SummaryCard
-          label="Comissões pagas"
-          value={fmtMoney(totals.commissionsPaid)}
-          valueClass="text-emerald-600"
-        />
+      <div className="space-y-2">
+        <div className="grid grid-cols-2 lg:grid-cols-2 gap-3">
+          <SummaryCard
+            label="Comissões — Acerto Pendente"
+            value={fmtMoney(totals.commissionsPending)}
+            valueClass={totals.commissionsPending > 0 ? "text-orange-600" : ""}
+          />
+          <SummaryCard
+            label="Comissões pagas"
+            value={fmtMoney(totals.commissionsPaid)}
+            valueClass="text-emerald-600"
+          />
+        </div>
+        <Button variant="outline" size="sm" onClick={() => setCommissionsModalOpen(true)}>
+          Ver detalhe das comissões
+        </Button>
       </div>
+
+      <Dialog open={commissionsModalOpen} onOpenChange={setCommissionsModalOpen}>
+        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Comissões do período</DialogTitle>
+          </DialogHeader>
+          <CommissionDetailsTable
+            establishmentId={establishmentId}
+            initialServiceFrom={periodFrom}
+            initialServiceTo={periodTo}
+            readOnly
+          />
+        </DialogContent>
+      </Dialog>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card>
