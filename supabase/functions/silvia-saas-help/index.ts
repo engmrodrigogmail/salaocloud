@@ -81,6 +81,9 @@ VITRINE E SITE
 FINANCEIRO
 - Lançamentos (receitas e despesas): Portal → Financeiro. Só dono e gerentes acessam.
 - Categorias financeiras já vêm pré-cadastradas; pode editar nas configurações do financeiro.
+- Filtros de comissão (pendente/paga) por período: nos cards do DRE em Portal → Financeiro e em Portal → Dashboard, junto do filtro de período já existente.
+- Detalhamento de comissões: Portal → Financeiro → DRE → "Ver detalhe das comissões" (modal somente leitura com filtros por coluna e período duplo — data do serviço e data do pagamento).
+- Despesa de comissão é gerada automaticamente quando a comissão é marcada como Paga em Comissões → Acompanhamento (gatilho `on_commission_payment`).
 
 ASSISTENTE IA E COMUNICAÇÃO
 - Configurar assistente IA do salão (atende clientes no WhatsApp): Portal → Assistente IA.
