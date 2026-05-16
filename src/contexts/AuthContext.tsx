@@ -84,18 +84,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-
-      if (session?.user) {
-        fetchUserRoles(session.user.id).then((list) => {
-          applyRoles(list);
-          setLoading(false);
-        });
-      } else {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session?.user) {
         setLoading(false);
+        return;
       }
+
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError || !userData.user) {
+        await supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        applyRoles([]);
+        setLoading(false);
+        return;
+      }
+
+      setSession(session);
+      setUser(userData.user);
+      fetchUserRoles(userData.user.id).then((list) => {
+        applyRoles(list);
+        setLoading(false);
+      });
     });
 
     return () => subscription.unsubscribe();

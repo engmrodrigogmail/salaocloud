@@ -31,17 +31,23 @@ Deno.serve(async (req) => {
 
     // Autenticação: super_admin OU service_role JWT (uso interno)
     const authHeader = req.headers.get("Authorization");
-    console.log("[admin-reset-owner-password] authHeader present:", !!authHeader, "starts with Bearer:", authHeader?.startsWith("Bearer "));
-    if (!authHeader?.startsWith("Bearer ")) return json({ error: "unauthorized", reason: "no_bearer" }, 401);
+    if (!authHeader?.startsWith("Bearer ")) {
+      return json({ error: "unauthorized", message: "Sessão ausente. Entre novamente como superadmin." }, 401);
+    }
     const token = authHeader.slice(7);
     if (token !== SERVICE_ROLE) {
       const { data: userData, error: userErr } = await admin.auth.getUser(token);
-      console.log("[admin-reset-owner-password] getUser err:", userErr?.message, "uid:", userData?.user?.id);
-      if (userErr || !userData?.user) return json({ error: "invalid_token", detail: userErr?.message }, 401);
+      if (userErr || !userData?.user) {
+        return json({
+          error: "invalid_token",
+          detail: userErr?.message,
+          message: "Sua sessão expirou. Entre novamente como superadmin e tente resetar a senha.",
+        }, 401);
+      }
       const { data: roles, error: rolesErr } = await admin.from("user_roles").select("role").eq("user_id", userData.user.id);
-      console.log("[admin-reset-owner-password] roles:", JSON.stringify(roles), "err:", rolesErr?.message);
       const isAuthorized = !!roles?.some((r: any) => r.role === "super_admin");
-      if (!isAuthorized) return json({ error: "forbidden", roles }, 403);
+      if (rolesErr) return json({ error: "roles_lookup_failed", message: "Não foi possível validar o perfil superadmin." }, 500);
+      if (!isAuthorized) return json({ error: "forbidden", message: "Apenas superadmin pode resetar a senha do dono." }, 403);
     }
 
     const { data: est, error: estErr } = await admin
