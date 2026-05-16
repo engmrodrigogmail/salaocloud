@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DatePickerBR } from "@/components/ui/date-picker-br";
+import { PeriodFilter, usePeriodRange, type PeriodKey } from "@/components/ui/period-filter";
 import { ManagerPinDialog, type ManagerPinAuthorization } from "@/components/security/ManagerPinDialog";
 import { EntryFormDialog } from "@/components/finance/EntryFormDialog";
 import {
@@ -34,12 +35,10 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip as RTip, PieChart, Pie, Cell, Legend } from "recharts";
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths, startOfDay, endOfDay, differenceInDays, addDays } from "date-fns";
+import { format, startOfMonth, endOfMonth, subMonths, differenceInDays, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-type PeriodKey = "today" | "week" | "month" | "last_month" | "custom";
 
 const fmtMoney = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
