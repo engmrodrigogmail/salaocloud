@@ -377,8 +377,7 @@ export function CommissionReportTab({ establishmentId }: CommissionReportTabProp
                   <TableHead>Profissional</TableHead>
                   <TableHead className="text-center">Atendimentos</TableHead>
                   <TableHead className="text-right">Valor Referência</TableHead>
-                  <TableHead className="text-right">Pendente</TableHead>
-                  <TableHead className="text-right">Aprovado</TableHead>
+                  <TableHead className="text-right">Acerto Pendente</TableHead>
                   <TableHead className="text-right">Pago</TableHead>
                   <TableHead className="text-right">Total Comissão</TableHead>
                 </TableRow>
@@ -390,7 +389,6 @@ export function CommissionReportTab({ establishmentId }: CommissionReportTabProp
                     <TableCell className="text-center">{summary.total_services}</TableCell>
                     <TableCell className="text-right">{formatCurrency(summary.total_reference)}</TableCell>
                     <TableCell className="text-right text-orange-500">{formatCurrency(summary.pending)}</TableCell>
-                    <TableCell className="text-right text-blue-500">{formatCurrency(summary.approved)}</TableCell>
                     <TableCell className="text-right text-green-500">{formatCurrency(summary.paid)}</TableCell>
                     <TableCell className="text-right font-bold">{formatCurrency(summary.total_commission)}</TableCell>
                   </TableRow>
