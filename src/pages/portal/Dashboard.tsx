@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { PortalLayout } from "@/components/layouts/PortalLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { PeriodFilter, usePeriodRange, type PeriodKey } from "@/components/ui/period-filter";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 
 import { 
   Calendar, 
@@ -37,13 +39,17 @@ export default function PortalDashboard() {
   const { user, loading: authLoading } = useAuth();
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [loading, setLoading] = useState(true);
+  const [period, setPeriod] = useState<PeriodKey>("month");
+  const [customFrom, setCustomFrom] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
+  const [customTo, setCustomTo] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
+  const range = usePeriodRange(period, customFrom, customTo);
   const [stats, setStats] = useState({
-    totalAppointments: 0,
+    periodAppointments: 0,
     todayAppointments: 0,
     totalClients: 0,
     totalServices: 0,
     totalProfessionals: 0,
-    monthRevenue: 0,
+    periodRevenue: 0,
     aiConversations: 0,
     aiMessagesThisMonth: 0,
   });
@@ -58,6 +64,13 @@ export default function PortalDashboard() {
       fetchEstablishment();
     }
   }, [slug, user, authLoading]);
+
+  useEffect(() => {
+    if (establishment?.id) {
+      fetchStats(establishment.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [establishment?.id, range.fromIso, range.toIso]);
 
   const fetchEstablishment = async () => {
     try {
@@ -90,11 +103,12 @@ export default function PortalDashboard() {
 
   const fetchStats = async (establishmentId: string) => {
     const today = new Date().toISOString().split("T")[0];
-    const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
     const currentMonthYear = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+    const fromIso = range.from.toISOString();
+    const toIso = range.to.toISOString();
 
     const [
-      appointmentsResult,
+      periodAppointmentsResult,
       todayAppointmentsResult,
       clientsResult,
       servicesResult,
@@ -103,25 +117,25 @@ export default function PortalDashboard() {
       aiConversationsResult,
       aiUsageResult,
     ] = await Promise.all([
-      supabase.from("appointments").select("id", { count: "exact" }).eq("establishment_id", establishmentId),
-      supabase.from("appointments").select("id", { count: "exact" }).eq("establishment_id", establishmentId).gte("scheduled_at", today).lt("scheduled_at", today + "T23:59:59"),
-      supabase.from("clients").select("id", { count: "exact" }).eq("establishment_id", establishmentId),
-      supabase.from("services").select("id", { count: "exact" }).eq("establishment_id", establishmentId).eq("is_active", true),
-      supabase.from("professionals").select("id", { count: "exact" }).eq("establishment_id", establishmentId).eq("is_active", true),
-      supabase.from("appointments").select("price").eq("establishment_id", establishmentId).eq("status", "completed").gte("scheduled_at", firstDayOfMonth),
-      supabase.from("ai_assistant_conversations").select("id", { count: "exact" }).eq("establishment_id", establishmentId),
+      supabase.from("appointments").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).gte("scheduled_at", fromIso).lte("scheduled_at", toIso),
+      supabase.from("appointments").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).gte("scheduled_at", today).lt("scheduled_at", today + "T23:59:59"),
+      supabase.from("clients").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId),
+      supabase.from("services").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).eq("is_active", true),
+      supabase.from("professionals").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).eq("is_active", true),
+      supabase.from("appointments").select("price").eq("establishment_id", establishmentId).eq("status", "completed").gte("scheduled_at", fromIso).lte("scheduled_at", toIso),
+      supabase.from("ai_assistant_conversations").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId),
       supabase.from("ai_assistant_usage").select("message_count").eq("establishment_id", establishmentId).eq("month_year", currentMonthYear).single(),
     ]);
 
-    const monthRevenue = revenueResult.data?.reduce((sum, app) => sum + (app.price || 0), 0) || 0;
+    const periodRevenue = revenueResult.data?.reduce((sum, app) => sum + (app.price || 0), 0) || 0;
 
     setStats({
-      totalAppointments: appointmentsResult.count || 0,
+      periodAppointments: periodAppointmentsResult.count || 0,
       todayAppointments: todayAppointmentsResult.count || 0,
       totalClients: clientsResult.count || 0,
       totalServices: servicesResult.count || 0,
       totalProfessionals: professionalsResult.count || 0,
-      monthRevenue,
+      periodRevenue,
       aiConversations: aiConversationsResult.count || 0,
       aiMessagesThisMonth: aiUsageResult.data?.message_count || 0,
     });
@@ -178,11 +192,21 @@ export default function PortalDashboard() {
           </Alert>
         )}
         
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">
-            Visão geral do {establishment?.name}
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+          <div>
+            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Visão geral do {establishment?.name} <span className="text-xs">({range.label})</span>
+            </p>
+          </div>
+          <PeriodFilter
+            period={period}
+            onPeriodChange={setPeriod}
+            customFrom={customFrom}
+            customTo={customTo}
+            onCustomFromChange={setCustomFrom}
+            onCustomToChange={setCustomTo}
+          />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -199,23 +223,23 @@ export default function PortalDashboard() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Total de Agendamentos</CardTitle>
+              <CardTitle className="text-sm font-medium">Agendamentos no período</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stats.totalAppointments}</div>
-              <p className="text-xs text-muted-foreground">agendamentos realizados</p>
+              <div className="text-2xl font-bold">{stats.periodAppointments}</div>
+              <p className="text-xs text-muted-foreground">agendamentos no intervalo</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium">Faturamento do Mês</CardTitle>
+              <CardTitle className="text-sm font-medium">Faturamento no período</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(stats.monthRevenue)}
+                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(stats.periodRevenue)}
               </div>
               <p className="text-xs text-muted-foreground">em serviços concluídos</p>
             </CardContent>

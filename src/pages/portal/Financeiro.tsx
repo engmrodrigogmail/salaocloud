@@ -19,6 +19,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DatePickerBR } from "@/components/ui/date-picker-br";
+import { PeriodFilter, usePeriodRange, type PeriodKey } from "@/components/ui/period-filter";
 import { ManagerPinDialog, type ManagerPinAuthorization } from "@/components/security/ManagerPinDialog";
 import { EntryFormDialog } from "@/components/finance/EntryFormDialog";
 import {
@@ -34,12 +35,10 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip as RTip, PieChart, Pie, Cell, Legend } from "recharts";
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, subMonths, startOfDay, endOfDay, differenceInDays, addDays } from "date-fns";
+import { format, startOfMonth, endOfMonth, subMonths, differenceInDays, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-
-type PeriodKey = "today" | "week" | "month" | "last_month" | "custom";
 
 const fmtMoney = (n: number) =>
   n.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -113,31 +112,21 @@ function FinanceContent({
   const [customFrom, setCustomFrom] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
   const [customTo, setCustomTo] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
 
+  const range = usePeriodRange(period, customFrom, customTo);
   const { from, to, prevFrom, prevTo, label } = useMemo(() => {
-    const today = new Date();
-    let f: Date, t: Date;
-    switch (period) {
-      case "today": f = startOfDay(today); t = endOfDay(today); break;
-      case "week": f = startOfWeek(today, { weekStartsOn: 0 }); t = endOfWeek(today, { weekStartsOn: 0 }); break;
-      case "last_month": {
-        const lm = subMonths(today, 1);
-        f = startOfMonth(lm); t = endOfMonth(lm); break;
-      }
-      case "custom": f = new Date(customFrom + "T00:00:00"); t = new Date(customTo + "T23:59:59"); break;
-      case "month":
-      default: f = startOfMonth(today); t = endOfMonth(today); break;
-    }
+    const f = range.from;
+    const t = range.to;
     const days = Math.max(1, differenceInDays(t, f) + 1);
     const pt = addDays(f, -1);
     const pf = addDays(pt, -(days - 1));
     return {
-      from: format(f, "yyyy-MM-dd"),
-      to: format(t, "yyyy-MM-dd"),
+      from: range.fromIso,
+      to: range.toIso,
       prevFrom: format(pf, "yyyy-MM-dd"),
       prevTo: format(pt, "yyyy-MM-dd"),
-      label: `${format(f, "dd/MM/yyyy")} – ${format(t, "dd/MM/yyyy")}`,
+      label: range.label,
     };
-  }, [period, customFrom, customTo]);
+  }, [range]);
 
   const finance = useFinance(establishmentId, from, to);
   const prev = useFinance(establishmentId, prevFrom, prevTo);
@@ -202,25 +191,14 @@ function FinanceContent({
           </h1>
           <p className="text-sm text-muted-foreground">{label}</p>
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Select value={period} onValueChange={(v) => setPeriod(v as PeriodKey)}>
-            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="today">Hoje</SelectItem>
-              <SelectItem value="week">Esta semana</SelectItem>
-              <SelectItem value="month">Este mês</SelectItem>
-              <SelectItem value="last_month">Mês passado</SelectItem>
-              <SelectItem value="custom">Personalizado</SelectItem>
-            </SelectContent>
-          </Select>
-          {period === "custom" && (
-            <div className="flex items-center gap-1">
-              <DatePickerBR value={customFrom} onChange={setCustomFrom} className="w-[160px]" />
-              <span>–</span>
-              <DatePickerBR value={customTo} onChange={setCustomTo} className="w-[160px]" />
-            </div>
-          )}
-        </div>
+        <PeriodFilter
+          period={period}
+          onPeriodChange={setPeriod}
+          customFrom={customFrom}
+          customTo={customTo}
+          onCustomFromChange={setCustomFrom}
+          onCustomToChange={setCustomTo}
+        />
       </div>
 
       <Alert>
