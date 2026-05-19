@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Filter, DollarSign, Plus, X } from "lucide-react";
+import { Filter, DollarSign, Plus, X, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -30,9 +30,21 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { DatePickerBR } from "@/components/ui/date-picker-br";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddCommissionDialog } from "./AddCommissionDialog";
+import { IssueReceiptDialog } from "./IssueReceiptDialog";
+import { ReceiptCommissionRow } from "@/lib/commissionReceiptPdf";
 
 type StatusFilter = "all" | "pending" | "paid" | "cancelled";
 
@@ -58,6 +70,8 @@ interface Row {
 
 interface Props {
   establishmentId: string;
+  establishmentName?: string;
+  defaultResponsibleName?: string;
   /** Pré-aplica filtro de data do serviço (yyyy-MM-dd) */
   initialServiceFrom?: string;
   initialServiceTo?: string;
@@ -77,6 +91,8 @@ const fmtMoney = (n: number) =>
 
 export function CommissionDetailsTable({
   establishmentId,
+  establishmentName = "",
+  defaultResponsibleName = "",
   initialServiceFrom,
   initialServiceTo,
   readOnly = false,
@@ -87,6 +103,16 @@ export function CommissionDetailsTable({
   const [professionals, setProfessionals] = useState<{ id: string; name: string }[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkPaying, setBulkPaying] = useState(false);
+
+  // Confirm "Gerar recibo?" após pagar selecionadas
+  const [askReceiptOpen, setAskReceiptOpen] = useState(false);
+  const [pendingReceiptIds, setPendingReceiptIds] = useState<string[]>([]);
+  // Fila de recibos (um por profissional)
+  const [receiptQueue, setReceiptQueue] = useState<Array<{
+    professional_name: string;
+    rows: ReceiptCommissionRow[];
+    total: number;
+  }>>([]);
 
   // Period filters
   const [serviceFrom, setServiceFrom] = useState(initialServiceFrom ?? "");
@@ -270,9 +296,61 @@ export function CommissionDetailsTable({
       return;
     }
     toast.success(`${ids.length} comissão(ões) marcadas como pagas`);
+    setPendingReceiptIds(ids);
+    setAskReceiptOpen(true);
     setSelected(new Set());
     fetchData();
   };
+
+  /** Agrupa um conjunto de comissões por profissional e enfileira recibos */
+  const queueReceiptsFromIds = (ids: string[]) => {
+    const byProf = new Map<string, { name: string; items: ReceiptCommissionRow[]; total: number }>();
+    for (const r of rows) {
+      if (!ids.includes(r.id)) continue;
+      const entry = byProf.get(r.professional_id) ?? {
+        name: r.professional_name,
+        items: [],
+        total: 0,
+      };
+      entry.items.push({
+        service_date_display: r.service_date_display,
+        service_name: r.service_name,
+        client_name: r.client_name,
+        gross_value: r.gross_value,
+        commission_amount: r.commission_amount,
+      });
+      entry.total += r.commission_amount;
+      byProf.set(r.professional_id, entry);
+    }
+    const queue = Array.from(byProf.values()).map((e) => ({
+      professional_name: e.name,
+      rows: e.items,
+      total: e.total,
+    }));
+    setReceiptQueue(queue);
+  };
+
+  const confirmGenerateReceipts = () => {
+    setAskReceiptOpen(false);
+    if (pendingReceiptIds.length > 0) {
+      queueReceiptsFromIds(pendingReceiptIds);
+    }
+    setPendingReceiptIds([]);
+  };
+
+  const handleRowReceipt = (row: Row) => {
+    // Reemissão: agrupa todas as comissões pagas do mesmo profissional no mesmo minuto de pagamento
+    const sameBatch = rows.filter(
+      (r) =>
+        r.status === "paid" &&
+        r.professional_id === row.professional_id &&
+        r.paid_at &&
+        row.paid_at &&
+        r.paid_at.slice(0, 16) === row.paid_at.slice(0, 16),
+    );
+    queueReceiptsFromIds(sameBatch.map((r) => r.id));
+  };
+
 
   const clearAllFilters = () => {
     setServiceFrom(initialServiceFrom ?? "");
@@ -441,11 +519,23 @@ export function CommissionDetailsTable({
                       <TableCell className="whitespace-nowrap text-xs">{r.paid_at_display || "—"}</TableCell>
                       {!readOnly && (
                         <TableCell className="text-right">
-                          {isPending && (
-                            <Button size="sm" variant="outline" onClick={() => handleMarkPaid(r.id)}>
-                              Marcar Paga
-                            </Button>
-                          )}
+                          <div className="flex justify-end gap-1">
+                            {isPending && (
+                              <Button size="sm" variant="outline" onClick={() => handleMarkPaid(r.id)}>
+                                Marcar Paga
+                              </Button>
+                            )}
+                            {r.status === "paid" && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRowReceipt(r)}
+                                title="Emitir recibo"
+                              >
+                                <FileText className="h-4 w-4 mr-1" /> Recibo
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       )}
                     </TableRow>
@@ -465,6 +555,40 @@ export function CommissionDetailsTable({
           establishmentId={establishmentId}
           professionals={professionals}
           onSuccess={fetchData}
+        />
+      )}
+
+      <AlertDialog open={askReceiptOpen} onOpenChange={setAskReceiptOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Gerar recibo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja emitir um recibo de pagamento agora? Se houver comissões de profissionais
+              diferentes, será gerado um recibo por profissional.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingReceiptIds([])}>
+              Não, obrigado
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmGenerateReceipts}>
+              Sim, gerar recibo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {receiptQueue.length > 0 && (
+        <IssueReceiptDialog
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) setReceiptQueue((q) => q.slice(1));
+          }}
+          establishmentName={establishmentName}
+          defaultResponsibleName={defaultResponsibleName}
+          professionalName={receiptQueue[0].professional_name}
+          rows={receiptQueue[0].rows}
+          totalPaid={receiptQueue[0].total}
         />
       )}
     </div>

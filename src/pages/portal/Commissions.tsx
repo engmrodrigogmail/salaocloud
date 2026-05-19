@@ -16,6 +16,8 @@ export default function PortalCommissions() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const [establishmentId, setEstablishmentId] = useState<string | null>(null);
+  const [establishmentName, setEstablishmentName] = useState<string>("");
+  const [responsibleName, setResponsibleName] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,7 +35,7 @@ export default function PortalCommissions() {
     try {
       const { data: est, error } = await supabase
         .from("establishments")
-        .select("id, owner_id")
+        .select("id, owner_id, name")
         .eq("slug", slug)
         .single();
 
@@ -43,6 +45,19 @@ export default function PortalCommissions() {
       }
 
       setEstablishmentId(est.id);
+      setEstablishmentName(est.name || "");
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user!.id)
+        .maybeSingle();
+      setResponsibleName(
+        profile?.full_name ||
+          (user!.user_metadata as any)?.full_name ||
+          user!.email ||
+          "",
+      );
     } catch (error) {
       console.error("Error fetching establishment:", error);
     } finally {
@@ -91,7 +106,11 @@ export default function PortalCommissions() {
           </TabsContent>
 
           <TabsContent value="tracking">
-            <CommissionTrackingTab establishmentId={establishmentId} />
+            <CommissionTrackingTab
+              establishmentId={establishmentId}
+              establishmentName={establishmentName}
+              defaultResponsibleName={responsibleName}
+            />
           </TabsContent>
 
           <TabsContent value="rules">
