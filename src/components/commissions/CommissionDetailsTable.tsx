@@ -70,6 +70,8 @@ interface Row {
 
 interface Props {
   establishmentId: string;
+  establishmentName?: string;
+  defaultResponsibleName?: string;
   /** Pré-aplica filtro de data do serviço (yyyy-MM-dd) */
   initialServiceFrom?: string;
   initialServiceTo?: string;
