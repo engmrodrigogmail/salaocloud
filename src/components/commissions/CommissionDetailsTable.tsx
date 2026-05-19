@@ -91,6 +91,8 @@ const fmtMoney = (n: number) =>
 
 export function CommissionDetailsTable({
   establishmentId,
+  establishmentName = "",
+  defaultResponsibleName = "",
   initialServiceFrom,
   initialServiceTo,
   readOnly = false,
@@ -101,6 +103,16 @@ export function CommissionDetailsTable({
   const [professionals, setProfessionals] = useState<{ id: string; name: string }[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkPaying, setBulkPaying] = useState(false);
+
+  // Confirm "Gerar recibo?" após pagar selecionadas
+  const [askReceiptOpen, setAskReceiptOpen] = useState(false);
+  const [pendingReceiptIds, setPendingReceiptIds] = useState<string[]>([]);
+  // Fila de recibos (um por profissional)
+  const [receiptQueue, setReceiptQueue] = useState<Array<{
+    professional_name: string;
+    rows: ReceiptCommissionRow[];
+    total: number;
+  }>>([]);
 
   // Period filters
   const [serviceFrom, setServiceFrom] = useState(initialServiceFrom ?? "");
