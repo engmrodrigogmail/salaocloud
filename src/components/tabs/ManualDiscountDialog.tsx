@@ -137,21 +137,39 @@ export function ManualDiscountDialog({
 
   const parsedValue = parseFloat((valueStr || "0").replace(",", ".")) || 0;
 
+  const selectedSet = new Set(selectedItemIds);
+  const eligibleSubtotal = items
+    .filter((i) => selectedSet.has(i.id))
+    .reduce((s, i) => s + i.total_price, 0);
+  const allSelected = items.length > 0 && selectedItemIds.length === items.length;
+
+  // Base for computing the discount: only the selected items.
   const computedAmount = (() => {
-    if (subtotal <= 0 || parsedValue <= 0) return 0;
+    if (eligibleSubtotal <= 0 || parsedValue <= 0) return 0;
     if (type === "percentage") {
       const pct = Math.min(parsedValue, 100);
-      return Math.round(subtotal * pct) / 100; // 2 decimal places
+      return Math.round(eligibleSubtotal * pct) / 100;
     }
-    return Math.min(parsedValue, subtotal);
+    return Math.round(Math.min(parsedValue, eligibleSubtotal) * 100) / 100;
   })();
 
+  // PIN threshold compares against the full tab subtotal (overall impact).
   const computedPercent = subtotal > 0 ? (computedAmount / subtotal) * 100 : 0;
   const requiresPin = computedPercent > pinThresholdPercent && computedAmount > 0;
+
+  const toggleItem = (id: string) => {
+    setSelectedItemIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+  const toggleAll = () => {
+    setSelectedItemIds(allSelected ? [] : items.map((i) => i.id));
+  };
 
   const persistDiscount = async (
     amount: number,
     reducesFlag: boolean,
+    itemIds: string[],
     managerProfessionalId: string | null,
     ownerUserId: string | null = null,
   ) => {
@@ -165,6 +183,11 @@ export function ManualDiscountDialog({
       if (fetchErr) throw fetchErr;
 
       const newTotal = Math.max(0, Number(tab.subtotal) - amount);
+      // Normalize: NULL when no discount or when all items are selected.
+      const idsToPersist =
+        amount > 0 && itemIds.length > 0 && itemIds.length < items.length
+          ? itemIds
+          : null;
 
       const { error } = await supabase
         .from("tabs")
@@ -173,6 +196,7 @@ export function ManualDiscountDialog({
           discount_type: amount > 0 ? "manual" : null,
           commission_discount_on_manual: reducesFlag,
           discount_authorized_by: managerProfessionalId,
+          manual_discount_item_ids: idsToPersist,
           total: newTotal,
         } as never)
         .eq("id", tabId);
@@ -189,7 +213,12 @@ export function ManualDiscountDialog({
           targetId: tabId,
           tabId,
           oldValue: { amount: currentDiscount, reduces_commission: currentReducesCommission },
-          newValue: { amount, reduces_commission: reducesFlag, percent: computedPercent.toFixed(2) },
+          newValue: {
+            amount,
+            reduces_commission: reducesFlag,
+            percent: computedPercent.toFixed(2),
+            item_ids: idsToPersist,
+          },
           reason: `Desconto de ${computedPercent.toFixed(1)}% (limite ${pinThresholdPercent}%)`,
         });
       }
@@ -210,18 +239,21 @@ export function ManualDiscountDialog({
   };
 
   const handleApply = async () => {
-    if (computedAmount < 0) return;
-
+    if (computedAmount <= 0) return;
+    if (selectedItemIds.length === 0) {
+      toast.error("Selecione ao menos um item para aplicar o desconto");
+      return;
+    }
     if (requiresPin) {
-      setPendingApply({ amount: computedAmount, reduces });
+      setPendingApply({ amount: computedAmount, reduces, itemIds: selectedItemIds });
       setPinOpen(true);
       return;
     }
-    await persistDiscount(computedAmount, reduces, null);
+    await persistDiscount(computedAmount, reduces, selectedItemIds, null);
   };
 
   const handleRemove = async () => {
-    await persistDiscount(0, false, null);
+    await persistDiscount(0, false, [], null);
   };
 
   return (
