@@ -69,19 +69,68 @@ export function ManualDiscountDialog({
   const [pendingApply, setPendingApply] = useState<{
     amount: number;
     reduces: boolean;
+    itemIds: string[];
   } | null>(null);
+  const [items, setItems] = useState<
+    Array<{
+      id: string;
+      name: string;
+      item_type: string;
+      total_price: number;
+      professional_name: string | null;
+    }>
+  >([]);
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+  const [loadingItems, setLoadingItems] = useState(false);
 
   useEffect(() => {
-    if (open) {
-      // Seed with existing fixed-amount discount (fallback to empty)
-      setType("fixed");
-      setValueStr(currentDiscount > 0 ? currentDiscount.toFixed(2) : "");
-      setReduces(currentReducesCommission);
-      setSaving(false);
-      setPinOpen(false);
-      setPendingApply(null);
-    }
-  }, [open, currentDiscount, currentReducesCommission]);
+    if (!open) return;
+    setType("fixed");
+    setValueStr(currentDiscount > 0 ? currentDiscount.toFixed(2) : "");
+    setReduces(currentReducesCommission);
+    setSaving(false);
+    setPinOpen(false);
+    setPendingApply(null);
+    setLoadingItems(true);
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("tab_items")
+          .select("id, name, item_type, total_price, professional:professionals(name)")
+          .eq("tab_id", tabId)
+          .in("item_type", ["service", "product"]);
+        if (error) throw error;
+        const list = (data || []).map((row: any) => ({
+          id: row.id as string,
+          name: row.name as string,
+          item_type: row.item_type as string,
+          total_price: Number(row.total_price) || 0,
+          professional_name: row.professional?.name ?? null,
+        }));
+        setItems(list);
+        // Seed selection: existing tab.manual_discount_item_ids if any, else all
+        const { data: tabRow } = await supabase
+          .from("tabs")
+          .select("manual_discount_item_ids")
+          .eq("id", tabId)
+          .single();
+        const existing = ((tabRow as any)?.manual_discount_item_ids ?? null) as
+          | string[]
+          | null;
+        if (existing && existing.length > 0) {
+          setSelectedItemIds(existing.filter((id) => list.some((i) => i.id === id)));
+        } else {
+          setSelectedItemIds(list.map((i) => i.id));
+        }
+      } catch (e) {
+        console.error("Error loading tab items:", e);
+        setItems([]);
+        setSelectedItemIds([]);
+      } finally {
+        setLoadingItems(false);
+      }
+    })();
+  }, [open, tabId, currentDiscount, currentReducesCommission]);
 
   const fmt = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
