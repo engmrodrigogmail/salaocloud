@@ -14,6 +14,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Percent, DollarSign, ShieldAlert } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { ManagerPinDialog, logManagerOverride } from "@/components/security/ManagerPinDialog";
@@ -68,40 +69,107 @@ export function ManualDiscountDialog({
   const [pendingApply, setPendingApply] = useState<{
     amount: number;
     reduces: boolean;
+    itemIds: string[];
   } | null>(null);
+  const [items, setItems] = useState<
+    Array<{
+      id: string;
+      name: string;
+      item_type: string;
+      total_price: number;
+      professional_name: string | null;
+    }>
+  >([]);
+  const [selectedItemIds, setSelectedItemIds] = useState<string[]>([]);
+  const [loadingItems, setLoadingItems] = useState(false);
 
   useEffect(() => {
-    if (open) {
-      // Seed with existing fixed-amount discount (fallback to empty)
-      setType("fixed");
-      setValueStr(currentDiscount > 0 ? currentDiscount.toFixed(2) : "");
-      setReduces(currentReducesCommission);
-      setSaving(false);
-      setPinOpen(false);
-      setPendingApply(null);
-    }
-  }, [open, currentDiscount, currentReducesCommission]);
+    if (!open) return;
+    setType("fixed");
+    setValueStr(currentDiscount > 0 ? currentDiscount.toFixed(2) : "");
+    setReduces(currentReducesCommission);
+    setSaving(false);
+    setPinOpen(false);
+    setPendingApply(null);
+    setLoadingItems(true);
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("tab_items")
+          .select("id, name, item_type, total_price, professional:professionals(name)")
+          .eq("tab_id", tabId)
+          .in("item_type", ["service", "product"]);
+        if (error) throw error;
+        const list = (data || []).map((row: any) => ({
+          id: row.id as string,
+          name: row.name as string,
+          item_type: row.item_type as string,
+          total_price: Number(row.total_price) || 0,
+          professional_name: row.professional?.name ?? null,
+        }));
+        setItems(list);
+        // Seed selection: existing tab.manual_discount_item_ids if any, else all
+        const { data: tabRow } = await supabase
+          .from("tabs")
+          .select("manual_discount_item_ids")
+          .eq("id", tabId)
+          .single();
+        const existing = ((tabRow as any)?.manual_discount_item_ids ?? null) as
+          | string[]
+          | null;
+        if (existing && existing.length > 0) {
+          setSelectedItemIds(existing.filter((id) => list.some((i) => i.id === id)));
+        } else {
+          setSelectedItemIds(list.map((i) => i.id));
+        }
+      } catch (e) {
+        console.error("Error loading tab items:", e);
+        setItems([]);
+        setSelectedItemIds([]);
+      } finally {
+        setLoadingItems(false);
+      }
+    })();
+  }, [open, tabId, currentDiscount, currentReducesCommission]);
 
   const fmt = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   const parsedValue = parseFloat((valueStr || "0").replace(",", ".")) || 0;
 
+  const selectedSet = new Set(selectedItemIds);
+  const eligibleSubtotal = items
+    .filter((i) => selectedSet.has(i.id))
+    .reduce((s, i) => s + i.total_price, 0);
+  const allSelected = items.length > 0 && selectedItemIds.length === items.length;
+
+  // Base for computing the discount: only the selected items.
   const computedAmount = (() => {
-    if (subtotal <= 0 || parsedValue <= 0) return 0;
+    if (eligibleSubtotal <= 0 || parsedValue <= 0) return 0;
     if (type === "percentage") {
       const pct = Math.min(parsedValue, 100);
-      return Math.round(subtotal * pct) / 100; // 2 decimal places
+      return Math.round(eligibleSubtotal * pct) / 100;
     }
-    return Math.min(parsedValue, subtotal);
+    return Math.round(Math.min(parsedValue, eligibleSubtotal) * 100) / 100;
   })();
 
+  // PIN threshold compares against the full tab subtotal (overall impact).
   const computedPercent = subtotal > 0 ? (computedAmount / subtotal) * 100 : 0;
   const requiresPin = computedPercent > pinThresholdPercent && computedAmount > 0;
+
+  const toggleItem = (id: string) => {
+    setSelectedItemIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+  const toggleAll = () => {
+    setSelectedItemIds(allSelected ? [] : items.map((i) => i.id));
+  };
 
   const persistDiscount = async (
     amount: number,
     reducesFlag: boolean,
+    itemIds: string[],
     managerProfessionalId: string | null,
     ownerUserId: string | null = null,
   ) => {
@@ -115,6 +183,11 @@ export function ManualDiscountDialog({
       if (fetchErr) throw fetchErr;
 
       const newTotal = Math.max(0, Number(tab.subtotal) - amount);
+      // Normalize: NULL when no discount or when all items are selected.
+      const idsToPersist =
+        amount > 0 && itemIds.length > 0 && itemIds.length < items.length
+          ? itemIds
+          : null;
 
       const { error } = await supabase
         .from("tabs")
@@ -123,6 +196,7 @@ export function ManualDiscountDialog({
           discount_type: amount > 0 ? "manual" : null,
           commission_discount_on_manual: reducesFlag,
           discount_authorized_by: managerProfessionalId,
+          manual_discount_item_ids: idsToPersist,
           total: newTotal,
         } as never)
         .eq("id", tabId);
@@ -139,7 +213,12 @@ export function ManualDiscountDialog({
           targetId: tabId,
           tabId,
           oldValue: { amount: currentDiscount, reduces_commission: currentReducesCommission },
-          newValue: { amount, reduces_commission: reducesFlag, percent: computedPercent.toFixed(2) },
+          newValue: {
+            amount,
+            reduces_commission: reducesFlag,
+            percent: computedPercent.toFixed(2),
+            item_ids: idsToPersist,
+          },
           reason: `Desconto de ${computedPercent.toFixed(1)}% (limite ${pinThresholdPercent}%)`,
         });
       }
@@ -160,18 +239,21 @@ export function ManualDiscountDialog({
   };
 
   const handleApply = async () => {
-    if (computedAmount < 0) return;
-
+    if (computedAmount <= 0) return;
+    if (selectedItemIds.length === 0) {
+      toast.error("Selecione ao menos um item para aplicar o desconto");
+      return;
+    }
     if (requiresPin) {
-      setPendingApply({ amount: computedAmount, reduces });
+      setPendingApply({ amount: computedAmount, reduces, itemIds: selectedItemIds });
       setPinOpen(true);
       return;
     }
-    await persistDiscount(computedAmount, reduces, null);
+    await persistDiscount(computedAmount, reduces, selectedItemIds, null);
   };
 
   const handleRemove = async () => {
-    await persistDiscount(0, false, null);
+    await persistDiscount(0, false, [], null);
   };
 
   return (
@@ -232,13 +314,66 @@ export function ManualDiscountDialog({
                 placeholder={type === "percentage" ? "10" : "20.00"}
               />
               <div className="text-xs text-muted-foreground flex justify-between">
-                <span>Subtotal: {fmt(subtotal)}</span>
+                <span>Base selecionada: {fmt(eligibleSubtotal)}</span>
                 <span>
-                  Desconto: <b className="text-foreground">{fmt(computedAmount)}</b>{" "}
-                  ({computedPercent.toFixed(1)}%)
+                  Desconto: <b className="text-foreground">{fmt(computedAmount)}</b>
                 </span>
               </div>
             </div>
+
+            <div className="space-y-2 rounded-md border p-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Aplicar desconto em</Label>
+                {items.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={toggleAll}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    {allSelected ? "Desmarcar todos" : "Selecionar todos"}
+                  </button>
+                )}
+              </div>
+              {loadingItems ? (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Carregando itens…
+                </div>
+              ) : items.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Nenhum item nesta comanda.
+                </p>
+              ) : (
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {items.map((it) => (
+                    <label
+                      key={it.id}
+                      className="flex items-start gap-2 rounded p-1.5 hover:bg-muted/40 cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={selectedSet.has(it.id)}
+                        onCheckedChange={() => toggleItem(it.id)}
+                        className="mt-0.5"
+                      />
+                      <div className="flex-1 min-w-0 text-sm">
+                        <div className="flex justify-between gap-2">
+                          <span className="truncate">{it.name}</span>
+                          <span className="text-foreground">{fmt(it.total_price)}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {it.item_type === "service" ? "Serviço" : "Produto"}
+                          {it.professional_name ? ` • ${it.professional_name}` : ""}
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                O desconto será rateado apenas entre os itens marcados. A receita e a
+                comissão dos demais profissionais não são afetadas.
+              </p>
+            </div>
+
 
             <div className="flex items-start justify-between gap-3 rounded-md border p-3">
               <div className="space-y-1 text-sm">
@@ -303,6 +438,7 @@ export function ManualDiscountDialog({
           await persistDiscount(
             pendingApply.amount,
             pendingApply.reduces,
+            pendingApply.itemIds,
             isOwner ? null : managerProfessionalId,
             ownerUserId ?? null,
           );
