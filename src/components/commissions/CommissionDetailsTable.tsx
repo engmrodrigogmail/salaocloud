@@ -519,11 +519,23 @@ export function CommissionDetailsTable({
                       <TableCell className="whitespace-nowrap text-xs">{r.paid_at_display || "—"}</TableCell>
                       {!readOnly && (
                         <TableCell className="text-right">
-                          {isPending && (
-                            <Button size="sm" variant="outline" onClick={() => handleMarkPaid(r.id)}>
-                              Marcar Paga
-                            </Button>
-                          )}
+                          <div className="flex justify-end gap-1">
+                            {isPending && (
+                              <Button size="sm" variant="outline" onClick={() => handleMarkPaid(r.id)}>
+                                Marcar Paga
+                              </Button>
+                            )}
+                            {r.status === "paid" && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRowReceipt(r)}
+                                title="Emitir recibo"
+                              >
+                                <FileText className="h-4 w-4 mr-1" /> Recibo
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       )}
                     </TableRow>
