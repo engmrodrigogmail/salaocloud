@@ -314,13 +314,66 @@ export function ManualDiscountDialog({
                 placeholder={type === "percentage" ? "10" : "20.00"}
               />
               <div className="text-xs text-muted-foreground flex justify-between">
-                <span>Subtotal: {fmt(subtotal)}</span>
+                <span>Base selecionada: {fmt(eligibleSubtotal)}</span>
                 <span>
-                  Desconto: <b className="text-foreground">{fmt(computedAmount)}</b>{" "}
-                  ({computedPercent.toFixed(1)}%)
+                  Desconto: <b className="text-foreground">{fmt(computedAmount)}</b>
                 </span>
               </div>
             </div>
+
+            <div className="space-y-2 rounded-md border p-3">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm">Aplicar desconto em</Label>
+                {items.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={toggleAll}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    {allSelected ? "Desmarcar todos" : "Selecionar todos"}
+                  </button>
+                )}
+              </div>
+              {loadingItems ? (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Carregando itens…
+                </div>
+              ) : items.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  Nenhum item nesta comanda.
+                </p>
+              ) : (
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {items.map((it) => (
+                    <label
+                      key={it.id}
+                      className="flex items-start gap-2 rounded p-1.5 hover:bg-muted/40 cursor-pointer"
+                    >
+                      <Checkbox
+                        checked={selectedSet.has(it.id)}
+                        onCheckedChange={() => toggleItem(it.id)}
+                        className="mt-0.5"
+                      />
+                      <div className="flex-1 min-w-0 text-sm">
+                        <div className="flex justify-between gap-2">
+                          <span className="truncate">{it.name}</span>
+                          <span className="text-foreground">{fmt(it.total_price)}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground truncate">
+                          {it.item_type === "service" ? "Serviço" : "Produto"}
+                          {it.professional_name ? ` • ${it.professional_name}` : ""}
+                        </div>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                O desconto será rateado apenas entre os itens marcados. A receita e a
+                comissão dos demais profissionais não são afetadas.
+              </p>
+            </div>
+
 
             <div className="flex items-start justify-between gap-3 rounded-md border p-3">
               <div className="space-y-1 text-sm">
