@@ -296,9 +296,61 @@ export function CommissionDetailsTable({
       return;
     }
     toast.success(`${ids.length} comissão(ões) marcadas como pagas`);
+    setPendingReceiptIds(ids);
+    setAskReceiptOpen(true);
     setSelected(new Set());
     fetchData();
   };
+
+  /** Agrupa um conjunto de comissões por profissional e enfileira recibos */
+  const queueReceiptsFromIds = (ids: string[]) => {
+    const byProf = new Map<string, { name: string; items: ReceiptCommissionRow[]; total: number }>();
+    for (const r of rows) {
+      if (!ids.includes(r.id)) continue;
+      const entry = byProf.get(r.professional_id) ?? {
+        name: r.professional_name,
+        items: [],
+        total: 0,
+      };
+      entry.items.push({
+        service_date_display: r.service_date_display,
+        service_name: r.service_name,
+        client_name: r.client_name,
+        gross_value: r.gross_value,
+        commission_amount: r.commission_amount,
+      });
+      entry.total += r.commission_amount;
+      byProf.set(r.professional_id, entry);
+    }
+    const queue = Array.from(byProf.values()).map((e) => ({
+      professional_name: e.name,
+      rows: e.items,
+      total: e.total,
+    }));
+    setReceiptQueue(queue);
+  };
+
+  const confirmGenerateReceipts = () => {
+    setAskReceiptOpen(false);
+    if (pendingReceiptIds.length > 0) {
+      queueReceiptsFromIds(pendingReceiptIds);
+    }
+    setPendingReceiptIds([]);
+  };
+
+  const handleRowReceipt = (row: Row) => {
+    // Reemissão: agrupa todas as comissões pagas do mesmo profissional no mesmo minuto de pagamento
+    const sameBatch = rows.filter(
+      (r) =>
+        r.status === "paid" &&
+        r.professional_id === row.professional_id &&
+        r.paid_at &&
+        row.paid_at &&
+        r.paid_at.slice(0, 16) === row.paid_at.slice(0, 16),
+    );
+    queueReceiptsFromIds(sameBatch.map((r) => r.id));
+  };
+
 
   const clearAllFilters = () => {
     setServiceFrom(initialServiceFrom ?? "");
