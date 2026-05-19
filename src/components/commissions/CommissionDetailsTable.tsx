@@ -557,6 +557,40 @@ export function CommissionDetailsTable({
           onSuccess={fetchData}
         />
       )}
+
+      <AlertDialog open={askReceiptOpen} onOpenChange={setAskReceiptOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Gerar recibo?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja emitir um recibo de pagamento agora? Se houver comissões de profissionais
+              diferentes, será gerado um recibo por profissional.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingReceiptIds([])}>
+              Não, obrigado
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmGenerateReceipts}>
+              Sim, gerar recibo
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {receiptQueue.length > 0 && (
+        <IssueReceiptDialog
+          open={true}
+          onOpenChange={(open) => {
+            if (!open) setReceiptQueue((q) => q.slice(1));
+          }}
+          establishmentName={establishmentName}
+          defaultResponsibleName={defaultResponsibleName}
+          professionalName={receiptQueue[0].professional_name}
+          rows={receiptQueue[0].rows}
+          totalPaid={receiptQueue[0].total}
+        />
+      )}
     </div>
   );
 }
