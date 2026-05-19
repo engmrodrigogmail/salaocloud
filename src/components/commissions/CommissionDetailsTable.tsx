@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Filter, DollarSign, Plus, X } from "lucide-react";
+import { Filter, DollarSign, Plus, X, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -30,9 +30,21 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { DatePickerBR } from "@/components/ui/date-picker-br";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddCommissionDialog } from "./AddCommissionDialog";
+import { IssueReceiptDialog } from "./IssueReceiptDialog";
+import { ReceiptCommissionRow } from "@/lib/commissionReceiptPdf";
 
 type StatusFilter = "all" | "pending" | "paid" | "cancelled";
 
