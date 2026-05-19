@@ -336,11 +336,41 @@ export function CommissionDetailsTable({
         </CardContent>
       </Card>
 
+      {!readOnly && selected.size > 0 && (
+        <Card className="border-primary">
+          <CardContent className="py-3 flex items-center justify-between gap-2 flex-wrap">
+            <div className="text-sm">
+              <span className="font-semibold">{selected.size}</span> selecionada(s) ·{" "}
+              <span className="font-semibold">{fmtMoney(selectedTotal)}</span>
+            </div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
+                Limpar seleção
+              </Button>
+              <Button size="sm" onClick={handlePaySelected} disabled={bulkPaying}>
+                <DollarSign className="h-4 w-4 mr-1" />
+                {bulkPaying ? "Pagando..." : "Pagar selecionadas"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
+                {!readOnly && (
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                      onCheckedChange={toggleAll}
+                      disabled={selectablePendingIds.length === 0}
+                      aria-label="Selecionar todas"
+                    />
+                  </TableHead>
+                )}
                 <TableHead>Data serviço</TableHead>
                 <TableHead>
                   <HeaderFilter label="Profissional" value={fProfessional} onChange={setFProfessional} />
@@ -365,13 +395,13 @@ export function CommissionDetailsTable({
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={readOnly ? 10 : 11} className="text-center py-12 text-muted-foreground">
+                  <TableCell colSpan={readOnly ? 10 : 12} className="text-center py-12 text-muted-foreground">
                     Carregando...
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={readOnly ? 10 : 11} className="text-center py-12">
+                  <TableCell colSpan={readOnly ? 10 : 12} className="text-center py-12">
                     <DollarSign className="h-12 w-12 mx-auto mb-2 opacity-30" />
                     <p className="text-muted-foreground">Nenhuma comissão encontrada</p>
                   </TableCell>
@@ -379,14 +409,24 @@ export function CommissionDetailsTable({
               ) : (
                 filtered.map((r) => {
                   const status = STATUS_LABELS[r.status] ?? { label: r.status, variant: "secondary" as const };
+                  const isPending = r.status === "pending" || r.status === "approved";
                   const discountDisplay =
                     r.tab_discount_amount > 0
-                      ? r.tab_discount_type === "percent"
-                        ? `${fmtMoney(r.tab_discount_amount)} (${r.tab_discount_pct.toFixed(1)}%)`
-                        : `${fmtMoney(r.tab_discount_amount)} (${r.tab_discount_pct.toFixed(1)}%)`
+                      ? `${fmtMoney(r.tab_discount_amount)} (${r.tab_discount_pct.toFixed(1)}%)`
                       : "—";
                   return (
-                    <TableRow key={r.id}>
+                    <TableRow key={r.id} data-state={selected.has(r.id) ? "selected" : undefined}>
+                      {!readOnly && (
+                        <TableCell>
+                          {isPending ? (
+                            <Checkbox
+                              checked={selected.has(r.id)}
+                              onCheckedChange={() => toggleOne(r.id)}
+                              aria-label="Selecionar comissão"
+                            />
+                          ) : null}
+                        </TableCell>
+                      )}
                       <TableCell className="whitespace-nowrap text-xs">{r.service_date_display}</TableCell>
                       <TableCell className="font-medium">{r.professional_name}</TableCell>
                       <TableCell>{r.service_name}</TableCell>
@@ -401,7 +441,7 @@ export function CommissionDetailsTable({
                       <TableCell className="whitespace-nowrap text-xs">{r.paid_at_display || "—"}</TableCell>
                       {!readOnly && (
                         <TableCell className="text-right">
-                          {(r.status === "pending" || r.status === "approved") && (
+                          {isPending && (
                             <Button size="sm" variant="outline" onClick={() => handleMarkPaid(r.id)}>
                               Marcar Paga
                             </Button>
@@ -416,6 +456,7 @@ export function CommissionDetailsTable({
           </Table>
         </CardContent>
       </Card>
+
 
       {!readOnly && (
         <AddCommissionDialog
