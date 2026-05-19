@@ -31,6 +31,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { DatePickerBR } from "@/components/ui/date-picker-br";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AddCommissionDialog } from "./AddCommissionDialog";
 
 type StatusFilter = "all" | "pending" | "paid" | "cancelled";
