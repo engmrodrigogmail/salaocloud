@@ -385,6 +385,7 @@ export function ManualDiscountDialog({
           await persistDiscount(
             pendingApply.amount,
             pendingApply.reduces,
+            pendingApply.itemIds,
             isOwner ? null : managerProfessionalId,
             ownerUserId ?? null,
           );
