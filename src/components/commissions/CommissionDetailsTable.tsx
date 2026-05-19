@@ -223,6 +223,57 @@ export function CommissionDetailsTable({
     fetchData();
   };
 
+  const selectablePendingIds = useMemo(
+    () => filtered.filter((r) => r.status === "pending" || r.status === "approved").map((r) => r.id),
+    [filtered],
+  );
+  const allSelected = selectablePendingIds.length > 0 && selectablePendingIds.every((id) => selected.has(id));
+  const someSelected = selectablePendingIds.some((id) => selected.has(id)) && !allSelected;
+
+  const toggleAll = () => {
+    if (allSelected) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(selectablePendingIds));
+    }
+  };
+  const toggleOne = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectedTotal = useMemo(() => {
+    let total = 0;
+    for (const r of filtered) if (selected.has(r.id)) total += r.commission_amount;
+    return total;
+  }, [filtered, selected]);
+
+  const handlePaySelected = async () => {
+    const ids = Array.from(selected).filter((id) => selectablePendingIds.includes(id));
+    if (ids.length === 0) {
+      toast.error("Selecione ao menos uma comissão pendente");
+      return;
+    }
+    setBulkPaying(true);
+    const paidAt = new Date().toISOString();
+    const { error } = await supabase
+      .from("professional_commissions")
+      .update({ status: "paid", paid_at: paidAt })
+      .in("id", ids);
+    setBulkPaying(false);
+    if (error) {
+      toast.error("Erro ao pagar comissões selecionadas");
+      return;
+    }
+    toast.success(`${ids.length} comissão(ões) marcadas como pagas`);
+    setSelected(new Set());
+    fetchData();
+  };
+
   const clearAllFilters = () => {
     setServiceFrom(initialServiceFrom ?? "");
     setServiceTo(initialServiceTo ?? "");
