@@ -106,7 +106,11 @@ export default function PortalCommissions() {
           </TabsContent>
 
           <TabsContent value="tracking">
-            <CommissionTrackingTab establishmentId={establishmentId} />
+            <CommissionTrackingTab
+              establishmentId={establishmentId}
+              establishmentName={establishmentName}
+              defaultResponsibleName={responsibleName}
+            />
           </TabsContent>
 
           <TabsContent value="rules">
