@@ -85,6 +85,8 @@ export function CommissionDetailsTable({
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
   const [professionals, setProfessionals] = useState<{ id: string; name: string }[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkPaying, setBulkPaying] = useState(false);
 
   // Period filters
   const [serviceFrom, setServiceFrom] = useState(initialServiceFrom ?? "");
