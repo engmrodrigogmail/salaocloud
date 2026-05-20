@@ -587,6 +587,7 @@ export function useTabItems(tabId: string | null) {
     original_unit_price?: number | null;
     price_override_by?: string | null;
     price_override_reason?: string | null;
+    created_at?: string;
   }) => {
     if (!tabId) return null;
 
@@ -608,6 +609,9 @@ export function useTabItems(tabId: string | null) {
         insertPayload.original_unit_price = itemData.original_unit_price;
         insertPayload.price_override_by = itemData.price_override_by ?? null;
         insertPayload.price_override_reason = itemData.price_override_reason ?? null;
+      }
+      if (itemData.created_at) {
+        insertPayload.created_at = itemData.created_at;
       }
       const { data, error } = await supabase
         .from("tab_items")
