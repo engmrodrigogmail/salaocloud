@@ -19,7 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Loader2, Search, UserPlus, Sparkles, ArrowLeft } from "lucide-react";
+import { Calendar, Loader2, Search, UserPlus, Sparkles, ArrowLeft, Check, ChevronsUpDown } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, setHours, setMinutes, addMinutes, parseISO, isBefore, isAfter, getDay, addDays, startOfDay } from "date-fns";
@@ -78,6 +80,7 @@ export function NewAppointmentDialog({
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [serviceId, setServiceId] = useState("");
+  const [serviceOpen, setServiceOpen] = useState(false);
   const [professionalId, setProfessionalId] = useState<string>("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
@@ -182,6 +185,10 @@ export function NewAppointmentDialog({
   }, [open, establishmentId, professionals]);
 
   const selectedService = useMemo(() => services.find((s) => s.id === serviceId), [serviceId, services]);
+  const sortedServices = useMemo(
+    () => [...services].sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" })),
+    [services],
+  );
   const selectedProfessional = useMemo(
     () => (professionalId && professionalId !== ANY_PRO ? professionals.find((p) => p.id === professionalId) : null),
     [professionalId, professionals],
@@ -555,18 +562,57 @@ export function NewAppointmentDialog({
               {/* Serviço */}
               <div className="space-y-2">
                 <Label>Serviço *</Label>
-                <Select value={serviceId} onValueChange={setServiceId}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {services.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.name} — {s.duration_minutes}min
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={serviceOpen} onOpenChange={setServiceOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={serviceOpen}
+                      className="w-full justify-between font-normal"
+                    >
+                      <span className="truncate">
+                        {selectedService
+                          ? `${selectedService.name} — ${selectedService.duration_minutes}min`
+                          : "Selecione"}
+                      </span>
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                    <Command
+                      filter={(value, search) => {
+                        if (!search) return 1;
+                        return value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
+                      }}
+                    >
+                      <CommandInput placeholder="Buscar serviço..." />
+                      <CommandList>
+                        <CommandEmpty>Nenhum serviço encontrado.</CommandEmpty>
+                        <CommandGroup>
+                          {sortedServices.map((s) => (
+                            <CommandItem
+                              key={s.id}
+                              value={`${s.name} ${s.duration_minutes}min`}
+                              onSelect={() => {
+                                setServiceId(s.id);
+                                setServiceOpen(false);
+                              }}
+                            >
+                              <Check
+                                className={cn(
+                                  "mr-2 h-4 w-4",
+                                  serviceId === s.id ? "opacity-100" : "opacity-0",
+                                )}
+                              />
+                              {s.name} — {s.duration_minutes}min
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
 
               {/* Profissional + Qualquer um */}
