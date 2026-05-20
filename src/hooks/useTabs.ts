@@ -235,7 +235,8 @@ export function useTabs(establishmentId: string | null) {
     tabId: string,
     payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[],
     items: TabItem[] = [],
-    flags?: { commission_discount_on_manual?: boolean; commission_discount_on_coupon?: boolean; commission_discount_on_loyalty?: boolean }
+    flags?: { commission_discount_on_manual?: boolean; commission_discount_on_coupon?: boolean; commission_discount_on_loyalty?: boolean },
+    closedAt?: string,
   ) => {
     try {
       // 1) Persist flags BEFORE calculating commissions, so the calculator reads the correct values
