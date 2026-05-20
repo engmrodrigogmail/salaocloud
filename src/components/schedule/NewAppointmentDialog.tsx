@@ -80,6 +80,7 @@ export function NewAppointmentDialog({
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [serviceId, setServiceId] = useState("");
+  const [serviceOpen, setServiceOpen] = useState(false);
   const [professionalId, setProfessionalId] = useState<string>("");
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
