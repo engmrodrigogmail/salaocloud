@@ -85,7 +85,8 @@ export function useTabs(establishmentId: string | null) {
 
       // Auto-create an "in_service" appointment to block the professional's agenda
       // when the tab is opened with a professional and a service selected.
-      if (!appointmentId && tabData.professional_id && tabData.service_id) {
+      // Skip for retroactive launches (event already happened in the past).
+      if (!appointmentId && !tabData.is_retroactive && tabData.professional_id && tabData.service_id) {
         // Fetch service info (duration + price)
         const { data: svc, error: svcError } = await supabase
           .from("services")
