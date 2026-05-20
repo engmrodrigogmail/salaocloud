@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, History } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Client = Tables<"clients">;
@@ -21,11 +22,15 @@ interface NewTabDialogProps {
     professional_id?: string;
     service_id?: string;
     notes?: string;
+    opened_at?: string;
+    is_retroactive?: boolean;
   }) => Promise<void>;
   clients: Client[];
   professionals: Professional[];
   services?: Service[];
   loading?: boolean;
+  /** If 'owner' or 'manager', allows retroactive opening (custom opened_at) */
+  userRole?: "owner" | "manager" | "professional";
 }
 
 export function NewTabDialog({
