@@ -88,6 +88,7 @@ export function NewAppointmentDialog({
   const [saving, setSaving] = useState(false);
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [allowOutsideHours, setAllowOutsideHours] = useState(false);
 
   // availability data
   const [estabWH, setEstabWH] = useState<WH>(DEFAULT_WH);
@@ -232,15 +233,17 @@ export function NewAppointmentDialog({
     });
   };
 
-  const isProfFree = (d: Date, time: string, profId: string, dur: number) => {
+  const isProfFree = (d: Date, time: string, profId: string, dur: number, ignoreWH = false) => {
     const wh = getWHForDay(d, profId);
-    if (!wh) return false;
     const [h, m] = time.split(":").map(Number);
     const start = setMinutes(setHours(d, h), m);
     const end = addMinutes(start, dur);
     const endStr = format(end, "HH:mm");
-    if (time < wh.open || endStr > wh.close) return false;
-    if (isDateClosed(d, time)) return false;
+    if (!ignoreWH) {
+      if (!wh) return false;
+      if (time < wh.open || endStr > wh.close) return false;
+      if (isDateClosed(d, time)) return false;
+    }
     // blocks
     for (const b of blocks) {
       if (b.professional_id !== profId) continue;
@@ -248,7 +251,7 @@ export function NewAppointmentDialog({
       const be = parseISO(b.end_time);
       if (isBefore(start, be) && isAfter(end, bs)) return false;
     }
-    // appointments
+    // appointments (sempre bloqueia sobreposição real)
     for (const a of appointments) {
       if (a.professional_id !== profId) continue;
       const as = parseISO(a.scheduled_at);
@@ -258,38 +261,57 @@ export function NewAppointmentDialog({
     return true;
   };
 
+  const isOutsideHours = (d: Date, time: string, profId: string | null, dur: number) => {
+    const wh = getWHForDay(d, profId && profId !== ANY_PRO ? profId : undefined);
+    if (!wh) return true;
+    const [h, m] = time.split(":").map(Number);
+    const start = setMinutes(setHours(d, h), m);
+    const endStr = format(addMinutes(start, dur), "HH:mm");
+    if (time < wh.open || endStr > wh.close) return true;
+    if (isDateClosed(d, time)) return true;
+    return false;
+  };
+
   const slotsForDay = useMemo(() => {
-    if (!serviceId || !date || !selectedService) return [] as Array<{ time: string; profId: string | null }>;
+    if (!serviceId || !date || !selectedService) return [] as Array<{ time: string; profId: string | null; outside?: boolean }>;
     const [yy, mm, dd] = date.split("-").map(Number);
     const day = new Date(yy, mm - 1, dd);
-    const wh = getWHForDay(day, professionalId && professionalId !== ANY_PRO ? professionalId : undefined);
-    if (!wh) return [];
     const dur = selectedService.duration_minutes;
-    const [oh, om] = wh.open.split(":").map(Number);
-    const [ch] = wh.close.split(":").map(Number);
+    const wh = getWHForDay(day, professionalId && professionalId !== ANY_PRO ? professionalId : undefined);
     const now = new Date();
-    const out: Array<{ time: string; profId: string | null }> = [];
-    for (let hour = oh; hour < ch; hour++) {
+    const out: Array<{ time: string; profId: string | null; outside?: boolean }> = [];
+
+    // Range de geração: se permitir fora do expediente, varre 00:00–23:30; caso contrário, somente WH.
+    const startH = allowOutsideHours ? 0 : (wh ? Number(wh.open.split(":")[0]) : 0);
+    const startM = allowOutsideHours ? 0 : (wh ? Number(wh.open.split(":")[1]) : 0);
+    const endH = allowOutsideHours ? 24 : (wh ? Number(wh.close.split(":")[0]) : 0);
+
+    if (!allowOutsideHours && !wh) return [];
+
+    for (let hour = startH; hour < endH; hour++) {
       for (const minute of [0, 30]) {
-        if (hour === oh && minute < om) continue;
+        if (hour === startH && minute < startM) continue;
         const time = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
         const slotDate = setMinutes(setHours(day, hour), minute);
         if (isBefore(slotDate, now)) continue;
         const endStr = format(addMinutes(slotDate, dur), "HH:mm");
-        if (endStr > wh.close) continue;
+        if (!allowOutsideHours && wh && endStr > wh.close) continue;
+
+        const outside = isOutsideHours(day, time, professionalId, dur);
 
         if (professionalId && professionalId !== ANY_PRO) {
-          if (isProfFree(day, time, professionalId, dur)) out.push({ time, profId: professionalId });
+          if (isProfFree(day, time, professionalId, dur, outside)) {
+            out.push({ time, profId: professionalId, outside });
+          }
         } else {
-          // any professional
-          const free = eligibleProfessionals.find((p) => isProfFree(day, time, p.id, dur));
-          if (free) out.push({ time, profId: free.id });
+          const free = eligibleProfessionals.find((p) => isProfFree(day, time, p.id, dur, outside));
+          if (free) out.push({ time, profId: free.id, outside });
         }
       }
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serviceId, date, professionalId, selectedService, appointments, blocks, closures, estabWH, profsWH, professionals]);
+  }, [serviceId, date, professionalId, selectedService, appointments, blocks, closures, estabWH, profsWH, professionals, allowOutsideHours]);
 
   // Auto-pick first available when "any" is chosen
   useEffect(() => {
@@ -456,6 +478,15 @@ export function NewAppointmentDialog({
 
           {showConfirmView ? (
             <div className="space-y-3 py-2">
+              {(() => {
+                const slot = slotsForDay.find((s) => s.time === time);
+                if (!slot?.outside) return null;
+                return (
+                  <div className="rounded-md border border-amber-500/60 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-800 dark:text-amber-300">
+                    <strong>Atenção:</strong> este horário está <strong>fora do expediente</strong> do salão e/ou do profissional. Deseja prosseguir mesmo assim?
+                  </div>
+                );
+              })()}
               <SummaryRow label="Cliente" value={`${selectedClient?.name} • ${selectedClient?.phone}`} />
               <SummaryRow label="Profissional" value={selectedProfessional?.name || "—"} />
               <SummaryRow
@@ -666,7 +697,18 @@ export function NewAppointmentDialog({
 
               {/* Horários disponíveis (calendário dinâmico) */}
               <div className="space-y-2">
-                <Label>Horários disponíveis</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label>Horários disponíveis</Label>
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={allowOutsideHours}
+                      onChange={(e) => { setAllowOutsideHours(e.target.checked); setTime(""); }}
+                      className="h-3.5 w-3.5"
+                    />
+                    Permitir fora do expediente
+                  </label>
+                </div>
                 {!serviceId || !professionalId ? (
                   <p className="text-xs text-muted-foreground">
                     Escolha o serviço e o profissional para ver os horários.
@@ -677,29 +719,40 @@ export function NewAppointmentDialog({
                   </div>
                 ) : slotsForDay.length === 0 ? (
                   <p className="text-xs text-muted-foreground">
-                    Sem horários nesta data. Tente outro dia ou use “Qualquer um”.
+                    Sem horários nesta data. {allowOutsideHours ? "Tente outra data." : "Ative \u201CPermitir fora do expediente\u201D ou tente outro dia."}
                   </p>
                 ) : (
-                  <div className="grid grid-cols-4 gap-2 max-h-56 overflow-y-auto pr-1">
-                    {slotsForDay.map((s) => (
-                      <button
-                        key={s.time}
-                        type="button"
-                        onClick={() => {
-                          setTime(s.time);
-                          if (professionalId === ANY_PRO && s.profId) setProfessionalId(s.profId);
-                        }}
-                        className={cn(
-                          "text-sm rounded-md border py-1.5 transition-colors",
-                          time === s.time
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "hover:bg-accent",
-                        )}
-                      >
-                        {s.time}
-                      </button>
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-4 gap-2 max-h-56 overflow-y-auto pr-1">
+                      {slotsForDay.map((s) => (
+                        <button
+                          key={s.time}
+                          type="button"
+                          onClick={() => {
+                            setTime(s.time);
+                            if (professionalId === ANY_PRO && s.profId) setProfessionalId(s.profId);
+                          }}
+                          title={s.outside ? "Fora do horário de atendimento" : undefined}
+                          className={cn(
+                            "text-sm rounded-md border py-1.5 transition-colors relative",
+                            time === s.time
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : s.outside
+                                ? "border-dashed border-amber-500/60 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                                : "hover:bg-accent",
+                          )}
+                        >
+                          {s.time}
+                          {s.outside && <span className="ml-1 text-[10px] align-top">•</span>}
+                        </button>
+                      ))}
+                    </div>
+                    {allowOutsideHours && (
+                      <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                        Horários tracejados estão fora do expediente do salão/profissional.
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
 
