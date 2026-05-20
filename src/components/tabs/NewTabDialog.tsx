@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Loader2, History } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Client = Tables<"clients">;
@@ -21,11 +22,15 @@ interface NewTabDialogProps {
     professional_id?: string;
     service_id?: string;
     notes?: string;
+    opened_at?: string;
+    is_retroactive?: boolean;
   }) => Promise<void>;
   clients: Client[];
   professionals: Professional[];
   services?: Service[];
   loading?: boolean;
+  /** If 'owner' or 'manager', allows retroactive opening (custom opened_at) */
+  userRole?: "owner" | "manager" | "professional";
 }
 
 export function NewTabDialog({
@@ -36,6 +41,7 @@ export function NewTabDialog({
   professionals,
   services = [],
   loading = false,
+  userRole = "professional",
 }: NewTabDialogProps) {
   const [clientName, setClientName] = useState("");
   const [clientId, setClientId] = useState<string>("");
@@ -43,6 +49,15 @@ export function NewTabDialog({
   const [serviceId, setServiceId] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [searchClient, setSearchClient] = useState("");
+  const [retroactive, setRetroactive] = useState(false);
+  const [retroDate, setRetroDate] = useState<string>(() => {
+    // default: now in local format yyyy-MM-ddTHH:mm
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  });
+
+  const canRetroactive = userRole === "owner" || userRole === "manager";
 
   const filteredClients = clients.filter(c =>
     c.name.toLowerCase().includes(searchClient.toLowerCase()) ||
@@ -56,15 +71,24 @@ export function NewTabDialog({
   };
 
   const handleSubmit = async () => {
+    let opened_at: string | undefined;
+    if (retroactive && canRetroactive && retroDate) {
+      // Treat the datetime-local as local time and convert to ISO
+      opened_at = new Date(retroDate).toISOString();
+    }
     await onSubmit({
       client_name: clientName,
       client_id: clientId || undefined,
       professional_id: professionalId || undefined,
       service_id: serviceId || undefined,
       notes: notes || undefined,
+      opened_at,
+      is_retroactive: retroactive && canRetroactive,
     });
     setClientName(""); setClientId(""); setProfessionalId(""); setServiceId(""); setNotes(""); setSearchClient("");
+    setRetroactive(false);
   };
+
 
   // "Avulsa" mode: no registered client selected. In this mode, both professional and service
   // are mandatory to ensure the agenda is properly blocked and the operation is auditable.
@@ -182,7 +206,40 @@ export function NewTabDialog({
               rows={2}
             />
           </div>
+
+          {canRetroactive && (
+            <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3">
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  id="retroactive"
+                  checked={retroactive}
+                  onCheckedChange={(v) => setRetroactive(v === true)}
+                />
+                <div className="flex-1">
+                  <Label htmlFor="retroactive" className="flex items-center gap-1 cursor-pointer">
+                    <History className="h-3.5 w-3.5" />
+                    Lançamento retroativo
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Use para regularizar atendimentos já realizados. A agenda do profissional NÃO será bloqueada e a comanda fica marcada como "Retroativa".
+                  </p>
+                </div>
+              </div>
+              {retroactive && (
+                <div className="space-y-1 pl-6">
+                  <Label htmlFor="retroDate" className="text-xs">Data e hora da abertura</Label>
+                  <Input
+                    id="retroDate"
+                    type="datetime-local"
+                    value={retroDate}
+                    onChange={(e) => setRetroDate(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
+
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

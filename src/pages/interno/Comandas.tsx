@@ -265,13 +265,18 @@ export default function InternoComandas() {
     setProfessionalServices((data || []) as any);
   };
 
-  const handleCreateTab = async (data: { client_name: string; client_id?: string; professional_id?: string; service_id?: string; notes?: string }) => {
+  const handleCreateTab = async (data: { client_name: string; client_id?: string; professional_id?: string; service_id?: string; notes?: string; opened_at?: string; is_retroactive?: boolean }) => {
     const tab = await createTab(data);
     if (tab) { setNewTabOpen(false); setSelectedTab(tab as TabWithDetails); }
   };
 
   const handleAddItem = async (itemData: any) => {
-    const item = await addItem(itemData);
+    // For retroactive tabs, stamp item created_at with the tab's opened_at
+    // so reports and history reflect the actual atendimento date.
+    const payload = selectedTab?.is_retroactive && selectedTab.opened_at
+      ? { ...itemData, created_at: selectedTab.opened_at }
+      : itemData;
+    const item = await addItem(payload);
     if (item && selectedTab) {
       await recalculateTotal(selectedTab.id);
       const { data } = await supabase.from("tabs").select("*").eq("id", selectedTab.id).single();
@@ -303,6 +308,7 @@ export default function InternoComandas() {
     payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[],
     couponInfo?: CouponInfo,
     flags?: CommissionDiscountFlags,
+    closedAt?: string,
   ) => {
     if (!selectedTab) return;
 
@@ -310,7 +316,7 @@ export default function InternoComandas() {
     // updates tabs.discount_amount/total) and the closing flow uses `close_tab_atomic`.
     // No manual subtotal/discount mutation here — avoids double-discount bugs.
 
-    const success = await closeTab(selectedTab.id, payments, items, flags);
+    const success = await closeTab(selectedTab.id, payments, items, flags, closedAt);
     if (success) { setCheckoutOpen(false); setSelectedTab(null); }
   };
 
@@ -447,7 +453,7 @@ export default function InternoComandas() {
           />
         )}
 
-        <NewTabDialog open={newTabOpen} onOpenChange={setNewTabOpen} onSubmit={handleCreateTab} clients={clients} professionals={professionals} services={services} />
+        <NewTabDialog open={newTabOpen} onOpenChange={setNewTabOpen} onSubmit={handleCreateTab} clients={clients} professionals={professionals} services={services} userRole={userRole} />
         <AddItemDialog open={addItemOpen} onOpenChange={setAddItemOpen} onAddItem={handleAddItem} products={products} services={services} professionals={professionals} professionalServices={professionalServices} establishmentId={establishmentId || undefined} defaultProfessionalId={selectedTab?.professional_id || null} />
         <CheckoutDialog
           open={checkoutOpen}

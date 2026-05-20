@@ -55,6 +55,8 @@ export function useTabs(establishmentId: string | null) {
     professional_id?: string;
     service_id?: string;
     notes?: string;
+    opened_at?: string;
+    is_retroactive?: boolean;
   }) => {
     if (!establishmentId) return null;
 
@@ -83,7 +85,8 @@ export function useTabs(establishmentId: string | null) {
 
       // Auto-create an "in_service" appointment to block the professional's agenda
       // when the tab is opened with a professional and a service selected.
-      if (!appointmentId && tabData.professional_id && tabData.service_id) {
+      // Skip for retroactive launches (event already happened in the past).
+      if (!appointmentId && !tabData.is_retroactive && tabData.professional_id && tabData.service_id) {
         // Fetch service info (duration + price)
         const { data: svc, error: svcError } = await supabase
           .from("services")
@@ -167,19 +170,27 @@ export function useTabs(establishmentId: string | null) {
         appointmentId = appt.id;
       }
 
+      const insertPayload: any = {
+        establishment_id: establishmentId,
+        client_name: tabData.client_name,
+        client_id: tabData.client_id,
+        appointment_id: appointmentId,
+        professional_id: tabData.professional_id,
+        notes: tabData.notes,
+        status: "open",
+        subtotal: 0,
+        total: 0,
+        is_retroactive: !!tabData.is_retroactive,
+      };
+      if (tabData.opened_at) {
+        insertPayload.opened_at = tabData.opened_at;
+        insertPayload.created_at = tabData.opened_at;
+        insertPayload.updated_at = tabData.opened_at;
+      }
+
       const { data, error } = await supabase
         .from("tabs")
-        .insert({
-          establishment_id: establishmentId,
-          client_name: tabData.client_name,
-          client_id: tabData.client_id,
-          appointment_id: appointmentId,
-          professional_id: tabData.professional_id,
-          notes: tabData.notes,
-          status: "open",
-          subtotal: 0,
-          total: 0,
-        })
+        .insert(insertPayload)
         .select()
         .single();
 
@@ -224,7 +235,8 @@ export function useTabs(establishmentId: string | null) {
     tabId: string,
     payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[],
     items: TabItem[] = [],
-    flags?: { commission_discount_on_manual?: boolean; commission_discount_on_coupon?: boolean; commission_discount_on_loyalty?: boolean }
+    flags?: { commission_discount_on_manual?: boolean; commission_discount_on_coupon?: boolean; commission_discount_on_loyalty?: boolean },
+    closedAt?: string,
   ) => {
     try {
       // 1) Persist flags BEFORE calculating commissions, so the calculator reads the correct values
@@ -268,7 +280,8 @@ export function useTabs(establishmentId: string | null) {
         _payments: payments as any,
         _commissions: commissionsPayload as any,
         _flags: (flags ?? {}) as any,
-      });
+        _closed_at: closedAt ?? null,
+      } as any);
 
       if (rpcError) throw rpcError;
       const result = rpcData as any;
@@ -574,6 +587,7 @@ export function useTabItems(tabId: string | null) {
     original_unit_price?: number | null;
     price_override_by?: string | null;
     price_override_reason?: string | null;
+    created_at?: string;
   }) => {
     if (!tabId) return null;
 
@@ -595,6 +609,9 @@ export function useTabItems(tabId: string | null) {
         insertPayload.original_unit_price = itemData.original_unit_price;
         insertPayload.price_override_by = itemData.price_override_by ?? null;
         insertPayload.price_override_reason = itemData.price_override_reason ?? null;
+      }
+      if (itemData.created_at) {
+        insertPayload.created_at = itemData.created_at;
       }
       const { data, error } = await supabase
         .from("tab_items")

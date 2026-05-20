@@ -37,7 +37,7 @@ interface CheckoutDialogProps {
   tab: TabWithDetails | null;
   items: TabItem[];
   paymentMethods: PaymentMethod[];
-  onConfirm: (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[], couponInfo?: CouponInfo, flags?: CommissionDiscountFlags) => Promise<void>;
+  onConfirm: (payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[], couponInfo?: CouponInfo, flags?: CommissionDiscountFlags, closedAt?: string) => Promise<void>;
   loading?: boolean;
   establishmentId?: string;
   discountPinThreshold?: number;
@@ -102,6 +102,18 @@ export function CheckoutDialog({
   const [flagManual, setFlagManual] = useState<boolean>(false);
   const [flagCoupon, setFlagCoupon] = useState<boolean>(false);
   const [flagLoyalty, setFlagLoyalty] = useState<boolean>(false);
+
+  // Retroactive close date (only used when the tab itself is retroactive)
+  const isRetroactive = !!tab?.is_retroactive;
+  const [retroClosedAt, setRetroClosedAt] = useState<string>("");
+  useEffect(() => {
+    if (!isRetroactive || !tab?.opened_at) { setRetroClosedAt(""); return; }
+    const d = new Date(tab.opened_at);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    setRetroClosedAt(
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    );
+  }, [isRetroactive, tab?.opened_at, open]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -380,7 +392,12 @@ export function CheckoutDialog({
       commission_discount_on_loyalty: flagLoyalty,
     };
 
-    await onConfirm(paymentData, couponInfo, flags);
+    let closedAtIso: string | undefined;
+    if (isRetroactive && retroClosedAt) {
+      closedAtIso = new Date(retroClosedAt).toISOString();
+    }
+
+    await onConfirm(paymentData, couponInfo, flags, closedAtIso);
   };
 
   const selectedPaymentMethod = paymentMethods.find(m => m.id === selectedMethod);
@@ -399,6 +416,22 @@ export function CheckoutDialog({
 
         <div className="flex-1 overflow-y-auto overscroll-contain pr-2 -mr-2">
           <div className="space-y-4">
+            {isRetroactive && (
+              <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3">
+                <Label htmlFor="retroClosedAt" className="text-xs font-medium">
+                  Data e hora do fechamento (retroativo)
+                </Label>
+                <Input
+                  id="retroClosedAt"
+                  type="datetime-local"
+                  value={retroClosedAt}
+                  onChange={(e) => setRetroClosedAt(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Pagamentos e comissões serão registrados nesta data. Use a hora real do atendimento para manter o histórico financeiro correto.
+                </p>
+              </div>
+            )}
             {/* Inconsistency warning: service items where the linked professional doesn't have the service registered */}
             {(() => {
               const inconsistent = items.filter(

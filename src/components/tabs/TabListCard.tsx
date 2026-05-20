@@ -1,7 +1,7 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { User, Clock, ChevronRight } from "lucide-react";
+import { User, Clock, ChevronRight, History } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import type { TabWithDetails } from "@/types/tabs";
@@ -36,6 +36,12 @@ export function TabListCard({ tab, onClick }: TabListCardProps) {
               >
                 {tab.status === "open" ? "Aberta" : tab.status === "closed" ? "Fechada" : "Cancelada"}
               </Badge>
+              {tab.is_retroactive && (
+                <Badge variant="outline" className="flex-shrink-0 gap-1 border-amber-500 text-amber-700 dark:text-amber-400">
+                  <History className="h-3 w-3" />
+                  Retroativa
+                </Badge>
+              )}
             </div>
             <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
               <div className="flex items-center gap-1">

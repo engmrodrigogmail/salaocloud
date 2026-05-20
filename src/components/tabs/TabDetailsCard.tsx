@@ -19,7 +19,7 @@ import {
 import { 
   Plus, Trash2, User, Clock, Package, Scissors, PenLine, 
   CreditCard, Receipt, ArrowLeft, Minus, Undo2, Tag, AlertCircle, Star, CalendarCheck, X,
-  AlertTriangle, RotateCcw,
+  AlertTriangle, RotateCcw, History,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { format, parseISO } from "date-fns";
@@ -253,6 +253,12 @@ export function TabDetailsCard({
           <Badge variant={tab.status === "open" ? "default" : "secondary"}>
             {tab.status === "open" ? "Aberta" : tab.status === "closed" ? "Fechada" : "Cancelada"}
           </Badge>
+          {tab.is_retroactive && (
+            <Badge variant="outline" className="gap-1 border-amber-500 text-amber-700 dark:text-amber-400">
+              <History className="h-3 w-3" />
+              Retroativa
+            </Badge>
+          )}
         </div>
       </div>
 

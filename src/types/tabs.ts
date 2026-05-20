@@ -18,6 +18,7 @@ export interface Tab {
   closed_by: string | null;
   created_at: string;
   updated_at: string;
+  is_retroactive?: boolean;
 }
 
 export interface TabItem {
