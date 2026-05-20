@@ -416,6 +416,22 @@ export function CheckoutDialog({
 
         <div className="flex-1 overflow-y-auto overscroll-contain pr-2 -mr-2">
           <div className="space-y-4">
+            {isRetroactive && (
+              <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3">
+                <Label htmlFor="retroClosedAt" className="text-xs font-medium">
+                  Data e hora do fechamento (retroativo)
+                </Label>
+                <Input
+                  id="retroClosedAt"
+                  type="datetime-local"
+                  value={retroClosedAt}
+                  onChange={(e) => setRetroClosedAt(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Pagamentos e comissões serão registrados nesta data. Use a hora real do atendimento para manter o histórico financeiro correto.
+                </p>
+              </div>
+            )}
             {/* Inconsistency warning: service items where the linked professional doesn't have the service registered */}
             {(() => {
               const inconsistent = items.filter(
