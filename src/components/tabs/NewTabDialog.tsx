@@ -41,6 +41,7 @@ export function NewTabDialog({
   professionals,
   services = [],
   loading = false,
+  userRole = "professional",
 }: NewTabDialogProps) {
   const [clientName, setClientName] = useState("");
   const [clientId, setClientId] = useState<string>("");
@@ -48,6 +49,15 @@ export function NewTabDialog({
   const [serviceId, setServiceId] = useState<string>("");
   const [notes, setNotes] = useState("");
   const [searchClient, setSearchClient] = useState("");
+  const [retroactive, setRetroactive] = useState(false);
+  const [retroDate, setRetroDate] = useState<string>(() => {
+    // default: now in local format yyyy-MM-ddTHH:mm
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  });
+
+  const canRetroactive = userRole === "owner" || userRole === "manager";
 
   const filteredClients = clients.filter(c =>
     c.name.toLowerCase().includes(searchClient.toLowerCase()) ||
@@ -61,15 +71,24 @@ export function NewTabDialog({
   };
 
   const handleSubmit = async () => {
+    let opened_at: string | undefined;
+    if (retroactive && canRetroactive && retroDate) {
+      // Treat the datetime-local as local time and convert to ISO
+      opened_at = new Date(retroDate).toISOString();
+    }
     await onSubmit({
       client_name: clientName,
       client_id: clientId || undefined,
       professional_id: professionalId || undefined,
       service_id: serviceId || undefined,
       notes: notes || undefined,
+      opened_at,
+      is_retroactive: retroactive && canRetroactive,
     });
     setClientName(""); setClientId(""); setProfessionalId(""); setServiceId(""); setNotes(""); setSearchClient("");
+    setRetroactive(false);
   };
+
 
   // "Avulsa" mode: no registered client selected. In this mode, both professional and service
   // are mandatory to ensure the agenda is properly blocked and the operation is auditable.
