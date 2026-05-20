@@ -265,13 +265,18 @@ export default function InternoComandas() {
     setProfessionalServices((data || []) as any);
   };
 
-  const handleCreateTab = async (data: { client_name: string; client_id?: string; professional_id?: string; service_id?: string; notes?: string }) => {
+  const handleCreateTab = async (data: { client_name: string; client_id?: string; professional_id?: string; service_id?: string; notes?: string; opened_at?: string; is_retroactive?: boolean }) => {
     const tab = await createTab(data);
     if (tab) { setNewTabOpen(false); setSelectedTab(tab as TabWithDetails); }
   };
 
   const handleAddItem = async (itemData: any) => {
-    const item = await addItem(itemData);
+    // For retroactive tabs, stamp item created_at with the tab's opened_at
+    // so reports and history reflect the actual atendimento date.
+    const payload = selectedTab?.is_retroactive && selectedTab.opened_at
+      ? { ...itemData, created_at: selectedTab.opened_at }
+      : itemData;
+    const item = await addItem(payload);
     if (item && selectedTab) {
       await recalculateTotal(selectedTab.id);
       const { data } = await supabase.from("tabs").select("*").eq("id", selectedTab.id).single();
