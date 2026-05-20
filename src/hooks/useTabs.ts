@@ -170,19 +170,27 @@ export function useTabs(establishmentId: string | null) {
         appointmentId = appt.id;
       }
 
+      const insertPayload: any = {
+        establishment_id: establishmentId,
+        client_name: tabData.client_name,
+        client_id: tabData.client_id,
+        appointment_id: appointmentId,
+        professional_id: tabData.professional_id,
+        notes: tabData.notes,
+        status: "open",
+        subtotal: 0,
+        total: 0,
+        is_retroactive: !!tabData.is_retroactive,
+      };
+      if (tabData.opened_at) {
+        insertPayload.opened_at = tabData.opened_at;
+        insertPayload.created_at = tabData.opened_at;
+        insertPayload.updated_at = tabData.opened_at;
+      }
+
       const { data, error } = await supabase
         .from("tabs")
-        .insert({
-          establishment_id: establishmentId,
-          client_name: tabData.client_name,
-          client_id: tabData.client_id,
-          appointment_id: appointmentId,
-          professional_id: tabData.professional_id,
-          notes: tabData.notes,
-          status: "open",
-          subtotal: 0,
-          total: 0,
-        })
+        .insert(insertPayload)
         .select()
         .single();
 
