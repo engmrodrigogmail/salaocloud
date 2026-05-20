@@ -185,6 +185,10 @@ export function NewAppointmentDialog({
   }, [open, establishmentId, professionals]);
 
   const selectedService = useMemo(() => services.find((s) => s.id === serviceId), [serviceId, services]);
+  const sortedServices = useMemo(
+    () => [...services].sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" })),
+    [services],
+  );
   const selectedProfessional = useMemo(
     () => (professionalId && professionalId !== ANY_PRO ? professionals.find((p) => p.id === professionalId) : null),
     [professionalId, professionals],
