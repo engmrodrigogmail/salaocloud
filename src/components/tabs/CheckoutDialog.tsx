@@ -103,6 +103,18 @@ export function CheckoutDialog({
   const [flagCoupon, setFlagCoupon] = useState<boolean>(false);
   const [flagLoyalty, setFlagLoyalty] = useState<boolean>(false);
 
+  // Retroactive close date (only used when the tab itself is retroactive)
+  const isRetroactive = !!tab?.is_retroactive;
+  const [retroClosedAt, setRetroClosedAt] = useState<string>("");
+  useEffect(() => {
+    if (!isRetroactive || !tab?.opened_at) { setRetroClosedAt(""); return; }
+    const d = new Date(tab.opened_at);
+    const pad = (n: number) => String(n).padStart(2, "0");
+    setRetroClosedAt(
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    );
+  }, [isRetroactive, tab?.opened_at, open]);
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
