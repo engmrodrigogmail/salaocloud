@@ -280,7 +280,8 @@ export function useTabs(establishmentId: string | null) {
         _payments: payments as any,
         _commissions: commissionsPayload as any,
         _flags: (flags ?? {}) as any,
-      });
+        _closed_at: closedAt ?? null,
+      } as any);
 
       if (rpcError) throw rpcError;
       const result = rpcData as any;
