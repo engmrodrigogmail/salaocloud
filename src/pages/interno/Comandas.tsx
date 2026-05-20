@@ -308,6 +308,7 @@ export default function InternoComandas() {
     payments: Omit<TabPayment, 'id' | 'tab_id' | 'created_at'>[],
     couponInfo?: CouponInfo,
     flags?: CommissionDiscountFlags,
+    closedAt?: string,
   ) => {
     if (!selectedTab) return;
 
@@ -315,7 +316,7 @@ export default function InternoComandas() {
     // updates tabs.discount_amount/total) and the closing flow uses `close_tab_atomic`.
     // No manual subtotal/discount mutation here — avoids double-discount bugs.
 
-    const success = await closeTab(selectedTab.id, payments, items, flags);
+    const success = await closeTab(selectedTab.id, payments, items, flags, closedAt);
     if (success) { setCheckoutOpen(false); setSelectedTab(null); }
   };
 
