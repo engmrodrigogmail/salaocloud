@@ -478,6 +478,15 @@ export function NewAppointmentDialog({
 
           {showConfirmView ? (
             <div className="space-y-3 py-2">
+              {(() => {
+                const slot = slotsForDay.find((s) => s.time === time);
+                if (!slot?.outside) return null;
+                return (
+                  <div className="rounded-md border border-amber-500/60 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-800 dark:text-amber-300">
+                    <strong>Atenção:</strong> este horário está <strong>fora do expediente</strong> do salão e/ou do profissional. Deseja prosseguir mesmo assim?
+                  </div>
+                );
+              })()}
               <SummaryRow label="Cliente" value={`${selectedClient?.name} • ${selectedClient?.phone}`} />
               <SummaryRow label="Profissional" value={selectedProfessional?.name || "—"} />
               <SummaryRow
