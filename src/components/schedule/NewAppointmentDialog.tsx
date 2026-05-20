@@ -688,7 +688,18 @@ export function NewAppointmentDialog({
 
               {/* Horários disponíveis (calendário dinâmico) */}
               <div className="space-y-2">
-                <Label>Horários disponíveis</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label>Horários disponíveis</Label>
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={allowOutsideHours}
+                      onChange={(e) => { setAllowOutsideHours(e.target.checked); setTime(""); }}
+                      className="h-3.5 w-3.5"
+                    />
+                    Permitir fora do expediente
+                  </label>
+                </div>
                 {!serviceId || !professionalId ? (
                   <p className="text-xs text-muted-foreground">
                     Escolha o serviço e o profissional para ver os horários.
@@ -699,29 +710,40 @@ export function NewAppointmentDialog({
                   </div>
                 ) : slotsForDay.length === 0 ? (
                   <p className="text-xs text-muted-foreground">
-                    Sem horários nesta data. Tente outro dia ou use “Qualquer um”.
+                    Sem horários nesta data. {allowOutsideHours ? "Tente outra data." : "Ative \u201CPermitir fora do expediente\u201D ou tente outro dia."}
                   </p>
                 ) : (
-                  <div className="grid grid-cols-4 gap-2 max-h-56 overflow-y-auto pr-1">
-                    {slotsForDay.map((s) => (
-                      <button
-                        key={s.time}
-                        type="button"
-                        onClick={() => {
-                          setTime(s.time);
-                          if (professionalId === ANY_PRO && s.profId) setProfessionalId(s.profId);
-                        }}
-                        className={cn(
-                          "text-sm rounded-md border py-1.5 transition-colors",
-                          time === s.time
-                            ? "bg-primary text-primary-foreground border-primary"
-                            : "hover:bg-accent",
-                        )}
-                      >
-                        {s.time}
-                      </button>
-                    ))}
-                  </div>
+                  <>
+                    <div className="grid grid-cols-4 gap-2 max-h-56 overflow-y-auto pr-1">
+                      {slotsForDay.map((s) => (
+                        <button
+                          key={s.time}
+                          type="button"
+                          onClick={() => {
+                            setTime(s.time);
+                            if (professionalId === ANY_PRO && s.profId) setProfessionalId(s.profId);
+                          }}
+                          title={s.outside ? "Fora do horário de atendimento" : undefined}
+                          className={cn(
+                            "text-sm rounded-md border py-1.5 transition-colors relative",
+                            time === s.time
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : s.outside
+                                ? "border-dashed border-amber-500/60 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                                : "hover:bg-accent",
+                          )}
+                        >
+                          {s.time}
+                          {s.outside && <span className="ml-1 text-[10px] align-top">•</span>}
+                        </button>
+                      ))}
+                    </div>
+                    {allowOutsideHours && (
+                      <p className="text-[11px] text-amber-700 dark:text-amber-400">
+                        Horários tracejados estão fora do expediente do salão/profissional.
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
 
