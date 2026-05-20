@@ -392,7 +392,12 @@ export function CheckoutDialog({
       commission_discount_on_loyalty: flagLoyalty,
     };
 
-    await onConfirm(paymentData, couponInfo, flags);
+    let closedAtIso: string | undefined;
+    if (isRetroactive && retroClosedAt) {
+      closedAtIso = new Date(retroClosedAt).toISOString();
+    }
+
+    await onConfirm(paymentData, couponInfo, flags, closedAtIso);
   };
 
   const selectedPaymentMethod = paymentMethods.find(m => m.id === selectedMethod);
