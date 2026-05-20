@@ -55,6 +55,8 @@ export function useTabs(establishmentId: string | null) {
     professional_id?: string;
     service_id?: string;
     notes?: string;
+    opened_at?: string;
+    is_retroactive?: boolean;
   }) => {
     if (!establishmentId) return null;
 
