@@ -4395,6 +4395,7 @@ export type Database = {
           establishment_id: string
           id: string
           is_deleted: boolean
+          is_retroactive: boolean
           loyalty_redemption_id: string | null
           manager_pin_used: boolean
           manager_professional_id: string | null
@@ -4432,6 +4433,7 @@ export type Database = {
           establishment_id: string
           id?: string
           is_deleted?: boolean
+          is_retroactive?: boolean
           loyalty_redemption_id?: string | null
           manager_pin_used?: boolean
           manager_professional_id?: string | null
@@ -4469,6 +4471,7 @@ export type Database = {
           establishment_id?: string
           id?: string
           is_deleted?: boolean
+          is_retroactive?: boolean
           loyalty_redemption_id?: string | null
           manager_pin_used?: boolean
           manager_professional_id?: string | null
@@ -4985,15 +4988,26 @@ export type Database = {
         }[]
       }
       clear_must_change_password: { Args: never; Returns: Json }
-      close_tab_atomic: {
-        Args: {
-          _commissions?: Json
-          _flags?: Json
-          _payments: Json
-          _tab_id: string
-        }
-        Returns: Json
-      }
+      close_tab_atomic:
+        | {
+            Args: {
+              _commissions?: Json
+              _flags?: Json
+              _payments: Json
+              _tab_id: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              _closed_at?: string
+              _commissions?: Json
+              _flags?: Json
+              _payments: Json
+              _tab_id: string
+            }
+            Returns: Json
+          }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
