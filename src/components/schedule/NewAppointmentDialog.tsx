@@ -19,7 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Loader2, Search, UserPlus, Sparkles, ArrowLeft } from "lucide-react";
+import { Calendar, Loader2, Search, UserPlus, Sparkles, ArrowLeft, Check, ChevronsUpDown } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, setHours, setMinutes, addMinutes, parseISO, isBefore, isAfter, getDay, addDays, startOfDay } from "date-fns";
