@@ -206,7 +206,40 @@ export function NewTabDialog({
               rows={2}
             />
           </div>
+
+          {canRetroactive && (
+            <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 p-3">
+              <div className="flex items-start gap-2">
+                <Checkbox
+                  id="retroactive"
+                  checked={retroactive}
+                  onCheckedChange={(v) => setRetroactive(v === true)}
+                />
+                <div className="flex-1">
+                  <Label htmlFor="retroactive" className="flex items-center gap-1 cursor-pointer">
+                    <History className="h-3.5 w-3.5" />
+                    Lançamento retroativo
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Use para regularizar atendimentos já realizados. A agenda do profissional NÃO será bloqueada e a comanda fica marcada como "Retroativa".
+                  </p>
+                </div>
+              </div>
+              {retroactive && (
+                <div className="space-y-1 pl-6">
+                  <Label htmlFor="retroDate" className="text-xs">Data e hora da abertura</Label>
+                  <Input
+                    id="retroDate"
+                    type="datetime-local"
+                    value={retroDate}
+                    onChange={(e) => setRetroDate(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </div>
+
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
