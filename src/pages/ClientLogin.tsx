@@ -19,7 +19,7 @@ interface EstablishmentOption {
   state: string | null;
 }
 
-type Step = "identifier" | "select" | "password" | "create_password" | "no_match";
+type Step = "login" | "select" | "create_password" | "no_match";
 type IdentifierType = "email" | "phone";
 
 function isEmail(v: string) {
@@ -50,21 +50,42 @@ function isValidCPF(cpf: string) {
   return r === parseInt(d[10]);
 }
 
+function persistSession(
+  slug: string,
+  clientId: string,
+  emailUsed: string,
+  sessionToken?: string | null,
+  sessionExpiresAt?: string | null,
+) {
+  const key = `client_portal_session:${slug}`;
+  localStorage.setItem(
+    key,
+    JSON.stringify({
+      clientId,
+      email: emailUsed,
+      phone: null,
+      sessionToken: sessionToken ?? null,
+      sessionExpiresAt: sessionExpiresAt ?? null,
+      savedAt: new Date().toISOString(),
+    }),
+  );
+}
+
 export default function ClientLogin() {
   const navigate = useNavigate();
-  const [step, setStep] = useState<Step>("identifier");
+  const [step, setStep] = useState<Step>("login");
   const [loading, setLoading] = useState(false);
 
   const [identifier, setIdentifier] = useState("");
   const [identifierType, setIdentifierType] = useState<IdentifierType>("email");
-  const [resolvedEmail, setResolvedEmail] = useState(""); // email used for backend calls
+  const [password, setPassword] = useState("");
+
+  const [resolvedEmail, setResolvedEmail] = useState("");
   const [resolvedPhone, setResolvedPhone] = useState("");
 
-  const [password, setPassword] = useState("");
+  // First-access fields
   const [confirmPassword, setConfirmPassword] = useState("");
-
-  // Extra fields collected on create_password (first access)
-  const [extraEmail, setExtraEmail] = useState(""); // when login was by phone and email is missing
+  const [extraEmail, setExtraEmail] = useState("");
   const [cpf, setCpf] = useState("");
   const [acceptTerms, setAcceptTerms] = useState(false);
 
@@ -72,28 +93,33 @@ export default function ClientLogin() {
   const [selectedEstablishment, setSelectedEstablishment] = useState<EstablishmentOption | null>(null);
   const [forgotInfoEmail, setForgotInfoEmail] = useState<string | null>(null);
 
-  const persistSession = (
-    slug: string,
-    clientId: string,
-    emailUsed: string,
-    sessionToken?: string | null,
-    sessionExpiresAt?: string | null,
-  ) => {
-    const key = `client_portal_session:${slug}`;
-    localStorage.setItem(
-      key,
-      JSON.stringify({
-        clientId,
-        email: emailUsed,
-        phone: null,
-        sessionToken: sessionToken ?? null,
-        sessionExpiresAt: sessionExpiresAt ?? null,
-        savedAt: new Date().toISOString(),
-      }),
+  /**
+   * Logs the client into every salon where the email is registered,
+   * persisting one session per slug, then sends user to /hub which
+   * already combines client sessions with Supabase auth (owner / super_admin).
+   */
+  const loginIntoAllSalons = async (email: string, pwd: string): Promise<boolean> => {
+    const { data: listData, error: listErr } = await supabase.functions.invoke(
+      "list-client-establishments",
+      { body: { email } },
     );
+    if (listErr) throw listErr;
+    const list = (listData?.establishments ?? []) as EstablishmentOption[];
+    if (list.length === 0) return false;
+
+    let anyOk = false;
+    for (const est of list) {
+      const { data, error } = await supabase.functions.invoke("client-auth-login", {
+        body: { email, password: pwd, establishment_id: est.id },
+      });
+      if (error || data?.status !== "ok" || !data?.client) continue;
+      persistSession(est.slug, data.client.id, email, data.session_token, data.session_expires_at);
+      anyOk = true;
+    }
+    return anyOk;
   };
 
-  const handleSubmitIdentifier = async (e: FormEvent) => {
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     const raw = identifier.trim();
     const digits = onlyDigits(raw);
@@ -103,9 +129,14 @@ export default function ClientLogin() {
       toast.error("Informe um e-mail ou telefone válido", { position: "top-center", duration: 2000 });
       return;
     }
+    if (!password || password.length < 6) {
+      toast.error("Digite sua senha (mín. 6 caracteres)", { position: "top-center", duration: 2000 });
+      return;
+    }
 
     setLoading(true);
     try {
+      let emailToUse = "";
       if (looksLikePhone) {
         setIdentifierType("phone");
         setResolvedPhone(digits);
@@ -118,98 +149,72 @@ export default function ClientLogin() {
         const list = (data?.establishments ?? []) as EstablishmentOption[];
         const suggested = (data?.suggested_email ?? null) as string | null;
         setEstablishments(list);
-        setResolvedEmail(suggested ? String(suggested).toLowerCase() : "");
 
         if (list.length === 0) {
           setStep("no_match");
-        } else if (list.length === 1) {
-          setSelectedEstablishment(list[0]);
-          // If we already know the email (suggested), try password login;
-          // otherwise go straight to create_password (collect email + CPF + terms).
-          if (suggested) {
-            setStep("password");
-          } else {
-            setStep("create_password");
-          }
-        } else {
-          setStep("select");
-        }
-      } else {
-        setIdentifierType("email");
-        const normalized = raw.toLowerCase();
-        setResolvedEmail(normalized);
-
-        const { data, error } = await supabase.functions.invoke("list-client-establishments", {
-          body: { email: normalized },
-        });
-        if (error) throw error;
-
-        const list = (data?.establishments ?? []) as EstablishmentOption[];
-        setEstablishments(list);
-
-        if (list.length === 0) setStep("no_match");
-        else if (list.length === 1) {
-          setSelectedEstablishment(list[0]);
-          setStep("password");
-        } else {
-          setStep("select");
-        }
-      }
-    } catch (err) {
-      console.error(err);
-      toast.error("Erro ao verificar cadastro. Tente novamente.", { position: "top-center", duration: 2500 });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSelectEstablishment = (est: EstablishmentOption) => {
-    setSelectedEstablishment(est);
-    if (identifierType === "phone" && !resolvedEmail) {
-      setStep("create_password");
-    } else {
-      setStep("password");
-    }
-  };
-
-  const handleSubmitPassword = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!password) {
-      toast.error("Digite sua senha", { position: "top-center", duration: 2000 });
-      return;
-    }
-    setLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke("client-auth-login", {
-        body: {
-          email: resolvedEmail,
-          password,
-          establishment_id: selectedEstablishment?.id,
-        },
-      });
-      if (error) {
-        const ctx: any = (error as any).context;
-        if (ctx?.status === 401) {
-          toast.error("E-mail ou senha incorretos", { position: "top-center", duration: 2500 });
           return;
         }
-        throw error;
+
+        if (!suggested) {
+          // Phone-only: needs first-access flow
+          setResolvedEmail("");
+          if (list.length === 1) {
+            setSelectedEstablishment(list[0]);
+            setStep("create_password");
+          } else {
+            setStep("select");
+          }
+          return;
+        }
+
+        emailToUse = String(suggested).toLowerCase();
+        setResolvedEmail(emailToUse);
+      } else {
+        setIdentifierType("email");
+        emailToUse = raw.toLowerCase();
+        setResolvedEmail(emailToUse);
       }
 
-      if (data?.status === "password_not_set") {
+      // Authenticate (global by email, sem establishment_id)
+      const { data: authData, error: authErr } = await supabase.functions.invoke("client-auth-login", {
+        body: { email: emailToUse, password },
+      });
+      if (authErr) {
+        const ctx: any = (authErr as any).context;
+        if (ctx?.status === 401) {
+          toast.error("E-mail/telefone ou senha incorretos", { position: "top-center", duration: 2500 });
+          return;
+        }
+        if (ctx?.status === 404) {
+          setStep("no_match");
+          return;
+        }
+        throw authErr;
+      }
+
+      if (authData?.status === "password_not_set") {
+        // First-access path: pick salon (if many) then create password
+        const { data: listData } = await supabase.functions.invoke("list-client-establishments", {
+          body: { email: emailToUse },
+        });
+        const list = (listData?.establishments ?? []) as EstablishmentOption[];
+        setEstablishments(list);
         toast.info("Primeiro acesso: complete seu cadastro.", { position: "top-center", duration: 2500 });
-        setStep("create_password");
+        if (list.length <= 1) {
+          setSelectedEstablishment(list[0] ?? null);
+          setStep("create_password");
+        } else {
+          setStep("select");
+        }
         return;
       }
 
-      if (data?.status === "ok" && data?.client && selectedEstablishment) {
-        persistSession(
-          selectedEstablishment.slug,
-          data.client.id,
-          resolvedEmail,
-          data.session_token,
-          data.session_expires_at,
-        );
+      if (authData?.status === "ok") {
+        const anyOk = await loginIntoAllSalons(emailToUse, password);
+        if (!anyOk) {
+          toast.error("Não foi possível abrir nenhum salão. Tente novamente.", { position: "top-center", duration: 2500 });
+          return;
+        }
         toast.success("Bem-vindo!", { position: "top-center", duration: 1500 });
         navigate("/hub");
         return;
@@ -224,10 +229,14 @@ export default function ClientLogin() {
     }
   };
 
+  const handleSelectEstablishment = (est: EstablishmentOption) => {
+    setSelectedEstablishment(est);
+    setStep("create_password");
+  };
+
   const handleCreatePassword = async (e: FormEvent) => {
     e.preventDefault();
 
-    // Determine final email
     const finalEmail = (resolvedEmail || extraEmail.trim().toLowerCase()).trim();
     if (!isEmail(finalEmail)) {
       toast.error("Informe um e-mail válido", { position: "top-center", duration: 2500 });
@@ -252,40 +261,15 @@ export default function ClientLogin() {
 
     setLoading(true);
     try {
-      // 1) If we logged in by phone and the client row had no email, set it now (so set-password can find by email).
-      if (identifierType === "phone" && !resolvedEmail && resolvedPhone) {
-        // Update all rows matching this phone (within their establishments) to set email + global identity
-        // Note: RLS allows establishment owners to update; this runs as anon, so we rely on a service-role flow
-        // by reusing the existing pattern: set fields directly via the table (the policy "Anyone can register"
-        // is INSERT-only). We attempt update; if blocked, we fall back to letting set-password handle by email.
-        // To stay within RLS, we'll update via the lookup-by-phone backend route is overkill — instead, we update
-        // by id using anon (will fail silently) and rely on set-password to upsert. We keep a defensive update:
-        try {
-          // Use the matched establishment + suggested email path: we can update the single matched row by establishment
-          // when the user is authenticated as that client. Here, we'll just persist the email locally for set-password.
-          setResolvedEmail(finalEmail);
-        } catch {
-          /* noop */
-        }
-      }
-
-      // 2) Create password (works by matching the email across rows).
-      // If row(s) currently have no email matching `finalEmail`, set-password will fail with client_not_found.
-      // For phone-only clients we therefore first patch one matching row's email via the RLS-public path:
       if (identifierType === "phone" && !resolvedEmail && selectedEstablishment) {
-        // Search the matched establishment for a client with this phone (suffix match, last 10 digits)
         const last10 = resolvedPhone.slice(-10);
         const { data: rows } = await supabase
           .from("clients")
           .select("id, email, global_identity_email, phone, establishment_id")
           .eq("establishment_id", selectedEstablishment.id);
-        const candidates = (rows ?? []).filter(
-          (r: any) => onlyDigits(r.phone ?? "").endsWith(last10)
-        );
-        // Cannot directly UPDATE as anon (no RLS policy). So we must call an edge function.
-        // To keep scope minimal, attempt a direct update — if blocked, surface a clear error.
+        const candidates = (rows ?? []).filter((r: any) => onlyDigits(r.phone ?? "").endsWith(last10));
         if (candidates.length > 0) {
-          const { error: upErr } = await supabase
+          await supabase
             .from("clients")
             .update({
               email: finalEmail,
@@ -295,18 +279,11 @@ export default function ClientLogin() {
               terms_accepted_at: new Date().toISOString(),
             })
             .eq("id", candidates[0].id);
-          if (upErr) {
-            console.warn("anon update blocked by RLS — falling back via set-password by email", upErr);
-          }
         }
       }
 
       const { error: setErr } = await supabase.functions.invoke("client-auth-set-password", {
-        body: {
-          email: finalEmail,
-          password,
-          mode: "first_time",
-        },
+        body: { email: finalEmail, password, mode: "first_time" },
       });
       if (setErr) {
         const ctx: any = (setErr as any).context;
@@ -315,21 +292,20 @@ export default function ClientLogin() {
             position: "top-center",
             duration: 3500,
           });
-          setStep("password");
           setResolvedEmail(finalEmail);
+          setStep("login");
           return;
         }
         if (ctx?.status === 404) {
-          toast.error(
-            "Não foi possível vincular seu e-mail ao cadastro. Peça ao salão para atualizar seu e-mail.",
-            { position: "top-center", duration: 4000 }
-          );
+          toast.error("Não foi possível vincular seu e-mail ao cadastro. Peça ao salão para atualizar seu e-mail.", {
+            position: "top-center",
+            duration: 4000,
+          });
           return;
         }
         throw setErr;
       }
 
-      // 3) Update CPF / LGPD across all rows of this email (best-effort; RLS may block for anon).
       try {
         await supabase
           .from("clients")
@@ -344,27 +320,16 @@ export default function ClientLogin() {
         console.warn("CPF/LGPD update best-effort failed", e);
       }
 
-      // 4) Login
-      const { data: loginData, error: loginErr } = await supabase.functions.invoke("client-auth-login", {
-        body: {
-          email: finalEmail,
-          password,
-          establishment_id: selectedEstablishment?.id,
-        },
-      });
-      if (loginErr) throw loginErr;
-
-      if (loginData?.status === "ok" && loginData?.client && selectedEstablishment) {
-        persistSession(
-          selectedEstablishment.slug,
-          loginData.client.id,
-          finalEmail,
-          loginData.session_token,
-          loginData.session_expires_at,
-        );
-        toast.success("Cadastro concluído!", { position: "top-center", duration: 2000 });
-        navigate("/hub");
+      const anyOk = await loginIntoAllSalons(finalEmail, password);
+      if (!anyOk) {
+        toast.error("Cadastro criado, mas não conseguimos abrir o salão. Tente novamente.", {
+          position: "top-center",
+          duration: 3000,
+        });
+        return;
       }
+      toast.success("Cadastro concluído!", { position: "top-center", duration: 2000 });
+      navigate("/hub");
     } catch (err) {
       console.error(err);
       toast.error("Erro ao concluir cadastro. Tente novamente.", { position: "top-center", duration: 2500 });
@@ -374,16 +339,18 @@ export default function ClientLogin() {
   };
 
   const handleForgotPassword = async () => {
-    const targetEmail = (resolvedEmail || identifier.trim().toLowerCase()).trim();
+    const raw = identifier.trim();
+    const targetEmail = (resolvedEmail || (isEmail(raw.toLowerCase()) ? raw.toLowerCase() : "")).trim();
     if (!isEmail(targetEmail)) {
-      toast.error("Informe seu e-mail primeiro", { position: "top-center", duration: 2500 });
+      toast.error("Para recuperar a senha, informe seu e-mail no campo acima.", {
+        position: "top-center",
+        duration: 3000,
+      });
       return;
     }
     setLoading(true);
     try {
-      await supabase.functions.invoke("client-auth-request-reset", {
-        body: { email: targetEmail },
-      });
+      await supabase.functions.invoke("client-auth-request-reset", { body: { email: targetEmail } });
       setForgotInfoEmail(targetEmail);
     } catch (err) {
       console.error(err);
@@ -394,15 +361,15 @@ export default function ClientLogin() {
   };
 
   const reset = () => {
-    setStep("identifier");
+    setStep("login");
     setIdentifier("");
+    setPassword("");
+    setConfirmPassword("");
     setResolvedEmail("");
     setResolvedPhone("");
     setExtraEmail("");
     setCpf("");
     setAcceptTerms(false);
-    setPassword("");
-    setConfirmPassword("");
     setEstablishments([]);
     setSelectedEstablishment(null);
     setForgotInfoEmail(null);
@@ -423,16 +390,16 @@ export default function ClientLogin() {
       <main className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
 
-          {step === "identifier" && (
+          {step === "login" && (
             <div className="space-y-6">
               <div className="text-center space-y-2">
                 <h1 className="text-2xl font-semibold tracking-tight">Acesso do Cliente</h1>
                 <p className="text-sm text-muted-foreground">
-                  Informe seu e-mail ou telefone para acessar os salões em que você tem cadastro.
+                  Entre com seu e-mail (ou telefone) e senha.
                 </p>
               </div>
 
-              <form onSubmit={handleSubmitIdentifier} className="space-y-4 bg-card border border-border rounded-lg p-6 shadow-sm">
+              <form onSubmit={handleLogin} className="space-y-4 bg-card border border-border rounded-lg p-6 shadow-sm">
                 <div className="space-y-2">
                   <Label htmlFor="identifier">E-mail ou telefone</Label>
                   <Input
@@ -443,12 +410,44 @@ export default function ClientLogin() {
                     onChange={(e) => setIdentifier(e.target.value)}
                     autoFocus
                     required
+                    autoComplete="username"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="pwd">Senha</Label>
+                  <PasswordInput
+                    id="pwd"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={6}
+                    autoComplete="current-password"
                   />
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verificando...</> : "Continuar"}
+                  {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Entrando...</> : "Entrar"}
                 </Button>
+                <button
+                  type="button"
+                  onClick={handleForgotPassword}
+                  disabled={loading}
+                  className="w-full text-sm text-primary hover:underline"
+                >
+                  Esqueci minha senha
+                </button>
               </form>
+
+              {forgotInfoEmail && (
+                <div className="bg-muted/50 border border-border rounded-lg p-4 text-sm space-y-2">
+                  <p>
+                    Se houver um cadastro para <strong>{forgotInfoEmail}</strong>, enviamos um link de redefinição
+                    <strong> exclusivamente para o e-mail cadastrado</strong>.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Verifique sua caixa de entrada (e o spam). O link expira em 30 minutos.
+                  </p>
+                </div>
+              )}
 
               <p className="text-xs text-center text-muted-foreground">
                 Você só conseguirá acessar se já tiver cadastro em algum salão.
@@ -467,8 +466,11 @@ export default function ClientLogin() {
 
               <div className="space-y-3">
                 {establishments.map((est) => (
-                  <button key={est.id} onClick={() => handleSelectEstablishment(est)}
-                    className="w-full bg-card border border-border rounded-lg p-4 hover:border-primary hover:shadow-md transition-all text-left flex items-center gap-4">
+                  <button
+                    key={est.id}
+                    onClick={() => handleSelectEstablishment(est)}
+                    className="w-full bg-card border border-border rounded-lg p-4 hover:border-primary hover:shadow-md transition-all text-left flex items-center gap-4"
+                  >
                     <div className="h-12 w-12 rounded-md bg-muted flex items-center justify-center overflow-hidden flex-shrink-0">
                       {est.logo_url ? <img src={est.logo_url} alt={est.name} className="h-full w-full object-cover" /> : <Store size={20} className="text-muted-foreground" />}
                     </div>
@@ -484,53 +486,7 @@ export default function ClientLogin() {
                 ))}
               </div>
 
-              <Button variant="ghost" onClick={reset} className="w-full">Usar outro contato</Button>
-            </div>
-          )}
-
-          {step === "password" && selectedEstablishment && (
-            <div className="space-y-6">
-              <div className="text-center space-y-2">
-                <h1 className="text-2xl font-semibold tracking-tight">{selectedEstablishment.name}</h1>
-                <p className="text-sm text-muted-foreground">Digite sua senha para acessar.</p>
-              </div>
-
-              <form onSubmit={handleSubmitPassword} className="space-y-4 bg-card border border-border rounded-lg p-6 shadow-sm">
-                <div className="space-y-2">
-                  <Label htmlFor="email-ro">E-mail</Label>
-                  <Input id="email-ro" value={resolvedEmail} disabled />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="pwd">Senha</Label>
-                  <PasswordInput id="pwd" value={password}
-                    onChange={(e) => setPassword(e.target.value)} autoFocus required minLength={6} autoComplete="current-password" />
-                </div>
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Entrando...</> : "Entrar"}
-                </Button>
-                <button type="button" onClick={handleForgotPassword} disabled={loading}
-                  className="w-full text-sm text-primary hover:underline">
-                  Esqueci minha senha
-                </button>
-              </form>
-
-              {forgotInfoEmail && (
-                <div className="bg-muted/50 border border-border rounded-lg p-4 text-sm space-y-2">
-                  <p>
-                    Se houver um cadastro para <strong>{forgotInfoEmail}</strong>, enviamos um link de redefinição
-                    <strong> exclusivamente para o e-mail cadastrado</strong>.
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Verifique sua caixa de entrada (e o spam). O link expira em 30 minutos.
-                  </p>
-                </div>
-              )}
-
-              {establishments.length > 1 && (
-                <Button variant="ghost" onClick={() => setStep("select")} className="w-full">
-                  Trocar de salão
-                </Button>
-              )}
+              <Button variant="ghost" onClick={reset} className="w-full">Voltar</Button>
             </div>
           )}
 
@@ -545,7 +501,6 @@ export default function ClientLogin() {
               </div>
 
               <form onSubmit={handleCreatePassword} className="space-y-4 bg-card border border-border rounded-lg p-6 shadow-sm">
-                {/* Email field: read-only when we have it; required input when login was by phone */}
                 {resolvedEmail ? (
                   <div className="space-y-2">
                     <Label htmlFor="email-ro2">E-mail</Label>
