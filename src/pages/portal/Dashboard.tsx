@@ -8,22 +8,28 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PeriodFilter, usePeriodRange, type PeriodKey } from "@/components/ui/period-filter";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 
-import { 
-  Calendar, 
-  Users, 
-  Scissors, 
+import {
+  Calendar,
+  Users,
+  Scissors,
   TrendingUp,
   Clock,
   DollarSign,
   Bot,
   MessageSquare,
   AlertTriangle,
+  Wallet,
+  Receipt,
+  CalendarX,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { NoShowReportCard } from "@/components/agenda/NoShowReportCard";
 import { ReviewsSummaryCard } from "@/components/reviews/ReviewsSummaryCard";
+
+const fmtBRL = (n: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n || 0);
 
 interface Establishment {
   id: string;
@@ -46,6 +52,9 @@ export default function PortalDashboard() {
   const [stats, setStats] = useState({
     periodAppointments: 0,
     todayAppointments: 0,
+    noShowCount: 0,
+    theoreticalRevenue: 0,
+    closedTabsCount: 0,
     totalClients: 0,
     totalServices: 0,
     totalProfessionals: 0,
@@ -54,6 +63,10 @@ export default function PortalDashboard() {
     aiMessagesThisMonth: 0,
     commissionsPending: 0,
     commissionsPaid: 0,
+    expensesPaid: 0,
+    expensesByCategory: [] as { name: string; total: number }[],
+    cashInflow: 0,
+    cashOutflow: 0,
   });
 
   useEffect(() => {
@@ -108,21 +121,26 @@ export default function PortalDashboard() {
     const currentMonthYear = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
     const fromIso = range.from.toISOString();
     const toIso = range.to.toISOString();
+    const fromDate = range.fromIso; // yyyy-MM-dd
+    const toDate = range.toIso;
 
     const [
       periodAppointmentsResult,
       todayAppointmentsResult,
+      appointmentsBreakdownResult,
       clientsResult,
       servicesResult,
       professionalsResult,
-      revenueResult,
+      tabsResult,
       aiConversationsResult,
       aiUsageResult,
       commissionsPaidResult,
       commissionsPendingResult,
+      financeEntriesResult,
     ] = await Promise.all([
       supabase.from("appointments").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).gte("scheduled_at", fromIso).lte("scheduled_at", toIso),
       supabase.from("appointments").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).gte("scheduled_at", today).lt("scheduled_at", today + "T23:59:59"),
+      supabase.from("appointments").select("status,price").eq("establishment_id", establishmentId).gte("scheduled_at", fromIso).lte("scheduled_at", toIso),
       supabase.from("clients").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId),
       supabase.from("services").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).eq("is_active", true),
       supabase.from("professionals").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).eq("is_active", true),
@@ -131,15 +149,50 @@ export default function PortalDashboard() {
       supabase.from("ai_assistant_usage").select("message_count").eq("establishment_id", establishmentId).eq("month_year", currentMonthYear).single(),
       supabase.from("professional_commissions").select("commission_amount").eq("establishment_id", establishmentId).eq("status", "paid").gte("paid_at", fromIso).lte("paid_at", toIso),
       supabase.from("professional_commissions").select("commission_amount").eq("establishment_id", establishmentId).in("status", ["pending", "approved"]).gte("created_at", fromIso).lte("created_at", toIso),
+      supabase.from("finance_entries").select("type,amount,status,date,finance_categories(name)").eq("establishment_id", establishmentId).eq("status", "paid").gte("date", fromDate).lte("date", toDate),
     ]);
 
-    const periodRevenue = revenueResult.data?.reduce((sum: number, t: any) => sum + Number(t.total || 0), 0) || 0;
+    const closedTabs = tabsResult.data || [];
+    const periodRevenue = closedTabs.reduce((sum: number, t: any) => sum + Number(t.total || 0), 0);
+    const closedTabsCount = closedTabs.length;
+
+    const apptRows = (appointmentsBreakdownResult.data || []) as any[];
+    const noShowCount = apptRows.filter((a) => a.status === "no_show").length;
+    const theoreticalRevenue = apptRows
+      .filter((a) => a.status !== "no_show" && a.status !== "cancelled")
+      .reduce((s, a) => s + Number(a.price || 0), 0);
+
     const commissionsPaid = commissionsPaidResult.data?.reduce((s, c) => s + Number(c.commission_amount || 0), 0) || 0;
     const commissionsPending = commissionsPendingResult.data?.reduce((s, c) => s + Number(c.commission_amount || 0), 0) || 0;
+
+    const finRows = (financeEntriesResult.data || []) as any[];
+    const catMap = new Map<string, number>();
+    let expensesPaid = 0;
+    let cashInflow = 0;
+    let cashOutflow = 0;
+    for (const r of finRows) {
+      const amt = Number(r.amount || 0);
+      if (r.type === "expense") {
+        expensesPaid += amt;
+        cashOutflow += amt;
+        const name = r.finance_categories?.name || "Sem categoria";
+        catMap.set(name, (catMap.get(name) || 0) + amt);
+      } else if (r.type === "revenue") {
+        cashInflow += amt;
+      }
+    }
+    cashInflow += periodRevenue; // closed tabs as inflow source
+
+    const expensesByCategory = Array.from(catMap.entries())
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => b.total - a.total);
 
     setStats({
       periodAppointments: periodAppointmentsResult.count || 0,
       todayAppointments: todayAppointmentsResult.count || 0,
+      noShowCount,
+      theoreticalRevenue,
+      closedTabsCount,
       totalClients: clientsResult.count || 0,
       totalServices: servicesResult.count || 0,
       totalProfessionals: professionalsResult.count || 0,
@@ -148,6 +201,10 @@ export default function PortalDashboard() {
       aiMessagesThisMonth: aiUsageResult.data?.message_count || 0,
       commissionsPending,
       commissionsPaid,
+      expensesPaid,
+      expensesByCategory,
+      cashInflow,
+      cashOutflow,
     });
   };
 
@@ -236,9 +293,22 @@ export default function PortalDashboard() {
               <CardTitle className="text-sm font-medium">Agendamentos no período</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.periodAppointments}</div>
-              <p className="text-xs text-muted-foreground">agendamentos no intervalo</p>
+            <CardContent className="space-y-2">
+              <div>
+                <div className="text-2xl font-bold">{stats.periodAppointments}</div>
+                <p className="text-xs text-muted-foreground">agendamentos no intervalo</p>
+              </div>
+              <div className="flex items-center gap-2 pt-2 border-t">
+                <CalendarX className="h-3.5 w-3.5 text-red-500" />
+                <span className="text-sm font-semibold text-red-600">{stats.noShowCount}</span>
+                <span className="text-xs text-muted-foreground">no-shows</span>
+              </div>
+              <div>
+                <div className="text-sm font-semibold">{fmtBRL(stats.theoreticalRevenue)}</div>
+                <p className="text-[11px] text-muted-foreground italic">
+                  faturamento teórico (preços agendados, exclui no-shows e cancelados)
+                </p>
+              </div>
             </CardContent>
           </Card>
 
@@ -247,11 +317,56 @@ export default function PortalDashboard() {
               <CardTitle className="text-sm font-medium">Faturamento no período</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(stats.periodRevenue)}
+            <CardContent className="space-y-2">
+              <div>
+                <div className="text-2xl font-bold">{fmtBRL(stats.periodRevenue)}</div>
+                <p className="text-xs text-muted-foreground">comandas fechadas no período</p>
               </div>
-              <p className="text-xs text-muted-foreground">em serviços concluídos</p>
+              <div className="flex items-center gap-2 pt-2 border-t">
+                <Receipt className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-sm font-semibold">{stats.closedTabsCount}</span>
+                <span className="text-xs text-muted-foreground">comandas fechadas</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Resultado de Caixa</CardTitle>
+              <Wallet className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="space-y-1">
+              <div className={`text-2xl font-bold ${stats.cashInflow - stats.cashOutflow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                {fmtBRL(stats.cashInflow - stats.cashOutflow)}
+              </div>
+              <p className="text-[11px] text-muted-foreground">entradas − saídas no período</p>
+              <div className="pt-2 border-t text-xs space-y-0.5">
+                <div className="flex justify-between"><span className="text-muted-foreground">Entradas</span><span className="font-medium text-emerald-600">{fmtBRL(stats.cashInflow)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Saídas</span><span className="font-medium text-red-600">{fmtBRL(stats.cashOutflow)}</span></div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Despesas no período</CardTitle>
+              <Receipt className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="text-2xl font-bold text-red-600">{fmtBRL(stats.expensesPaid)}</div>
+              <p className="text-xs text-muted-foreground">despesas pagas (fluxo de caixa)</p>
+              {stats.expensesByCategory.length > 0 ? (
+                <div className="pt-2 border-t space-y-1 max-h-40 overflow-y-auto">
+                  {stats.expensesByCategory.map((c) => (
+                    <div key={c.name} className="flex justify-between text-xs">
+                      <span className="text-muted-foreground truncate pr-2">{c.name}</span>
+                      <span className="font-medium">{fmtBRL(c.total)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] text-muted-foreground italic pt-2 border-t">Nenhuma despesa paga no período.</p>
+              )}
             </CardContent>
           </Card>
 
