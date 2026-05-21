@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { toast } from "sonner";
 
 interface Professional {
@@ -161,21 +162,13 @@ export function AddCommissionDialog({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label>Profissional *</Label>
-            <Select
+            <SearchableSelect
               value={formData.professional_id}
               onValueChange={(v) => setFormData({ ...formData, professional_id: v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o profissional" />
-              </SelectTrigger>
-              <SelectContent>
-                {professionals.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder="Selecione o profissional"
+              searchPlaceholder="Buscar profissional..."
+              options={professionals.map((p) => ({ value: p.id, label: p.name }))}
+            />
           </div>
 
           <div className="space-y-2">

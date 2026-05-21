@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Switch } from "@/components/ui/switch";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -193,17 +194,16 @@ export function BlockScheduleDialog({
           {blockType === "professional" && (
             <div className="space-y-2">
               <Label>Profissional</Label>
-              <Select value={selectedProfessional} onValueChange={setSelectedProfessional}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione um profissional" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos os Profissionais</SelectItem>
-                  {professionals.map(prof => (
-                    <SelectItem key={prof.id} value={prof.id}>{prof.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={selectedProfessional}
+                onValueChange={(v) => setSelectedProfessional(v || "all")}
+                placeholder="Selecione um profissional"
+                searchPlaceholder="Buscar profissional..."
+                options={[
+                  { value: "all", label: "Todos os Profissionais" },
+                  ...professionals.map((p) => ({ value: p.id, label: p.name })),
+                ]}
+              />
             </div>
           )}
 
