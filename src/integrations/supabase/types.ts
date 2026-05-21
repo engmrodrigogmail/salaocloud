@@ -423,6 +423,67 @@ export type Database = {
           },
         ]
       }
+      appointment_services: {
+        Row: {
+          appointment_id: string
+          created_at: string
+          duration_minutes: number
+          id: string
+          position: number
+          price: number
+          professional_id: string
+          service_id: string
+          starts_at: string
+          updated_at: string
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string
+          duration_minutes: number
+          id?: string
+          position?: number
+          price?: number
+          professional_id: string
+          service_id: string
+          starts_at: string
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          position?: number
+          price?: number
+          professional_id?: string
+          service_id?: string
+          starts_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_services_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_services_professional_id_fkey"
+            columns: ["professional_id"]
+            isOneToOne: false
+            referencedRelation: "professionals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_services_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           cancelled_reason: string | null
@@ -5020,6 +5081,10 @@ export type Database = {
             }
             Returns: Json
           }
+      create_appointment_with_services: {
+        Args: { _payload: Json }
+        Returns: Json
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean

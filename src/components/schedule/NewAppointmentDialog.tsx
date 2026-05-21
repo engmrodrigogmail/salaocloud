@@ -12,15 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DatePickerBR } from "@/components/ui/date-picker-br";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
-import { Calendar, Loader2, Search, UserPlus, Sparkles, ArrowLeft } from "lucide-react";
+import { Calendar, Loader2, Search, UserPlus, Sparkles, ArrowLeft, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, setHours, setMinutes, addMinutes, parseISO, isBefore, isAfter, getDay, addDays, startOfDay } from "date-fns";
@@ -53,6 +46,11 @@ const ANY_PRO = "__any__";
 interface WHDay { open: string; close: string; enabled: boolean }
 type WH = Record<string, WHDay>;
 
+interface Item {
+  serviceId: string;
+  professionalId: string; // ANY_PRO permitido apenas na 1ª seleção
+}
+
 const DEFAULT_WH: WH = {
   "0": { open: "09:00", close: "18:00", enabled: false },
   "1": { open: "09:00", close: "20:00", enabled: true },
@@ -79,9 +77,7 @@ export function NewAppointmentDialog({
   const [searching, setSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
-  const [serviceId, setServiceId] = useState("");
-  const [serviceOpen, setServiceOpen] = useState(false);
-  const [professionalId, setProfessionalId] = useState<string>("");
+  const [items, setItems] = useState<Item[]>([{ serviceId: "", professionalId: "" }]);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");
@@ -89,11 +85,12 @@ export function NewAppointmentDialog({
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [allowOutsideHours, setAllowOutsideHours] = useState(false);
+  const [allowGap, setAllowGap] = useState(false);
 
-  // availability data
   const [estabWH, setEstabWH] = useState<WH>(DEFAULT_WH);
   const [profsWH, setProfsWH] = useState<Record<string, WH>>({});
   const [appointments, setAppointments] = useState<Array<{ id: string; scheduled_at: string; duration_minutes: number; professional_id: string; status: string }>>([]);
+  const [apptServices, setApptServices] = useState<Array<{ professional_id: string; starts_at: string; duration_minutes: number }>>([]);
   const [blocks, setBlocks] = useState<Array<{ professional_id: string; start_time: string; end_time: string }>>([]);
   const [closures, setClosures] = useState<Array<{ start_date: string; end_date: string; start_time: string | null; end_time: string | null }>>([]);
   const [profServices, setProfServices] = useState<Array<{ professional_id: string; service_id: string }>>([]);
@@ -102,15 +99,14 @@ export function NewAppointmentDialog({
   const reset = () => {
     setSearch("");
     setLocalResults([]);
-    
     setHasSearched(false);
     setSelectedClient(null);
-    setServiceId("");
-    setProfessionalId(defaultProfessionalId ?? "");
+    setItems([{ serviceId: "", professionalId: defaultProfessionalId ?? "" }]);
     setDate(defaultDate ? format(defaultDate, "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd"));
     setTime(defaultTime ?? "");
     setNotes("");
     setConfirmOpen(false);
+    setAllowGap(false);
   };
 
   useEffect(() => {
@@ -118,7 +114,6 @@ export function NewAppointmentDialog({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, defaultDate, defaultTime, defaultProfessionalId]);
 
-  // Load availability data when dialog opens
   useEffect(() => {
     if (!open || !establishmentId) return;
     let cancelled = false;
@@ -130,7 +125,7 @@ export function NewAppointmentDialog({
         const horizonStart = new Date();
         const horizonEnd = addDays(horizonStart, 60);
 
-        const [estRes, blkRes, clRes, apRes, psRes] = await Promise.all([
+        const [estRes, blkRes, clRes, apRes, psRes, asRes] = await Promise.all([
           supabase.from("establishments").select("working_hours").eq("id", establishmentId).maybeSingle(),
           profIds.length
             ? supabase
@@ -157,6 +152,14 @@ export function NewAppointmentDialog({
                 .select("professional_id, service_id")
                 .in("professional_id", profIds)
             : Promise.resolve({ data: [] as any[] }),
+          profIds.length
+            ? supabase
+                .from("appointment_services")
+                .select("professional_id, starts_at, duration_minutes")
+                .in("professional_id", profIds)
+                .gte("starts_at", horizonStart.toISOString())
+                .lte("starts_at", horizonEnd.toISOString())
+            : Promise.resolve({ data: [] as any[] }),
         ]);
 
         if (cancelled) return;
@@ -174,6 +177,7 @@ export function NewAppointmentDialog({
         setClosures((clRes.data || []) as any);
         setAppointments((apRes.data || []) as any);
         setProfServices((psRes.data || []) as any);
+        setApptServices((asRes.data || []) as any);
       } catch (e) {
         console.error("availability load error", e);
       } finally {
@@ -187,28 +191,31 @@ export function NewAppointmentDialog({
 
   const { getServiceCategory } = useCatalogCategories(establishmentId);
 
-  const selectedService = useMemo(() => services.find((s) => s.id === serviceId), [serviceId, services]);
   const sortedServices = useMemo(
     () => [...services].sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" })),
     [services],
   );
-  const selectedProfessional = useMemo(
-    () => (professionalId && professionalId !== ANY_PRO ? professionals.find((p) => p.id === professionalId) : null),
-    [professionalId, professionals],
-  );
 
-  const eligibleProfessionals = useMemo(() => {
+  const eligibleProfsFor = (serviceId: string) => {
     if (!serviceId) return professionals;
     const ids = new Set(profServices.filter((ps) => ps.service_id === serviceId).map((ps) => ps.professional_id));
-    if (ids.size === 0) return professionals; // sem matriz cadastrada: não filtra (evita travar)
+    if (ids.size === 0) return professionals;
     return professionals.filter((p) => ids.has(p.id));
-  }, [professionals, profServices, serviceId]);
+  };
 
-  // Reset professional if not eligible after service change
-  useEffect(() => {
-    if (!serviceId || !professionalId || professionalId === ANY_PRO) return;
-    if (!eligibleProfessionals.some((p) => p.id === professionalId)) setProfessionalId("");
-  }, [serviceId, eligibleProfessionals, professionalId]);
+  const totalDuration = useMemo(() => {
+    return items.reduce((acc, it) => {
+      const s = services.find((x) => x.id === it.serviceId);
+      return acc + (s?.duration_minutes || 0);
+    }, 0);
+  }, [items, services]);
+
+  const totalPrice = useMemo(() => {
+    return items.reduce((acc, it) => {
+      const s = services.find((x) => x.id === it.serviceId);
+      return acc + Number(s?.price || 0);
+    }, 0);
+  }, [items, services]);
 
   // === Availability helpers ===
   const getWHForDay = (d: Date, profId?: string) => {
@@ -235,55 +242,154 @@ export function NewAppointmentDialog({
     });
   };
 
-  const isProfFree = (d: Date, time: string, profId: string, dur: number, ignoreWH = false) => {
-    const wh = getWHForDay(d, profId);
-    const [h, m] = time.split(":").map(Number);
-    const start = setMinutes(setHours(d, h), m);
+  // Verifica se um único bloco {profId, start, dur} cabe respeitando todas as regras
+  const isBlockFree = (start: Date, dur: number, profId: string, ignoreWH = false) => {
     const end = addMinutes(start, dur);
-    const endStr = format(end, "HH:mm");
     if (!ignoreWH) {
+      const wh = getWHForDay(start, profId);
       if (!wh) return false;
-      if (time < wh.open || endStr > wh.close) return false;
-      if (isDateClosed(d, time)) return false;
+      const timeStr = format(start, "HH:mm");
+      const endStr = format(end, "HH:mm");
+      if (timeStr < wh.open || endStr > wh.close) return false;
+      if (isDateClosed(start, timeStr)) return false;
     }
-    // blocks
     for (const b of blocks) {
       if (b.professional_id !== profId) continue;
       const bs = parseISO(b.start_time);
       const be = parseISO(b.end_time);
       if (isBefore(start, be) && isAfter(end, bs)) return false;
     }
-    // appointments (sempre bloqueia sobreposição real)
     for (const a of appointments) {
       if (a.professional_id !== profId) continue;
       const as = parseISO(a.scheduled_at);
       const ae = addMinutes(as, a.duration_minutes);
       if (isBefore(start, ae) && isAfter(end, as)) return false;
     }
+    for (const s of apptServices) {
+      if (s.professional_id !== profId) continue;
+      const ss = parseISO(s.starts_at);
+      const se = addMinutes(ss, s.duration_minutes);
+      if (isBefore(start, se) && isAfter(end, ss)) return false;
+    }
     return true;
   };
 
-  const isOutsideHours = (d: Date, time: string, profId: string | null, dur: number) => {
-    const wh = getWHForDay(d, profId && profId !== ANY_PRO ? profId : undefined);
-    if (!wh) return true;
-    const [h, m] = time.split(":").map(Number);
-    const start = setMinutes(setHours(d, h), m);
-    const endStr = format(addMinutes(start, dur), "HH:mm");
-    if (time < wh.open || endStr > wh.close) return true;
-    if (isDateClosed(d, time)) return true;
-    return false;
+  // Valida sequência contínua a partir de t1 — todos os blocos encadeados sem gap
+  const fitsSequenceContinuous = (start: Date, ignoreWH: boolean) => {
+    let cur = start;
+    for (const it of items) {
+      const svc = services.find((s) => s.id === it.serviceId);
+      if (!svc) return false;
+      const profId = it.professionalId && it.professionalId !== ANY_PRO ? it.professionalId : null;
+      if (!profId) {
+        // Auto-resolve: encontra qualquer profissional elegível livre para este bloco
+        const elig = eligibleProfsFor(it.serviceId);
+        const free = elig.find((p) => isBlockFree(cur, svc.duration_minutes, p.id, ignoreWH));
+        if (!free) return false;
+      } else {
+        if (!isBlockFree(cur, svc.duration_minutes, profId, ignoreWH)) return false;
+      }
+      cur = addMinutes(cur, svc.duration_minutes);
+    }
+    return true;
   };
 
+  // Avalia se um horário inicial cabe (contínuo ou com gap, dependendo do flag)
+  const fitsSequence = (start: Date, ignoreWH: boolean): boolean => {
+    if (!allowGap) return fitsSequenceContinuous(start, ignoreWH);
+    // Modo com gap: para cada item, encontra o próximo slot livre >= cursor
+    let cursor = start;
+    for (const it of items) {
+      const svc = services.find((s) => s.id === it.serviceId);
+      if (!svc) return false;
+      const profId = it.professionalId && it.professionalId !== ANY_PRO ? it.professionalId : null;
+      let scheduled = false;
+      for (let probe = cursor; isBefore(probe, addMinutes(start, 12 * 60)); probe = addMinutes(probe, 15)) {
+        if (profId) {
+          if (isBlockFree(probe, svc.duration_minutes, profId, ignoreWH)) {
+            cursor = addMinutes(probe, svc.duration_minutes);
+            scheduled = true;
+            break;
+          }
+        } else {
+          const elig = eligibleProfsFor(it.serviceId);
+          const free = elig.find((p) => isBlockFree(probe, svc.duration_minutes, p.id, ignoreWH));
+          if (free) {
+            cursor = addMinutes(probe, svc.duration_minutes);
+            scheduled = true;
+            break;
+          }
+        }
+      }
+      if (!scheduled) return false;
+    }
+    return true;
+  };
+
+  // Resolve sequência final com horários por bloco (usado no submit e confirmação)
+  const resolveSequence = (startStr: string, dateStr: string, ignoreWH: boolean):
+    | { items: Array<{ serviceId: string; professionalId: string; startsAt: Date; duration: number; price: number }>; }
+    | null => {
+    if (!items.every((it) => it.serviceId && it.professionalId)) return null;
+    const [yy, mm, dd] = dateStr.split("-").map(Number);
+    const [h, m] = startStr.split(":").map(Number);
+    const start = setMinutes(setHours(new Date(yy, mm - 1, dd), h), m);
+    const out: Array<{ serviceId: string; professionalId: string; startsAt: Date; duration: number; price: number }> = [];
+
+    let cursor = start;
+    for (const it of items) {
+      const svc = services.find((s) => s.id === it.serviceId);
+      if (!svc) return null;
+      let profId = it.professionalId;
+      let placed: Date | null = null;
+
+      if (!allowGap) {
+        // contínuo
+        if (profId === ANY_PRO) {
+          const elig = eligibleProfsFor(it.serviceId);
+          const free = elig.find((p) => isBlockFree(cursor, svc.duration_minutes, p.id, ignoreWH));
+          if (!free) return null;
+          profId = free.id;
+        } else {
+          if (!isBlockFree(cursor, svc.duration_minutes, profId, ignoreWH)) return null;
+        }
+        placed = cursor;
+      } else {
+        // com gap
+        for (let probe = cursor; isBefore(probe, addMinutes(start, 12 * 60)); probe = addMinutes(probe, 15)) {
+          if (profId === ANY_PRO) {
+            const elig = eligibleProfsFor(it.serviceId);
+            const free = elig.find((p) => isBlockFree(probe, svc.duration_minutes, p.id, ignoreWH));
+            if (free) { profId = free.id; placed = probe; break; }
+          } else {
+            if (isBlockFree(probe, svc.duration_minutes, profId, ignoreWH)) { placed = probe; break; }
+          }
+        }
+        if (!placed) return null;
+      }
+      out.push({
+        serviceId: it.serviceId,
+        professionalId: profId,
+        startsAt: placed,
+        duration: svc.duration_minutes,
+        price: Number(svc.price || 0),
+      });
+      cursor = addMinutes(placed, svc.duration_minutes);
+    }
+    return { items: out };
+  };
+
+  const itemsReady = items.length > 0 && items.every((it) => it.serviceId && it.professionalId);
+
   const slotsForDay = useMemo(() => {
-    if (!serviceId || !date || !selectedService) return [] as Array<{ time: string; profId: string | null; outside?: boolean }>;
+    if (!itemsReady || !date || totalDuration === 0) return [] as Array<{ time: string; outside?: boolean }>;
     const [yy, mm, dd] = date.split("-").map(Number);
     const day = new Date(yy, mm - 1, dd);
-    const dur = selectedService.duration_minutes;
-    const wh = getWHForDay(day, professionalId && professionalId !== ANY_PRO ? professionalId : undefined);
     const now = new Date();
-    const out: Array<{ time: string; profId: string | null; outside?: boolean }> = [];
+    const out: Array<{ time: string; outside?: boolean }> = [];
 
-    // Range de geração: se permitir fora do expediente, varre 00:00–23:30; caso contrário, somente WH.
+    // Usa expediente do salão como envelope
+    const wh = getWHForDay(day);
     const startH = allowOutsideHours ? 0 : (wh ? Number(wh.open.split(":")[0]) : 0);
     const startM = allowOutsideHours ? 0 : (wh ? Number(wh.open.split(":")[1]) : 0);
     const endH = allowOutsideHours ? 24 : (wh ? Number(wh.close.split(":")[0]) : 0);
@@ -293,72 +399,20 @@ export function NewAppointmentDialog({
     for (let hour = startH; hour < endH; hour++) {
       for (const minute of [0, 30]) {
         if (hour === startH && minute < startM) continue;
-        const time = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
         const slotDate = setMinutes(setHours(day, hour), minute);
         if (isBefore(slotDate, now)) continue;
-        const endStr = format(addMinutes(slotDate, dur), "HH:mm");
-        if (!allowOutsideHours && wh && endStr > wh.close) continue;
-
-        const outside = isOutsideHours(day, time, professionalId, dur);
-
-        if (professionalId && professionalId !== ANY_PRO) {
-          if (isProfFree(day, time, professionalId, dur, outside)) {
-            out.push({ time, profId: professionalId, outside });
-          }
-        } else {
-          const free = eligibleProfessionals.find((p) => isProfFree(day, time, p.id, dur, outside));
-          if (free) out.push({ time, profId: free.id, outside });
+        const t = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+        // Tenta primeiro respeitando WH; se allowOutsideHours, fallback
+        const okNormal = fitsSequence(slotDate, false);
+        if (okNormal) { out.push({ time: t }); continue; }
+        if (allowOutsideHours && fitsSequence(slotDate, true)) {
+          out.push({ time: t, outside: true });
         }
       }
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [serviceId, date, professionalId, selectedService, appointments, blocks, closures, estabWH, profsWH, professionals, allowOutsideHours]);
-
-  // Auto-pick first available when "any" is chosen
-  useEffect(() => {
-    if (professionalId !== ANY_PRO || !serviceId || !selectedService) return;
-    if (loadingAvail) return;
-    // Try today's slots first; if none, search forward up to 30 days
-    if (slotsForDay.length > 0) {
-      const first = slotsForDay[0];
-      setTime(first.time);
-      return;
-    }
-    const [yy, mm, dd] = date.split("-").map(Number);
-    let probe = new Date(yy, mm - 1, dd);
-    const now = new Date();
-    for (let i = 1; i <= 30; i++) {
-      probe = addDays(startOfDay(probe), 1);
-      const wh = getWHForDay(probe);
-      if (!wh) continue;
-      const [oh, om] = wh.open.split(":").map(Number);
-      const [ch] = wh.close.split(":").map(Number);
-      for (let hour = oh; hour < ch; hour++) {
-        for (const minute of [0, 30]) {
-          if (hour === oh && minute < om) continue;
-          const t = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
-          const sd = setMinutes(setHours(probe, hour), minute);
-          if (isBefore(sd, now)) continue;
-          const endStr = format(addMinutes(sd, selectedService.duration_minutes), "HH:mm");
-          if (endStr > wh.close) continue;
-          const free = eligibleProfessionals.find((p) => isProfFree(probe, t, p.id, selectedService.duration_minutes));
-          if (free) {
-            setDate(format(probe, "yyyy-MM-dd"));
-            setTime(t);
-            setProfessionalId(free.id);
-            toast.success(`Próximo horário: ${format(probe, "dd/MM")} às ${t} com ${free.name}`, {
-              position: "top-center",
-              duration: 2500,
-            });
-            return;
-          }
-        }
-      }
-    }
-    toast.error("Nenhum horário disponível nos próximos 30 dias", { position: "top-center", duration: 2500 });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [professionalId, serviceId, loadingAvail]);
+  }, [itemsReady, date, items, totalDuration, appointments, apptServices, blocks, closures, estabWH, profsWH, professionals, allowOutsideHours, allowGap]);
 
   // Reset chosen time if it's no longer valid
   useEffect(() => {
@@ -394,12 +448,8 @@ export function NewAppointmentDialog({
       toast.error("Selecione um cliente", { position: "top-center", duration: 2000 });
       return false;
     }
-    if (!serviceId) {
-      toast.error("Selecione um serviço", { position: "top-center", duration: 2000 });
-      return false;
-    }
-    if (!professionalId) {
-      toast.error("Selecione um profissional", { position: "top-center", duration: 2000 });
+    if (!itemsReady) {
+      toast.error("Preencha serviço e profissional em cada item", { position: "top-center", duration: 2000 });
       return false;
     }
     if (!date || !time) {
@@ -412,42 +462,43 @@ export function NewAppointmentDialog({
   const handleOpenConfirm = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateBeforeConfirm()) return;
-    // If "any" is still set somehow, resolve to a real prof
-    if (professionalId === ANY_PRO) {
-      const slot = slotsForDay.find((s) => s.time === time);
-      if (slot?.profId) setProfessionalId(slot.profId);
-      else {
-        toast.error("Sem profissional disponível", { position: "top-center", duration: 2000 });
-        return;
-      }
-    }
     setConfirmOpen(true);
   };
 
   const handleConfirmCreate = async () => {
-    if (!selectedClient || !selectedService) return;
+    if (!selectedClient) return;
+    const slot = slotsForDay.find((s) => s.time === time);
+    const seq = resolveSequence(time, date, !!slot?.outside);
+    if (!seq) {
+      toast.error("Não foi possível encaixar a sequência neste horário", { position: "top-center", duration: 2500 });
+      return;
+    }
     setSaving(true);
     try {
-      const [h, m] = time.split(":").map(Number);
-      const [yy, mm, dd] = date.split("-").map(Number);
-      const scheduledAt = setMinutes(setHours(new Date(yy, mm - 1, dd), h), m);
-
-      const { error } = await supabase.from("appointments").insert({
+      const payload = {
         establishment_id: establishmentId,
-        service_id: serviceId,
-        professional_id: professionalId,
         client_id: selectedClient.id,
         client_name: selectedClient.name,
-        client_phone: selectedClient.phone,
+        client_phone: selectedClient.phone || "",
         client_email: selectedClient.email || null,
-        scheduled_at: scheduledAt.toISOString(),
-        duration_minutes: selectedService.duration_minutes,
-        price: selectedService.price,
         notes: notes || null,
         status: "confirmed",
-      });
+        items: seq.items.map((it, idx) => ({
+          service_id: it.serviceId,
+          professional_id: it.professionalId,
+          position: idx + 1,
+          starts_at: it.startsAt.toISOString(),
+          duration_minutes: it.duration,
+          price: it.price,
+        })),
+      };
+      const { data, error } = await supabase.rpc("create_appointment_with_services", { _payload: payload as any });
       if (error) throw error;
-
+      const result = data as { success: boolean; error?: string };
+      if (!result?.success) {
+        toast.error(result?.error || "Erro ao criar agendamento", { position: "top-center", duration: 3000 });
+        return;
+      }
       toast.success("Agendamento criado!", { position: "top-center", duration: 2000 });
       setConfirmOpen(false);
       onOpenChange(false);
@@ -460,12 +511,33 @@ export function NewAppointmentDialog({
     }
   };
 
+  const updateItem = (idx: number, patch: Partial<Item>) => {
+    setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+    setTime("");
+  };
+
+  const addItem = () => {
+    setItems((prev) => [...prev, { serviceId: "", professionalId: "" }]);
+    setTime("");
+  };
+
+  const removeItem = (idx: number) => {
+    setItems((prev) => prev.filter((_, i) => i !== idx));
+    setTime("");
+  };
+
   const showConfirmView = confirmOpen;
+  const previewSeq = useMemo(() => {
+    if (!time || !date) return null;
+    const slot = slotsForDay.find((s) => s.time === time);
+    return resolveSequence(time, date, !!slot?.outside);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [time, date, slotsForDay, items, allowGap]);
 
   return (
     <>
       <Dialog open={open} onOpenChange={(o) => !saving && onOpenChange(o)}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
@@ -473,32 +545,26 @@ export function NewAppointmentDialog({
             </DialogTitle>
             <DialogDescription>
               {showConfirmView
-                ? "Revise os detalhes e confirme para registrar na agenda."
-                : "Lance manualmente um agendamento (modo balcão / recepção)."}
+                ? "Revise os blocos e confirme para registrar na agenda."
+                : "Adicione um ou mais serviços. Cada serviço pode ser com um profissional diferente."}
             </DialogDescription>
           </DialogHeader>
 
           {showConfirmView ? (
             <div className="space-y-3 py-2">
-              {(() => {
-                const slot = slotsForDay.find((s) => s.time === time);
-                if (!slot?.outside) return null;
+              <SummaryRow label="Cliente" value={`${selectedClient?.name} • ${selectedClient?.phone || ""}`} />
+              {previewSeq?.items.map((b, i) => {
+                const svc = services.find((s) => s.id === b.serviceId);
+                const prof = professionals.find((p) => p.id === b.professionalId);
                 return (
-                  <div className="rounded-md border border-amber-500/60 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm text-amber-800 dark:text-amber-300">
-                    <strong>Atenção:</strong> este horário está <strong>fora do expediente</strong> do salão e/ou do profissional. Deseja prosseguir mesmo assim?
-                  </div>
+                  <SummaryRow
+                    key={i}
+                    label={`${i + 1}. ${svc?.name || "Serviço"}`}
+                    value={`${prof?.name || "—"} • ${format(b.startsAt, "HH:mm")} (${b.duration}min) • R$ ${b.price.toFixed(2)}`}
+                  />
                 );
-              })()}
-              <SummaryRow label="Cliente" value={`${selectedClient?.name} • ${selectedClient?.phone}`} />
-              <SummaryRow label="Profissional" value={selectedProfessional?.name || "—"} />
-              <SummaryRow
-                label="Serviço"
-                value={`${selectedService?.name} — ${selectedService?.duration_minutes}min`}
-              />
-              <SummaryRow
-                label="Data e hora"
-                value={`${format(parseISO(date), "dd/MM/yyyy")} às ${time}`}
-              />
+              })}
+              <SummaryRow label="Total" value={`R$ ${totalPrice.toFixed(2)} • ${totalDuration}min`} />
               {notes && <SummaryRow label="Observações" value={notes} />}
               <DialogFooter className="pt-2">
                 <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={saving}>
@@ -592,55 +658,73 @@ export function NewAppointmentDialog({
                 )}
               </div>
 
-              {/* Serviço */}
-              <div className="space-y-2">
-                <Label>Serviço *</Label>
-                <SearchableSelect
-                  value={serviceId}
-                  onValueChange={setServiceId}
-                  placeholder="Selecione"
-                  searchPlaceholder="Buscar serviço..."
-                  emptyText="Nenhum serviço encontrado."
-                  options={sortedServices.map((s) => ({
-                    value: s.id,
-                    label: s.name,
-                    hint: `${s.duration_minutes}min`,
-                    group: getServiceCategory((s as any).category_id),
-                  }))}
-                />
-              </div>
-
-              {/* Profissional + Qualquer um */}
-              <div className="space-y-2">
-                <Label>Profissional *</Label>
-                <div className="flex gap-2">
-                  <div className="flex-1 min-w-0">
-                    <SearchableSelect
-                      value={professionalId}
-                      onValueChange={setProfessionalId}
-                      placeholder="Selecione"
-                      searchPlaceholder="Buscar profissional..."
-                      options={eligibleProfessionals.map((p) => ({
-                        value: p.id,
-                        label: p.name,
-                      }))}
-                    />
-                  </div>
-                  <Button
-                    type="button"
-                    variant={professionalId === ANY_PRO ? "default" : "outline"}
-                    onClick={() => setProfessionalId(ANY_PRO)}
-                    disabled={!serviceId}
-                    className="whitespace-nowrap"
-                    title={!serviceId ? "Escolha um serviço primeiro" : "Primeiro horário disponível"}
-                  >
-                    <Sparkles className="h-4 w-4 mr-1" />
-                    Qualquer um
+              {/* Lista de itens */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Serviços *</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={addItem}>
+                    <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar serviço
                   </Button>
                 </div>
-                {serviceId && eligibleProfessionals.length === 0 && (
-                  <p className="text-xs text-destructive">
-                    Nenhum profissional possui este serviço cadastrado. Vincule o serviço ao profissional em Profissionais.
+                {items.map((it, idx) => {
+                  const elig = eligibleProfsFor(it.serviceId);
+                  return (
+                    <div key={idx} className="rounded-md border p-3 space-y-2 bg-muted/20">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-muted-foreground">
+                          Bloco {idx + 1}
+                        </span>
+                        {items.length > 1 && (
+                          <Button type="button" variant="ghost" size="sm" onClick={() => removeItem(idx)}>
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
+                      </div>
+                      <SearchableSelect
+                        value={it.serviceId}
+                        onValueChange={(v) => updateItem(idx, { serviceId: v, professionalId: "" })}
+                        placeholder="Selecione o serviço"
+                        searchPlaceholder="Buscar serviço..."
+                        emptyText="Nenhum serviço encontrado."
+                        options={sortedServices.map((s) => ({
+                          value: s.id,
+                          label: s.name,
+                          hint: `${s.duration_minutes}min • R$ ${Number(s.price).toFixed(2)}`,
+                          group: getServiceCategory((s as any).category_id),
+                        }))}
+                      />
+                      <div className="flex gap-2">
+                        <div className="flex-1 min-w-0">
+                          <SearchableSelect
+                            value={it.professionalId === ANY_PRO ? "" : it.professionalId}
+                            onValueChange={(v) => updateItem(idx, { professionalId: v })}
+                            placeholder="Profissional"
+                            searchPlaceholder="Buscar profissional..."
+                            options={elig.map((p) => ({ value: p.id, label: p.name }))}
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant={it.professionalId === ANY_PRO ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => updateItem(idx, { professionalId: ANY_PRO })}
+                          disabled={!it.serviceId}
+                          title="Qualquer profissional disponível"
+                        >
+                          <Sparkles className="h-3.5 w-3.5 mr-1" /> Qualquer
+                        </Button>
+                      </div>
+                      {it.serviceId && elig.length === 0 && (
+                        <p className="text-xs text-destructive">
+                          Nenhum profissional possui este serviço.
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+                {items.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Total: {totalDuration}min • R$ {totalPrice.toFixed(2)}
                   </p>
                 )}
               </div>
@@ -657,23 +741,34 @@ export function NewAppointmentDialog({
                 />
               </div>
 
-              {/* Horários disponíveis (calendário dinâmico) */}
+              {/* Horários */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                   <Label>Horários disponíveis</Label>
-                  <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={allowOutsideHours}
-                      onChange={(e) => { setAllowOutsideHours(e.target.checked); setTime(""); }}
-                      className="h-3.5 w-3.5"
-                    />
-                    Permitir fora do expediente
-                  </label>
+                  <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={allowGap}
+                        onChange={(e) => { setAllowGap(e.target.checked); setTime(""); }}
+                        className="h-3.5 w-3.5"
+                      />
+                      Permitir intervalo entre serviços
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={allowOutsideHours}
+                        onChange={(e) => { setAllowOutsideHours(e.target.checked); setTime(""); }}
+                        className="h-3.5 w-3.5"
+                      />
+                      Permitir fora do expediente
+                    </label>
+                  </div>
                 </div>
-                {!serviceId || !professionalId ? (
+                {!itemsReady ? (
                   <p className="text-xs text-muted-foreground">
-                    Escolha o serviço e o profissional para ver os horários.
+                    Preencha serviço e profissional em cada bloco para ver os horários.
                   </p>
                 ) : loadingAvail ? (
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -681,7 +776,7 @@ export function NewAppointmentDialog({
                   </div>
                 ) : slotsForDay.length === 0 ? (
                   <p className="text-xs text-muted-foreground">
-                    Sem horários nesta data. {allowOutsideHours ? "Tente outra data." : "Ative \u201CPermitir fora do expediente\u201D ou tente outro dia."}
+                    Sem horários disponíveis nesta data. {allowGap ? "" : "Tente ativar \u201CPermitir intervalo\u201D."}
                   </p>
                 ) : (
                   <>
@@ -690,13 +785,10 @@ export function NewAppointmentDialog({
                         <button
                           key={s.time}
                           type="button"
-                          onClick={() => {
-                            setTime(s.time);
-                            if (professionalId === ANY_PRO && s.profId) setProfessionalId(s.profId);
-                          }}
+                          onClick={() => setTime(s.time)}
                           title={s.outside ? "Fora do horário de atendimento" : undefined}
                           className={cn(
-                            "text-sm rounded-md border py-1.5 transition-colors relative",
+                            "text-sm rounded-md border py-1.5 transition-colors",
                             time === s.time
                               ? "bg-primary text-primary-foreground border-primary"
                               : s.outside
@@ -705,16 +797,24 @@ export function NewAppointmentDialog({
                           )}
                         >
                           {s.time}
-                          {s.outside && <span className="ml-1 text-[10px] align-top">•</span>}
                         </button>
                       ))}
                     </div>
-                    {allowOutsideHours && (
-                      <p className="text-[11px] text-amber-700 dark:text-amber-400">
-                        Horários tracejados estão fora do expediente do salão/profissional.
-                      </p>
-                    )}
                   </>
+                )}
+                {previewSeq && (
+                  <div className="rounded-md border bg-muted/30 p-2 text-xs space-y-1">
+                    <p className="font-semibold">Sequência:</p>
+                    {previewSeq.items.map((b, i) => {
+                      const svc = services.find((s) => s.id === b.serviceId);
+                      const prof = professionals.find((p) => p.id === b.professionalId);
+                      return (
+                        <p key={i}>
+                          {format(b.startsAt, "HH:mm")} → {format(addMinutes(b.startsAt, b.duration), "HH:mm")} · {svc?.name} · {prof?.name}
+                        </p>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
 
