@@ -4399,6 +4399,7 @@ export type Database = {
           loyalty_redemption_id: string | null
           manager_pin_used: boolean
           manager_professional_id: string | null
+          manual_discount_item_amounts: Json | null
           manual_discount_item_ids: string[] | null
           notes: string | null
           opened_at: string
@@ -4437,6 +4438,7 @@ export type Database = {
           loyalty_redemption_id?: string | null
           manager_pin_used?: boolean
           manager_professional_id?: string | null
+          manual_discount_item_amounts?: Json | null
           manual_discount_item_ids?: string[] | null
           notes?: string | null
           opened_at?: string
@@ -4475,6 +4477,7 @@ export type Database = {
           loyalty_redemption_id?: string | null
           manager_pin_used?: boolean
           manager_professional_id?: string | null
+          manual_discount_item_amounts?: Json | null
           manual_discount_item_ids?: string[] | null
           notes?: string | null
           opened_at?: string
