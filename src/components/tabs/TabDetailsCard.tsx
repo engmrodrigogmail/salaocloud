@@ -541,17 +541,69 @@ export function TabDetailsCard({
             >
               Cancelar Atendimento + Agendamento
             </Button>
+            {canClose ? (
+              <Button
+                className="flex-1"
+                onClick={onCheckout}
+                disabled={items.length === 0}
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Finalizar e Cobrar
+              </Button>
+            ) : (
+              <Button
+                className="flex-1"
+                variant="secondary"
+                onClick={() => onFreeze?.()}
+                disabled={items.length === 0 || !onFreeze}
+              >
+                <Clock className="h-4 w-4 mr-2" />
+                Encerrar atendimento
+              </Button>
+            )}
+          </div>
+          {!canClose && (
+            <p className="text-xs text-muted-foreground text-center">
+              Você não tem permissão para fechar comandas. Ao encerrar, a comanda fica
+              <b> aguardando fechamento</b> e o salão é notificado para concluir o recebimento.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Awaiting closure (frozen) — actions */}
+      {tab.status === "awaiting_closure" && (
+        <div className="flex flex-col gap-2">
+          <div className="rounded-md border border-amber-400/50 bg-amber-50 dark:bg-amber-950/20 p-3 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <span>
+              Comanda <b>aguardando fechamento</b> e recebimento pelo responsável.
+              Itens estão bloqueados para edição.
+            </span>
+          </div>
+          {canClose && (
             <Button
-              className="flex-1"
+              className="w-full"
               onClick={onCheckout}
               disabled={items.length === 0}
             >
               <CreditCard className="h-4 w-4 mr-2" />
               Finalizar e Cobrar
             </Button>
-          </div>
+          )}
+          {(userRole === "owner" || userRole === "manager" || (currentUserId && tab.frozen_by === currentUserId)) && onUnfreeze && (
+            <Button
+              variant="outline"
+              className="w-full border-amber-400 text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/30"
+              onClick={() => onUnfreeze()}
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reabrir comanda
+            </Button>
+          )}
         </div>
       )}
+
 
       {/* Delete / Recover actions (owner + manager) */}
       {canDelete && !isDeleted && (
