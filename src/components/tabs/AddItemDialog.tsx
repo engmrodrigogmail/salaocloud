@@ -361,21 +361,28 @@ export function AddItemDialog({
                     Nenhum serviço encontrado
                   </div>
                 ) : (
-                  filteredServices.map((service) => (
-                    <button
-                      key={service.id}
-                      type="button"
-                      onClick={() => setSelectedService(service)}
-                      className={`w-full text-left px-3 py-2 hover:bg-muted border-b last:border-0 ${
-                        selectedService?.id === service.id ? "bg-primary/10" : ""
-                      }`}
-                    >
-                      <div className="flex justify-between">
-                        <span className="font-medium">{service.name}</span>
-                        <span className="text-muted-foreground">{formatCurrency(service.price)}</span>
+                  serviceGroups.map(({ group, items }) => (
+                    <div key={group}>
+                      <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide bg-muted/60 text-muted-foreground border-b">
+                        {group}
                       </div>
-                      <span className="text-xs text-muted-foreground">{service.duration_minutes} min</span>
-                    </button>
+                      {items.map((service) => (
+                        <button
+                          key={service.id}
+                          type="button"
+                          onClick={() => setSelectedService(service)}
+                          className={`w-full text-left px-3 py-2 hover:bg-muted border-b last:border-0 ${
+                            selectedService?.id === service.id ? "bg-primary/10" : ""
+                          }`}
+                        >
+                          <div className="flex justify-between">
+                            <span className="font-medium">{service.name}</span>
+                            <span className="text-muted-foreground">{formatCurrency(service.price)}</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">{service.duration_minutes} min</span>
+                        </button>
+                      ))}
+                    </div>
                   ))
                 )}
               </ScrollArea>
