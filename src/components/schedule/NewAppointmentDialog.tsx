@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Calendar, Loader2, Search, UserPlus, Sparkles, ArrowLeft, Check, ChevronsUpDown } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -27,6 +28,7 @@ import { toast } from "sonner";
 import { format, setHours, setMinutes, addMinutes, parseISO, isBefore, isAfter, getDay, addDays, startOfDay } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
 import { NewClientDialog } from "@/components/clients/NewClientDialog";
+import { useCatalogCategories } from "@/hooks/useCatalogCategories";
 import { cn } from "@/lib/utils";
 
 type Service = Tables<"services">;
