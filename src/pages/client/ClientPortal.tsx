@@ -95,6 +95,18 @@ const ClientPortal = () => {
   const [professionalServices, setProfessionalServices] = useState<{professional_id: string, service_id: string}[]>([]);
   const [showcaseImages, setShowcaseImages] = useState<ShowcaseImage[]>([]);
   const [showVitrine, setShowVitrine] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>("booking");
+
+  // Histórico
+  const [history, setHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Meus dados
+  const [profileName, setProfileName] = useState("");
+  const [profilePhone, setProfilePhone] = useState("");
+  const [profileCpf, setProfileCpf] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [resettingPwd, setResettingPwd] = useState(false);
 
   // Email check form
   const [emailToCheck, setEmailToCheck] = useState("");
