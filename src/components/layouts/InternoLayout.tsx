@@ -146,7 +146,7 @@ export function InternoLayout({ children }: InternoLayoutProps) {
               size="sm"
               onClick={() => navigate(`/portal/${slug}`)}
             >
-              Portal Admin
+              Administrativo
             </Button>
           )}
 
