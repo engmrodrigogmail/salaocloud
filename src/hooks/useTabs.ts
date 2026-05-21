@@ -105,6 +105,12 @@ export function useTabs(establishmentId: string | null) {
         };
       }
 
+      // Auto-detect retroactive: any opened_at in the past should NOT block the agenda,
+      // regardless of whether the "retroactive" checkbox was ticked.
+      const isPastOpenedAt = !!(tabData.opened_at && new Date(tabData.opened_at).getTime() < Date.now() - 60 * 1000);
+      if (isPastOpenedAt) {
+        tabData.is_retroactive = true;
+      }
       if (!appointmentId && !tabData.is_retroactive && tabData.professional_id && tabData.service_id && initialService) {
         const duration = initialService.duration_minutes;
         const price = initialService.price;
