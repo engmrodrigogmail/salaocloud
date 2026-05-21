@@ -29,6 +29,7 @@ import { ManualDiscountDialog } from "./ManualDiscountDialog";
 import { SalonReviewDialog } from "./SalonReviewDialog";
 import { DeleteTabDialog } from "./DeleteTabDialog";
 import { RecoverTabDialog } from "./RecoverTabDialog";
+import { ReopenTabDialog } from "./ReopenTabDialog";
 
 interface AppointmentSuggestion {
   appointment_id: string;
@@ -91,10 +92,15 @@ export function TabDetailsCard({
   const [salonReviewOpen, setSalonReviewOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [recoverOpen, setRecoverOpen] = useState(false);
+  const [reopenOpen, setReopenOpen] = useState(false);
 
   const canDelete = userRole === "owner" || userRole === "manager";
   const canRecover = userRole === "owner" && (tab as any).is_deleted === true;
   const isDeleted = (tab as any).is_deleted === true;
+  const canReopen =
+    (userRole === "owner" || userRole === "manager") &&
+    tab.status === "closed" &&
+    !isDeleted;
 
   // Eligibility for "Desfazer Abertura": tab created < 5 min ago AND no items.
   const ageMs = Date.now() - new Date(tab.opened_at).getTime();
@@ -569,6 +575,32 @@ export function TabDetailsCard({
           <Star className="h-4 w-4 mr-2" />
           Avaliar cliente
         </Button>
+      )}
+
+      {canReopen && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full border-amber-400 text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/30"
+          onClick={() => setReopenOpen(true)}
+        >
+          <RotateCcw className="h-4 w-4 mr-2" />
+          Reabrir comanda
+        </Button>
+      )}
+
+      {canReopen && (
+        <ReopenTabDialog
+          open={reopenOpen}
+          onOpenChange={setReopenOpen}
+          tabId={tab.id}
+          clientName={tab.client_name}
+          role={userRole === "owner" ? "owner" : "manager"}
+          onReopened={async () => {
+            if (onTabChanged) await onTabChanged();
+            onBack();
+          }}
+        />
       )}
 
       {(canDelete || canRecover) && (
