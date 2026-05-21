@@ -266,8 +266,11 @@ export function TabDetailsCard({
               Recuperada pelo dono
             </Badge>
           )}
-          <Badge variant={tab.status === "open" ? "default" : "secondary"}>
-            {tab.status === "open" ? "Aberta" : tab.status === "closed" ? "Fechada" : "Cancelada"}
+          <Badge variant={tab.status === "open" ? "default" : tab.status === "awaiting_closure" ? "outline" : tab.status === "closed" ? "secondary" : "destructive"}
+            className={tab.status === "awaiting_closure" ? "border-amber-500 text-amber-700 dark:text-amber-300 gap-1" : ""}>
+            {tab.status === "open" ? "Aberta"
+              : tab.status === "awaiting_closure" ? "Aguardando fechamento"
+              : tab.status === "closed" ? "Fechada" : "Cancelada"}
           </Badge>
           {tab.is_retroactive && (
             <Badge variant="outline" className="gap-1 border-amber-500 text-amber-700 dark:text-amber-400">
