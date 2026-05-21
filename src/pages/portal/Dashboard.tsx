@@ -121,21 +121,26 @@ export default function PortalDashboard() {
     const currentMonthYear = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
     const fromIso = range.from.toISOString();
     const toIso = range.to.toISOString();
+    const fromDate = range.fromIso; // yyyy-MM-dd
+    const toDate = range.toIso;
 
     const [
       periodAppointmentsResult,
       todayAppointmentsResult,
+      appointmentsBreakdownResult,
       clientsResult,
       servicesResult,
       professionalsResult,
-      revenueResult,
+      tabsResult,
       aiConversationsResult,
       aiUsageResult,
       commissionsPaidResult,
       commissionsPendingResult,
+      financeEntriesResult,
     ] = await Promise.all([
       supabase.from("appointments").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).gte("scheduled_at", fromIso).lte("scheduled_at", toIso),
       supabase.from("appointments").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).gte("scheduled_at", today).lt("scheduled_at", today + "T23:59:59"),
+      supabase.from("appointments").select("status,price").eq("establishment_id", establishmentId).gte("scheduled_at", fromIso).lte("scheduled_at", toIso),
       supabase.from("clients").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId),
       supabase.from("services").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).eq("is_active", true),
       supabase.from("professionals").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).eq("is_active", true),
@@ -144,15 +149,50 @@ export default function PortalDashboard() {
       supabase.from("ai_assistant_usage").select("message_count").eq("establishment_id", establishmentId).eq("month_year", currentMonthYear).single(),
       supabase.from("professional_commissions").select("commission_amount").eq("establishment_id", establishmentId).eq("status", "paid").gte("paid_at", fromIso).lte("paid_at", toIso),
       supabase.from("professional_commissions").select("commission_amount").eq("establishment_id", establishmentId).in("status", ["pending", "approved"]).gte("created_at", fromIso).lte("created_at", toIso),
+      supabase.from("finance_entries").select("type,amount,status,date,finance_categories(name)").eq("establishment_id", establishmentId).eq("status", "paid").gte("date", fromDate).lte("date", toDate),
     ]);
 
-    const periodRevenue = revenueResult.data?.reduce((sum: number, t: any) => sum + Number(t.total || 0), 0) || 0;
+    const closedTabs = tabsResult.data || [];
+    const periodRevenue = closedTabs.reduce((sum: number, t: any) => sum + Number(t.total || 0), 0);
+    const closedTabsCount = closedTabs.length;
+
+    const apptRows = (appointmentsBreakdownResult.data || []) as any[];
+    const noShowCount = apptRows.filter((a) => a.status === "no_show").length;
+    const theoreticalRevenue = apptRows
+      .filter((a) => a.status !== "no_show" && a.status !== "cancelled")
+      .reduce((s, a) => s + Number(a.price || 0), 0);
+
     const commissionsPaid = commissionsPaidResult.data?.reduce((s, c) => s + Number(c.commission_amount || 0), 0) || 0;
     const commissionsPending = commissionsPendingResult.data?.reduce((s, c) => s + Number(c.commission_amount || 0), 0) || 0;
+
+    const finRows = (financeEntriesResult.data || []) as any[];
+    const catMap = new Map<string, number>();
+    let expensesPaid = 0;
+    let cashInflow = 0;
+    let cashOutflow = 0;
+    for (const r of finRows) {
+      const amt = Number(r.amount || 0);
+      if (r.type === "expense") {
+        expensesPaid += amt;
+        cashOutflow += amt;
+        const name = r.finance_categories?.name || "Sem categoria";
+        catMap.set(name, (catMap.get(name) || 0) + amt);
+      } else if (r.type === "revenue") {
+        cashInflow += amt;
+      }
+    }
+    cashInflow += periodRevenue; // closed tabs as inflow source
+
+    const expensesByCategory = Array.from(catMap.entries())
+      .map(([name, total]) => ({ name, total }))
+      .sort((a, b) => b.total - a.total);
 
     setStats({
       periodAppointments: periodAppointmentsResult.count || 0,
       todayAppointments: todayAppointmentsResult.count || 0,
+      noShowCount,
+      theoreticalRevenue,
+      closedTabsCount,
       totalClients: clientsResult.count || 0,
       totalServices: servicesResult.count || 0,
       totalProfessionals: professionalsResult.count || 0,
@@ -161,6 +201,10 @@ export default function PortalDashboard() {
       aiMessagesThisMonth: aiUsageResult.data?.message_count || 0,
       commissionsPending,
       commissionsPaid,
+      expensesPaid,
+      expensesByCategory,
+      cashInflow,
+      cashOutflow,
     });
   };
 
