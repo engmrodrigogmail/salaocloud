@@ -919,19 +919,19 @@ export default function InternoAgenda() {
                     <Check className="h-4 w-4 mr-1" /> Confirmar
                   </Button>
                 )}
-                {(selectedAppointment?.status === "pending" || selectedAppointment?.status === "confirmed") && (
+                {(selectedAppointment?.status === "pending" || selectedAppointment?.status === "confirmed") && !selectedAppointmentTabId && (
                   <Button size="sm" variant="secondary" onClick={handleOpenTabFromAppointment}>
                     <Receipt className="h-4 w-4 mr-1" /> Abrir comanda
+                  </Button>
+                )}
+                {selectedAppointmentTabId && (
+                  <Button size="sm" onClick={() => { setDialogOpen(false); navigate(`/interno/${slug}/comandas`, { state: { openTabId: selectedAppointmentTabId } }); }}>
+                    <Receipt className="h-4 w-4 mr-1" /> Acessar comanda
                   </Button>
                 )}
                 {selectedAppointment?.status === "confirmed" && (
                   <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "completed")}>
                     <Check className="h-4 w-4 mr-1" /> Concluir
-                  </Button>
-                )}
-                {selectedAppointment?.status === "in_service" && (
-                  <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "completed")}>
-                    <Check className="h-4 w-4 mr-1" /> Finalizar Atendimento
                   </Button>
                 )}
                 {(selectedAppointment?.status === "pending" || selectedAppointment?.status === "confirmed") && (
