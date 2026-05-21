@@ -8,22 +8,28 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { PeriodFilter, usePeriodRange, type PeriodKey } from "@/components/ui/period-filter";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 
-import { 
-  Calendar, 
-  Users, 
-  Scissors, 
+import {
+  Calendar,
+  Users,
+  Scissors,
   TrendingUp,
   Clock,
   DollarSign,
   Bot,
   MessageSquare,
   AlertTriangle,
+  Wallet,
+  Receipt,
+  CalendarX,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { NoShowReportCard } from "@/components/agenda/NoShowReportCard";
 import { ReviewsSummaryCard } from "@/components/reviews/ReviewsSummaryCard";
+
+const fmtBRL = (n: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n || 0);
 
 interface Establishment {
   id: string;
