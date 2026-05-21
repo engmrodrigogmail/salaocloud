@@ -211,6 +211,32 @@ export function useTabs(establishmentId: string | null) {
         }
         throw error;
       }
+
+      // Insert initial service as a tab_item so the tab opens already populated
+      if (initialService && tabData.service_id) {
+        const itemPayload: any = {
+          tab_id: (data as Tab).id,
+          item_type: "service",
+          service_id: tabData.service_id,
+          professional_id: tabData.professional_id ?? null,
+          name: initialService.name,
+          quantity: 1,
+          unit_price: initialService.price,
+          total_price: initialService.price,
+        };
+        if (tabData.is_retroactive && tabData.opened_at) {
+          itemPayload.created_at = tabData.opened_at;
+        }
+        const { error: itemError } = await supabase.from("tab_items").insert(itemPayload);
+        if (itemError) {
+          console.error("Error inserting initial service item:", itemError);
+          toast.warning("Comanda aberta, mas não foi possível adicionar o serviço inicial. Adicione manualmente.");
+        } else {
+          // Recalculate totals so subtotal/total reflect the inserted service
+          await recalculateTotal((data as Tab).id);
+        }
+      }
+
       toast.success("Comanda aberta com sucesso");
       await fetchTabs("open");
       return { ...(data as Tab), appointment_id: appointmentId } as Tab;
