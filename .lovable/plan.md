@@ -1,105 +1,116 @@
-## Visão geral
+# Agendamento com múltiplos serviços (manual e cliente)
 
-Portal interno para treinar vendedores SalãoCloud. Acesso para vendedores via `/treinamento` (Supabase Auth + role `sales_trainee`) e para o Superadmin via dois cards no Hub (Gerenciar / Acessar como vendedor).
+## Resumo
+Permitir 1..N serviços em um único agendamento, cada um com profissional próprio (podendo ser o mesmo ou diferentes). Cada serviço entra como linha em `appointment_services`. A agenda valida cada bloco contra o calendário do profissional atribuído, respeitando bloqueios, expediente, fechamentos, sobreposições e regras existentes. Quando não houver sequência contínua, oferece automaticamente alternativa com gap.
 
-## Banco de dados (1 migration)
+---
 
-**Enum:** adicionar valor `sales_trainee` em `app_role`.
+## 1. Modelo de dados (migration)
 
-**Tabelas:**
-- `training_vendor_profiles` — dados pessoais do vendedor (cpf, telefone, cidade, uf, must_change_password, locked_until, failed_attempts).
-- `training_modules` — id (int 1–29), title, profile (admin/professional/receptionist/client), view (portal/interno/cliente), iframe_url, screenshot_url, order, content jsonb (técnico, comercial, argumentos por porte, diferenciais, casos, checklist, quiz).
-- `training_user_progress` — vendor_id, module_id, status (not_started/in_progress/completed), checklist_state jsonb, started_at, completed_at, score.
-- `training_quiz_attempts` — vendor_id, module_id, answers jsonb, score, passed, attempted_at.
-- `training_certificates` — vendor_id, profile, issued_at, code (UUID público).
+Nova tabela `public.appointment_services` (filha de `appointments`):
 
-**RLS:**
-- Vendedor lê só o próprio progresso/certificados; lê todos os módulos ativos.
-- Super admin (via `has_role`) lê/edita tudo.
-- Módulos públicos para `sales_trainee` autenticado (read-only).
+| coluna | tipo | observações |
+|---|---|---|
+| `id` | uuid PK | |
+| `appointment_id` | uuid FK → appointments(id) ON DELETE CASCADE | |
+| `service_id` | uuid FK → services(id) | |
+| `professional_id` | uuid FK → professionals(id) | |
+| `position` | int | ordem na sequência (1..N) |
+| `starts_at` | timestamptz | início absoluto do bloco |
+| `duration_minutes` | int | snapshot da duração |
+| `price` | numeric | snapshot do preço |
+| `created_at` / `updated_at` | timestamptz | |
 
-**Seed:**
-- Criar establishment demo (`slug = demo-treinamento`, owner = super admin atual) via insert tool, em modo somente-leitura (flag `is_demo`).
-- Inserir os 29 módulos com conteúdo extraído do spec (jsonb).
+- Index em `(appointment_id, position)` e em `(professional_id, starts_at)`.
+- RLS espelhando `appointments` (mesma owner/professional/cliente que enxerga o pai).
+- Trigger `update_updated_at_column`.
+- `appointments` continua sendo a "capa": guarda cliente, status, `scheduled_at` (= 1º bloco), `duration_minutes` (= soma incluindo gaps até o último fim) e `price` (= soma). `service_id`/`professional_id` permanecem populados com o 1º item para retro-compat (queries antigas, Dashboard, comissões via comanda).
+- Backfill: para cada appointment existente, inserir 1 linha em `appointment_services` espelhando os campos atuais.
 
-## Frontend
+---
 
-**Hub (`src/pages/Hub.tsx`):** dois cards extras só para super_admin:
-- "Gerenciar Treinamento" → `/treinamento/admin`
-- "Acessar como Vendedor" → `/treinamento/dashboard` (impersona via flag local)
+## 2. Camada de disponibilidade (frontend)
 
-**Rotas novas (em `App.tsx`):**
-- `/treinamento` — login (email + senha)
-- `/treinamento/primeiro-acesso` — completar cadastro + nova senha
-- `/treinamento/recuperar-senha` — pede email
-- `/treinamento/resetar-senha` — token via Supabase
-- `/treinamento/dashboard` — progresso geral + lista de módulos por perfil
-- `/treinamento/perfil` — dados + segurança + estatísticas
-- `/treinamento/modulo/:id` — player genérico (60% conteúdo / 40% iframe)
-- `/treinamento/admin` — CRUD vendedores + edição rápida de módulos + dashboard de progresso
+Refatorar/estender `useAvailability.ts` e a lógica local de `NewAppointmentDialog`:
 
-**Componentes:**
-- `TrainingProtectedRoute` — exige role `sales_trainee` ou `super_admin`.
-- `TrainingLayout` — sidebar + header com avatar + progresso global.
-- `ModulePlayer` — renderiza seções a partir do jsonb + iframe + checklist + quiz.
-- `QuizComponent` — múltipla escolha, libera "concluir" só com 100% acerto.
-- `ProgressBar`, `CertificateCard`.
+- Nova função `findSequenceSlots(date, items[{service_id, professional_id}], { mode: "continuous" | "with_gap" })`:
+  1. Modo `continuous`: para cada slot inicial candidato, valida bloco 1 com `isProfessionalAvailable(prof1, t1, dur1)`. Se livre, calcula `t2 = t1 + dur1` e valida bloco 2 com `prof2`. Repete até o fim. Bloco passa só se TODOS livres em sequência sem lacuna.
+  2. Modo `with_gap`: para cada bloco independente, busca o próximo slot livre do `professional_id` daquele item, começando em `t_anterior + dur_anterior`. Permite intervalo.
+  3. Em todos os casos: valida expediente do salão, expediente do profissional do bloco, `professional_blocked_times`, `establishment_closures`, e sobreposição com `appointments` (do mesmo profissional). Profissionais diferentes podem trabalhar em paralelo — não bloqueia entre si, exceto se for o mesmo profissional em dois blocos do mesmo agendamento (auto-conflito impossível porque são sequenciais).
+- `findNextAvailableSequence(fromDate, items)`: varre dias futuros, retorna primeiro arranjo viável (tenta contínuo, depois com gap).
+- Slot picker do dialog passa a mostrar horários de **início** válidos para a sequência inteira.
 
-## Edge functions
+---
 
-- `training-vendor-create` (admin): cria user + envia email de primeiro acesso.
-- `training-issue-certificate`: gera certificado quando todos os módulos do perfil concluídos.
+## 3. UI — `NewAppointmentDialog` (interno/portal)
 
-(Reaproveita `client-auth-request-reset` patterns para email — ou usa `supabase.auth.resetPasswordForEmail` direto; preferimos o nativo para simplificar.)
+- Substituir `serviceId` único por `items: Array<{ serviceId, professionalId }>` com mínimo 1.
+- Linha de item:
+  - SearchableSelect de serviço.
+  - SearchableSelect de profissional (filtrado por `professional_services` do serviço; ou "Qualquer um" para auto-seleção).
+  - Botão remover (se >1).
+- Botão "+ Adicionar serviço".
+- Resumo lateral: lista os blocos com horário previsto (`t1, t2, ...`), duração e preço de cada um; total no rodapé.
+- Picker de horário: mostra apenas inícios em que a sequência cabe contínua. Toggle "Permitir intervalo entre serviços" — quando ativo, mostra também horários com gap (marcador visual diferente, igual ao atual de "fora do expediente").
+- Mensagem inteligente: se nenhuma sequência contínua existir no dia, propõe automaticamente a primeira data/hora com gap aceito, ou no próximo dia.
+- Confirmação: revisa todos os blocos antes de salvar.
 
-## Conteúdo dos 29 módulos
+## 4. UI — `BookingPage.tsx` (cliente)
 
-Extraído integralmente do spec anexado (2910 linhas). Cada módulo vira uma linha em `training_modules` com `content` jsonb estruturado:
+- Step 1 "Escolha o Serviço" vira lista com checkbox/quantidade e botão "Adicionar mais um serviço". Cliente seleciona N serviços.
+- Step 2 "Escolha o Profissional" passa a ser por serviço (lista cada serviço selecionado e pede profissional, ou "Qualquer disponível"). Filtra por `professional_services`.
+- Step 3 "Data/Horário" usa o mesmo motor de `findSequenceSlots`. Mostra horários onde a sequência inteira cabe contínua; se não houver, oferece automaticamente "Mais cedo possível com intervalo" como segunda lista.
+- Step 4 inalterado (dados do cliente).
+- Step 5 confirma com os blocos detalhados.
 
-```json
-{
-  "technical": "...",
-  "commercial": "...",
-  "arguments": { "small": [...], "medium": [...], "large": [...] },
-  "differentials": [{ "feature": "...", "salaocloud": "...", "competitor_a": "...", "competitor_b": "..." }],
-  "use_cases": [{ "salon": "...", "before": "...", "after": "...", "result": "...", "roi": "..." }],
-  "checklist": ["...", "..."],
-  "quiz": [{ "question": "...", "options": ["A","B","C"], "correct": 1 }]
-}
-```
+---
 
-Distribuição: 12 admin (Portal) + 6 profissional (Interno) + 6 recepcionista (Interno) + 5 cliente.
+## 5. Persistência
 
-## Fluxo de dados
+- `appointments` insert: `service_id` = 1º item, `professional_id` = 1º item, `scheduled_at` = início bloco 1, `duration_minutes` = (fim do último bloco − início bloco 1), `price` = soma.
+- `appointment_services` insert: linha por bloco com `starts_at`, `duration_minutes`, `price`, `position`.
+- Tudo em transação via RPC `create_appointment_with_services(_payload jsonb)` para garantir atomicidade e revalidar conflitos no servidor (anti race-condition).
+
+## 6. Integração com Comanda
+
+Quando o agendamento entra em atendimento e a comanda abre (`useTabs.createTab` com `appointment_id`):
+- Em vez de inserir 1 `tab_items` baseado em `appointments.service_id`, ler `appointment_services` e inserir 1 `tab_items` por bloco (cada um com seu `professional_id` para comissão correta). Preço da comanda = soma.
+- `close_tab_atomic` continua funcionando — comissões já são calculadas por `tab_items`.
+
+## 7. Renderização na Agenda
+
+- `Agenda.tsx` (interno e portal) passam a buscar `appointment_services` junto e renderizam cada bloco no grid do profissional correspondente. Visualmente conectados (mesma borda/cor) para indicar que pertencem ao mesmo agendamento.
+- "Iniciar atendimento" e "Encerrar" continuam atuando no `appointments` pai (status único).
+
+## 8. Backfill e compatibilidade
+
+- Migration copia cada appointment existente para `appointment_services` (1 linha, position=1).
+- Dashboard e relatórios continuam lendo `appointments.price` (já é a soma). Comissões continuam vindo de `tab_items`.
+
+## 9. Fora de escopo (não nesta entrega)
+
+- Edição de agendamento existente para adicionar/remover serviços (manter apenas criar; editar só recria).
+- AI assistant `[AGENDAR|...]` multi-serviço (manter single-service por enquanto; sinalizar como follow-up).
+- Reagendamento drag-and-drop dos blocos individualmente.
+
+---
+
+## Detalhes técnicos
 
 ```text
-Super Admin → Hub → Card "Gerenciar"  → /treinamento/admin
-                 → Card "Acessar como vendedor" → /treinamento/dashboard
-
-Vendedor → /treinamento (login) → /treinamento/dashboard
-        → escolhe módulo → /treinamento/modulo/:id
-        → conclui checklist + passa quiz → progress.completed
-        → todos os módulos do perfil completos → certificado emitido
+appointments (capa)
+ ├─ id, client_*, status, scheduled_at (= bloco1.start), duration_minutes (= cobertura total), price (= Σ)
+ └─ appointment_services[]
+      ├─ position=1, service_A, prof_X, starts_at, dur, price
+      ├─ position=2, service_B, prof_Y, starts_at = starts_at1+dur1 (ou + gap), dur, price
+      └─ ...
 ```
 
-## Detalhes técnicos relevantes
+Algoritmo de checagem por bloco (idêntico ao atual `isProfessionalAvailable`):
+1. Expediente do salão aberto em `(date, time, time+dur)`.
+2. Sem `establishment_closures` cobrindo o intervalo.
+3. Expediente do `professional_id` ativo no dia e cobrindo `(time, time+dur)`.
+4. Sem `professional_blocked_times` sobrepondo.
+5. Sem `appointments` ou `appointment_services` do mesmo `professional_id` sobrepondo (exceto o próprio agendamento em edição).
 
-- Establishment demo recebe seed mínimo (1 profissional, 3 serviços, 5 clientes fictícios) para iframes não ficarem vazios. Marcado com `is_demo=true` para excluir de buscas/relatórios reais (adicionar coluna no `establishments`).
-- Iframes restritos via `sandbox="allow-scripts allow-same-origin"`; conteúdo do salão demo é read-only por RLS extra (CHECK no role).
-- Senha de primeiro acesso: gerada pelo admin, marcada `must_change_password=true`, tela de primeiro acesso força troca.
-- Logout limpa sessão Supabase normalmente.
-
-## Entregáveis
-
-1. **Migration** com enum, 5 tabelas, RLS, coluna `is_demo` em establishments, trigger de updated_at.
-2. **Insert** com salão demo + 29 módulos populados.
-3. **Edge functions** (`training-vendor-create`, `training-issue-certificate`).
-4. **15+ arquivos frontend** (rotas, layout, player, admin, hub atualizado).
-5. **Memory** atualizada com regras do portal.
-
-## O que NÃO está incluído
-
-- Integração com WhatsApp para notificar vendedor (fora do escopo Z-API).
-- Gamification além de certificado (rankings, badges).
-- Versionamento de conteúdo dos módulos (edita-se direto).
-- Tradução multi-idioma.
+Sobreposição entre blocos do MESMO agendamento mas com profissionais DIFERENTES é permitida (são pessoas distintas). Só blocos sequenciais do mesmo profissional teriam conflito — e por construção `t_n = t_{n-1} + dur_{n-1}` evita isso.
