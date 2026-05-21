@@ -6,7 +6,9 @@ export interface Tab {
   appointment_id: string | null;
   professional_id: string | null;
   client_name: string;
-  status: 'open' | 'closed' | 'cancelled';
+  status: 'open' | 'closed' | 'cancelled' | 'awaiting_closure';
+  frozen_at?: string | null;
+  frozen_by?: string | null;
   subtotal: number;
   discount_amount: number | null;
   discount_type: string | null;

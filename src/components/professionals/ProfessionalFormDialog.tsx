@@ -90,6 +90,7 @@ export function ProfessionalFormDialog({
     specialties: "",
     is_active: true,
     is_manager: false,
+    can_close_tabs: true,
     leasing_type: "none" as "none" | "fixed_monthly" | "proportional",
     leasing_value: "",
     leasing_base_date: "",
@@ -138,6 +139,7 @@ export function ProfessionalFormDialog({
         specialties: fullProfessional.specialties?.join(", ") || "",
         is_active: fullProfessional.is_active,
         is_manager: (fullProfessional as any).is_manager === true,
+        can_close_tabs: (fullProfessional as any).can_close_tabs !== false,
         leasing_type: (fullProfessional.leasing_type as "none" | "fixed_monthly" | "proportional") || "none",
         leasing_value: fullProfessional.leasing_value ? String(fullProfessional.leasing_value) : "",
         leasing_base_date: fullProfessional.leasing_base_date || "",
@@ -191,6 +193,7 @@ export function ProfessionalFormDialog({
       specialties: "",
       is_active: true,
       is_manager: false,
+      can_close_tabs: true,
       leasing_type: "none",
       leasing_value: "",
       leasing_base_date: "",
@@ -267,6 +270,7 @@ export function ProfessionalFormDialog({
             specialties: specialtiesArray.length > 0 ? specialtiesArray : null,
             is_active: formData.is_active,
             is_manager: formData.is_manager,
+            can_close_tabs: formData.can_close_tabs,
             leasing_type: formData.leasing_type,
             leasing_value: formData.leasing_type !== "none" ? (parseFloat(formData.leasing_value) || 0) : 0,
             leasing_base_date: formData.leasing_type === "fixed_monthly" && formData.leasing_base_date 
@@ -289,6 +293,7 @@ export function ProfessionalFormDialog({
             specialties: specialtiesArray.length > 0 ? specialtiesArray : null,
             is_active: formData.is_active,
             is_manager: formData.is_manager,
+            can_close_tabs: formData.can_close_tabs,
             leasing_type: formData.leasing_type,
             leasing_value: formData.leasing_type !== "none" ? (parseFloat(formData.leasing_value) || 0) : 0,
             leasing_base_date: formData.leasing_type === "fixed_monthly" && formData.leasing_base_date 
@@ -438,6 +443,21 @@ export function ProfessionalFormDialog({
                 <Switch
                   checked={formData.is_manager}
                   onCheckedChange={(checked) => setFormData({ ...formData, is_manager: checked })}
+                />
+              </div>
+              <div className="flex items-start justify-between gap-4 p-3 rounded-md border bg-muted/30">
+                <div className="space-y-1">
+                  <Label className="text-sm">Pode fechar comanda e receber pagamentos</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Quando desativado, o profissional consegue abrir e lançar itens na comanda,
+                    mas ao encerrar o atendimento a comanda fica <b>aguardando fechamento</b> e
+                    o dono, gerentes e demais habilitados são notificados para concluir o recebimento.
+                    Gerentes sempre podem fechar.
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.can_close_tabs}
+                  onCheckedChange={(checked) => setFormData({ ...formData, can_close_tabs: checked })}
                 />
               </div>
 

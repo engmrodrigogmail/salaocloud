@@ -32,6 +32,9 @@ export function useTabs(establishmentId: string | null) {
         query = query.eq("is_deleted", false);
         if (status === 'history') {
           query = query.in("status", ["closed", "cancelled"]);
+        } else if (status === 'open') {
+          // Comandas abertas incluem as congeladas aguardando fechamento
+          query = query.in("status", ["open", "awaiting_closure"]);
         } else if (status) {
           query = query.eq("status", status);
         }
@@ -443,6 +446,46 @@ export function useTabs(establishmentId: string | null) {
     }
   };
 
+  /** Congela a comanda (profissional sem permissão de fechar). Mantém os itens, envia notificação aos responsáveis. */
+  const freezeTab = async (tabId: string) => {
+    try {
+      const { data, error } = await supabase.rpc("freeze_tab" as any, { _tab_id: tabId } as any);
+      if (error) throw error;
+      const res = data as any;
+      if (!res?.success) {
+        toast.error(res?.error || "Erro ao congelar comanda");
+        return false;
+      }
+      toast.success("Comanda aguardando fechamento e recebimento");
+      await fetchTabs("open");
+      return true;
+    } catch (error: any) {
+      console.error("Error freezing tab:", error);
+      toast.error(error?.message || "Erro ao congelar comanda");
+      return false;
+    }
+  };
+
+  /** Reabre uma comanda congelada (volta para 'open'). Permitido para dono, gerente ou quem congelou. */
+  const unfreezeTab = async (tabId: string) => {
+    try {
+      const { data, error } = await supabase.rpc("unfreeze_tab" as any, { _tab_id: tabId } as any);
+      if (error) throw error;
+      const res = data as any;
+      if (!res?.success) {
+        toast.error(res?.error || "Erro ao reabrir comanda");
+        return false;
+      }
+      toast.success("Comanda reaberta");
+      await fetchTabs("open");
+      return true;
+    } catch (error: any) {
+      console.error("Error unfreezing tab:", error);
+      toast.error(error?.message || "Erro ao reabrir comanda");
+      return false;
+    }
+  };
+
   const recalculateTotal = async (tabId: string) => {
     try {
       const { data: items } = await supabase
@@ -527,6 +570,8 @@ export function useTabs(establishmentId: string | null) {
     cancelTab,
     undoTabOpening,
     recalculateTotal,
+    freezeTab,
+    unfreezeTab,
   };
 }
 

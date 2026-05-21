@@ -47,10 +47,16 @@ interface TabDetailsCardProps {
   discountPinThreshold: number;
   /** Role of the current user against this establishment. Defaults to 'professional'. */
   userRole?: "owner" | "manager" | "professional";
+  /** Whether the current user can close tabs and receive payments. Defaults to true. */
+  canClose?: boolean;
+  /** Current authenticated user's auth.uid — needed to allow the freezer to unfreeze. */
+  currentUserId?: string | null;
   onAddItem: () => void;
   onRemoveItem: (itemId: string) => Promise<void>;
   onUpdateQuantity: (itemId: string, quantity: number) => Promise<void>;
   onCheckout: () => void;
+  onFreeze?: () => Promise<void> | void;
+  onUnfreeze?: () => Promise<void> | void;
   onBack: () => void;
   onCancel: () => void;
   onUndoOpening?: () => Promise<void> | void;
@@ -70,10 +76,14 @@ export function TabDetailsCard({
   establishmentId,
   discountPinThreshold,
   userRole = "professional",
+  canClose = true,
+  currentUserId = null,
   onAddItem,
   onRemoveItem,
   onUpdateQuantity,
   onCheckout,
+  onFreeze,
+  onUnfreeze,
   onBack,
   onCancel,
   onUndoOpening,
@@ -256,8 +266,11 @@ export function TabDetailsCard({
               Recuperada pelo dono
             </Badge>
           )}
-          <Badge variant={tab.status === "open" ? "default" : "secondary"}>
-            {tab.status === "open" ? "Aberta" : tab.status === "closed" ? "Fechada" : "Cancelada"}
+          <Badge variant={tab.status === "open" ? "default" : tab.status === "awaiting_closure" ? "outline" : tab.status === "closed" ? "secondary" : "destructive"}
+            className={tab.status === "awaiting_closure" ? "border-amber-500 text-amber-700 dark:text-amber-300 gap-1" : ""}>
+            {tab.status === "open" ? "Aberta"
+              : tab.status === "awaiting_closure" ? "Aguardando fechamento"
+              : tab.status === "closed" ? "Fechada" : "Cancelada"}
           </Badge>
           {tab.is_retroactive && (
             <Badge variant="outline" className="gap-1 border-amber-500 text-amber-700 dark:text-amber-400">
@@ -528,17 +541,69 @@ export function TabDetailsCard({
             >
               Cancelar Atendimento + Agendamento
             </Button>
+            {canClose ? (
+              <Button
+                className="flex-1"
+                onClick={onCheckout}
+                disabled={items.length === 0}
+              >
+                <CreditCard className="h-4 w-4 mr-2" />
+                Finalizar e Cobrar
+              </Button>
+            ) : (
+              <Button
+                className="flex-1"
+                variant="secondary"
+                onClick={() => onFreeze?.()}
+                disabled={items.length === 0 || !onFreeze}
+              >
+                <Clock className="h-4 w-4 mr-2" />
+                Encerrar atendimento
+              </Button>
+            )}
+          </div>
+          {!canClose && (
+            <p className="text-xs text-muted-foreground text-center">
+              Você não tem permissão para fechar comandas. Ao encerrar, a comanda fica
+              <b> aguardando fechamento</b> e o salão é notificado para concluir o recebimento.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Awaiting closure (frozen) — actions */}
+      {tab.status === "awaiting_closure" && (
+        <div className="flex flex-col gap-2">
+          <div className="rounded-md border border-amber-400/50 bg-amber-50 dark:bg-amber-950/20 p-3 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+            <span>
+              Comanda <b>aguardando fechamento</b> e recebimento pelo responsável.
+              Itens estão bloqueados para edição.
+            </span>
+          </div>
+          {canClose && (
             <Button
-              className="flex-1"
+              className="w-full"
               onClick={onCheckout}
               disabled={items.length === 0}
             >
               <CreditCard className="h-4 w-4 mr-2" />
               Finalizar e Cobrar
             </Button>
-          </div>
+          )}
+          {(userRole === "owner" || userRole === "manager" || (currentUserId && tab.frozen_by === currentUserId)) && onUnfreeze && (
+            <Button
+              variant="outline"
+              className="w-full border-amber-400 text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/30"
+              onClick={() => onUnfreeze()}
+            >
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reabrir comanda
+            </Button>
+          )}
         </div>
       )}
+
 
       {/* Delete / Recover actions (owner + manager) */}
       {canDelete && !isDeleted && (

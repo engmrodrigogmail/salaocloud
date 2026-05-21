@@ -30,11 +30,13 @@ export function TabListCard({ tab, onClick }: TabListCardProps) {
             <div className="flex items-center gap-2">
               <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <span className="font-medium truncate">{tab.client_name}</span>
-              <Badge 
-                variant={tab.status === "open" ? "default" : tab.status === "closed" ? "secondary" : "destructive"}
-                className="flex-shrink-0"
+              <Badge
+                variant={tab.status === "open" ? "default" : tab.status === "awaiting_closure" ? "outline" : tab.status === "closed" ? "secondary" : "destructive"}
+                className={`flex-shrink-0 ${tab.status === "awaiting_closure" ? "border-amber-500 text-amber-700 dark:text-amber-300" : ""}`}
               >
-                {tab.status === "open" ? "Aberta" : tab.status === "closed" ? "Fechada" : "Cancelada"}
+                {tab.status === "open" ? "Aberta"
+                  : tab.status === "awaiting_closure" ? "Aguardando fechamento"
+                  : tab.status === "closed" ? "Fechada" : "Cancelada"}
               </Badge>
               {tab.is_retroactive && (
                 <Badge variant="outline" className="flex-shrink-0 gap-1 border-amber-500 text-amber-700 dark:text-amber-400">

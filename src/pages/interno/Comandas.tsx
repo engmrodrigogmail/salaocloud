@@ -34,6 +34,7 @@ export default function InternoComandas() {
   const [discountPinThreshold, setDiscountPinThreshold] = useState<number>(10);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<"owner" | "manager" | "professional">("professional");
+  const [canClose, setCanClose] = useState<boolean>(true);
   const [clients, setClients] = useState<Client[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
@@ -45,7 +46,7 @@ export default function InternoComandas() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [activeView, setActiveView] = useState<"open" | "history" | "deleted">("open");
 
-  const { tabs, fetchTabs, createTab, closeTab, cancelTab, undoTabOpening, recalculateTotal } = useTabs(establishmentId);
+  const { tabs, fetchTabs, createTab, closeTab, cancelTab, undoTabOpening, recalculateTotal, freezeTab, unfreezeTab } = useTabs(establishmentId);
   const { items, fetchItems, addItem, updateItem, removeItem } = useTabItems(selectedTab?.id || null);
   const { paymentMethods } = usePaymentMethods(establishmentId);
   const { products } = useProducts(establishmentId);
@@ -218,14 +219,18 @@ export default function InternoComandas() {
       // Resolve current user role
       if (user && (data as any).owner_id === user.id) {
         setUserRole("owner");
+        setCanClose(true);
       } else if (user) {
         const { data: prof } = await supabase
           .from("professionals")
-          .select("is_manager")
+          .select("is_manager, can_close_tabs")
           .eq("establishment_id", data.id)
           .eq("user_id", user.id)
           .maybeSingle();
-        setUserRole(prof?.is_manager ? "manager" : "professional");
+        const isManager = !!(prof as any)?.is_manager;
+        setUserRole(isManager ? "manager" : "professional");
+        // Gerentes sempre podem fechar; demais profissionais dependem da flag.
+        setCanClose(isManager ? true : (prof as any)?.can_close_tabs !== false);
       }
     } catch { navigate("/"); }
     finally { setLoading(false); }
@@ -375,26 +380,26 @@ export default function InternoComandas() {
               </TabsList>
 
               <TabsContent value="open" className="space-y-3 mt-4">
-                {tabs.filter(t => t.status === "open").length === 0 ? (
+                {tabs.filter(t => t.status === "open" || t.status === "awaiting_closure").length === 0 ? (
                   <Card><CardContent className="py-12 text-center text-muted-foreground">
                     <Receipt className="h-12 w-12 mx-auto mb-2 opacity-50" />
                     <p>Nenhuma comanda aberta</p>
                   </CardContent></Card>
                 ) : (
-                  tabs.filter(t => t.status === "open").map(tab => (
+                  tabs.filter(t => t.status === "open" || t.status === "awaiting_closure").map(tab => (
                     <TabListCard key={tab.id} tab={tab} onClick={() => setSelectedTab(tab)} />
                   ))
                 )}
               </TabsContent>
 
               <TabsContent value="history" className="space-y-3 mt-4">
-                {tabs.filter(t => t.status !== "open").length === 0 ? (
+                {tabs.filter(t => t.status !== "open" && t.status !== "awaiting_closure").length === 0 ? (
                   <Card><CardContent className="py-12 text-center text-muted-foreground">
                     <History className="h-12 w-12 mx-auto mb-2 opacity-50" />
                     <p>Nenhuma comanda no histórico</p>
                   </CardContent></Card>
                 ) : (
-                  tabs.filter(t => t.status !== "open").map(tab => (
+                  tabs.filter(t => t.status !== "open" && t.status !== "awaiting_closure").map(tab => (
                     <TabListCard key={tab.id} tab={tab} onClick={() => setSelectedTab(tab)} />
                   ))
                 )}
@@ -432,10 +437,25 @@ export default function InternoComandas() {
             establishmentId={establishmentId || ""}
             discountPinThreshold={discountPinThreshold}
             userRole={userRole}
+            canClose={canClose}
+            currentUserId={user?.id ?? null}
             onAddItem={() => setAddItemOpen(true)}
             onRemoveItem={handleRemoveItem}
             onUpdateQuantity={handleUpdateQuantity}
             onCheckout={() => setCheckoutOpen(true)}
+            onFreeze={async () => {
+              if (!selectedTab) return;
+              const ok = await freezeTab(selectedTab.id);
+              if (ok) setSelectedTab(null);
+            }}
+            onUnfreeze={async () => {
+              if (!selectedTab) return;
+              const ok = await unfreezeTab(selectedTab.id);
+              if (ok) {
+                const { data } = await supabase.from("tabs").select("*").eq("id", selectedTab.id).single();
+                if (data) setSelectedTab({ ...selectedTab, ...data, status: data.status as TabWithDetails['status'] });
+              }
+            }}
             onBack={() => setSelectedTab(null)}
             onCancel={handleCancelTab}
             onUndoOpening={handleUndoOpening}
