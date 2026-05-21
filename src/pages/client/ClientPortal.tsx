@@ -15,7 +15,8 @@ import { toast } from "sonner";
 import { 
   Calendar, Clock, User, Phone, CreditCard, ArrowLeft, 
   Loader2, Store, Scissors, Star, Gift, LogOut, Filter,
-  ChevronLeft, ChevronRight, AlertCircle, FileText, Info, MessageCircle
+  ChevronLeft, ChevronRight, AlertCircle, FileText, Info, MessageCircle,
+  Image as ImageIcon, UserCircle, History, KeyRound, RotateCw
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
