@@ -1864,27 +1864,48 @@ const ClientPortal = () => {
           onValueChange={setActiveTab}
           className="space-y-6"
         >
-          <TabsList className={`grid w-full ${establishment.show_catalog ? "grid-cols-5" : "grid-cols-4"}`}>
-            <TabsTrigger value="booking">
-              <Calendar className="h-4 w-4 mr-2 hidden sm:inline" />
-              Agendar
+          <TabsList
+            className={`w-full h-auto p-1 gap-1 grid ${
+              establishment.show_catalog ? "grid-cols-5" : "grid-cols-4"
+            }`}
+          >
+            <TabsTrigger
+              value="booking"
+              className="flex flex-col sm:flex-row items-center justify-center gap-1 px-1 py-2 text-[10px] sm:text-sm leading-tight whitespace-normal text-center"
+            >
+              <Calendar className="h-4 w-4 sm:mr-2" />
+              <span>Agendar</span>
             </TabsTrigger>
-            <TabsTrigger value="appointments">
-              <Clock className="h-4 w-4 mr-2 hidden sm:inline" />
-              Agendamentos
+            <TabsTrigger
+              value="appointments"
+              className="flex flex-col sm:flex-row items-center justify-center gap-1 px-1 py-2 text-[10px] sm:text-sm leading-tight whitespace-normal text-center"
+            >
+              <Clock className="h-4 w-4 sm:mr-2" />
+              <span>Agenda</span>
+              <span className="hidden sm:inline">mentos</span>
             </TabsTrigger>
-            <TabsTrigger value="history">
-              <History className="h-4 w-4 mr-2 hidden sm:inline" />
-              Histórico
+            <TabsTrigger
+              value="history"
+              className="flex flex-col sm:flex-row items-center justify-center gap-1 px-1 py-2 text-[10px] sm:text-sm leading-tight whitespace-normal text-center"
+            >
+              <History className="h-4 w-4 sm:mr-2" />
+              <span>Histórico</span>
             </TabsTrigger>
-            <TabsTrigger value="profile">
-              <UserCircle className="h-4 w-4 mr-2 hidden sm:inline" />
-              Meus dados
+            <TabsTrigger
+              value="profile"
+              className="flex flex-col sm:flex-row items-center justify-center gap-1 px-1 py-2 text-[10px] sm:text-sm leading-tight whitespace-normal text-center"
+            >
+              <UserCircle className="h-4 w-4 sm:mr-2" />
+              <span className="sm:hidden">Dados</span>
+              <span className="hidden sm:inline">Meus dados</span>
             </TabsTrigger>
             {establishment.show_catalog && (
-              <TabsTrigger value="services">
-                <Scissors className="h-4 w-4 mr-2 hidden sm:inline" />
-                Serviços
+              <TabsTrigger
+                value="services"
+                className="flex flex-col sm:flex-row items-center justify-center gap-1 px-1 py-2 text-[10px] sm:text-sm leading-tight whitespace-normal text-center"
+              >
+                <Scissors className="h-4 w-4 sm:mr-2" />
+                <span>Serviços</span>
               </TabsTrigger>
             )}
           </TabsList>
