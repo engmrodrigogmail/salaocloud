@@ -986,6 +986,141 @@ const ClientPortal = () => {
     }
   };
 
+  // ===== Profile & History helpers =====
+  const getStoredSessionToken = (): string | null => {
+    if (!sessionStorageKey) return null;
+    try {
+      const raw = localStorage.getItem(sessionStorageKey);
+      if (!raw) return null;
+      const saved = JSON.parse(raw) as { sessionToken?: string | null };
+      return saved?.sessionToken ?? null;
+    } catch { return null; }
+  };
+
+  // Carrega histórico de comandas fechadas do cliente neste salão
+  const fetchHistory = async () => {
+    if (!establishment || !client) return;
+    const token = getStoredSessionToken();
+    if (!token) {
+      setHistory([]);
+      return;
+    }
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("client-history", {
+        body: { establishment_id: establishment.id },
+        headers: { "x-client-session": token },
+      });
+      if (error) throw error;
+      setHistory((data?.tabs || []) as any[]);
+    } catch (err) {
+      console.error("[ClientPortal] fetchHistory error", err);
+      toast.error("Não foi possível carregar o histórico");
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  // Sincroniza inputs de Meus dados quando o cliente é (re)carregado
+  useEffect(() => {
+    if (!client) return;
+    setProfileName(client.name || "");
+    setProfilePhone(client.phone ? formatPhone(client.phone) : "");
+    setProfileCpf(client.cpf ? formatCpf(client.cpf) : "");
+  }, [client?.id]);
+
+  // Carrega histórico ao entrar na aba
+  useEffect(() => {
+    if (activeTab === "history" && isAuthenticated) {
+      fetchHistory();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, isAuthenticated]);
+
+  const handleSaveProfile = async () => {
+    if (!establishment || !client) return;
+    const token = getStoredSessionToken();
+    if (!token) {
+      toast.error("Sessão expirada. Faça login novamente.");
+      return;
+    }
+    const phoneClean = profilePhone.replace(/\D/g, "");
+    const cpfClean = profileCpf.replace(/\D/g, "");
+    if (!profileName.trim() || profileName.trim().length < 2) {
+      toast.error("Nome inválido");
+      return;
+    }
+    if (phoneClean && phoneClean.length < 10) {
+      toast.error("Celular inválido");
+      return;
+    }
+    if (cpfClean && cpfClean.length !== 11) {
+      toast.error("CPF inválido");
+      return;
+    }
+    setSavingProfile(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("client-update-profile", {
+        body: {
+          establishment_id: establishment.id,
+          name: profileName.trim(),
+          phone: phoneClean,
+          cpf: cpfClean,
+        },
+        headers: { "x-client-session": token },
+      });
+      if (error) throw error;
+      if (data?.client) {
+        setClient((prev) => prev ? { ...prev, ...data.client } as Client : prev);
+        persistClientSession({ ...client, ...data.client } as Client);
+      }
+      toast.success("Dados atualizados", { duration: 2000 });
+    } catch (err) {
+      console.error("[ClientPortal] saveProfile error", err);
+      toast.error("Erro ao atualizar dados");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleResetPasswordFromProfile = async () => {
+    const email = (client?.global_identity_email || client?.email || "").trim().toLowerCase();
+    if (!email) {
+      toast.error("E-mail não encontrado no cadastro");
+      return;
+    }
+    setResettingPwd(true);
+    try {
+      await supabase.functions.invoke("client-auth-request-reset", { body: { email } });
+      toast.success("Enviamos um link de redefinição para o seu e-mail.", { duration: 4000 });
+    } catch (err) {
+      console.error("[ClientPortal] reset pwd error", err);
+      toast.error("Erro ao solicitar redefinição");
+    } finally {
+      setResettingPwd(false);
+    }
+  };
+
+  // "Agendar novamente": preenche serviço (e profissional, se disponível) e pula para escolha de data/hora
+  const handleRebook = (serviceId: string | null, professionalId: string | null) => {
+    const svc = services.find((s) => s.id === serviceId) || null;
+    if (!svc) {
+      toast.error("Este serviço não está mais disponível para agendamento online");
+      return;
+    }
+    const prof = professionalId ? professionals.find((p) => p.id === professionalId) || null : null;
+    setSelectedService(svc);
+    setSelectedProfessional(prof);
+    setSelectedDate(null);
+    setSelectedTime(null);
+    setPolicyAccepted(false);
+    setBookingStep(3);
+    setIsBooking(true);
+    setActiveTab("booking");
+  };
+
+
+
   const handleLogout = () => {
     persistClientSession(null);
     setClient(null);
