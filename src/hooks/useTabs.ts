@@ -32,6 +32,9 @@ export function useTabs(establishmentId: string | null) {
         query = query.eq("is_deleted", false);
         if (status === 'history') {
           query = query.in("status", ["closed", "cancelled"]);
+        } else if (status === 'open') {
+          // Comandas abertas incluem as congeladas aguardando fechamento
+          query = query.in("status", ["open", "awaiting_closure"]);
         } else if (status) {
           query = query.eq("status", status);
         }
