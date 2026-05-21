@@ -54,6 +54,7 @@ export default function PortalDashboard() {
     todayAppointments: 0,
     noShowCount: 0,
     theoreticalRevenue: 0,
+    theoreticalBreakdown: { upcoming: 0, inService: 0, completed: 0 },
     closedTabsCount: 0,
     totalClients: 0,
     totalServices: 0,
