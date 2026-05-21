@@ -96,12 +96,44 @@ export function AddItemDialog({
     }
   }, [open, defaultProfessionalId]);
 
+  const { getServiceCategory } = useCatalogCategories(establishmentId ?? null);
+
+  const collator = new Intl.Collator("pt-BR", { sensitivity: "base" });
+
+  const groupAndSort = <T extends { name: string }>(
+    items: T[],
+    getGroup: (it: T) => string,
+  ): Array<{ group: string; items: T[] }> => {
+    const map = new Map<string, T[]>();
+    for (const it of items) {
+      const g = getGroup(it) || "Sem categoria";
+      const arr = map.get(g) ?? [];
+      arr.push(it);
+      map.set(g, arr);
+    }
+    return Array.from(map.entries())
+      .map(([group, list]) => ({
+        group,
+        items: [...list].sort((a, b) => collator.compare(a.name, b.name)),
+      }))
+      .sort((a, b) => {
+        if (a.group === "Sem categoria" && b.group !== "Sem categoria") return 1;
+        if (b.group === "Sem categoria" && a.group !== "Sem categoria") return -1;
+        return collator.compare(a.group, b.group);
+      });
+  };
+
   const filteredProducts = products.filter((p) =>
     p.name.toLowerCase().includes(searchProduct.toLowerCase())
   );
 
   const filteredServices = services.filter((s) =>
     s.name.toLowerCase().includes(searchService.toLowerCase())
+  );
+
+  const productGroups = groupAndSort(filteredProducts, (p) => p.category || "");
+  const serviceGroups = groupAndSort(filteredServices, (s) =>
+    getServiceCategory((s as any).category_id),
   );
 
   const formatCurrency = (value: number) =>
