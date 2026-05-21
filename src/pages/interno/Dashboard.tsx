@@ -84,12 +84,20 @@ export default function InternoDashboard() {
   const fetchTodayStats = async (establishmentId: string) => {
     const today = new Date().toISOString().split("T")[0];
 
-    const { data: appointments } = await supabase
-      .from("appointments")
-      .select("status")
-      .eq("establishment_id", establishmentId)
-      .gte("scheduled_at", today)
-      .lt("scheduled_at", today + "T23:59:59");
+    const [{ data: appointments }, { count: openTabsCount }] = await Promise.all([
+      supabase
+        .from("appointments")
+        .select("status")
+        .eq("establishment_id", establishmentId)
+        .gte("scheduled_at", today)
+        .lt("scheduled_at", today + "T23:59:59"),
+      supabase
+        .from("tabs")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", establishmentId)
+        .eq("status", "open")
+        .eq("is_deleted", false),
+    ]);
 
     const pending = appointments?.filter(a => a.status === "pending").length || 0;
     const confirmed = appointments?.filter(a => a.status === "confirmed").length || 0;
@@ -99,7 +107,7 @@ export default function InternoDashboard() {
       pendingAppointments: pending,
       confirmedAppointments: confirmed,
       completedAppointments: completed,
-      openCommands: 0, // TODO: Implement commands table
+      openCommands: openTabsCount ?? 0,
     });
   };
 
