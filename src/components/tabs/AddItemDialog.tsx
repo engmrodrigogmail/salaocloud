@@ -298,23 +298,27 @@ export function AddItemDialog({
                     {products.length === 0 ? "Nenhum produto cadastrado" : "Nenhum produto encontrado"}
                   </div>
                 ) : (
-                  filteredProducts.map((product) => (
-                    <button
-                      key={product.id}
-                      type="button"
-                      onClick={() => setSelectedProduct(product)}
-                      className={`w-full text-left px-3 py-2 hover:bg-muted border-b last:border-0 ${
-                        selectedProduct?.id === product.id ? "bg-primary/10" : ""
-                      }`}
-                    >
-                      <div className="flex justify-between">
-                        <span className="font-medium">{product.name}</span>
-                        <span className="text-muted-foreground">{formatCurrency(product.price)}</span>
+                  productGroups.map(({ group, items }) => (
+                    <div key={group}>
+                      <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide bg-muted/60 text-muted-foreground border-b">
+                        {group}
                       </div>
-                      {product.category && (
-                        <span className="text-xs text-muted-foreground">{product.category}</span>
-                      )}
-                    </button>
+                      {items.map((product) => (
+                        <button
+                          key={product.id}
+                          type="button"
+                          onClick={() => setSelectedProduct(product)}
+                          className={`w-full text-left px-3 py-2 hover:bg-muted border-b last:border-0 ${
+                            selectedProduct?.id === product.id ? "bg-primary/10" : ""
+                          }`}
+                        >
+                          <div className="flex justify-between">
+                            <span className="font-medium">{product.name}</span>
+                            <span className="text-muted-foreground">{formatCurrency(product.price)}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   ))
                 )}
               </ScrollArea>
