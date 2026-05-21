@@ -66,9 +66,15 @@ export function AgendaTimeSlots({
   const [isExpanded, setIsExpanded] = useState(false);
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const isInterno = typeof window !== "undefined" && window.location.pathname.startsWith("/interno/");
 
   const goToClient = (e: React.MouseEvent, clientId: string | null) => {
     if (!clientId || !slug) return;
+    // No /interno (acesso de profissional/recepcionista), o detalhe do cliente
+    // é uma rota do /portal restrita ao dono. Para evitar redirecionar o
+    // profissional para fora da agenda, não navegamos — o clique no card
+    // continua abrindo o diálogo do agendamento.
+    if (isInterno) return;
     e.stopPropagation();
     navigate(`/portal/${slug}/clientes/${clientId}`, { state: { from: "agenda" } });
   };
