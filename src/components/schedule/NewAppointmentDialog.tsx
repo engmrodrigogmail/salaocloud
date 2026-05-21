@@ -187,6 +187,8 @@ export function NewAppointmentDialog({
     };
   }, [open, establishmentId, professionals]);
 
+  const { getServiceCategory } = useCatalogCategories(establishmentId);
+
   const selectedService = useMemo(() => services.find((s) => s.id === serviceId), [serviceId, services]);
   const sortedServices = useMemo(
     () => [...services].sort((a, b) => a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" })),
