@@ -197,6 +197,7 @@ export default function PortalDashboard() {
       todayAppointments: todayAppointmentsResult.count || 0,
       noShowCount,
       theoreticalRevenue,
+      theoreticalBreakdown,
       closedTabsCount,
       totalClients: clientsResult.count || 0,
       totalServices: servicesResult.count || 0,
