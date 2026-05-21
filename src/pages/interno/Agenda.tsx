@@ -117,6 +117,25 @@ export default function InternoAgenda() {
     }
   }, [establishment?.id, currentDate, viewMode]);
 
+  // Fetch open/awaiting_closure tab linked to selected appointment
+  useEffect(() => {
+    if (!selectedAppointment || !dialogOpen) {
+      setSelectedAppointmentTabId(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("tabs")
+        .select("id")
+        .eq("appointment_id", selectedAppointment.id)
+        .in("status", ["open", "awaiting_closure"])
+        .maybeSingle();
+      if (!cancelled) setSelectedAppointmentTabId(data?.id ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [selectedAppointment, dialogOpen]);
+
   // Auto-set filter to current professional's agenda if user is a professional
   useEffect(() => {
     if (role === "professional" && currentProfessionalId && filterProfessional === "all") {
