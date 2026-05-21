@@ -1826,6 +1826,17 @@ const ClientPortal = () => {
       />
       <div className="border-b border-border bg-background">
         <div className="max-w-7xl mx-auto px-4 py-2 flex justify-end items-center gap-1">
+          {showcaseImages.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowVitrine(true)}
+              aria-label="Abrir Vitrine"
+            >
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Vitrine
+            </Button>
+          )}
           {client?.id && (
             <NotificationBell
               recipientType="client"
@@ -1849,10 +1860,11 @@ const ClientPortal = () => {
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         <Tabs
-          defaultValue="booking"
+          value={activeTab}
+          onValueChange={setActiveTab}
           className="space-y-6"
         >
-          <TabsList className={`grid w-full ${establishment.show_catalog ? "grid-cols-3" : "grid-cols-2"}`}>
+          <TabsList className={`grid w-full ${establishment.show_catalog ? "grid-cols-5" : "grid-cols-4"}`}>
             <TabsTrigger value="booking">
               <Calendar className="h-4 w-4 mr-2 hidden sm:inline" />
               Agendar
@@ -1861,6 +1873,14 @@ const ClientPortal = () => {
               <Clock className="h-4 w-4 mr-2 hidden sm:inline" />
               Agendamentos
             </TabsTrigger>
+            <TabsTrigger value="history">
+              <History className="h-4 w-4 mr-2 hidden sm:inline" />
+              Histórico
+            </TabsTrigger>
+            <TabsTrigger value="profile">
+              <UserCircle className="h-4 w-4 mr-2 hidden sm:inline" />
+              Meus dados
+            </TabsTrigger>
             {establishment.show_catalog && (
               <TabsTrigger value="services">
                 <Scissors className="h-4 w-4 mr-2 hidden sm:inline" />
@@ -1868,6 +1888,7 @@ const ClientPortal = () => {
               </TabsTrigger>
             )}
           </TabsList>
+
 
           {/* Booking Tab */}
           <TabsContent value="booking" className="space-y-4">
