@@ -405,32 +405,23 @@ export function AddItemDialog({
                       className="w-20"
                     />
                   </div>
-                  <Select
-                    value={selectedProfessional || "__none__"}
-                    onValueChange={(v) => setSelectedProfessional(v === "__none__" ? "" : v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Profissional (opcional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">Nenhum</SelectItem>
-                      {professionals.map((prof) => {
-                        const missing = isProfMissingService(prof.id, selectedService.id);
-                        return (
-                          <SelectItem key={prof.id} value={prof.id}>
-                            <span className="flex items-center gap-2">
-                              {prof.name}
-                              {missing && (
-                                <span className="text-[10px] uppercase tracking-wide text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
-                                  sem este serviço
-                                </span>
-                              )}
-                            </span>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    value={selectedProfessional}
+                    onValueChange={setSelectedProfessional}
+                    placeholder="Profissional (opcional)"
+                    searchPlaceholder="Buscar profissional..."
+                    allowClear
+                    clearLabel="Nenhum"
+                    options={professionals.map((prof) => {
+                      const missing = isProfMissingService(prof.id, selectedService.id);
+                      return {
+                        value: prof.id,
+                        label: prof.name,
+                        hint: missing ? "sem este serviço" : undefined,
+                        keywords: missing ? "sem este servico" : "",
+                      };
+                    })}
+                  />
                   {selectedProfessional && isProfMissingService(selectedProfessional, selectedService.id) && (
                     <Alert>
                       <AlertTriangle className="h-4 w-4" />
