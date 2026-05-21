@@ -47,10 +47,16 @@ interface TabDetailsCardProps {
   discountPinThreshold: number;
   /** Role of the current user against this establishment. Defaults to 'professional'. */
   userRole?: "owner" | "manager" | "professional";
+  /** Whether the current user can close tabs and receive payments. Defaults to true. */
+  canClose?: boolean;
+  /** Current authenticated user's auth.uid — needed to allow the freezer to unfreeze. */
+  currentUserId?: string | null;
   onAddItem: () => void;
   onRemoveItem: (itemId: string) => Promise<void>;
   onUpdateQuantity: (itemId: string, quantity: number) => Promise<void>;
   onCheckout: () => void;
+  onFreeze?: () => Promise<void> | void;
+  onUnfreeze?: () => Promise<void> | void;
   onBack: () => void;
   onCancel: () => void;
   onUndoOpening?: () => Promise<void> | void;
@@ -70,10 +76,14 @@ export function TabDetailsCard({
   establishmentId,
   discountPinThreshold,
   userRole = "professional",
+  canClose = true,
+  currentUserId = null,
   onAddItem,
   onRemoveItem,
   onUpdateQuantity,
   onCheckout,
+  onFreeze,
+  onUnfreeze,
   onBack,
   onCancel,
   onUndoOpening,
