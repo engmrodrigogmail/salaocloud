@@ -145,7 +145,7 @@ export function useCommissionCalculator(establishmentId: string | null) {
     // Fetch tab with new granular flags
     const { data: tab } = await supabase
       .from("tabs")
-      .select("discount_amount, discount_type, subtotal, coupon_id, commission_discount_on_manual, commission_discount_on_coupon, commission_discount_on_loyalty")
+      .select("discount_amount, discount_type, subtotal, coupon_id, commission_discount_on_manual, commission_discount_on_coupon, commission_discount_on_loyalty, manual_discount_item_amounts")
       .eq("id", tabId)
       .maybeSingle();
 
@@ -168,6 +168,11 @@ export function useCommissionCalculator(establishmentId: string | null) {
 
     const totalDiscount = Number((tab as any)?.discount_amount) || 0;
     const dType: string | null = (tab as any)?.discount_type || null;
+    const perItemAmounts = ((tab as any)?.manual_discount_item_amounts ?? null) as
+      | Record<string, number>
+      | null;
+    const hasPerItem =
+      dType === 'manual' && perItemAmounts && Object.keys(perItemAmounts).length > 0;
 
     // Decide if this discount type reduces commission, using granular flags
     const reducesByType = (() => {
@@ -175,7 +180,6 @@ export function useCommissionCalculator(establishmentId: string | null) {
       if (dType === 'manual') return (tab as any)?.commission_discount_on_manual === true;
       if (dType === 'coupon') return (tab as any)?.commission_discount_on_coupon === true;
       if (dType === 'loyalty') return (tab as any)?.commission_discount_on_loyalty === true;
-      // fallback (mixed/unknown): conservative true if any flag enabled
       return (tab as any)?.commission_discount_on_manual === true
           || (tab as any)?.commission_discount_on_coupon === true
           || (tab as any)?.commission_discount_on_loyalty === true;
@@ -195,9 +199,8 @@ export function useCommissionCalculator(establishmentId: string | null) {
       return true;
     };
 
-    // Compute the eligible base for the discount (pro-rata over scope only)
+    // For proportional (legacy) modes: compute eligible base
     const eligibleBase = items.reduce((s, it) => {
-      // Manual/loyalty discounts always apply on full subtotal (no scope)
       const inScope = dType === 'coupon' ? itemInCouponScope(it) : true;
       return s + (inScope ? Number(it.total_price) : 0);
     }, 0);
@@ -206,7 +209,6 @@ export function useCommissionCalculator(establishmentId: string | null) {
       ? Math.max(0, 1 - totalDiscount / eligibleBase)
       : 1;
 
-    // Fetch both commission rules and professional-specific commissions in parallel
     const [rules, psCommissions] = await Promise.all([
       fetchActiveRules(),
       fetchProfessionalServiceCommissions(professionalIds),
@@ -215,13 +217,19 @@ export function useCommissionCalculator(establishmentId: string | null) {
     const commissions: CalculatedCommission[] = [];
 
     for (const item of items) {
-      // Only calculate for items with a professional
       if (!item.professional_id) continue;
 
       const fullPrice = Number(item.total_price);
-      const inScope = dType === 'coupon' ? itemInCouponScope(item) : true;
-      const itemFactor = (reducesByType && inScope) ? discountFactorScoped : 1;
-      const referenceValue = +(fullPrice * itemFactor).toFixed(2);
+      let referenceValue: number;
+      if (reducesByType && hasPerItem) {
+        // Explicit per-item discount overrides proportional split
+        const d = Number(perItemAmounts![item.id] ?? 0) || 0;
+        referenceValue = +Math.max(0, fullPrice - d).toFixed(2);
+      } else {
+        const inScope = dType === 'coupon' ? itemInCouponScope(item) : true;
+        const itemFactor = (reducesByType && inScope) ? discountFactorScoped : 1;
+        referenceValue = +(fullPrice * itemFactor).toFixed(2);
+      }
       let commissionAmount = 0;
       let description = "";
       let ruleId: string | null = null;
