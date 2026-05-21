@@ -293,9 +293,22 @@ export default function PortalDashboard() {
               <CardTitle className="text-sm font-medium">Agendamentos no período</CardTitle>
               <Calendar className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.periodAppointments}</div>
-              <p className="text-xs text-muted-foreground">agendamentos no intervalo</p>
+            <CardContent className="space-y-2">
+              <div>
+                <div className="text-2xl font-bold">{stats.periodAppointments}</div>
+                <p className="text-xs text-muted-foreground">agendamentos no intervalo</p>
+              </div>
+              <div className="flex items-center gap-2 pt-2 border-t">
+                <CalendarX className="h-3.5 w-3.5 text-red-500" />
+                <span className="text-sm font-semibold text-red-600">{stats.noShowCount}</span>
+                <span className="text-xs text-muted-foreground">no-shows</span>
+              </div>
+              <div>
+                <div className="text-sm font-semibold">{fmtBRL(stats.theoreticalRevenue)}</div>
+                <p className="text-[11px] text-muted-foreground italic">
+                  faturamento teórico (preços agendados, exclui no-shows e cancelados)
+                </p>
+              </div>
             </CardContent>
           </Card>
 
@@ -304,11 +317,56 @@ export default function PortalDashboard() {
               <CardTitle className="text-sm font-medium">Faturamento no período</CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(stats.periodRevenue)}
+            <CardContent className="space-y-2">
+              <div>
+                <div className="text-2xl font-bold">{fmtBRL(stats.periodRevenue)}</div>
+                <p className="text-xs text-muted-foreground">comandas fechadas no período</p>
               </div>
-              <p className="text-xs text-muted-foreground">em serviços concluídos</p>
+              <div className="flex items-center gap-2 pt-2 border-t">
+                <Receipt className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-sm font-semibold">{stats.closedTabsCount}</span>
+                <span className="text-xs text-muted-foreground">comandas fechadas</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Resultado de Caixa</CardTitle>
+              <Wallet className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="space-y-1">
+              <div className={`text-2xl font-bold ${stats.cashInflow - stats.cashOutflow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                {fmtBRL(stats.cashInflow - stats.cashOutflow)}
+              </div>
+              <p className="text-[11px] text-muted-foreground">entradas − saídas no período</p>
+              <div className="pt-2 border-t text-xs space-y-0.5">
+                <div className="flex justify-between"><span className="text-muted-foreground">Entradas</span><span className="font-medium text-emerald-600">{fmtBRL(stats.cashInflow)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Saídas</span><span className="font-medium text-red-600">{fmtBRL(stats.cashOutflow)}</span></div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium">Despesas no período</CardTitle>
+              <Receipt className="h-4 w-4 text-red-500" />
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <div className="text-2xl font-bold text-red-600">{fmtBRL(stats.expensesPaid)}</div>
+              <p className="text-xs text-muted-foreground">despesas pagas (fluxo de caixa)</p>
+              {stats.expensesByCategory.length > 0 ? (
+                <div className="pt-2 border-t space-y-1 max-h-40 overflow-y-auto">
+                  {stats.expensesByCategory.map((c) => (
+                    <div key={c.name} className="flex justify-between text-xs">
+                      <span className="text-muted-foreground truncate pr-2">{c.name}</span>
+                      <span className="font-medium">{fmtBRL(c.total)}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] text-muted-foreground italic pt-2 border-t">Nenhuma despesa paga no período.</p>
+              )}
             </CardContent>
           </Card>
 
