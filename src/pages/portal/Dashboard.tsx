@@ -54,6 +54,7 @@ export default function PortalDashboard() {
     todayAppointments: 0,
     noShowCount: 0,
     theoreticalRevenue: 0,
+    theoreticalBreakdown: { upcoming: 0, inService: 0, completed: 0 },
     closedTabsCount: 0,
     totalClients: 0,
     totalServices: 0,
@@ -158,9 +159,13 @@ export default function PortalDashboard() {
 
     const apptRows = (appointmentsBreakdownResult.data || []) as any[];
     const noShowCount = apptRows.filter((a) => a.status === "no_show").length;
-    const theoreticalRevenue = apptRows
-      .filter((a) => a.status !== "no_show" && a.status !== "cancelled")
-      .reduce((s, a) => s + Number(a.price || 0), 0);
+    const countedRows = apptRows.filter((a) => a.status !== "no_show" && a.status !== "cancelled");
+    const theoreticalRevenue = countedRows.reduce((s, a) => s + Number(a.price || 0), 0);
+    const theoreticalBreakdown = {
+      upcoming: countedRows.filter((a) => a.status === "pending" || a.status === "confirmed").reduce((s, a) => s + Number(a.price || 0), 0),
+      inService: countedRows.filter((a) => a.status === "in_service").reduce((s, a) => s + Number(a.price || 0), 0),
+      completed: countedRows.filter((a) => a.status === "completed").reduce((s, a) => s + Number(a.price || 0), 0),
+    };
 
     const commissionsPaid = commissionsPaidResult.data?.reduce((s, c) => s + Number(c.commission_amount || 0), 0) || 0;
     const commissionsPending = commissionsPendingResult.data?.reduce((s, c) => s + Number(c.commission_amount || 0), 0) || 0;
@@ -192,6 +197,7 @@ export default function PortalDashboard() {
       todayAppointments: todayAppointmentsResult.count || 0,
       noShowCount,
       theoreticalRevenue,
+      theoreticalBreakdown,
       closedTabsCount,
       totalClients: clientsResult.count || 0,
       totalServices: servicesResult.count || 0,
@@ -303,11 +309,16 @@ export default function PortalDashboard() {
                 <span className="text-sm font-semibold text-red-600">{stats.noShowCount}</span>
                 <span className="text-xs text-muted-foreground">no-shows</span>
               </div>
-              <div>
+              <div className="pt-2 border-t">
                 <div className="text-sm font-semibold">{fmtBRL(stats.theoreticalRevenue)}</div>
-                <p className="text-[11px] text-muted-foreground italic">
-                  faturamento teórico (preços agendados, exclui no-shows e cancelados)
+                <p className="text-[11px] text-muted-foreground italic mb-1">
+                  Receita prevista do período (todos os agendamentos, exceto faltas e cancelados)
                 </p>
+                <div className="space-y-0.5 text-[11px] text-muted-foreground">
+                  <div className="flex justify-between"><span>Concluídos</span><span className="tabular-nums">{fmtBRL(stats.theoreticalBreakdown.completed)}</span></div>
+                  <div className="flex justify-between"><span>Em atendimento</span><span className="tabular-nums">{fmtBRL(stats.theoreticalBreakdown.inService)}</span></div>
+                  <div className="flex justify-between"><span>Pendentes / Confirmados</span><span className="tabular-nums">{fmtBRL(stats.theoreticalBreakdown.upcoming)}</span></div>
+                </div>
               </div>
             </CardContent>
           </Card>
