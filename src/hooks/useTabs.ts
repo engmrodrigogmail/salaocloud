@@ -570,6 +570,8 @@ export function useTabs(establishmentId: string | null) {
     cancelTab,
     undoTabOpening,
     recalculateTotal,
+    freezeTab,
+    unfreezeTab,
   };
 }
 
