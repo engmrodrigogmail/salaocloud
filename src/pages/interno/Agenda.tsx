@@ -85,6 +85,7 @@ export default function InternoAgenda() {
   const [newApptDefaultTime, setNewApptDefaultTime] = useState<string | undefined>();
   const [dayScheduleOpen, setDayScheduleOpen] = useState(false);
   const [dayScheduleDate, setDayScheduleDate] = useState<Date>(new Date());
+  const [selectedAppointmentTabId, setSelectedAppointmentTabId] = useState<string | null>(null);
   // Edit form state
   const [editDate, setEditDate] = useState("");
   const [editTime, setEditTime] = useState("");
