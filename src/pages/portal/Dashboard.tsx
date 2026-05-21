@@ -52,6 +52,9 @@ export default function PortalDashboard() {
   const [stats, setStats] = useState({
     periodAppointments: 0,
     todayAppointments: 0,
+    noShowCount: 0,
+    theoreticalRevenue: 0,
+    closedTabsCount: 0,
     totalClients: 0,
     totalServices: 0,
     totalProfessionals: 0,
@@ -60,6 +63,10 @@ export default function PortalDashboard() {
     aiMessagesThisMonth: 0,
     commissionsPending: 0,
     commissionsPaid: 0,
+    expensesPaid: 0,
+    expensesByCategory: [] as { name: string; total: number }[],
+    cashInflow: 0,
+    cashOutflow: 0,
   });
 
   useEffect(() => {
