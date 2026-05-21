@@ -159,9 +159,13 @@ export default function PortalDashboard() {
 
     const apptRows = (appointmentsBreakdownResult.data || []) as any[];
     const noShowCount = apptRows.filter((a) => a.status === "no_show").length;
-    const theoreticalRevenue = apptRows
-      .filter((a) => a.status !== "no_show" && a.status !== "cancelled")
-      .reduce((s, a) => s + Number(a.price || 0), 0);
+    const countedRows = apptRows.filter((a) => a.status !== "no_show" && a.status !== "cancelled");
+    const theoreticalRevenue = countedRows.reduce((s, a) => s + Number(a.price || 0), 0);
+    const theoreticalBreakdown = {
+      upcoming: countedRows.filter((a) => a.status === "pending" || a.status === "confirmed").reduce((s, a) => s + Number(a.price || 0), 0),
+      inService: countedRows.filter((a) => a.status === "in_service").reduce((s, a) => s + Number(a.price || 0), 0),
+      completed: countedRows.filter((a) => a.status === "completed").reduce((s, a) => s + Number(a.price || 0), 0),
+    };
 
     const commissionsPaid = commissionsPaidResult.data?.reduce((s, c) => s + Number(c.commission_amount || 0), 0) || 0;
     const commissionsPending = commissionsPendingResult.data?.reduce((s, c) => s + Number(c.commission_amount || 0), 0) || 0;
