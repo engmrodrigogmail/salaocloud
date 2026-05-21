@@ -520,7 +520,10 @@ export default function InternoAgenda() {
             <Button variant="outline" onClick={() => setCurrentDate(new Date())}>
               Hoje
             </Button>
-            <Button onClick={() => setNewApptOpen(true)}>
+            <Button onClick={() => {
+              setNewApptDefaultDate(currentDate);
+              setNewApptOpen(true);
+            }}>
               <Plus className="h-4 w-4 mr-1.5" /> Novo
             </Button>
           </div>
