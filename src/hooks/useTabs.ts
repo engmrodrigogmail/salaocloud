@@ -86,21 +86,28 @@ export function useTabs(establishmentId: string | null) {
       // Auto-create an "in_service" appointment to block the professional's agenda
       // when the tab is opened with a professional and a service selected.
       // Skip for retroactive launches (event already happened in the past).
-      if (!appointmentId && !tabData.is_retroactive && tabData.professional_id && tabData.service_id) {
-        // Fetch service info (duration + price)
+      // Fetch service info early — needed both for appointment block and to insert the initial tab_item
+      let initialService: { name: string; duration_minutes: number; price: number } | null = null;
+      if (tabData.service_id) {
         const { data: svc, error: svcError } = await supabase
           .from("services")
-          .select("duration_minutes, price")
+          .select("name, duration_minutes, price")
           .eq("id", tabData.service_id)
           .single();
-
         if (svcError || !svc) {
           toast.error("Serviço inválido. Não foi possível abrir a comanda.");
           return null;
         }
+        initialService = {
+          name: svc.name,
+          duration_minutes: svc.duration_minutes ?? 60,
+          price: Number(svc.price ?? 0),
+        };
+      }
 
-        const duration = svc.duration_minutes ?? 60;
-        const price = svc.price ?? 0;
+      if (!appointmentId && !tabData.is_retroactive && tabData.professional_id && tabData.service_id && initialService) {
+        const duration = initialService.duration_minutes;
+        const price = initialService.price;
 
         // Use Brazil wall-clock for scheduled_at consistency
         const startBrazil = getBrazilNow();
@@ -204,6 +211,32 @@ export function useTabs(establishmentId: string | null) {
         }
         throw error;
       }
+
+      // Insert initial service as a tab_item so the tab opens already populated
+      if (initialService && tabData.service_id) {
+        const itemPayload: any = {
+          tab_id: (data as Tab).id,
+          item_type: "service",
+          service_id: tabData.service_id,
+          professional_id: tabData.professional_id ?? null,
+          name: initialService.name,
+          quantity: 1,
+          unit_price: initialService.price,
+          total_price: initialService.price,
+        };
+        if (tabData.is_retroactive && tabData.opened_at) {
+          itemPayload.created_at = tabData.opened_at;
+        }
+        const { error: itemError } = await supabase.from("tab_items").insert(itemPayload);
+        if (itemError) {
+          console.error("Error inserting initial service item:", itemError);
+          toast.warning("Comanda aberta, mas não foi possível adicionar o serviço inicial. Adicione manualmente.");
+        } else {
+          // Recalculate totals so subtotal/total reflect the inserted service
+          await recalculateTotal((data as Tab).id);
+        }
+      }
+
       toast.success("Comanda aberta com sucesso");
       await fetchTabs("open");
       return { ...(data as Tab), appointment_id: appointmentId } as Tab;
