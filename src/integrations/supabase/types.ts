@@ -3427,6 +3427,7 @@ export type Database = {
       professionals: {
         Row: {
           avatar_url: string | null
+          can_close_tabs: boolean
           created_at: string
           email: string | null
           establishment_id: string
@@ -3448,6 +3449,7 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          can_close_tabs?: boolean
           created_at?: string
           email?: string | null
           establishment_id: string
@@ -3469,6 +3471,7 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          can_close_tabs?: boolean
           created_at?: string
           email?: string | null
           establishment_id?: string
@@ -4393,6 +4396,8 @@ export type Database = {
           discount_authorized_by: string | null
           discount_type: string | null
           establishment_id: string
+          frozen_at: string | null
+          frozen_by: string | null
           id: string
           is_deleted: boolean
           is_retroactive: boolean
@@ -4432,6 +4437,8 @@ export type Database = {
           discount_authorized_by?: string | null
           discount_type?: string | null
           establishment_id: string
+          frozen_at?: string | null
+          frozen_by?: string | null
           id?: string
           is_deleted?: boolean
           is_retroactive?: boolean
@@ -4471,6 +4478,8 @@ export type Database = {
           discount_authorized_by?: string | null
           discount_type?: string | null
           establishment_id?: string
+          frozen_at?: string | null
+          frozen_by?: string | null
           id?: string
           is_deleted?: boolean
           is_retroactive?: boolean
@@ -5020,6 +5029,7 @@ export type Database = {
         Returns: number
       }
       format_cpf: { Args: { cpf_raw: string }; Returns: string }
+      freeze_tab: { Args: { _tab_id: string }; Returns: Json }
       get_client_appointments:
         | {
             Args: { _client_id: string; _email: string }
@@ -5137,6 +5147,7 @@ export type Database = {
         Args: { _establishment_id: string }
         Returns: undefined
       }
+      unfreeze_tab: { Args: { _tab_id: string }; Returns: Json }
       update_professional_pin: { Args: { _pin_hash: string }; Returns: Json }
       validate_client_session: {
         Args: { _token_hash: string }
