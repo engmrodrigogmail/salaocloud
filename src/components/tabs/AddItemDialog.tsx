@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Package, Scissors, PenLine, ShieldAlert, AlertTriangle } from "lucide-react";
 import type { Product } from "@/types/tabs";
 import type { Tables } from "@/integrations/supabase/types";
+import { useCatalogCategories } from "@/hooks/useCatalogCategories";
 import { ManagerPinDialog, logManagerOverride } from "@/components/security/ManagerPinDialog";
 
 type Service = Tables<"services">;
