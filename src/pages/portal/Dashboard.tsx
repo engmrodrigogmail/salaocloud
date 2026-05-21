@@ -126,14 +126,14 @@ export default function PortalDashboard() {
       supabase.from("clients").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId),
       supabase.from("services").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).eq("is_active", true),
       supabase.from("professionals").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId).eq("is_active", true),
-      supabase.from("appointments").select("price").eq("establishment_id", establishmentId).eq("status", "completed").gte("scheduled_at", fromIso).lte("scheduled_at", toIso),
+      supabase.from("tabs").select("total").eq("establishment_id", establishmentId).eq("status", "closed").gte("closed_at", fromIso).lte("closed_at", toIso),
       supabase.from("ai_assistant_conversations").select("id", { count: "exact", head: true }).eq("establishment_id", establishmentId),
       supabase.from("ai_assistant_usage").select("message_count").eq("establishment_id", establishmentId).eq("month_year", currentMonthYear).single(),
       supabase.from("professional_commissions").select("commission_amount").eq("establishment_id", establishmentId).eq("status", "paid").gte("paid_at", fromIso).lte("paid_at", toIso),
       supabase.from("professional_commissions").select("commission_amount").eq("establishment_id", establishmentId).in("status", ["pending", "approved"]).gte("created_at", fromIso).lte("created_at", toIso),
     ]);
 
-    const periodRevenue = revenueResult.data?.reduce((sum, app) => sum + (app.price || 0), 0) || 0;
+    const periodRevenue = revenueResult.data?.reduce((sum: number, t: any) => sum + Number(t.total || 0), 0) || 0;
     const commissionsPaid = commissionsPaidResult.data?.reduce((s, c) => s + Number(c.commission_amount || 0), 0) || 0;
     const commissionsPending = commissionsPendingResult.data?.reduce((s, c) => s + Number(c.commission_amount || 0), 0) || 0;
 
