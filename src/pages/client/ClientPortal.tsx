@@ -15,7 +15,8 @@ import { toast } from "sonner";
 import { 
   Calendar, Clock, User, Phone, CreditCard, ArrowLeft, 
   Loader2, Store, Scissors, Star, Gift, LogOut, Filter,
-  ChevronLeft, ChevronRight, AlertCircle, FileText, Info, MessageCircle
+  ChevronLeft, ChevronRight, AlertCircle, FileText, Info, MessageCircle,
+  Image as ImageIcon, UserCircle, History, KeyRound, RotateCw
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Calendar as CalendarPicker } from "@/components/ui/calendar";
@@ -94,6 +95,18 @@ const ClientPortal = () => {
   const [professionalServices, setProfessionalServices] = useState<{professional_id: string, service_id: string}[]>([]);
   const [showcaseImages, setShowcaseImages] = useState<ShowcaseImage[]>([]);
   const [showVitrine, setShowVitrine] = useState(true);
+  const [activeTab, setActiveTab] = useState<string>("booking");
+
+  // Histórico
+  const [history, setHistory] = useState<any[]>([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Meus dados
+  const [profileName, setProfileName] = useState("");
+  const [profilePhone, setProfilePhone] = useState("");
+  const [profileCpf, setProfileCpf] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [resettingPwd, setResettingPwd] = useState(false);
 
   // Email check form
   const [emailToCheck, setEmailToCheck] = useState("");
@@ -973,6 +986,141 @@ const ClientPortal = () => {
     }
   };
 
+  // ===== Profile & History helpers =====
+  const getStoredSessionToken = (): string | null => {
+    if (!sessionStorageKey) return null;
+    try {
+      const raw = localStorage.getItem(sessionStorageKey);
+      if (!raw) return null;
+      const saved = JSON.parse(raw) as { sessionToken?: string | null };
+      return saved?.sessionToken ?? null;
+    } catch { return null; }
+  };
+
+  // Carrega histórico de comandas fechadas do cliente neste salão
+  const fetchHistory = async () => {
+    if (!establishment || !client) return;
+    const token = getStoredSessionToken();
+    if (!token) {
+      setHistory([]);
+      return;
+    }
+    setLoadingHistory(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("client-history", {
+        body: { establishment_id: establishment.id },
+        headers: { "x-client-session": token },
+      });
+      if (error) throw error;
+      setHistory((data?.tabs || []) as any[]);
+    } catch (err) {
+      console.error("[ClientPortal] fetchHistory error", err);
+      toast.error("Não foi possível carregar o histórico");
+    } finally {
+      setLoadingHistory(false);
+    }
+  };
+
+  // Sincroniza inputs de Meus dados quando o cliente é (re)carregado
+  useEffect(() => {
+    if (!client) return;
+    setProfileName(client.name || "");
+    setProfilePhone(client.phone ? formatPhone(client.phone) : "");
+    setProfileCpf(client.cpf ? formatCpf(client.cpf) : "");
+  }, [client?.id]);
+
+  // Carrega histórico ao entrar na aba
+  useEffect(() => {
+    if (activeTab === "history" && isAuthenticated) {
+      fetchHistory();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, isAuthenticated]);
+
+  const handleSaveProfile = async () => {
+    if (!establishment || !client) return;
+    const token = getStoredSessionToken();
+    if (!token) {
+      toast.error("Sessão expirada. Faça login novamente.");
+      return;
+    }
+    const phoneClean = profilePhone.replace(/\D/g, "");
+    const cpfClean = profileCpf.replace(/\D/g, "");
+    if (!profileName.trim() || profileName.trim().length < 2) {
+      toast.error("Nome inválido");
+      return;
+    }
+    if (phoneClean && phoneClean.length < 10) {
+      toast.error("Celular inválido");
+      return;
+    }
+    if (cpfClean && cpfClean.length !== 11) {
+      toast.error("CPF inválido");
+      return;
+    }
+    setSavingProfile(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("client-update-profile", {
+        body: {
+          establishment_id: establishment.id,
+          name: profileName.trim(),
+          phone: phoneClean,
+          cpf: cpfClean,
+        },
+        headers: { "x-client-session": token },
+      });
+      if (error) throw error;
+      if (data?.client) {
+        setClient((prev) => prev ? { ...prev, ...data.client } as Client : prev);
+        persistClientSession({ ...client, ...data.client } as Client);
+      }
+      toast.success("Dados atualizados", { duration: 2000 });
+    } catch (err) {
+      console.error("[ClientPortal] saveProfile error", err);
+      toast.error("Erro ao atualizar dados");
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleResetPasswordFromProfile = async () => {
+    const email = (client?.global_identity_email || client?.email || "").trim().toLowerCase();
+    if (!email) {
+      toast.error("E-mail não encontrado no cadastro");
+      return;
+    }
+    setResettingPwd(true);
+    try {
+      await supabase.functions.invoke("client-auth-request-reset", { body: { email } });
+      toast.success("Enviamos um link de redefinição para o seu e-mail.", { duration: 4000 });
+    } catch (err) {
+      console.error("[ClientPortal] reset pwd error", err);
+      toast.error("Erro ao solicitar redefinição");
+    } finally {
+      setResettingPwd(false);
+    }
+  };
+
+  // "Agendar novamente": preenche serviço (e profissional, se disponível) e pula para escolha de data/hora
+  const handleRebook = (serviceId: string | null, professionalId: string | null) => {
+    const svc = services.find((s) => s.id === serviceId) || null;
+    if (!svc) {
+      toast.error("Este serviço não está mais disponível para agendamento online");
+      return;
+    }
+    const prof = professionalId ? professionals.find((p) => p.id === professionalId) || null : null;
+    setSelectedService(svc);
+    setSelectedProfessional(prof);
+    setSelectedDate(null);
+    setSelectedTime(null);
+    setPolicyAccepted(false);
+    setBookingStep(3);
+    setIsBooking(true);
+    setActiveTab("booking");
+  };
+
+
+
   const handleLogout = () => {
     persistClientSession(null);
     setClient(null);
@@ -1678,6 +1826,17 @@ const ClientPortal = () => {
       />
       <div className="border-b border-border bg-background">
         <div className="max-w-7xl mx-auto px-4 py-2 flex justify-end items-center gap-1">
+          {showcaseImages.length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowVitrine(true)}
+              aria-label="Abrir Vitrine"
+            >
+              <ImageIcon className="h-4 w-4 mr-2" />
+              Vitrine
+            </Button>
+          )}
           {client?.id && (
             <NotificationBell
               recipientType="client"
@@ -1701,10 +1860,11 @@ const ClientPortal = () => {
 
       <main className="max-w-4xl mx-auto px-4 py-8">
         <Tabs
-          defaultValue="booking"
+          value={activeTab}
+          onValueChange={setActiveTab}
           className="space-y-6"
         >
-          <TabsList className={`grid w-full ${establishment.show_catalog ? "grid-cols-3" : "grid-cols-2"}`}>
+          <TabsList className={`grid w-full ${establishment.show_catalog ? "grid-cols-5" : "grid-cols-4"}`}>
             <TabsTrigger value="booking">
               <Calendar className="h-4 w-4 mr-2 hidden sm:inline" />
               Agendar
@@ -1713,6 +1873,14 @@ const ClientPortal = () => {
               <Clock className="h-4 w-4 mr-2 hidden sm:inline" />
               Agendamentos
             </TabsTrigger>
+            <TabsTrigger value="history">
+              <History className="h-4 w-4 mr-2 hidden sm:inline" />
+              Histórico
+            </TabsTrigger>
+            <TabsTrigger value="profile">
+              <UserCircle className="h-4 w-4 mr-2 hidden sm:inline" />
+              Meus dados
+            </TabsTrigger>
             {establishment.show_catalog && (
               <TabsTrigger value="services">
                 <Scissors className="h-4 w-4 mr-2 hidden sm:inline" />
@@ -1720,6 +1888,7 @@ const ClientPortal = () => {
               </TabsTrigger>
             )}
           </TabsList>
+
 
           {/* Booking Tab */}
           <TabsContent value="booking" className="space-y-4">
@@ -1799,6 +1968,173 @@ const ClientPortal = () => {
               ))
             )}
           </TabsContent>
+
+          {/* História Tab */}
+          <TabsContent value="history" className="space-y-4">
+            <h2 className="text-lg font-semibold">Histórico de atendimentos</h2>
+            {loadingHistory ? (
+              <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
+            ) : history.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    Você ainda não possui atendimentos finalizados neste salão.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {history.map((tab: any) => {
+                  const items = (tab.tab_items || []) as any[];
+                  const payments = (tab.tab_payments || []) as any[];
+                  return (
+                    <Card key={tab.id}>
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <p className="text-sm text-muted-foreground">
+                            {tab.closed_at ? format(new Date(tab.closed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : "—"}
+                          </p>
+                          <Badge className="text-base">R$ {Number(tab.total || 0).toFixed(2)}</Badge>
+                        </div>
+                        <div className="space-y-2">
+                          {items.length === 0 && (
+                            <p className="text-sm text-muted-foreground">Nenhum item registrado.</p>
+                          )}
+                          {items.map((it: any) => {
+                            const isService = it.item_type === "service";
+                            return (
+                              <div
+                                key={it.id}
+                                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border border-border"
+                              >
+                                <div className="min-w-0">
+                                  <p className="font-medium truncate">{it.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {isService ? "Serviço" : it.item_type === "product" ? "Produto" : "Item"}
+                                    {Number(it.quantity || 1) > 1 && ` × ${Number(it.quantity)}`}
+                                    {it.professionals?.name && ` • ${it.professionals.name}`}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <span className="font-semibold tabular-nums">
+                                    R$ {Number(it.total_price || 0).toFixed(2)}
+                                  </span>
+                                  {isService && it.service_id && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleRebook(it.service_id, it.professional_id || null)}
+                                    >
+                                      <RotateCw className="h-3.5 w-3.5 mr-1" />
+                                      Agendar novamente
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {payments.length > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            Pago via: {payments.map((p: any) => `${p.payment_method_name} (R$ ${Number(p.amount || 0).toFixed(2)})`).join(" • ")}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Meus dados Tab */}
+          <TabsContent value="profile" className="space-y-4">
+            <h2 className="text-lg font-semibold">Meus dados</h2>
+            <Card>
+              <CardContent className="p-6 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="profileName">Nome completo</Label>
+                  <Input
+                    id="profileName"
+                    value={profileName}
+                    onChange={(e) => setProfileName(e.target.value)}
+                    placeholder="Seu nome"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>E-mail</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={client?.global_identity_email || client?.email || ""}
+                      readOnly
+                      className="pl-10 bg-muted"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    O e-mail é a sua identidade na plataforma e não pode ser alterado por aqui.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="profilePhone">Celular / WhatsApp</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="profilePhone"
+                      value={profilePhone}
+                      onChange={(e) => setProfilePhone(formatPhone(e.target.value))}
+                      placeholder="(11) 99999-9999"
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="profileCpf">
+                    CPF <span className="text-muted-foreground text-xs">(opcional)</span>
+                  </Label>
+                  <div className="relative">
+                    <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="profileCpf"
+                      value={profileCpf}
+                      onChange={(e) => setProfileCpf(formatCpf(e.target.value))}
+                      placeholder="000.000.000-00"
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                  <Button onClick={handleSaveProfile} disabled={savingProfile} className="flex-1">
+                    {savingProfile && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Salvar alterações
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6 space-y-3">
+                <div className="flex items-center gap-2">
+                  <KeyRound className="h-4 w-4 text-muted-foreground" />
+                  <h3 className="font-semibold">Senha de acesso</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Enviaremos um link de redefinição para o seu e-mail cadastrado.
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={handleResetPasswordFromProfile}
+                  disabled={resettingPwd}
+                >
+                  {resettingPwd && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Redefinir senha
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+
 
           {/* Services Tab */}
           {establishment.show_catalog && (

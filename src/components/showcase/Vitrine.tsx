@@ -208,6 +208,9 @@ export function Vitrine({ images, onClose }: VitrineProps) {
       )}
 
       <div className="relative max-w-3xl mx-auto">
+        <h1 className="relative z-[1] text-center text-3xl sm:text-4xl font-display font-bold text-brand-gold mb-4 drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]">
+          Vitrine
+        </h1>
         {/* Carousel */}
         <div className="relative rounded-2xl overflow-hidden bg-black/40 backdrop-blur-sm border border-brand-copper/40 shadow-2xl">
           <button
