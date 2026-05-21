@@ -523,7 +523,10 @@ export default function PortalAgenda() {
           <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-1 px-1">
             <Button
               size="sm"
-              onClick={() => setNewApptOpen(true)}
+              onClick={() => {
+                setNewApptDefaultDate(currentDate);
+                setNewApptOpen(true);
+              }}
               className="h-8 whitespace-nowrap"
             >
               <Plus className="h-3.5 w-3.5 mr-1.5" />
