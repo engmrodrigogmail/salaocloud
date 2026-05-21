@@ -1969,6 +1969,173 @@ const ClientPortal = () => {
             )}
           </TabsContent>
 
+          {/* História Tab */}
+          <TabsContent value="history" className="space-y-4">
+            <h2 className="text-lg font-semibold">Histórico de atendimentos</h2>
+            {loadingHistory ? (
+              <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
+            ) : history.length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center">
+                  <History className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    Você ainda não possui atendimentos finalizados neste salão.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {history.map((tab: any) => {
+                  const items = (tab.tab_items || []) as any[];
+                  const payments = (tab.tab_payments || []) as any[];
+                  return (
+                    <Card key={tab.id}>
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <p className="text-sm text-muted-foreground">
+                            {tab.closed_at ? format(new Date(tab.closed_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR }) : "—"}
+                          </p>
+                          <Badge className="text-base">R$ {Number(tab.total || 0).toFixed(2)}</Badge>
+                        </div>
+                        <div className="space-y-2">
+                          {items.length === 0 && (
+                            <p className="text-sm text-muted-foreground">Nenhum item registrado.</p>
+                          )}
+                          {items.map((it: any) => {
+                            const isService = it.item_type === "service";
+                            return (
+                              <div
+                                key={it.id}
+                                className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-lg border border-border"
+                              >
+                                <div className="min-w-0">
+                                  <p className="font-medium truncate">{it.name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {isService ? "Serviço" : it.item_type === "product" ? "Produto" : "Item"}
+                                    {Number(it.quantity || 1) > 1 && ` × ${Number(it.quantity)}`}
+                                    {it.professionals?.name && ` • ${it.professionals.name}`}
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <span className="font-semibold tabular-nums">
+                                    R$ {Number(it.total_price || 0).toFixed(2)}
+                                  </span>
+                                  {isService && it.service_id && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleRebook(it.service_id, it.professional_id || null)}
+                                    >
+                                      <RotateCw className="h-3.5 w-3.5 mr-1" />
+                                      Agendar novamente
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {payments.length > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            Pago via: {payments.map((p: any) => `${p.payment_method_name} (R$ ${Number(p.amount || 0).toFixed(2)})`).join(" • ")}
+                          </p>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Meus dados Tab */}
+          <TabsContent value="profile" className="space-y-4">
+            <h2 className="text-lg font-semibold">Meus dados</h2>
+            <Card>
+              <CardContent className="p-6 space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="profileName">Nome completo</Label>
+                  <Input
+                    id="profileName"
+                    value={profileName}
+                    onChange={(e) => setProfileName(e.target.value)}
+                    placeholder="Seu nome"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>E-mail</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      value={client?.global_identity_email || client?.email || ""}
+                      readOnly
+                      className="pl-10 bg-muted"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    O e-mail é a sua identidade na plataforma e não pode ser alterado por aqui.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="profilePhone">Celular / WhatsApp</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="profilePhone"
+                      value={profilePhone}
+                      onChange={(e) => setProfilePhone(formatPhone(e.target.value))}
+                      placeholder="(11) 99999-9999"
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="profileCpf">
+                    CPF <span className="text-muted-foreground text-xs">(opcional)</span>
+                  </Label>
+                  <div className="relative">
+                    <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="profileCpf"
+                      value={profileCpf}
+                      onChange={(e) => setProfileCpf(formatCpf(e.target.value))}
+                      placeholder="000.000.000-00"
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                  <Button onClick={handleSaveProfile} disabled={savingProfile} className="flex-1">
+                    {savingProfile && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Salvar alterações
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6 space-y-3">
+                <div className="flex items-center gap-2">
+                  <KeyRound className="h-4 w-4 text-muted-foreground" />
+                  <h3 className="font-semibold">Senha de acesso</h3>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Enviaremos um link de redefinição para o seu e-mail cadastrado.
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={handleResetPasswordFromProfile}
+                  disabled={resettingPwd}
+                >
+                  {resettingPwd && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Redefinir senha
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+
+
           {/* Services Tab */}
           {establishment.show_catalog && (
             <TabsContent value="services" className="space-y-4">
