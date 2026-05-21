@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, History } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { useCatalogCategories } from "@/hooks/useCatalogCategories";
 
 type Client = Tables<"clients">;
 type Professional = Tables<"professionals">;
@@ -48,10 +49,8 @@ export function NewTabDialog({
   const [professionalId, setProfessionalId] = useState<string>("");
   const [serviceId, setServiceId] = useState<string>("");
   const [notes, setNotes] = useState("");
-  const [searchClient, setSearchClient] = useState("");
   const [retroactive, setRetroactive] = useState(false);
   const [retroDate, setRetroDate] = useState<string>(() => {
-    // default: now in local format yyyy-MM-ddTHH:mm
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -59,21 +58,51 @@ export function NewTabDialog({
 
   const canRetroactive = userRole === "owner" || userRole === "manager";
 
-  const filteredClients = clients.filter(c =>
-    c.name.toLowerCase().includes(searchClient.toLowerCase()) ||
-    c.phone.includes(searchClient)
-  );
+  // Deriva o estabelecimento a partir dos dados recebidos (para buscar categorias)
+  const establishmentId =
+    services[0]?.establishment_id ||
+    professionals[0]?.establishment_id ||
+    clients[0]?.establishment_id ||
+    null;
+  const { getServiceCategory } = useCatalogCategories(establishmentId);
 
   const handleClientSelect = (id: string) => {
     setClientId(id);
-    const client = clients.find(c => c.id === id);
+    if (!id) return;
+    const client = clients.find((c) => c.id === id);
     if (client) setClientName(client.name);
   };
+
+  const clientOptions = useMemo(
+    () =>
+      clients.map((c) => ({
+        value: c.id,
+        label: c.name,
+        hint: c.phone,
+        keywords: c.phone,
+      })),
+    [clients],
+  );
+
+  const professionalOptions = useMemo(
+    () => professionals.map((p) => ({ value: p.id, label: p.name })),
+    [professionals],
+  );
+
+  const serviceOptions = useMemo(
+    () =>
+      services.map((s) => ({
+        value: s.id,
+        label: s.name,
+        hint: `${s.duration_minutes}min`,
+        group: getServiceCategory((s as any).category_id),
+      })),
+    [services, getServiceCategory],
+  );
 
   const handleSubmit = async () => {
     let opened_at: string | undefined;
     if (retroactive && canRetroactive && retroDate) {
-      // Treat the datetime-local as local time and convert to ISO
       opened_at = new Date(retroDate).toISOString();
     }
     await onSubmit({
@@ -85,18 +114,16 @@ export function NewTabDialog({
       opened_at,
       is_retroactive: retroactive && canRetroactive,
     });
-    setClientName(""); setClientId(""); setProfessionalId(""); setServiceId(""); setNotes(""); setSearchClient("");
+    setClientName("");
+    setClientId("");
+    setProfessionalId("");
+    setServiceId("");
+    setNotes("");
     setRetroactive(false);
   };
 
-
-  // "Avulsa" mode: no registered client selected. In this mode, both professional and service
-  // are mandatory to ensure the agenda is properly blocked and the operation is auditable.
   const isAvulsa = !clientId;
-  // Service is also required whenever a professional is selected (to know how long to block the agenda).
   const requiresService = professionalId.length > 0 || isAvulsa;
-  // Professional is required whenever there is an initial service (otherwise we can't block the agenda)
-  // or in "avulsa" mode.
   const requiresProfessional = isAvulsa || serviceId.length > 0;
   const isValid =
     clientName.trim().length > 0 &&
@@ -116,26 +143,16 @@ export function NewTabDialog({
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label>Cliente Cadastrado (opcional)</Label>
-            <Input
-              placeholder="Buscar cliente..."
-              value={searchClient}
-              onChange={(e) => setSearchClient(e.target.value)}
+            <SearchableSelect
+              value={clientId}
+              onValueChange={handleClientSelect}
+              placeholder="Selecionar cliente cadastrado"
+              searchPlaceholder="Buscar por nome ou telefone..."
+              emptyText="Nenhum cliente encontrado."
+              options={clientOptions}
+              allowClear
+              clearLabel="Nenhum / cliente avulso"
             />
-            {searchClient && filteredClients.length > 0 && (
-              <div className="max-h-32 overflow-y-auto border rounded-md">
-                {filteredClients.slice(0, 5).map(client => (
-                  <button
-                    key={client.id}
-                    type="button"
-                    className="w-full text-left px-3 py-2 hover:bg-muted text-sm"
-                    onClick={() => { handleClientSelect(client.id); setSearchClient(""); }}
-                  >
-                    <span className="font-medium">{client.name}</span>
-                    <span className="text-muted-foreground ml-2">{client.phone}</span>
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           <div className="space-y-2">
@@ -152,16 +169,13 @@ export function NewTabDialog({
             <Label>
               Profissional Responsável {requiresProfessional ? "*" : ""}
             </Label>
-            <Select value={professionalId} onValueChange={setProfessionalId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecionar profissional" />
-              </SelectTrigger>
-              <SelectContent>
-                {professionals.map(prof => (
-                  <SelectItem key={prof.id} value={prof.id}>{prof.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={professionalId}
+              onValueChange={setProfessionalId}
+              placeholder="Selecionar profissional"
+              searchPlaceholder="Buscar profissional..."
+              options={professionalOptions}
+            />
             {requiresProfessional && (
               <p className="text-xs text-muted-foreground">
                 {isAvulsa
@@ -176,18 +190,15 @@ export function NewTabDialog({
               <Label>
                 Serviço inicial {requiresService ? "*" : "(opcional)"}
               </Label>
-              <Select value={serviceId} onValueChange={setServiceId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecionar serviço" />
-                </SelectTrigger>
-                <SelectContent>
-                  {services.map(s => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name} ({s.duration_minutes}min)
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <SearchableSelect
+                value={serviceId}
+                onValueChange={setServiceId}
+                placeholder="Selecionar serviço"
+                searchPlaceholder="Buscar serviço..."
+                options={serviceOptions}
+                allowClear
+                clearLabel="Sem serviço inicial"
+              />
               <p className="text-xs text-muted-foreground">
                 {requiresService
                   ? "Obrigatório quando há profissional selecionado — define a duração do bloqueio na agenda."

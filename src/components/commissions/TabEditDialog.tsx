@@ -23,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import {
   Table,
   TableBody,
@@ -501,19 +502,13 @@ export function TabEditDialog({
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label>Profissional *</Label>
-                        <Select
+                        <SearchableSelect
                           value={newCommission.professional_id}
                           onValueChange={(v) => setNewCommission({ ...newCommission, professional_id: v })}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Selecione..." />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {professionals.map((p) => (
-                              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          placeholder="Selecione..."
+                          searchPlaceholder="Buscar profissional..."
+                          options={professionals.map((p) => ({ value: p.id, label: p.name }))}
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label>Tipo</Label>

@@ -4,12 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Package, Scissors, PenLine, ShieldAlert, AlertTriangle } from "lucide-react";
 import type { Product } from "@/types/tabs";
 import type { Tables } from "@/integrations/supabase/types";
+import { useCatalogCategories } from "@/hooks/useCatalogCategories";
 import { ManagerPinDialog, logManagerOverride } from "@/components/security/ManagerPinDialog";
 
 type Service = Tables<"services">;
@@ -94,12 +96,44 @@ export function AddItemDialog({
     }
   }, [open, defaultProfessionalId]);
 
+  const { getServiceCategory } = useCatalogCategories(establishmentId ?? null);
+
+  const collator = new Intl.Collator("pt-BR", { sensitivity: "base" });
+
+  const groupAndSort = <T extends { name: string }>(
+    items: T[],
+    getGroup: (it: T) => string,
+  ): Array<{ group: string; items: T[] }> => {
+    const map = new Map<string, T[]>();
+    for (const it of items) {
+      const g = getGroup(it) || "Sem categoria";
+      const arr = map.get(g) ?? [];
+      arr.push(it);
+      map.set(g, arr);
+    }
+    return Array.from(map.entries())
+      .map(([group, list]) => ({
+        group,
+        items: [...list].sort((a, b) => collator.compare(a.name, b.name)),
+      }))
+      .sort((a, b) => {
+        if (a.group === "Sem categoria" && b.group !== "Sem categoria") return 1;
+        if (b.group === "Sem categoria" && a.group !== "Sem categoria") return -1;
+        return collator.compare(a.group, b.group);
+      });
+  };
+
   const filteredProducts = products.filter((p) =>
     p.name.toLowerCase().includes(searchProduct.toLowerCase())
   );
 
   const filteredServices = services.filter((s) =>
     s.name.toLowerCase().includes(searchService.toLowerCase())
+  );
+
+  const productGroups = groupAndSort(filteredProducts, (p) => p.category || "");
+  const serviceGroups = groupAndSort(filteredServices, (s) =>
+    getServiceCategory((s as any).category_id),
   );
 
   const formatCurrency = (value: number) =>
@@ -264,23 +298,27 @@ export function AddItemDialog({
                     {products.length === 0 ? "Nenhum produto cadastrado" : "Nenhum produto encontrado"}
                   </div>
                 ) : (
-                  filteredProducts.map((product) => (
-                    <button
-                      key={product.id}
-                      type="button"
-                      onClick={() => setSelectedProduct(product)}
-                      className={`w-full text-left px-3 py-2 hover:bg-muted border-b last:border-0 ${
-                        selectedProduct?.id === product.id ? "bg-primary/10" : ""
-                      }`}
-                    >
-                      <div className="flex justify-between">
-                        <span className="font-medium">{product.name}</span>
-                        <span className="text-muted-foreground">{formatCurrency(product.price)}</span>
+                  productGroups.map(({ group, items }) => (
+                    <div key={group}>
+                      <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide bg-muted/60 text-muted-foreground border-b">
+                        {group}
                       </div>
-                      {product.category && (
-                        <span className="text-xs text-muted-foreground">{product.category}</span>
-                      )}
-                    </button>
+                      {items.map((product) => (
+                        <button
+                          key={product.id}
+                          type="button"
+                          onClick={() => setSelectedProduct(product)}
+                          className={`w-full text-left px-3 py-2 hover:bg-muted border-b last:border-0 ${
+                            selectedProduct?.id === product.id ? "bg-primary/10" : ""
+                          }`}
+                        >
+                          <div className="flex justify-between">
+                            <span className="font-medium">{product.name}</span>
+                            <span className="text-muted-foreground">{formatCurrency(product.price)}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   ))
                 )}
               </ScrollArea>
@@ -323,21 +361,28 @@ export function AddItemDialog({
                     Nenhum serviço encontrado
                   </div>
                 ) : (
-                  filteredServices.map((service) => (
-                    <button
-                      key={service.id}
-                      type="button"
-                      onClick={() => setSelectedService(service)}
-                      className={`w-full text-left px-3 py-2 hover:bg-muted border-b last:border-0 ${
-                        selectedService?.id === service.id ? "bg-primary/10" : ""
-                      }`}
-                    >
-                      <div className="flex justify-between">
-                        <span className="font-medium">{service.name}</span>
-                        <span className="text-muted-foreground">{formatCurrency(service.price)}</span>
+                  serviceGroups.map(({ group, items }) => (
+                    <div key={group}>
+                      <div className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide bg-muted/60 text-muted-foreground border-b">
+                        {group}
                       </div>
-                      <span className="text-xs text-muted-foreground">{service.duration_minutes} min</span>
-                    </button>
+                      {items.map((service) => (
+                        <button
+                          key={service.id}
+                          type="button"
+                          onClick={() => setSelectedService(service)}
+                          className={`w-full text-left px-3 py-2 hover:bg-muted border-b last:border-0 ${
+                            selectedService?.id === service.id ? "bg-primary/10" : ""
+                          }`}
+                        >
+                          <div className="flex justify-between">
+                            <span className="font-medium">{service.name}</span>
+                            <span className="text-muted-foreground">{formatCurrency(service.price)}</span>
+                          </div>
+                          <span className="text-xs text-muted-foreground">{service.duration_minutes} min</span>
+                        </button>
+                      ))}
+                    </div>
                   ))
                 )}
               </ScrollArea>
@@ -360,32 +405,23 @@ export function AddItemDialog({
                       className="w-20"
                     />
                   </div>
-                  <Select
-                    value={selectedProfessional || "__none__"}
-                    onValueChange={(v) => setSelectedProfessional(v === "__none__" ? "" : v)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Profissional (opcional)" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">Nenhum</SelectItem>
-                      {professionals.map((prof) => {
-                        const missing = isProfMissingService(prof.id, selectedService.id);
-                        return (
-                          <SelectItem key={prof.id} value={prof.id}>
-                            <span className="flex items-center gap-2">
-                              {prof.name}
-                              {missing && (
-                                <span className="text-[10px] uppercase tracking-wide text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
-                                  sem este serviço
-                                </span>
-                              )}
-                            </span>
-                          </SelectItem>
-                        );
-                      })}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    value={selectedProfessional}
+                    onValueChange={setSelectedProfessional}
+                    placeholder="Profissional (opcional)"
+                    searchPlaceholder="Buscar profissional..."
+                    allowClear
+                    clearLabel="Nenhum"
+                    options={professionals.map((prof) => {
+                      const missing = isProfMissingService(prof.id, selectedService.id);
+                      return {
+                        value: prof.id,
+                        label: prof.name,
+                        hint: missing ? "sem este serviço" : undefined,
+                        keywords: missing ? "sem este servico" : "",
+                      };
+                    })}
+                  />
                   {selectedProfessional && isProfMissingService(selectedProfessional, selectedService.id) && (
                     <Alert>
                       <AlertTriangle className="h-4 w-4" />

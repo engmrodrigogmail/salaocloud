@@ -19,14 +19,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Calendar, Loader2, Search, UserPlus, Sparkles, ArrowLeft, Check, ChevronsUpDown } from "lucide-react";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { SearchableSelect } from "@/components/ui/searchable-select";
+import { Calendar, Loader2, Search, UserPlus, Sparkles, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { format, setHours, setMinutes, addMinutes, parseISO, isBefore, isAfter, getDay, addDays, startOfDay } from "date-fns";
 import type { Tables } from "@/integrations/supabase/types";
 import { NewClientDialog } from "@/components/clients/NewClientDialog";
+import { useCatalogCategories } from "@/hooks/useCatalogCategories";
 import { cn } from "@/lib/utils";
 
 type Service = Tables<"services">;
@@ -184,6 +184,8 @@ export function NewAppointmentDialog({
       cancelled = true;
     };
   }, [open, establishmentId, professionals]);
+
+  const { getServiceCategory } = useCatalogCategories(establishmentId);
 
   const selectedService = useMemo(() => services.find((s) => s.id === serviceId), [serviceId, services]);
   const sortedServices = useMemo(
@@ -593,76 +595,36 @@ export function NewAppointmentDialog({
               {/* Serviço */}
               <div className="space-y-2">
                 <Label>Serviço *</Label>
-                <Popover open={serviceOpen} onOpenChange={setServiceOpen}>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      role="combobox"
-                      aria-expanded={serviceOpen}
-                      className="w-full justify-between font-normal"
-                    >
-                      <span className="truncate">
-                        {selectedService
-                          ? `${selectedService.name} — ${selectedService.duration_minutes}min`
-                          : "Selecione"}
-                      </span>
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                    <Command
-                      filter={(value, search) => {
-                        if (!search) return 1;
-                        return value.toLowerCase().includes(search.toLowerCase()) ? 1 : 0;
-                      }}
-                    >
-                      <CommandInput placeholder="Buscar serviço..." />
-                      <CommandList>
-                        <CommandEmpty>Nenhum serviço encontrado.</CommandEmpty>
-                        <CommandGroup>
-                          {sortedServices.map((s) => (
-                            <CommandItem
-                              key={s.id}
-                              value={`${s.name} ${s.duration_minutes}min`}
-                              onSelect={() => {
-                                setServiceId(s.id);
-                                setServiceOpen(false);
-                              }}
-                            >
-                              <Check
-                                className={cn(
-                                  "mr-2 h-4 w-4",
-                                  serviceId === s.id ? "opacity-100" : "opacity-0",
-                                )}
-                              />
-                              {s.name} — {s.duration_minutes}min
-                            </CommandItem>
-                          ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <SearchableSelect
+                  value={serviceId}
+                  onValueChange={setServiceId}
+                  placeholder="Selecione"
+                  searchPlaceholder="Buscar serviço..."
+                  emptyText="Nenhum serviço encontrado."
+                  options={sortedServices.map((s) => ({
+                    value: s.id,
+                    label: s.name,
+                    hint: `${s.duration_minutes}min`,
+                    group: getServiceCategory((s as any).category_id),
+                  }))}
+                />
               </div>
 
               {/* Profissional + Qualquer um */}
               <div className="space-y-2">
                 <Label>Profissional *</Label>
                 <div className="flex gap-2">
-                  <div className="flex-1">
-                    <Select value={professionalId} onValueChange={setProfessionalId}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {eligibleProfessionals.map((p) => (
-                          <SelectItem key={p.id} value={p.id}>
-                            {p.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="flex-1 min-w-0">
+                    <SearchableSelect
+                      value={professionalId}
+                      onValueChange={setProfessionalId}
+                      placeholder="Selecione"
+                      searchPlaceholder="Buscar profissional..."
+                      options={eligibleProfessionals.map((p) => ({
+                        value: p.id,
+                        label: p.name,
+                      }))}
+                    />
                   </div>
                   <Button
                     type="button"
