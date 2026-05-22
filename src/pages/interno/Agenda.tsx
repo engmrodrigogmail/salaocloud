@@ -400,18 +400,6 @@ export default function InternoAgenda() {
 
   const openViewDialog = (apt: Appointment) => {
     setSelectedAppointment(apt);
-    setEditMode(false);
-    setDialogOpen(true);
-  };
-
-  const openEditDialog = (apt: Appointment) => {
-    setSelectedAppointment(apt);
-    setEditDate(format(parseISO(apt.scheduled_at), "yyyy-MM-dd"));
-    setEditTime(format(parseISO(apt.scheduled_at), "HH:mm"));
-    setEditServiceId(apt.service_id);
-    setEditProfessionalId(apt.professional_id);
-    setEditNotes(apt.notes || "");
-    setEditMode(true);
     setDialogOpen(true);
   };
 
