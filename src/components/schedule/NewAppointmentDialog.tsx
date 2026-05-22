@@ -261,17 +261,19 @@ export function NewAppointmentDialog({
       const be = parseISO(b.end_time);
       if (isBefore(start, be) && isAfter(end, bs)) return false;
     }
-    for (const a of appointments) {
-      if (a.professional_id !== profId) continue;
-      const as = parseISO(a.scheduled_at);
-      const ae = addMinutes(as, a.duration_minutes);
-      if (isBefore(start, ae) && isAfter(end, as)) return false;
-    }
-    for (const s of apptServices) {
-      if (s.professional_id !== profId) continue;
-      const ss = parseISO(s.starts_at);
-      const se = addMinutes(ss, s.duration_minutes);
-      if (isBefore(start, se) && isAfter(end, ss)) return false;
+    if (!allowOverlap) {
+      for (const a of appointments) {
+        if (a.professional_id !== profId) continue;
+        const as = parseISO(a.scheduled_at);
+        const ae = addMinutes(as, a.duration_minutes);
+        if (isBefore(start, ae) && isAfter(end, as)) return false;
+      }
+      for (const s of apptServices) {
+        if (s.professional_id !== profId) continue;
+        const ss = parseISO(s.starts_at);
+        const se = addMinutes(ss, s.duration_minutes);
+        if (isBefore(start, se) && isAfter(end, ss)) return false;
+      }
     }
     return true;
   };
