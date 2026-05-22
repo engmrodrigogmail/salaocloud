@@ -103,7 +103,8 @@ const BookingPage = () => {
   const [items, setItems] = useState<Item[]>([{ serviceId: "", professionalId: "" }]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [allowGap, setAllowGap] = useState(false);
+  type SeqMode = "sequential" | "gap" | "parallel";
+  const [mode, setMode] = useState<SeqMode>("sequential");
 
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
@@ -316,7 +317,12 @@ const BookingPage = () => {
       if (!svc) return false;
       const profId =
         it.professionalId && it.professionalId !== ANY_PRO ? it.professionalId : null;
-      if (!allowGap) {
+      if (mode === "parallel") {
+        // Parallel: same start, distinct specific professionals required
+        if (!profId) return false;
+        if (!isBlockFree(start, svc.duration_minutes, profId)) return false;
+        // cursor does not advance
+      } else if (mode === "sequential") {
         if (profId) {
           if (!isBlockFree(cursor, svc.duration_minutes, profId)) return false;
         } else {
@@ -351,6 +357,10 @@ const BookingPage = () => {
         if (!placed) return false;
       }
     }
+    if (mode === "parallel") {
+      const ids = items.map((i) => i.professionalId);
+      if (new Set(ids).size !== ids.length) return false;
+    }
     return true;
   };
 
@@ -369,7 +379,11 @@ const BookingPage = () => {
       if (!svc) return null;
       let profId = it.professionalId;
       let placed: Date | null = null;
-      if (!allowGap) {
+      if (mode === "parallel") {
+        if (profId === ANY_PRO) return null;
+        if (!isBlockFree(start, svc.duration_minutes, profId)) return null;
+        placed = start;
+      } else if (mode === "sequential") {
         if (profId === ANY_PRO) {
           const elig = eligibleProfsFor(it.serviceId);
           const free = elig.find((p) => isBlockFree(cursor, svc.duration_minutes, p.id));
@@ -444,7 +458,7 @@ const BookingPage = () => {
     closures,
     estabWH,
     profsWH,
-    allowGap,
+    mode,
   ]);
 
   useEffect(() => {
@@ -478,7 +492,7 @@ const BookingPage = () => {
     const start = setMinutes(setHours(selectedDate, h), m);
     return resolveSequence(start);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTime, selectedDate, items, allowGap]);
+  }, [selectedTime, selectedDate, items, mode]);
 
   const handleSubmit = async () => {
     if (!establishment || !selectedDate || !selectedTime || !itemsReady) {
@@ -774,25 +788,56 @@ const BookingPage = () => {
 
                 {selectedDate && (
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="space-y-2">
                       <Label className="text-base font-semibold">Horário</Label>
-                      <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={allowGap}
-                          onChange={(e) => {
-                            setAllowGap(e.target.checked);
-                            setSelectedTime(null);
-                          }}
-                          className="h-3.5 w-3.5"
-                        />
-                        Permitir intervalo entre serviços
-                      </label>
+                      {items.length > 1 && (
+                        <div className="rounded-md border p-2 space-y-1 bg-muted/20">
+                          <p className="text-xs font-semibold text-muted-foreground">Como agendar os serviços?</p>
+                          {([
+                            { v: "sequential", label: "Em sequência" },
+                            { v: "gap", label: "Em sequência com pausa" },
+                            { v: "parallel", label: "Em paralelo (profissionais diferentes ao mesmo tempo)" },
+                          ] as const).map((opt) => (
+                            <label key={opt.v} className="flex items-center gap-2 text-xs cursor-pointer">
+                              <input
+                                type="radio"
+                                name="seqMode"
+                                checked={mode === opt.v}
+                                onChange={() => {
+                                  setMode(opt.v);
+                                  setSelectedTime(null);
+                                }}
+                                className="h-3.5 w-3.5"
+                              />
+                              {opt.label}
+                            </label>
+                          ))}
+                          {mode === "parallel" &&
+                            (() => {
+                              const ids = items.map((i) => i.professionalId);
+                              const hasAny = ids.some((id) => !id || id === ANY_PRO);
+                              const dup = new Set(ids).size !== ids.length;
+                              if (hasAny)
+                                return (
+                                  <p className="text-[11px] text-destructive">
+                                    No modo paralelo, escolha um profissional específico para cada serviço (não use "Qualquer").
+                                  </p>
+                                );
+                              if (dup)
+                                return (
+                                  <p className="text-[11px] text-destructive">
+                                    No modo paralelo, cada serviço precisa ter um profissional diferente.
+                                  </p>
+                                );
+                              return null;
+                            })()}
+                        </div>
+                      )}
                     </div>
                     {slotsForDay.length === 0 ? (
                       <p className="text-xs text-muted-foreground">
                         Sem horários disponíveis nesta data.
-                        {!allowGap && " Tente ativar “Permitir intervalo”."}
+                        {mode === "sequential" && items.length > 1 && " Tente \"Em sequência com pausa\" ou \"Em paralelo\"."}
                       </p>
                     ) : (
                       <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
