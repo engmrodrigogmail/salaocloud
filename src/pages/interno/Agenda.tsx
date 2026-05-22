@@ -30,6 +30,7 @@ import { AgendaTimeSlots } from "@/components/schedule/AgendaTimeSlots";
 import { DayScheduleDialog } from "@/components/schedule/DayScheduleDialog";
 import { NewAppointmentDialog } from "@/components/schedule/NewAppointmentDialog";
 import { TimeSelect } from "@/components/schedule/TimeSelect";
+import { EditAppointmentServicesDialog } from "@/components/schedule/EditAppointmentServicesDialog";
 
 type Client = Tables<"clients">;
 type Service = Tables<"services">;
