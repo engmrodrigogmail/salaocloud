@@ -2300,132 +2300,139 @@ const ClientPortal = () => {
           </DialogHeader>
 
 
-          {/* Header de Resumo fixo: aparece a partir do passo 2 quando o serviço foi escolhido */}
-          {bookingStep > 1 && selectedService && (
-            <div className="sticky top-0 z-10 -mx-6 px-6 py-3 bg-muted/40 border-y space-y-2">
-              <div>
-                <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
-                  Serviço selecionado
-                </p>
-                <p className="text-sm font-semibold">{selectedService.name}</p>
-              </div>
-              {selectedProfessional && (
-                <div className="flex items-center gap-2 pt-1 border-t border-border/50">
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
-                      Profissional
-                    </p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <Avatar className="h-7 w-7">
-                        <AvatarImage
-                          src={selectedProfessional.avatar_url || undefined}
-                          alt={selectedProfessional.name}
-                        />
-                        <AvatarFallback>
-                          <User className="h-3.5 w-3.5" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="text-sm font-semibold">{selectedProfessional.name}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
+          {/* Resumo fixo a partir do passo 2 */}
+          {bookingStep > 1 && bookingItems.length > 0 && (
+            <div className="sticky top-0 z-10 -mx-6 px-6 py-3 bg-muted/40 border-y space-y-1">
+              <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+                {bookingItems.length === 1 ? "Serviço selecionado" : `${bookingItems.length} serviços selecionados`}
+              </p>
+              <ul className="text-sm space-y-0.5">
+                {bookingItems.map((it, i) => {
+                  const prof = it.professionalId ? professionals.find((p) => p.id === it.professionalId) : null;
+                  return (
+                    <li key={i} className="flex justify-between gap-2">
+                      <span className="truncate">
+                        <span className="font-semibold">{it.name}</span>
+                        <span className="text-muted-foreground"> · {prof ? prof.name : "Sem preferência"}</span>
+                      </span>
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
+                        {it.duration}min
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="text-xs text-muted-foreground text-right pt-1 border-t border-border/50">
+                Total: {totalDuration}min • R$ {totalPrice.toFixed(2)}
+              </p>
             </div>
           )}
 
-          {/* Step 1: Service */}
+          {/* Step 1: Serviços (multi) */}
           {bookingStep === 1 && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               {services.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-4">
                   Nenhum serviço disponível
                 </p>
               )}
-              {services.map((service) => (
-                <Card
-                  key={service.id}
-                  className={`cursor-pointer transition-colors hover:border-primary ${
-                    selectedService?.id === service.id ? "border-primary bg-primary/5" : ""
-                  }`}
-                  onClick={() => setSelectedService(service)}
-                >
-                  <CardContent className="p-4 flex justify-between items-center">
-                    <div>
-                      <h4 className="font-semibold">{service.name}</h4>
-                      <p className="text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3 inline mr-1" />
-                        {service.duration_minutes} min
-                      </p>
+
+              {[{ idx: 0, serviceId: selectedService?.id || "", professionalId: selectedProfessional?.id ?? null }, ...extraItems.map((it, i) => ({ idx: i + 1, ...it }))].map((item) => {
+                const isPrimary = item.idx === 0;
+                const elig = item.serviceId ? getProfessionalsForService(item.serviceId) : [];
+                return (
+                  <div key={item.idx} className="rounded-lg border p-3 space-y-2 bg-muted/20">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-semibold text-muted-foreground">
+                        Serviço {item.idx + 1}
+                      </span>
+                      {!isPrimary && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeExtraItem(item.idx - 1)}
+                        >
+                          Remover
+                        </Button>
+                      )}
                     </div>
-                    <p className="font-bold text-accent">
-                      R$ {Number(service.price).toFixed(2)}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
+                    <Select
+                      value={item.serviceId || ""}
+                      onValueChange={(v) => {
+                        if (isPrimary) {
+                          const svc = services.find((s) => s.id === v) || null;
+                          setSelectedService(svc);
+                          setSelectedProfessional(null);
+                        } else {
+                          updateExtraItem(item.idx - 1, { serviceId: v, professionalId: null });
+                        }
+                        setSelectedTime(null);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o serviço" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {services.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name} · {s.duration_minutes}min · R$ {Number(s.price).toFixed(2)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
+                      value={item.professionalId || "__any__"}
+                      onValueChange={(v) => {
+                        const pid = v === "__any__" ? null : v;
+                        if (isPrimary) {
+                          const prof = pid ? professionals.find((p) => p.id === pid) || null : null;
+                          setSelectedProfessional(prof);
+                        } else {
+                          updateExtraItem(item.idx - 1, { professionalId: pid });
+                        }
+                        setSelectedTime(null);
+                      }}
+                      disabled={!item.serviceId}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Profissional" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__any__">Sem preferência</SelectItem>
+                        {elig.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {item.serviceId && elig.length === 0 && (
+                      <p className="text-xs text-destructive">
+                        Nenhum profissional possui este serviço.
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={addExtraItem}
+                disabled={!selectedService}
+              >
+                + Adicionar outro serviço
+              </Button>
+
+              {totalDuration > 0 && (
+                <p className="text-xs text-muted-foreground text-right">
+                  Total: {totalDuration}min • R$ {totalPrice.toFixed(2)}
+                </p>
+              )}
             </div>
           )}
 
-          {/* Step 2: Professional - filtrado por disponibilidade do dia se data já estiver escolhida */}
-          {bookingStep === 2 && selectedService && (() => {
-            const allProfs = getProfessionalsForService(selectedService.id);
-            const profsForDay = selectedDate
-              ? allProfs.filter((p) => availability.getWorkingHoursForDay(selectedDate, p.id) !== null)
-              : allProfs;
-
-            return (
-              <div className="space-y-2">
-                {selectedDate && profsForDay.length < allProfs.length && (
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription className="text-xs">
-                      Mostrando apenas profissionais que trabalham em{" "}
-                      {format(selectedDate, "EEEE", { locale: ptBR })}.
-                    </AlertDescription>
-                  </Alert>
-                )}
-                <Card
-                  className={`cursor-pointer transition-colors hover:border-primary ${
-                    !selectedProfessional ? "border-primary bg-primary/5" : ""
-                  }`}
-                  onClick={() => setSelectedProfessional(null)}
-                >
-                  <CardContent className="p-4">
-                    <h4 className="font-semibold">Sem preferência</h4>
-                    <p className="text-xs text-muted-foreground">
-                      Atribuir automaticamente o profissional disponível
-                    </p>
-                  </CardContent>
-                </Card>
-                {profsForDay.map((prof) => (
-                  <Card
-                    key={prof.id}
-                    className={`cursor-pointer transition-colors hover:border-primary ${
-                      selectedProfessional?.id === prof.id ? "border-primary bg-primary/5" : ""
-                    }`}
-                    onClick={() => setSelectedProfessional(prof)}
-                  >
-                    <CardContent className="p-4 flex items-center gap-3">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={prof.avatar_url || undefined} alt={prof.name} />
-                        <AvatarFallback>
-                          <User className="h-4 w-4" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <h4 className="font-semibold">{prof.name}</h4>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-                {profsForDay.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    Nenhum profissional trabalha nesta data. Volte e escolha outra.
-                  </p>
-                )}
-              </div>
-            );
-          })()}
 
           {/* Step 3: Date (Calendário Mensal) & Time */}
           {bookingStep === 3 && selectedService && (
