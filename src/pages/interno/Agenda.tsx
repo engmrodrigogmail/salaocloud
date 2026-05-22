@@ -848,36 +848,34 @@ export default function InternoAgenda() {
                 </Button>
               </div>
             )}
-                {selectedAppointment?.status === "pending" && (
-                  <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "confirmed")}>
-                    <Check className="h-4 w-4 mr-1" /> Confirmar
-                  </Button>
-                )}
-                {(selectedAppointment?.status === "pending" || selectedAppointment?.status === "confirmed") && !selectedAppointmentTabId && (
-                  <Button size="sm" variant="secondary" onClick={handleOpenTabFromAppointment}>
-                    <Receipt className="h-4 w-4 mr-1" /> Abrir comanda
-                  </Button>
-                )}
-                {selectedAppointmentTabId && (
-                  <Button size="sm" onClick={() => { setDialogOpen(false); navigate(`/interno/${slug}/comandas`, { state: { openTabId: selectedAppointmentTabId } }); }}>
-                    <Receipt className="h-4 w-4 mr-1" /> Acessar comanda
-                  </Button>
-                )}
-                {selectedAppointment?.status === "confirmed" && (
-                  <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "completed")}>
-                    <Check className="h-4 w-4 mr-1" /> Concluir
-                  </Button>
-                )}
-                {(selectedAppointment?.status === "pending" || selectedAppointment?.status === "confirmed") && (
-                  <Button size="sm" variant="outline" className="border-orange-300 text-orange-700 hover:bg-orange-50" onClick={() => updateAppointmentStatus(selectedAppointment.id, "no_show")}>
-                    <X className="h-4 w-4 mr-1" /> Marcou falta
-                  </Button>
-                )}
-                <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
-                  <X className="h-4 w-4 mr-1" /> Fechar
-                </Button>
-              </>
+            {selectedAppointment?.status === "pending" && (
+              <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "confirmed")}>
+                <Check className="h-4 w-4 mr-1" /> Confirmar
+              </Button>
             )}
+            {(selectedAppointment?.status === "pending" || selectedAppointment?.status === "confirmed") && !selectedAppointmentTabId && (
+              <Button size="sm" variant="secondary" onClick={handleOpenTabFromAppointment}>
+                <Receipt className="h-4 w-4 mr-1" /> Abrir comanda
+              </Button>
+            )}
+            {selectedAppointmentTabId && (
+              <Button size="sm" onClick={() => { setDialogOpen(false); navigate(`/interno/${slug}/comandas`, { state: { openTabId: selectedAppointmentTabId } }); }}>
+                <Receipt className="h-4 w-4 mr-1" /> Acessar comanda
+              </Button>
+            )}
+            {selectedAppointment?.status === "confirmed" && (
+              <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "completed")}>
+                <Check className="h-4 w-4 mr-1" /> Concluir
+              </Button>
+            )}
+            {(selectedAppointment?.status === "pending" || selectedAppointment?.status === "confirmed") && (
+              <Button size="sm" variant="outline" className="border-orange-300 text-orange-700 hover:bg-orange-50" onClick={() => updateAppointmentStatus(selectedAppointment.id, "no_show")}>
+                <X className="h-4 w-4 mr-1" /> Marcou falta
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
+              <X className="h-4 w-4 mr-1" /> Fechar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
