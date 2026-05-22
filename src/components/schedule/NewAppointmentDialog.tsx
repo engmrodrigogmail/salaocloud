@@ -550,7 +550,7 @@ export function NewAppointmentDialog({
     const slot = slotsForDay.find((s) => s.time === time);
     return resolveSequence(time, date, !!slot?.outside);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [time, date, slotsForDay, items, allowGap]);
+  }, [time, date, slotsForDay, items, mode]);
 
   return (
     <>
