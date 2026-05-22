@@ -872,14 +872,6 @@ export default function PortalAgenda() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-                <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
-                  <X className="h-4 w-4 mr-1" /> Fechar
-                </Button>
-              </>
-            )}
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Delete Confirmation */}
       <Dialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
