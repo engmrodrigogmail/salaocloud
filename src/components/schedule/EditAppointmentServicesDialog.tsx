@@ -77,7 +77,8 @@ export function EditAppointmentServicesDialog({
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");
-  const [allowGap, setAllowGap] = useState(false);
+  type SeqMode = "sequential" | "gap" | "parallel";
+  const [mode, setMode] = useState<SeqMode>("sequential");
 
   const [estabWH, setEstabWH] = useState<WH>(DEFAULT_WH);
   const [profsWH, setProfsWH] = useState<Record<string, WH>>({});
