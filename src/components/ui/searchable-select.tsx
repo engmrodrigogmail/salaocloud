@@ -127,8 +127,16 @@ export function SearchableSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className={cn("w-[--radix-popover-trigger-width] p-0", className)}
+        className={cn(
+          "w-[--radix-popover-trigger-width] p-0 flex flex-col",
+          "max-h-[min(70vh,var(--radix-popover-content-available-height,70vh))]",
+          className,
+        )}
         align="start"
+        side="bottom"
+        sideOffset={4}
+        collisionPadding={8}
+        avoidCollisions
       >
         <Command
           filter={(itemValue, search) => {
@@ -136,9 +144,10 @@ export function SearchableSelect({
             const s = stripAccents(search);
             return stripAccents(itemValue).includes(s) ? 1 : 0;
           }}
+          className="flex flex-col min-h-0"
         >
           <CommandInput placeholder={searchPlaceholder} />
-          <CommandList className="max-h-72">
+          <CommandList className="flex-1 min-h-0 max-h-none overflow-y-auto overscroll-contain">
             <CommandEmpty>{emptyText}</CommandEmpty>
             {allowClear && (
               <CommandGroup>
