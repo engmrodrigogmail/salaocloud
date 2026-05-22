@@ -85,7 +85,8 @@ export function NewAppointmentDialog({
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [allowOutsideHours, setAllowOutsideHours] = useState(false);
-  const [allowGap, setAllowGap] = useState(false);
+  type SeqMode = "sequential" | "gap" | "parallel";
+  const [mode, setMode] = useState<SeqMode>("sequential");
 
   const [estabWH, setEstabWH] = useState<WH>(DEFAULT_WH);
   const [profsWH, setProfsWH] = useState<Record<string, WH>>({});
@@ -106,7 +107,7 @@ export function NewAppointmentDialog({
     setTime(defaultTime ?? "");
     setNotes("");
     setConfirmOpen(false);
-    setAllowGap(false);
+    setMode("sequential");
   };
 
   useEffect(() => {
@@ -294,9 +295,20 @@ export function NewAppointmentDialog({
     return true;
   };
 
-  // Avalia se um horário inicial cabe (contínuo ou com gap, dependendo do flag)
+  // Avalia se um horário inicial cabe (contínuo, com gap, ou paralelo)
   const fitsSequence = (start: Date, ignoreWH: boolean): boolean => {
-    if (!allowGap) return fitsSequenceContinuous(start, ignoreWH);
+    if (mode === "parallel") {
+      // Todos os blocos começam no mesmo horário; cada profissional só precisa ter ele livre.
+      for (const it of items) {
+        const svc = services.find((s) => s.id === it.serviceId);
+        if (!svc) return false;
+        const profId = it.professionalId && it.professionalId !== ANY_PRO ? it.professionalId : null;
+        if (!profId) return false;
+        if (!isBlockFree(start, svc.duration_minutes, profId, ignoreWH)) return false;
+      }
+      return true;
+    }
+    if (mode === "sequential") return fitsSequenceContinuous(start, ignoreWH);
     // Modo com gap: para cada item, encontra o próximo slot livre >= cursor
     let cursor = start;
     for (const it of items) {
@@ -343,7 +355,12 @@ export function NewAppointmentDialog({
       let profId = it.professionalId;
       let placed: Date | null = null;
 
-      if (!allowGap) {
+      if (mode === "parallel") {
+        // todos no mesmo horário, profissional já é específico
+        if (profId === ANY_PRO) return null;
+        if (!isBlockFree(start, svc.duration_minutes, profId, ignoreWH)) return null;
+        placed = start;
+      } else if (mode === "sequential") {
         // contínuo
         if (profId === ANY_PRO) {
           const elig = eligibleProfsFor(it.serviceId);
@@ -374,7 +391,8 @@ export function NewAppointmentDialog({
         duration: svc.duration_minutes,
         price: Number(svc.price || 0),
       });
-      cursor = addMinutes(placed, svc.duration_minutes);
+      // No modo paralelo o cursor não avança (todos no mesmo início)
+      if (mode !== "parallel") cursor = addMinutes(placed, svc.duration_minutes);
     }
     return { items: out };
   };
@@ -412,7 +430,7 @@ export function NewAppointmentDialog({
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemsReady, date, items, totalDuration, appointments, apptServices, blocks, closures, estabWH, profsWH, professionals, allowOutsideHours, allowGap]);
+  }, [itemsReady, date, items, totalDuration, appointments, apptServices, blocks, closures, estabWH, profsWH, professionals, allowOutsideHours, mode]);
 
   // Reset chosen time if it's no longer valid
   useEffect(() => {
@@ -532,7 +550,7 @@ export function NewAppointmentDialog({
     const slot = slotsForDay.find((s) => s.time === time);
     return resolveSequence(time, date, !!slot?.outside);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [time, date, slotsForDay, items, allowGap]);
+  }, [time, date, slotsForDay, items, mode]);
 
   return (
     <>
@@ -745,27 +763,65 @@ export function NewAppointmentDialog({
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <Label>Horários disponíveis</Label>
-                  <div className="flex flex-col items-end gap-1 text-xs text-muted-foreground">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={allowGap}
-                        onChange={(e) => { setAllowGap(e.target.checked); setTime(""); }}
-                        className="h-3.5 w-3.5"
-                      />
-                      Permitir intervalo entre serviços
-                    </label>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={allowOutsideHours}
-                        onChange={(e) => { setAllowOutsideHours(e.target.checked); setTime(""); }}
-                        className="h-3.5 w-3.5"
-                      />
-                      Permitir fora do expediente
-                    </label>
-                  </div>
+                  <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={allowOutsideHours}
+                      onChange={(e) => { setAllowOutsideHours(e.target.checked); setTime(""); }}
+                      className="h-3.5 w-3.5"
+                    />
+                    Permitir fora do expediente
+                  </label>
                 </div>
+                {items.length >= 2 && (
+                  <div className="rounded-md border bg-muted/20 p-2 space-y-1">
+                    <p className="text-xs font-semibold">Como organizar a sequência?</p>
+                    <div className="flex flex-col gap-1 text-xs">
+                      <label className="flex items-start gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="seq-mode"
+                          checked={mode === "sequential"}
+                          onChange={() => { setMode("sequential"); setTime(""); }}
+                          className="mt-0.5"
+                        />
+                        <span><strong>Em sequência</strong> — um após o outro, sem pausa.</span>
+                      </label>
+                      <label className="flex items-start gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="seq-mode"
+                          checked={mode === "gap"}
+                          onChange={() => { setMode("gap"); setTime(""); }}
+                          className="mt-0.5"
+                        />
+                        <span><strong>Em sequência com pausa</strong> — aceita intervalo entre os blocos.</span>
+                      </label>
+                      <label className="flex items-start gap-2 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="seq-mode"
+                          checked={mode === "parallel"}
+                          onChange={() => { setMode("parallel"); setTime(""); }}
+                          className="mt-0.5"
+                        />
+                        <span><strong>Em paralelo</strong> — todos no mesmo horário, com profissionais diferentes.</span>
+                      </label>
+                    </div>
+                    {mode === "parallel" && (() => {
+                      const profIds = items.map((it) => it.professionalId).filter((v) => v && v !== ANY_PRO);
+                      const distinct = new Set(profIds).size === items.length && profIds.length === items.length;
+                      if (!distinct) {
+                        return (
+                          <p className="text-xs text-destructive mt-1">
+                            No modo paralelo cada bloco precisa ter um profissional específico e diferente dos demais.
+                          </p>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </div>
+                )}
                 {!itemsReady ? (
                   <p className="text-xs text-muted-foreground">
                     Preencha serviço e profissional em cada bloco para ver os horários.
@@ -776,7 +832,7 @@ export function NewAppointmentDialog({
                   </div>
                 ) : slotsForDay.length === 0 ? (
                   <p className="text-xs text-muted-foreground">
-                    Sem horários disponíveis nesta data. {allowGap ? "" : "Tente ativar \u201CPermitir intervalo\u201D."}
+                    Sem horários disponíveis nesta data. {mode === "sequential" ? "Tente \u201CCom pausa\u201D ou \u201CEm paralelo\u201D." : ""}
                   </p>
                 ) : (
                   <>

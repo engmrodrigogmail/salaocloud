@@ -77,7 +77,8 @@ export function EditAppointmentServicesDialog({
   const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");
-  const [allowGap, setAllowGap] = useState(false);
+  type SeqMode = "sequential" | "gap" | "parallel";
+  const [mode, setMode] = useState<SeqMode>("sequential");
 
   const [estabWH, setEstabWH] = useState<WH>(DEFAULT_WH);
   const [profsWH, setProfsWH] = useState<Record<string, WH>>({});
@@ -139,11 +140,29 @@ export function EditAppointmentServicesDialog({
           const first = sorted[0];
           setDate(format(parseISO(first.starts_at), "yyyy-MM-dd"));
           setTime(format(parseISO(first.starts_at), "HH:mm"));
+          // Detecta o modo a partir dos dados
+          if (sorted.length >= 2) {
+            const allParallel = sorted.every((s) => s.starts_at === first.starts_at);
+            if (allParallel) {
+              setMode("parallel");
+            } else {
+              const hasGap = sorted.some((s, i) => {
+                if (i === 0) return false;
+                const prev = sorted[i - 1];
+                const prevEnd = new Date(prev.starts_at).getTime() + prev.duration_minutes * 60000;
+                return new Date(s.starts_at).getTime() > prevEnd;
+              });
+              setMode(hasGap ? "gap" : "sequential");
+            }
+          } else {
+            setMode("sequential");
+          }
         } else if (appt) {
           // legacy: 1 serviço
           setItems([{ serviceId: appt.service_id, professionalId: appt.professional_id }]);
           setDate(format(parseISO(appt.scheduled_at), "yyyy-MM-dd"));
           setTime(format(parseISO(appt.scheduled_at), "HH:mm"));
+          setMode("sequential");
         }
         setNotes(appt?.notes || "");
       } catch (e) {
@@ -233,12 +252,22 @@ export function EditAppointmentServicesDialog({
   };
 
   const fitsSequence = (start: Date): boolean => {
+    if (mode === "parallel") {
+      for (const it of items) {
+        const svc = services.find((s) => s.id === it.serviceId);
+        if (!svc) return false;
+        const profId = it.professionalId && it.professionalId !== ANY_PRO ? it.professionalId : null;
+        if (!profId) return false;
+        if (!isBlockFree(start, svc.duration_minutes, profId)) return false;
+      }
+      return true;
+    }
     let cursor = start;
     for (const it of items) {
       const svc = services.find((s) => s.id === it.serviceId);
       if (!svc) return false;
       const profId = it.professionalId && it.professionalId !== ANY_PRO ? it.professionalId : null;
-      if (!allowGap) {
+      if (mode === "sequential") {
         if (profId) {
           if (!isBlockFree(cursor, svc.duration_minutes, profId)) return false;
         } else {
@@ -280,7 +309,11 @@ export function EditAppointmentServicesDialog({
       if (!svc) return null;
       let profId = it.professionalId;
       let placed: Date | null = null;
-      if (!allowGap) {
+      if (mode === "parallel") {
+        if (profId === ANY_PRO) return null;
+        if (!isBlockFree(start, svc.duration_minutes, profId)) return null;
+        placed = start;
+      } else if (mode === "sequential") {
         if (profId === ANY_PRO) {
           const elig = eligibleProfsFor(it.serviceId);
           const free = elig.find((p) => isBlockFree(cursor, svc.duration_minutes, p.id));
@@ -310,7 +343,7 @@ export function EditAppointmentServicesDialog({
         duration: svc.duration_minutes,
         price: Number(svc.price || 0),
       });
-      cursor = addMinutes(placed, svc.duration_minutes);
+      if (mode !== "parallel") cursor = addMinutes(placed, svc.duration_minutes);
     }
     return out;
   };
@@ -336,7 +369,7 @@ export function EditAppointmentServicesDialog({
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemsReady, date, items, totalDuration, appointments, apptServices, blocks, closures, estabWH, profsWH, allowGap]);
+  }, [itemsReady, date, items, totalDuration, appointments, apptServices, blocks, closures, estabWH, profsWH, mode]);
 
   const previewSeq = useMemo(() => {
     if (!time || !date) return null;
@@ -344,7 +377,7 @@ export function EditAppointmentServicesDialog({
     const [h, m] = time.split(":").map(Number);
     return resolveSequence(setMinutes(setHours(new Date(yy, mm - 1, dd), h), m));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [time, date, items, allowGap]);
+  }, [time, date, items, mode]);
 
   const updateItem = (idx: number, patch: Partial<Item>) => {
     setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
@@ -486,18 +519,38 @@ export function EditAppointmentServicesDialog({
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <Label>Horários disponíveis</Label>
-                <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={allowGap}
-                    onChange={(e) => { setAllowGap(e.target.checked); setTime(""); }}
-                    className="h-3.5 w-3.5"
-                  />
-                  Permitir intervalo
-                </label>
-              </div>
+              <Label>Horários disponíveis</Label>
+              {items.length >= 2 && (
+                <div className="rounded-md border bg-muted/20 p-2 space-y-1">
+                  <p className="text-xs font-semibold">Como organizar a sequência?</p>
+                  <div className="flex flex-col gap-1 text-xs">
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input type="radio" name="seq-mode-edit" checked={mode === "sequential"} onChange={() => { setMode("sequential"); setTime(""); }} className="mt-0.5" />
+                      <span><strong>Em sequência</strong> — um após o outro, sem pausa.</span>
+                    </label>
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input type="radio" name="seq-mode-edit" checked={mode === "gap"} onChange={() => { setMode("gap"); setTime(""); }} className="mt-0.5" />
+                      <span><strong>Em sequência com pausa</strong> — aceita intervalo entre os blocos.</span>
+                    </label>
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input type="radio" name="seq-mode-edit" checked={mode === "parallel"} onChange={() => { setMode("parallel"); setTime(""); }} className="mt-0.5" />
+                      <span><strong>Em paralelo</strong> — todos no mesmo horário, com profissionais diferentes.</span>
+                    </label>
+                  </div>
+                  {mode === "parallel" && (() => {
+                    const profIds = items.map((it) => it.professionalId).filter((v) => v && v !== ANY_PRO);
+                    const distinct = new Set(profIds).size === items.length && profIds.length === items.length;
+                    if (!distinct) {
+                      return (
+                        <p className="text-xs text-destructive mt-1">
+                          No modo paralelo cada bloco precisa ter um profissional específico e diferente dos demais.
+                        </p>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+              )}
               {!itemsReady ? (
                 <p className="text-xs text-muted-foreground">Preencha os blocos.</p>
               ) : slotsForDay.length === 0 ? (
