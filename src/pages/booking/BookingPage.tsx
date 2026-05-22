@@ -492,7 +492,7 @@ const BookingPage = () => {
     const start = setMinutes(setHours(selectedDate, h), m);
     return resolveSequence(start);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTime, selectedDate, items, allowGap]);
+  }, [selectedTime, selectedDate, items, mode]);
 
   const handleSubmit = async () => {
     if (!establishment || !selectedDate || !selectedTime || !itemsReady) {
