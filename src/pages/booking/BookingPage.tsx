@@ -458,7 +458,7 @@ const BookingPage = () => {
     closures,
     estabWH,
     profsWH,
-    allowGap,
+    mode,
   ]);
 
   useEffect(() => {
