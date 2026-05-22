@@ -103,7 +103,8 @@ const BookingPage = () => {
   const [items, setItems] = useState<Item[]>([{ serviceId: "", professionalId: "" }]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
-  const [allowGap, setAllowGap] = useState(false);
+  type SeqMode = "sequential" | "gap" | "parallel";
+  const [mode, setMode] = useState<SeqMode>("sequential");
 
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
