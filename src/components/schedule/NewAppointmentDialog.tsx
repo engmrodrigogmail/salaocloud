@@ -523,17 +523,7 @@ export function NewAppointmentDialog({
     }
     setSaving(true);
     try {
-      let res = await submitCreate(false);
-      if (res.ok && res.result && !res.result.success && res.result.error?.startsWith("Conflito de horário")) {
-        const proceed = window.confirm(
-          "Já existe outro agendamento para este profissional nesse horário.\n\nDeseja criar mesmo assim (sobreposição)?"
-        );
-        if (!proceed) {
-          setSaving(false);
-          return;
-        }
-        res = await submitCreate(true);
-      }
+      const res = await submitCreate(allowOverlap);
       if (!res.ok) return;
       const result = res.result;
       if (!result?.success) {
