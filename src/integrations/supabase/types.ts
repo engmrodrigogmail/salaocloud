@@ -5207,6 +5207,10 @@ export type Database = {
           read_ct: number
         }[]
       }
+      recalculate_tab_commissions: {
+        Args: { _created_at?: string; _tab_id: string }
+        Returns: number
+      }
       reset_training_sandbox: { Args: never; Returns: Json }
       seed_finance_categories: {
         Args: { _establishment_id: string }
