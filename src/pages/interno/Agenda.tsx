@@ -80,7 +80,6 @@ export default function InternoAgenda() {
   // Dialog states
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editMode, setEditMode] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [newApptOpen, setNewApptOpen] = useState(false);
   const [newApptDefaultDate, setNewApptDefaultDate] = useState<Date | undefined>();
@@ -88,12 +87,6 @@ export default function InternoAgenda() {
   const [dayScheduleOpen, setDayScheduleOpen] = useState(false);
   const [dayScheduleDate, setDayScheduleDate] = useState<Date>(new Date());
   const [selectedAppointmentTabId, setSelectedAppointmentTabId] = useState<string | null>(null);
-  // Edit form state
-  const [editDate, setEditDate] = useState("");
-  const [editTime, setEditTime] = useState("");
-  const [editServiceId, setEditServiceId] = useState("");
-  const [editProfessionalId, setEditProfessionalId] = useState("");
-  const [editNotes, setEditNotes] = useState("");
   
   // Filters
   const [filterService, setFilterService] = useState<string>("all");
@@ -326,35 +319,6 @@ export default function InternoAgenda() {
     }
   };
 
-  const handleEditAppointment = async () => {
-    if (!selectedAppointment) return;
-
-    try {
-      const scheduledAt = new Date(`${editDate}T${editTime}`);
-      const service = services.find(s => s.id === editServiceId);
-
-      const { error } = await supabase
-        .from("appointments")
-        .update({
-          scheduled_at: scheduledAt.toISOString(),
-          service_id: editServiceId,
-          professional_id: editProfessionalId,
-          duration_minutes: service?.duration_minutes || selectedAppointment.duration_minutes,
-          price: service?.price || selectedAppointment.price,
-          notes: editNotes,
-        })
-        .eq("id", selectedAppointment.id);
-
-      if (error) throw error;
-      toast.success("Agendamento atualizado");
-      fetchAppointments();
-      setEditMode(false);
-      setDialogOpen(false);
-    } catch (error) {
-      console.error("Error updating appointment:", error);
-      toast.error("Erro ao atualizar agendamento");
-    }
-  };
 
   const handleOpenTabFromAppointment = async () => {
     if (!selectedAppointment || !establishment) return;
