@@ -252,12 +252,22 @@ export function EditAppointmentServicesDialog({
   };
 
   const fitsSequence = (start: Date): boolean => {
+    if (mode === "parallel") {
+      for (const it of items) {
+        const svc = services.find((s) => s.id === it.serviceId);
+        if (!svc) return false;
+        const profId = it.professionalId && it.professionalId !== ANY_PRO ? it.professionalId : null;
+        if (!profId) return false;
+        if (!isBlockFree(start, svc.duration_minutes, profId)) return false;
+      }
+      return true;
+    }
     let cursor = start;
     for (const it of items) {
       const svc = services.find((s) => s.id === it.serviceId);
       if (!svc) return false;
       const profId = it.professionalId && it.professionalId !== ANY_PRO ? it.professionalId : null;
-      if (!allowGap) {
+      if (mode === "sequential") {
         if (profId) {
           if (!isBlockFree(cursor, svc.duration_minutes, profId)) return false;
         } else {
@@ -299,7 +309,11 @@ export function EditAppointmentServicesDialog({
       if (!svc) return null;
       let profId = it.professionalId;
       let placed: Date | null = null;
-      if (!allowGap) {
+      if (mode === "parallel") {
+        if (profId === ANY_PRO) return null;
+        if (!isBlockFree(start, svc.duration_minutes, profId)) return null;
+        placed = start;
+      } else if (mode === "sequential") {
         if (profId === ANY_PRO) {
           const elig = eligibleProfsFor(it.serviceId);
           const free = elig.find((p) => isBlockFree(cursor, svc.duration_minutes, p.id));
@@ -329,7 +343,7 @@ export function EditAppointmentServicesDialog({
         duration: svc.duration_minutes,
         price: Number(svc.price || 0),
       });
-      cursor = addMinutes(placed, svc.duration_minutes);
+      if (mode !== "parallel") cursor = addMinutes(placed, svc.duration_minutes);
     }
     return out;
   };
