@@ -527,7 +527,18 @@ export function EditAppointmentServicesDialog({
             </div>
 
             <div className="space-y-2">
-              <Label>Horários disponíveis</Label>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <Label>Horários disponíveis</Label>
+                <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={allowOverlap}
+                    onChange={(e) => { setAllowOverlap(e.target.checked); setTime(""); }}
+                  />
+                  Permitir sobreposição
+                </label>
+              </div>
+
               {items.length >= 2 && (
                 <div className="rounded-md border bg-muted/20 p-2 space-y-1">
                   <p className="text-xs font-semibold">Como organizar a sequência?</p>
