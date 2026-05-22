@@ -131,6 +131,8 @@ const ClientPortal = () => {
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [policyAccepted, setPolicyAccepted] = useState(false);
+  // Multi-serviço: lista de serviços extras (item 0 = selectedService/selectedProfessional)
+  const [extraItems, setExtraItems] = useState<Array<{ serviceId: string; professionalId: string | null }>>([]);
 
   // Filters for agenda view
   const [filterDate, setFilterDate] = useState<Date>(startOfDay(new Date()));
