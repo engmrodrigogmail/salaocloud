@@ -2284,6 +2284,7 @@ const ClientPortal = () => {
           setSelectedProfessional(null);
           setSelectedDate(null);
           setSelectedTime(null);
+          setExtraItems([]);
           setPolicyAccepted(false);
           setShowClosedMessage(false);
         }
@@ -2291,13 +2292,13 @@ const ClientPortal = () => {
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {bookingStep === 1 && "Escolha o serviço"}
-              {bookingStep === 2 && "Escolha o profissional"}
-              {bookingStep === 3 && "Escolha data e horário"}
-              {bookingStep === 4 && "Confirmar agendamento"}
+              {bookingStep === 1 && "Escolha os serviços"}
+              {bookingStep === 2 && "Escolha data e horário"}
+              {bookingStep === 3 && "Confirmar agendamento"}
             </DialogTitle>
-            <DialogDescription>Passo {bookingStep} de 4</DialogDescription>
+            <DialogDescription>Passo {bookingStep} de 3</DialogDescription>
           </DialogHeader>
+
 
           {/* Header de Resumo fixo: aparece a partir do passo 2 quando o serviço foi escolhido */}
           {bookingStep > 1 && selectedService && (
