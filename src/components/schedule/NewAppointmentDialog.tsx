@@ -82,6 +82,7 @@ export function NewAppointmentDialog({
   const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [allowOutsideHours, setAllowOutsideHours] = useState(false);
