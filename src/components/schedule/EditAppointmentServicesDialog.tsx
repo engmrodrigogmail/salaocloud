@@ -140,11 +140,29 @@ export function EditAppointmentServicesDialog({
           const first = sorted[0];
           setDate(format(parseISO(first.starts_at), "yyyy-MM-dd"));
           setTime(format(parseISO(first.starts_at), "HH:mm"));
+          // Detecta o modo a partir dos dados
+          if (sorted.length >= 2) {
+            const allParallel = sorted.every((s) => s.starts_at === first.starts_at);
+            if (allParallel) {
+              setMode("parallel");
+            } else {
+              const hasGap = sorted.some((s, i) => {
+                if (i === 0) return false;
+                const prev = sorted[i - 1];
+                const prevEnd = new Date(prev.starts_at).getTime() + prev.duration_minutes * 60000;
+                return new Date(s.starts_at).getTime() > prevEnd;
+              });
+              setMode(hasGap ? "gap" : "sequential");
+            }
+          } else {
+            setMode("sequential");
+          }
         } else if (appt) {
           // legacy: 1 serviço
           setItems([{ serviceId: appt.service_id, professionalId: appt.professional_id }]);
           setDate(format(parseISO(appt.scheduled_at), "yyyy-MM-dd"));
           setTime(format(parseISO(appt.scheduled_at), "HH:mm"));
+          setMode("sequential");
         }
         setNotes(appt?.notes || "");
       } catch (e) {
