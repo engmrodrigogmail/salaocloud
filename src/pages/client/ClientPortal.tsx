@@ -2434,8 +2434,8 @@ const ClientPortal = () => {
           )}
 
 
-          {/* Step 3: Date (Calendário Mensal) & Time */}
-          {bookingStep === 3 && selectedService && (
+          {/* Step 2: Data & Horário */}
+          {bookingStep === 2 && allItemsReady && (
             <div className="space-y-4">
               <div>
                 <Label className="mb-2 block">Data</Label>
@@ -2449,13 +2449,11 @@ const ClientPortal = () => {
                     toDate={addDays(new Date(), 60)}
                     disabled={(date) => {
                       if (isBefore(startOfDay(date), startOfDay(new Date()))) return true;
-                      // Se profissional escolhido, desabilitar dias em que ele não trabalha
-                      if (selectedProfessional) {
+                      if (bookingItems.length === 1 && selectedProfessional) {
                         if (availability.getWorkingHoursForDay(date, selectedProfessional.id) === null) {
                           return true;
                         }
                       }
-                      // Sempre desabilita dias fechados do estabelecimento
                       return !availability.isEstablishmentOpen(date);
                     }}
                     className="rounded-md border pointer-events-auto"
@@ -2482,34 +2480,51 @@ const ClientPortal = () => {
               )}
 
               {selectedDate && !showClosedMessage && (() => {
-                // Estritamente apenas slots realmente disponíveis (sem sobreposição)
-                const slots = generateAvailableSlots(
-                  selectedDate,
-                  selectedProfessional?.id || null,
-                  selectedService.duration_minutes
-                ).filter((slot) => slot.available === true);
+                // Slots compatíveis com a sequência completa de itens (sem sobreposição)
+                const wh = availability.getWorkingHoursForDay(selectedDate);
+                if (!wh) {
+                  return (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      Estabelecimento fechado nesta data.
+                    </p>
+                  );
+                }
+                const [oh, om] = wh.open.split(":").map(Number);
+                const [ch] = wh.close.split(":").map(Number);
+                const now = new Date();
+                const slots: string[] = [];
+                const startMinTotal = oh * 60 + om;
+                const endMinTotal = ch * 60;
+                for (let t = startMinTotal; t + totalDuration <= endMinTotal; t += 15) {
+                  const hour = Math.floor(t / 60);
+                  const minute = t % 60;
+                  const slotDate = setMinutes(setHours(selectedDate, hour), minute);
+                  if (isBefore(slotDate, now)) continue;
+                  const time = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+                  if (resolveSequenceAt(selectedDate, time)) slots.push(time);
+                }
 
                 return (
                   <div>
                     <Label className="mb-2 block">Horário</Label>
                     {slots.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-4">
-                        Nenhum horário disponível nesta data
+                        Nenhum horário disponível nesta data para a sequência escolhida
                       </p>
                     ) : (
                       <div className="grid grid-cols-4 gap-2">
-                        {slots.map((slot) => (
+                        {slots.map((time) => (
                           <button
-                            key={slot.time}
+                            key={time}
                             type="button"
-                            onClick={() => setSelectedTime(slot.time)}
+                            onClick={() => setSelectedTime(time)}
                             className={`px-2 py-2 rounded-md border text-sm transition-colors ${
-                              selectedTime === slot.time
+                              selectedTime === time
                                 ? "border-primary bg-primary/10"
                                 : "border-border hover:border-primary"
                             }`}
                           >
-                            {slot.time}
+                            {time}
                           </button>
                         ))}
                       </div>
@@ -2519,6 +2534,7 @@ const ClientPortal = () => {
               })()}
             </div>
           )}
+
 
           {/* Step 4: Confirm */}
           {bookingStep === 4 && selectedService && selectedDate && selectedTime && (
