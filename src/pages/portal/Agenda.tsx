@@ -888,6 +888,18 @@ export default function PortalAgenda() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {establishment && (
+        <EditAppointmentServicesDialog
+          open={editServicesOpen}
+          onOpenChange={setEditServicesOpen}
+          appointmentId={selectedAppointment?.id ?? null}
+          establishmentId={establishment.id}
+          services={services}
+          professionals={professionals}
+          onSaved={() => { fetchAppointments(); }}
+        />
+      )}
     </PortalLayout>
   );
 }
