@@ -668,7 +668,7 @@ export default function Agenda() {
                         ) : (
                           dayAppointments.map((apt) => (
                             <button
-                              key={apt.id}
+                              key={`${apt.id}-${apt._partIndex ?? 0}`}
                               onClick={() => {
                                 setSelectedAppointment(apt);
                                 setEditMode(false);
