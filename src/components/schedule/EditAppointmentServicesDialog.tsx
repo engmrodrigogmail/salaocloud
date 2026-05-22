@@ -374,7 +374,8 @@ export function EditAppointmentServicesDialog({
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemsReady, date, items, totalDuration, appointments, apptServices, blocks, closures, estabWH, profsWH, mode]);
+  }, [itemsReady, date, items, totalDuration, appointments, apptServices, blocks, closures, estabWH, profsWH, mode, allowOverlap]);
+
 
   const previewSeq = useMemo(() => {
     if (!time || !date) return null;
