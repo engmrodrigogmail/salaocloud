@@ -2536,75 +2536,98 @@ const ClientPortal = () => {
           )}
 
 
-          {/* Step 4: Confirm */}
-          {bookingStep === 4 && selectedService && selectedDate && selectedTime && (
-            <div className="space-y-3">
-              <Card>
-                <CardContent className="p-4 space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Serviço:</span>
-                    <span className="font-semibold">{selectedService.name}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-muted-foreground">Profissional:</span>
-                    {selectedProfessional ? (
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
-                          <AvatarImage
-                            src={selectedProfessional.avatar_url || undefined}
-                            alt={selectedProfessional.name}
-                          />
-                          <AvatarFallback>
-                            <User className="h-3 w-3" />
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="font-semibold">{selectedProfessional.name}</span>
-                      </div>
-                    ) : (
-                      <span className="font-semibold">Sem preferência</span>
-                    )}
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Data:</span>
-                    <span className="font-semibold">
-                      {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Horário:</span>
-                    <span className="font-semibold">{selectedTime}</span>
-                  </div>
-                  <div className="flex justify-between border-t pt-2 mt-2">
-                    <span className="text-muted-foreground">Valor:</span>
-                    <span className="font-bold text-accent">
-                      R$ {Number(selectedService.price).toFixed(2)}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
+          {/* Step 3: Confirmar */}
+          {bookingStep === 3 && allItemsReady && selectedDate && selectedTime && (() => {
+            const seq = resolveSequenceAt(selectedDate, selectedTime);
+            const rows = seq
+              ? seq.map((it) => ({
+                  serviceId: it.serviceId,
+                  professionalId: it.professionalId,
+                  duration: it.duration,
+                  startsAt: it.startsAt as Date | null,
+                  name: services.find((s) => s.id === it.serviceId)?.name || "",
+                }))
+              : bookingItems.map((it) => ({
+                  serviceId: it.serviceId,
+                  professionalId: it.professionalId,
+                  duration: it.duration,
+                  startsAt: null as Date | null,
+                  name: it.name,
+                }));
+            return (
+              <div className="space-y-3">
+                <Card>
+                  <CardContent className="p-4 space-y-3 text-sm">
+                    <div className="space-y-2">
+                      {rows.map((row, i) => {
+                        const prof = row.professionalId ? professionals.find((p) => p.id === row.professionalId) : null;
+                        return (
+                          <div key={i} className="flex justify-between gap-2 border-b pb-1.5 last:border-0 last:pb-0">
+                            <div className="min-w-0">
+                              <p className="font-semibold truncate">{row.name}</p>
+                              <p className="text-xs text-muted-foreground truncate">
+                                {prof ? prof.name : "Sem preferência"}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              {row.startsAt && (
+                                <p className="text-xs font-semibold">{format(row.startsAt, "HH:mm")}</p>
+                              )}
+                              <p className="text-xs text-muted-foreground">{row.duration}min</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span className="text-muted-foreground">Data:</span>
+                      <span className="font-semibold">
+                        {format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Início:</span>
+                      <span className="font-semibold">{selectedTime}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span className="text-muted-foreground">Total ({totalDuration}min):</span>
+                      <span className="font-bold text-accent">R$ {totalPrice.toFixed(2)}</span>
+                    </div>
+                  </CardContent>
+                </Card>
 
-              {establishment.cancellation_policy && (
-                <div className="space-y-2">
-                  <Alert>
-                    <Info className="h-4 w-4" />
-                    <AlertDescription className="text-xs whitespace-pre-wrap">
-                      {establishment.cancellation_policy}
+                {!seq && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      A sequência escolhida não cabe mais neste horário. Volte e escolha outro.
                     </AlertDescription>
                   </Alert>
-                  <div className="flex items-start gap-2">
-                    <Checkbox
-                      id="policy"
-                      checked={policyAccepted}
-                      onCheckedChange={(checked) => setPolicyAccepted(checked === true)}
-                    />
-                    <Label htmlFor="policy" className="text-xs leading-tight">
-                      Li e aceito a política de cancelamento
-                    </Label>
+                )}
+
+                {establishment.cancellation_policy && (
+                  <div className="space-y-2">
+                    <Alert>
+                      <Info className="h-4 w-4" />
+                      <AlertDescription className="text-xs whitespace-pre-wrap">
+                        {establishment.cancellation_policy}
+                      </AlertDescription>
+                    </Alert>
+                    <div className="flex items-start gap-2">
+                      <Checkbox
+                        id="policy"
+                        checked={policyAccepted}
+                        onCheckedChange={(checked) => setPolicyAccepted(checked === true)}
+                      />
+                      <Label htmlFor="policy" className="text-xs leading-tight">
+                        Li e aceito a política de cancelamento
+                      </Label>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            );
+          })()}
 
           <DialogFooter className="flex-row justify-between gap-2 sm:justify-between">
             <Button
@@ -2621,12 +2644,12 @@ const ClientPortal = () => {
               <ArrowLeft className="h-4 w-4 mr-1" />
               {bookingStep === 1 ? "Cancelar" : "Voltar"}
             </Button>
-            {bookingStep < 4 ? (
+            {bookingStep < 3 ? (
               <Button
                 onClick={() => setBookingStep(bookingStep + 1)}
                 disabled={
-                  (bookingStep === 1 && !selectedService) ||
-                  (bookingStep === 3 && (!selectedDate || !selectedTime))
+                  (bookingStep === 1 && !allItemsReady) ||
+                  (bookingStep === 2 && (!selectedDate || !selectedTime))
                 }
               >
                 Continuar
@@ -2638,6 +2661,7 @@ const ClientPortal = () => {
               </Button>
             )}
           </DialogFooter>
+
         </DialogContent>
       </Dialog>
 
