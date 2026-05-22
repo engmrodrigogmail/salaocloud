@@ -603,7 +603,7 @@ export default function Agenda() {
                           >
                             {dayAppointments.map((apt) => (
                               <button
-                                key={apt.id}
+                                key={`${apt.id}-${apt._partIndex ?? 0}`}
                                 onClick={() => {
                                   setSelectedAppointment(apt);
                                   setEditMode(false);
@@ -619,11 +619,19 @@ export default function Agenda() {
                                     : "bg-accent/20 text-accent-foreground border-accent"
                                 }`}
                               >
-                                <p className="font-semibold truncate">{apt.client_name}</p>
+                                <div className="flex items-center justify-between gap-1">
+                                  <p className="font-semibold truncate">{apt.client_name}</p>
+                                  {apt._partTotal && apt._partTotal > 1 && (
+                                    <span className="text-[9px] font-semibold bg-background/60 rounded px-1 flex-shrink-0">
+                                      {apt._partIndex}/{apt._partTotal}
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="truncate text-[10px]">{apt.services?.name}</p>
                                 <p className="truncate text-[10px]">{apt.professionals?.name}</p>
                               </button>
                             ))}
+
                           </div>
                         );
                       })}
