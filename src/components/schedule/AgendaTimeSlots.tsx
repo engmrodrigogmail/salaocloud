@@ -14,6 +14,9 @@ type Appointment = Tables<"appointments"> & {
   professionals?: { name: string } | null;
   clients?: { cpf: string | null } | null;
   confirmed_at?: string | null;
+  _partIndex?: number;
+  _partTotal?: number;
+  _partOfAppointmentId?: string;
 };
 
 type Professional = Tables<"professionals">;
@@ -229,7 +232,7 @@ export function AgendaTimeSlots({
                           const isInactive = apt.status === "cancelled" || apt.status === "no_show";
                           return (
                             <div
-                              key={apt.id}
+                              key={`${apt.id}-${apt._partIndex ?? 0}`}
                               onClick={() => onAppointmentClick(apt)}
                               className={`flex-1 min-w-[180px] max-w-[300px] p-2 rounded border-l-4 cursor-pointer hover:opacity-80 transition-opacity ${colors.bg} ${colors.border} ${isInactive ? "opacity-60" : ""}`}
                             >
@@ -242,9 +245,15 @@ export function AgendaTimeSlots({
                                   >
                                     {apt.client_name}
                                   </span>
+                                  {apt._partTotal && apt._partTotal > 1 && (
+                                    <span className="text-[9px] font-semibold bg-background/70 rounded px-1 flex-shrink-0">
+                                      {apt._partIndex}/{apt._partTotal}
+                                    </span>
+                                  )}
                                 </div>
                                 {getStatusBadge(apt.status)}
                               </div>
+
                               <div className={`text-xs mt-1 truncate ${colors.text} opacity-80`}>
                                 {apt.services?.name}
                               </div>
@@ -285,7 +294,7 @@ export function AgendaTimeSlots({
           const isInactive = apt.status === "cancelled" || apt.status === "no_show";
           return (
             <div
-              key={apt.id}
+              key={`${apt.id}-${apt._partIndex ?? 0}`}
               onClick={() => onAppointmentClick(apt)}
               className={`p-1.5 rounded border-l-2 text-xs cursor-pointer hover:opacity-80 transition-opacity ${colors.bg} ${colors.border} ${isInactive ? "opacity-60" : ""}`}
             >

@@ -34,6 +34,9 @@ type Appointment = Tables<"appointments"> & {
   services?: { name: string } | null;
   professionals?: { name: string } | null;
   clients?: { cpf: string | null } | null;
+  _partIndex?: number;
+  _partTotal?: number;
+  _partOfAppointmentId?: string;
 };
 
 export default function Agenda() {
@@ -153,7 +156,12 @@ export default function Agenda() {
           *,
           services:service_id(name),
           professionals:professional_id(name),
-          clients:client_id(cpf)
+          clients:client_id(cpf),
+          appointment_services(
+            id, service_id, professional_id, position, starts_at, duration_minutes, price,
+            services:service_id(name),
+            professionals:professional_id(name)
+          )
         `)
         .eq("establishment_id", establishmentId)
         .gte("scheduled_at", startDate.toISOString())
@@ -161,7 +169,36 @@ export default function Agenda() {
         .order("scheduled_at");
 
       if (error) throw error;
-      setAppointments(data || []);
+
+      // Expand multi-service appointments: each appointment_services row becomes
+      // a virtual card in its own professional column / time. Single-service
+      // appointments (or those without rows) keep the original behavior.
+      const expanded: any[] = [];
+      for (const apt of data || []) {
+        const parts = (apt as any).appointment_services || [];
+        if (parts.length > 1) {
+          const sorted = [...parts].sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
+          sorted.forEach((p: any, idx: number) => {
+            expanded.push({
+              ...apt,
+              scheduled_at: p.starts_at,
+              duration_minutes: p.duration_minutes,
+              price: p.price,
+              service_id: p.service_id,
+              professional_id: p.professional_id,
+              services: p.services,
+              professionals: p.professionals,
+              _partIndex: idx + 1,
+              _partTotal: sorted.length,
+              _partOfAppointmentId: apt.id,
+            });
+          });
+        } else {
+          expanded.push(apt);
+        }
+      }
+      setAppointments(expanded);
+
     } catch (error) {
       console.error("Error fetching appointments:", error);
       toast.error("Erro ao carregar agendamentos");
@@ -566,7 +603,7 @@ export default function Agenda() {
                           >
                             {dayAppointments.map((apt) => (
                               <button
-                                key={apt.id}
+                                key={`${apt.id}-${apt._partIndex ?? 0}`}
                                 onClick={() => {
                                   setSelectedAppointment(apt);
                                   setEditMode(false);
@@ -582,11 +619,19 @@ export default function Agenda() {
                                     : "bg-accent/20 text-accent-foreground border-accent"
                                 }`}
                               >
-                                <p className="font-semibold truncate">{apt.client_name}</p>
+                                <div className="flex items-center justify-between gap-1">
+                                  <p className="font-semibold truncate">{apt.client_name}</p>
+                                  {apt._partTotal && apt._partTotal > 1 && (
+                                    <span className="text-[9px] font-semibold bg-background/60 rounded px-1 flex-shrink-0">
+                                      {apt._partIndex}/{apt._partTotal}
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="truncate text-[10px]">{apt.services?.name}</p>
                                 <p className="truncate text-[10px]">{apt.professionals?.name}</p>
                               </button>
                             ))}
+
                           </div>
                         );
                       })}
@@ -623,7 +668,7 @@ export default function Agenda() {
                         ) : (
                           dayAppointments.map((apt) => (
                             <button
-                              key={apt.id}
+                              key={`${apt.id}-${apt._partIndex ?? 0}`}
                               onClick={() => {
                                 setSelectedAppointment(apt);
                                 setEditMode(false);
@@ -636,6 +681,11 @@ export default function Agenda() {
                                   <div className="flex items-center gap-2">
                                     <span className="font-semibold">{apt.client_name}</span>
                                     {getStatusBadge(apt.status)}
+                                    {apt._partTotal && apt._partTotal > 1 && (
+                                      <span className="text-[10px] font-semibold bg-muted rounded px-1.5 py-0.5">
+                                        Parte {apt._partIndex}/{apt._partTotal}
+                                      </span>
+                                    )}
                                   </div>
                                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                                     <Phone className="h-3 w-3" />
