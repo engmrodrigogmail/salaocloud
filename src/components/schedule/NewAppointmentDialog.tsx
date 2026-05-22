@@ -295,9 +295,20 @@ export function NewAppointmentDialog({
     return true;
   };
 
-  // Avalia se um horário inicial cabe (contínuo ou com gap, dependendo do flag)
+  // Avalia se um horário inicial cabe (contínuo, com gap, ou paralelo)
   const fitsSequence = (start: Date, ignoreWH: boolean): boolean => {
-    if (!allowGap) return fitsSequenceContinuous(start, ignoreWH);
+    if (mode === "parallel") {
+      // Todos os blocos começam no mesmo horário; cada profissional só precisa ter ele livre.
+      for (const it of items) {
+        const svc = services.find((s) => s.id === it.serviceId);
+        if (!svc) return false;
+        const profId = it.professionalId && it.professionalId !== ANY_PRO ? it.professionalId : null;
+        if (!profId) return false;
+        if (!isBlockFree(start, svc.duration_minutes, profId, ignoreWH)) return false;
+      }
+      return true;
+    }
+    if (mode === "sequential") return fitsSequenceContinuous(start, ignoreWH);
     // Modo com gap: para cada item, encontra o próximo slot livre >= cursor
     let cursor = start;
     for (const it of items) {
