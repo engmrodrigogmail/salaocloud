@@ -355,7 +355,12 @@ export function NewAppointmentDialog({
       let profId = it.professionalId;
       let placed: Date | null = null;
 
-      if (!allowGap) {
+      if (mode === "parallel") {
+        // todos no mesmo horário, profissional já é específico
+        if (profId === ANY_PRO) return null;
+        if (!isBlockFree(start, svc.duration_minutes, profId, ignoreWH)) return null;
+        placed = start;
+      } else if (mode === "sequential") {
         // contínuo
         if (profId === ANY_PRO) {
           const elig = eligibleProfsFor(it.serviceId);
@@ -386,7 +391,8 @@ export function NewAppointmentDialog({
         duration: svc.duration_minutes,
         price: Number(svc.price || 0),
       });
-      cursor = addMinutes(placed, svc.duration_minutes);
+      // No modo paralelo o cursor não avança (todos no mesmo início)
+      if (mode !== "parallel") cursor = addMinutes(placed, svc.duration_minutes);
     }
     return { items: out };
   };
