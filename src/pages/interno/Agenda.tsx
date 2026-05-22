@@ -30,6 +30,7 @@ import { AgendaTimeSlots } from "@/components/schedule/AgendaTimeSlots";
 import { DayScheduleDialog } from "@/components/schedule/DayScheduleDialog";
 import { NewAppointmentDialog } from "@/components/schedule/NewAppointmentDialog";
 import { TimeSelect } from "@/components/schedule/TimeSelect";
+import { EditAppointmentServicesDialog } from "@/components/schedule/EditAppointmentServicesDialog";
 
 type Client = Tables<"clients">;
 type Service = Tables<"services">;
@@ -63,6 +64,7 @@ export default function InternoAgenda() {
   const navigate = useNavigate();
   const { user, role, loading: authLoading } = useAuth();
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
+  const [editServicesOpen, setEditServicesOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -939,6 +941,9 @@ export default function InternoAgenda() {
                     <Button variant="outline" size="sm" onClick={() => openEditDialog(selectedAppointment!)}>
                       <Edit className="h-4 w-4 mr-1" /> Editar
                     </Button>
+                    <Button variant="outline" size="sm" onClick={() => { setDialogOpen(false); setEditServicesOpen(true); }}>
+                      <Edit className="h-4 w-4 mr-1" /> Editar serviços
+                    </Button>
                     <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
                       <Trash2 className="h-4 w-4 mr-1" /> Excluir
                     </Button>
@@ -993,6 +998,18 @@ export default function InternoAgenda() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {establishment && (
+        <EditAppointmentServicesDialog
+          open={editServicesOpen}
+          onOpenChange={setEditServicesOpen}
+          appointmentId={selectedAppointment?.id ?? null}
+          establishmentId={establishment.id}
+          services={services}
+          professionals={professionals}
+          onSaved={() => { fetchAppointments(); }}
+        />
+      )}
     </InternoLayout>
   );
 }
