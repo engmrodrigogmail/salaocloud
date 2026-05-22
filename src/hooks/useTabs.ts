@@ -221,8 +221,45 @@ export function useTabs(establishmentId: string | null) {
         throw error;
       }
 
-      // Insert initial service as a tab_item so the tab opens already populated
-      if (initialService && tabData.service_id) {
+      // Insert services as tab_items. If the appointment has multiple services
+      // (appointment_services), insert one item per block with the correct
+      // professional_id (so each one generates commission for the right person).
+      // Falls back to the single initialService for legacy/simple appointments.
+      let inserted = false;
+      if (appointmentId) {
+        const { data: apptSvcs } = await supabase
+          .from("appointment_services")
+          .select("service_id, professional_id, price, position, services(name)")
+          .eq("appointment_id", appointmentId)
+          .order("position", { ascending: true });
+        if (apptSvcs && apptSvcs.length > 0) {
+          const items = apptSvcs.map((it: any) => {
+            const payload: any = {
+              tab_id: (data as Tab).id,
+              item_type: "service",
+              service_id: it.service_id,
+              professional_id: it.professional_id ?? tabData.professional_id ?? null,
+              name: it.services?.name ?? "Serviço",
+              quantity: 1,
+              unit_price: Number(it.price ?? 0),
+              total_price: Number(it.price ?? 0),
+            };
+            if (tabData.is_retroactive && tabData.opened_at) {
+              payload.created_at = tabData.opened_at;
+            }
+            return payload;
+          });
+          const { error: itemsError } = await supabase.from("tab_items").insert(items);
+          if (itemsError) {
+            console.error("Error inserting multi-service tab items:", itemsError);
+            toast.warning("Comanda aberta, mas houve falha ao adicionar todos os serviços. Confira os itens.");
+          } else {
+            inserted = true;
+            await recalculateTotal((data as Tab).id);
+          }
+        }
+      }
+      if (!inserted && initialService && tabData.service_id) {
         const itemPayload: any = {
           tab_id: (data as Tab).id,
           item_type: "service",
@@ -241,10 +278,10 @@ export function useTabs(establishmentId: string | null) {
           console.error("Error inserting initial service item:", itemError);
           toast.warning("Comanda aberta, mas não foi possível adicionar o serviço inicial. Adicione manualmente.");
         } else {
-          // Recalculate totals so subtotal/total reflect the inserted service
           await recalculateTotal((data as Tab).id);
         }
       }
+
 
       toast.success("Comanda aberta com sucesso");
       await fetchTabs("open");
