@@ -787,120 +787,67 @@ export default function InternoAgenda() {
         )}
       </div>
 
-      {/* View/Edit Dialog */}
+      {/* View Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editMode ? "Editar Agendamento" : "Detalhes do Agendamento"}</DialogTitle>
+            <DialogTitle>Detalhes do Agendamento</DialogTitle>
           </DialogHeader>
-          
+
           {selectedAppointment && (
-            <>
-              {editMode ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Data</Label>
-                      <DatePickerBR value={editDate} onChange={setEditDate} className="w-full" />
-                    </div>
-                    <div>
-                      <Label>Horário</Label>
-                      <TimeSelect value={editTime} onChange={setEditTime} />
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Serviço</Label>
-                    <Select value={editServiceId} onValueChange={setEditServiceId}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {services.map(s => (
-                          <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Profissional</Label>
-                    <Select value={editProfessionalId} onValueChange={setEditProfessionalId}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {professionals.map(p => (
-                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Observações</Label>
-                    <Textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} />
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Cliente:</span>
-                    <span className="font-medium">{selectedAppointment.client_name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Telefone:</span>
-                    <span>{selectedAppointment.client_phone}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">CPF:</span>
-                    <span>{formatCpf(selectedAppointment.clients?.cpf)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Serviço:</span>
-                    <span>{selectedAppointment.services?.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Profissional:</span>
-                    <span>{selectedAppointment.professionals?.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Data/Hora:</span>
-                    <span>{format(parseISO(selectedAppointment.scheduled_at), "dd/MM/yyyy HH:mm")}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Preço:</span>
-                    <span>{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(selectedAppointment.price)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Status:</span>
-                    {getStatusBadge(selectedAppointment.status)}
-                  </div>
-                  {selectedAppointment.notes && (
-                    <div>
-                      <span className="text-muted-foreground">Observações:</span>
-                      <p className="mt-1 text-sm">{selectedAppointment.notes}</p>
-                    </div>
-                  )}
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Cliente:</span>
+                <span className="font-medium">{selectedAppointment.client_name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Telefone:</span>
+                <span>{selectedAppointment.client_phone}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">CPF:</span>
+                <span>{formatCpf(selectedAppointment.clients?.cpf)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Serviço:</span>
+                <span>{selectedAppointment.services?.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Profissional:</span>
+                <span>{selectedAppointment.professionals?.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Data/Hora:</span>
+                <span>{format(parseISO(selectedAppointment.scheduled_at), "dd/MM/yyyy HH:mm")}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Preço:</span>
+                <span>{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(selectedAppointment.price)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Status:</span>
+                {getStatusBadge(selectedAppointment.status)}
+              </div>
+              {selectedAppointment.notes && (
+                <div>
+                  <span className="text-muted-foreground">Observações:</span>
+                  <p className="mt-1 text-sm">{selectedAppointment.notes}</p>
                 </div>
               )}
-            </>
+            </div>
           )}
 
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            {editMode ? (
-              <>
-                <Button variant="outline" onClick={() => setEditMode(false)}>Cancelar</Button>
-                <Button onClick={handleEditAppointment}>Salvar</Button>
-              </>
-            ) : (
-              <>
-                {(isOwner || isManager) && (
-                  <div className="flex gap-2 w-full sm:w-auto">
-                    <Button variant="outline" size="sm" onClick={() => openEditDialog(selectedAppointment!)}>
-                      <Edit className="h-4 w-4 mr-1" /> Editar
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => { setDialogOpen(false); setEditServicesOpen(true); }}>
-                      <Edit className="h-4 w-4 mr-1" /> Editar serviços
-                    </Button>
-                    <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
-                      <Trash2 className="h-4 w-4 mr-1" /> Excluir
-                    </Button>
-                  </div>
-                )}
+            {(isOwner || isManager) && (
+              <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+                <Button variant="outline" size="sm" onClick={() => { setDialogOpen(false); setEditServicesOpen(true); }}>
+                  <Edit className="h-4 w-4 mr-1" /> Editar serviços
+                </Button>
+                <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
+                  <Trash2 className="h-4 w-4 mr-1" /> Excluir
+                </Button>
+              </div>
+            )}
                 {selectedAppointment?.status === "pending" && (
                   <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "confirmed")}>
                     <Check className="h-4 w-4 mr-1" /> Confirmar
