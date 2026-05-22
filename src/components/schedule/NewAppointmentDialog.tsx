@@ -107,7 +107,7 @@ export function NewAppointmentDialog({
     setTime(defaultTime ?? "");
     setNotes("");
     setConfirmOpen(false);
-    setAllowGap(false);
+    setMode("sequential");
   };
 
   useEffect(() => {
