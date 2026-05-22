@@ -1113,10 +1113,11 @@ const ClientPortal = () => {
     const prof = professionalId ? professionals.find((p) => p.id === professionalId) || null : null;
     setSelectedService(svc);
     setSelectedProfessional(prof);
+    setExtraItems([]);
     setSelectedDate(null);
     setSelectedTime(null);
     setPolicyAccepted(false);
-    setBookingStep(3);
+    setBookingStep(2);
     setIsBooking(true);
     setActiveTab("booking");
   };
