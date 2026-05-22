@@ -379,7 +379,11 @@ const BookingPage = () => {
       if (!svc) return null;
       let profId = it.professionalId;
       let placed: Date | null = null;
-      if (!allowGap) {
+      if (mode === "parallel") {
+        if (profId === ANY_PRO) return null;
+        if (!isBlockFree(start, svc.duration_minutes, profId)) return null;
+        placed = start;
+      } else if (mode === "sequential") {
         if (profId === ANY_PRO) {
           const elig = eligibleProfsFor(it.serviceId);
           const free = elig.find((p) => isBlockFree(cursor, svc.duration_minutes, p.id));
