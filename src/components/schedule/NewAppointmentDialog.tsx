@@ -85,6 +85,7 @@ export function NewAppointmentDialog({
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [allowOutsideHours, setAllowOutsideHours] = useState(false);
+  const [allowOverlap, setAllowOverlap] = useState(false);
   type SeqMode = "sequential" | "gap" | "parallel";
   const [mode, setMode] = useState<SeqMode>("sequential");
 
@@ -260,17 +261,19 @@ export function NewAppointmentDialog({
       const be = parseISO(b.end_time);
       if (isBefore(start, be) && isAfter(end, bs)) return false;
     }
-    for (const a of appointments) {
-      if (a.professional_id !== profId) continue;
-      const as = parseISO(a.scheduled_at);
-      const ae = addMinutes(as, a.duration_minutes);
-      if (isBefore(start, ae) && isAfter(end, as)) return false;
-    }
-    for (const s of apptServices) {
-      if (s.professional_id !== profId) continue;
-      const ss = parseISO(s.starts_at);
-      const se = addMinutes(ss, s.duration_minutes);
-      if (isBefore(start, se) && isAfter(end, ss)) return false;
+    if (!allowOverlap) {
+      for (const a of appointments) {
+        if (a.professional_id !== profId) continue;
+        const as = parseISO(a.scheduled_at);
+        const ae = addMinutes(as, a.duration_minutes);
+        if (isBefore(start, ae) && isAfter(end, as)) return false;
+      }
+      for (const s of apptServices) {
+        if (s.professional_id !== profId) continue;
+        const ss = parseISO(s.starts_at);
+        const se = addMinutes(ss, s.duration_minutes);
+        if (isBefore(start, se) && isAfter(end, ss)) return false;
+      }
     }
     return true;
   };
@@ -430,7 +433,7 @@ export function NewAppointmentDialog({
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemsReady, date, items, totalDuration, appointments, apptServices, blocks, closures, estabWH, profsWH, professionals, allowOutsideHours, mode]);
+  }, [itemsReady, date, items, totalDuration, appointments, apptServices, blocks, closures, estabWH, profsWH, professionals, allowOutsideHours, allowOverlap, mode]);
 
   // Reset chosen time if it's no longer valid
   useEffect(() => {
@@ -520,17 +523,7 @@ export function NewAppointmentDialog({
     }
     setSaving(true);
     try {
-      let res = await submitCreate(false);
-      if (res.ok && res.result && !res.result.success && res.result.error?.startsWith("Conflito de horário")) {
-        const proceed = window.confirm(
-          "Já existe outro agendamento para este profissional nesse horário.\n\nDeseja criar mesmo assim (sobreposição)?"
-        );
-        if (!proceed) {
-          setSaving(false);
-          return;
-        }
-        res = await submitCreate(true);
-      }
+      const res = await submitCreate(allowOverlap);
       if (!res.ok) return;
       const result = res.result;
       if (!result?.success) {
@@ -784,15 +777,26 @@ export function NewAppointmentDialog({
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <Label>Horários disponíveis</Label>
-                  <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground">
-                    <input
-                      type="checkbox"
-                      checked={allowOutsideHours}
-                      onChange={(e) => { setAllowOutsideHours(e.target.checked); setTime(""); }}
-                      className="h-3.5 w-3.5"
-                    />
-                    Permitir fora do expediente
-                  </label>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground">
+                      <input
+                        type="checkbox"
+                        checked={allowOutsideHours}
+                        onChange={(e) => { setAllowOutsideHours(e.target.checked); setTime(""); }}
+                        className="h-3.5 w-3.5"
+                      />
+                      Permitir fora do expediente
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground">
+                      <input
+                        type="checkbox"
+                        checked={allowOverlap}
+                        onChange={(e) => { setAllowOverlap(e.target.checked); setTime(""); }}
+                        className="h-3.5 w-3.5"
+                      />
+                      Permitir sobreposição
+                    </label>
+                  </div>
                 </div>
                 {items.length >= 2 && (
                   <div className="rounded-md border bg-muted/20 p-2 space-y-1">
