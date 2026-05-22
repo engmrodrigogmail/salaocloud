@@ -416,6 +416,7 @@ export function EditAppointmentServicesDialog({
         _appointment_id: appointmentId,
         _payload: {
           notes,
+          allow_overlap: allowOverlap,
           items: seq.map((it, idx) => ({
             service_id: it.serviceId,
             professional_id: it.professionalId,
@@ -426,6 +427,7 @@ export function EditAppointmentServicesDialog({
           })),
         } as any,
       });
+
       if (error) throw error;
       const r = data as { success: boolean; error?: string };
       if (!r?.success) {
