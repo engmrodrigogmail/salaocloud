@@ -1243,8 +1243,86 @@ const ClientPortal = () => {
     ).length;
   };
 
+  // ===== Multi-serviço: helpers =====
+  const bookingItems = useMemo(() => {
+    if (!selectedService) return [] as Array<{ serviceId: string; professionalId: string | null; duration: number; price: number; name: string }>;
+    const head = {
+      serviceId: selectedService.id,
+      professionalId: selectedProfessional?.id ?? null,
+      duration: selectedService.duration_minutes,
+      price: Number(selectedService.price ?? 0),
+      name: selectedService.name,
+    };
+    const tail = extraItems.map((it) => {
+      const svc = services.find((s) => s.id === it.serviceId);
+      return {
+        serviceId: it.serviceId,
+        professionalId: it.professionalId,
+        duration: svc?.duration_minutes ?? 0,
+        price: Number(svc?.price ?? 0),
+        name: svc?.name ?? "",
+      };
+    });
+    return [head, ...tail];
+  }, [selectedService, selectedProfessional, extraItems, services]);
+
+  const totalDuration = useMemo(
+    () => bookingItems.reduce((a, b) => a + b.duration, 0),
+    [bookingItems]
+  );
+  const totalPrice = useMemo(
+    () => bookingItems.reduce((a, b) => a + b.price, 0),
+    [bookingItems]
+  );
+  const allItemsReady =
+    bookingItems.length > 0 && bookingItems.every((i) => i.serviceId && i.duration > 0);
+
+  // Resolve sequência (encadeada) num dado horário. Retorna lista com prof concreto e startsAt, ou null.
+  const resolveSequenceAt = (date: Date, time: string) => {
+    if (!bookingItems.length) return null;
+    const [hh, mm] = time.split(":").map(Number);
+    let cursor = setMinutes(setHours(date, hh), mm);
+    const out: Array<{ serviceId: string; professionalId: string; startsAt: Date; duration: number; price: number }> = [];
+    for (const it of bookingItems) {
+      const cursorTime = format(cursor, "HH:mm");
+      let profId = it.professionalId;
+      if (!profId) {
+        const elig = getProfessionalsForService(it.serviceId);
+        const free = elig.find((p) =>
+          availability.isProfessionalAvailable(cursor, cursorTime, p.id, it.duration)
+        );
+        if (!free) return null;
+        profId = free.id;
+      } else {
+        if (!availability.isProfessionalAvailable(cursor, cursorTime, profId, it.duration)) return null;
+      }
+      out.push({
+        serviceId: it.serviceId,
+        professionalId: profId,
+        startsAt: new Date(cursor),
+        duration: it.duration,
+        price: it.price,
+      });
+      cursor = addMinutes(cursor, it.duration);
+    }
+    return out;
+  };
+
+  const updateExtraItem = (idx: number, patch: Partial<{ serviceId: string; professionalId: string | null }>) => {
+    setExtraItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
+    setSelectedTime(null);
+  };
+  const addExtraItem = () => {
+    setExtraItems((prev) => [...prev, { serviceId: "", professionalId: null }]);
+    setSelectedTime(null);
+  };
+  const removeExtraItem = (idx: number) => {
+    setExtraItems((prev) => prev.filter((_, i) => i !== idx));
+    setSelectedTime(null);
+  };
+
   const handleBookingSubmit = async () => {
-    if (!establishment || !client || !selectedService || !selectedDate || !selectedTime) {
+    if (!establishment || !client || !selectedService || !selectedDate || !selectedTime || !allItemsReady) {
       toast.error("Complete todos os campos obrigatórios");
       return;
     }
@@ -1254,52 +1332,43 @@ const ClientPortal = () => {
       return;
     }
 
-    // Find a professional - either selected or auto-assigned with load balancing
-    let professionalId = selectedProfessional?.id;
-    let assignedProfessional = selectedProfessional;
-    
-    if (!professionalId) {
-      assignedProfessional = autoAssignProfessional(
-        selectedDate, 
-        selectedTime, 
-        selectedService.id, 
-        selectedService.duration_minutes
-      );
-      
-      if (!assignedProfessional) {
-        toast.error("Não há profissionais disponíveis para este horário. Por favor, escolha outro horário.");
-        return;
-      }
-      professionalId = assignedProfessional.id;
-    } else {
-      // Verify selected professional is still available
-      if (!isProfessionalAvailable(selectedDate, selectedTime, professionalId, selectedService.duration_minutes)) {
-        toast.error("Este profissional não está mais disponível neste horário. Por favor, escolha outro horário ou profissional.");
-        return;
-      }
+    const seq = resolveSequenceAt(selectedDate, selectedTime);
+    if (!seq) {
+      toast.error("Não foi possível encaixar todos os serviços neste horário. Escolha outro horário.");
+      return;
     }
 
     setConfirming(true);
 
     try {
-      const [hours, minutes] = selectedTime.split(":").map(Number);
-      const scheduledAt = setMinutes(setHours(selectedDate, hours), minutes);
-
-      const { error } = await supabase.from("appointments").insert({
+      const payload = {
         establishment_id: establishment.id,
-        service_id: selectedService.id,
-        professional_id: professionalId,
-        scheduled_at: scheduledAt.toISOString(),
-        duration_minutes: selectedService.duration_minutes,
-        price: selectedService.price,
+        client_id: client.id,
         client_name: client.name,
         client_phone: client.phone,
         client_email: client.global_identity_email || client.email || emailToCheck.trim().toLowerCase() || null,
-        client_id: client.id,
+        notes: null,
         status: "pending",
+        items: seq.map((it, idx) => ({
+          service_id: it.serviceId,
+          professional_id: it.professionalId,
+          position: idx + 1,
+          starts_at: it.startsAt.toISOString(),
+          duration_minutes: it.duration,
+          price: it.price,
+        })),
+      };
+
+      const { data, error } = await supabase.rpc("create_appointment_with_services", {
+        _payload: payload as any,
       });
 
       if (error) throw error;
+      const result = data as { success: boolean; error?: string };
+      if (!result?.success) {
+        toast.error(result?.error || "Erro ao criar agendamento");
+        return;
+      }
 
       toast.success("Agendamento realizado com sucesso!");
       setIsBooking(false);
@@ -1308,16 +1377,18 @@ const ClientPortal = () => {
       setSelectedProfessional(null);
       setSelectedDate(null);
       setSelectedTime(null);
+      setExtraItems([]);
       setPolicyAccepted(false);
       fetchClientData(client.id);
       fetchAllAppointments();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating appointment:", error);
-      toast.error("Erro ao criar agendamento");
+      toast.error(error?.message || "Erro ao criar agendamento");
     } finally {
       setConfirming(false);
     }
   };
+
 
   // Generate dates for date picker - only show days establishment is open
   const generateDates = () => {
