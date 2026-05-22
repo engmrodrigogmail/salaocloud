@@ -79,6 +79,8 @@ export function EditAppointmentServicesDialog({
   const [notes, setNotes] = useState("");
   type SeqMode = "sequential" | "gap" | "parallel";
   const [mode, setMode] = useState<SeqMode>("sequential");
+  const [allowOverlap, setAllowOverlap] = useState(true);
+
 
   const [estabWH, setEstabWH] = useState<WH>(DEFAULT_WH);
   const [profsWH, setProfsWH] = useState<Record<string, WH>>({});
