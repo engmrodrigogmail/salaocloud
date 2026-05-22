@@ -433,7 +433,7 @@ export function NewAppointmentDialog({
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemsReady, date, items, totalDuration, appointments, apptServices, blocks, closures, estabWH, profsWH, professionals, allowOutsideHours, mode]);
+  }, [itemsReady, date, items, totalDuration, appointments, apptServices, blocks, closures, estabWH, profsWH, professionals, allowOutsideHours, allowOverlap, mode]);
 
   // Reset chosen time if it's no longer valid
   useEffect(() => {
