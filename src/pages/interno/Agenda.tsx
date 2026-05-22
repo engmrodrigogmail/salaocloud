@@ -998,6 +998,18 @@ export default function InternoAgenda() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {establishment && (
+        <EditAppointmentServicesDialog
+          open={editServicesOpen}
+          onOpenChange={setEditServicesOpen}
+          appointmentId={selectedAppointment?.id ?? null}
+          establishmentId={establishment.id}
+          services={services}
+          professionals={professionals}
+          onSaved={() => { fetchAppointments(); }}
+        />
+      )}
     </InternoLayout>
   );
 }
