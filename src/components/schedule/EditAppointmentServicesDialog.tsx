@@ -79,6 +79,8 @@ export function EditAppointmentServicesDialog({
   const [notes, setNotes] = useState("");
   type SeqMode = "sequential" | "gap" | "parallel";
   const [mode, setMode] = useState<SeqMode>("sequential");
+  const [allowOverlap, setAllowOverlap] = useState(true);
+
 
   const [estabWH, setEstabWH] = useState<WH>(DEFAULT_WH);
   const [profsWH, setProfsWH] = useState<Record<string, WH>>({});
@@ -236,18 +238,21 @@ export function EditAppointmentServicesDialog({
       const be = parseISO(b.end_time);
       if (isBefore(start, be) && isAfter(end, bs)) return false;
     }
-    for (const a of appointments) {
-      if (a.professional_id !== profId) continue;
-      const as = parseISO(a.scheduled_at);
-      const ae = addMinutes(as, a.duration_minutes);
-      if (isBefore(start, ae) && isAfter(end, as)) return false;
+    if (!allowOverlap) {
+      for (const a of appointments) {
+        if (a.professional_id !== profId) continue;
+        const as = parseISO(a.scheduled_at);
+        const ae = addMinutes(as, a.duration_minutes);
+        if (isBefore(start, ae) && isAfter(end, as)) return false;
+      }
+      for (const s of apptServices) {
+        if (s.professional_id !== profId) continue;
+        const ss = parseISO(s.starts_at);
+        const se = addMinutes(ss, s.duration_minutes);
+        if (isBefore(start, se) && isAfter(end, ss)) return false;
+      }
     }
-    for (const s of apptServices) {
-      if (s.professional_id !== profId) continue;
-      const ss = parseISO(s.starts_at);
-      const se = addMinutes(ss, s.duration_minutes);
-      if (isBefore(start, se) && isAfter(end, ss)) return false;
-    }
+
     return true;
   };
 
@@ -369,7 +374,8 @@ export function EditAppointmentServicesDialog({
     }
     return out;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [itemsReady, date, items, totalDuration, appointments, apptServices, blocks, closures, estabWH, profsWH, mode]);
+  }, [itemsReady, date, items, totalDuration, appointments, apptServices, blocks, closures, estabWH, profsWH, mode, allowOverlap]);
+
 
   const previewSeq = useMemo(() => {
     if (!time || !date) return null;
@@ -410,6 +416,7 @@ export function EditAppointmentServicesDialog({
         _appointment_id: appointmentId,
         _payload: {
           notes,
+          allow_overlap: allowOverlap,
           items: seq.map((it, idx) => ({
             service_id: it.serviceId,
             professional_id: it.professionalId,
@@ -420,6 +427,7 @@ export function EditAppointmentServicesDialog({
           })),
         } as any,
       });
+
       if (error) throw error;
       const r = data as { success: boolean; error?: string };
       if (!r?.success) {
@@ -519,7 +527,18 @@ export function EditAppointmentServicesDialog({
             </div>
 
             <div className="space-y-2">
-              <Label>Horários disponíveis</Label>
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <Label>Horários disponíveis</Label>
+                <label className="flex items-center gap-1.5 text-xs cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={allowOverlap}
+                    onChange={(e) => { setAllowOverlap(e.target.checked); setTime(""); }}
+                  />
+                  Permitir sobreposição
+                </label>
+              </div>
+
               {items.length >= 2 && (
                 <div className="rounded-md border bg-muted/20 p-2 space-y-1">
                   <p className="text-xs font-semibold">Como organizar a sequência?</p>
