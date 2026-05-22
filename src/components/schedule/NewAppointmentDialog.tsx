@@ -483,6 +483,33 @@ export function NewAppointmentDialog({
     setConfirmOpen(true);
   };
 
+  const submitCreate = async (allowOverlap: boolean) => {
+    const slot = slotsForDay.find((s) => s.time === time);
+    const seq = resolveSequence(time, date, !!slot?.outside);
+    if (!seq || !selectedClient) return { ok: false as const };
+    const payload = {
+      establishment_id: establishmentId,
+      client_id: selectedClient.id,
+      client_name: selectedClient.name,
+      client_phone: selectedClient.phone || "",
+      client_email: selectedClient.email || null,
+      notes: notes || null,
+      status: "confirmed",
+      allow_overlap: allowOverlap,
+      items: seq.items.map((it, idx) => ({
+        service_id: it.serviceId,
+        professional_id: it.professionalId,
+        position: idx + 1,
+        starts_at: it.startsAt.toISOString(),
+        duration_minutes: it.duration,
+        price: it.price,
+      })),
+    };
+    const { data, error } = await supabase.rpc("create_appointment_with_services", { _payload: payload as any });
+    if (error) throw error;
+    return { ok: true as const, result: data as { success: boolean; error?: string } };
+  };
+
   const handleConfirmCreate = async () => {
     if (!selectedClient) return;
     const slot = slotsForDay.find((s) => s.time === time);
@@ -493,26 +520,19 @@ export function NewAppointmentDialog({
     }
     setSaving(true);
     try {
-      const payload = {
-        establishment_id: establishmentId,
-        client_id: selectedClient.id,
-        client_name: selectedClient.name,
-        client_phone: selectedClient.phone || "",
-        client_email: selectedClient.email || null,
-        notes: notes || null,
-        status: "confirmed",
-        items: seq.items.map((it, idx) => ({
-          service_id: it.serviceId,
-          professional_id: it.professionalId,
-          position: idx + 1,
-          starts_at: it.startsAt.toISOString(),
-          duration_minutes: it.duration,
-          price: it.price,
-        })),
-      };
-      const { data, error } = await supabase.rpc("create_appointment_with_services", { _payload: payload as any });
-      if (error) throw error;
-      const result = data as { success: boolean; error?: string };
+      let res = await submitCreate(false);
+      if (res.ok && res.result && !res.result.success && res.result.error?.startsWith("Conflito de horário")) {
+        const proceed = window.confirm(
+          "Já existe outro agendamento para este profissional nesse horário.\n\nDeseja criar mesmo assim (sobreposição)?"
+        );
+        if (!proceed) {
+          setSaving(false);
+          return;
+        }
+        res = await submitCreate(true);
+      }
+      if (!res.ok) return;
+      const result = res.result;
       if (!result?.success) {
         toast.error(result?.error || "Erro ao criar agendamento", { position: "top-center", duration: 3000 });
         return;
@@ -528,6 +548,7 @@ export function NewAppointmentDialog({
       setSaving(false);
     }
   };
+
 
   const updateItem = (idx: number, patch: Partial<Item>) => {
     setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
