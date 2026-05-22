@@ -519,18 +519,38 @@ export function EditAppointmentServicesDialog({
             </div>
 
             <div className="space-y-2">
-              <div className="flex items-center justify-between gap-2 flex-wrap">
-                <Label>Horários disponíveis</Label>
-                <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={allowGap}
-                    onChange={(e) => { setAllowGap(e.target.checked); setTime(""); }}
-                    className="h-3.5 w-3.5"
-                  />
-                  Permitir intervalo
-                </label>
-              </div>
+              <Label>Horários disponíveis</Label>
+              {items.length >= 2 && (
+                <div className="rounded-md border bg-muted/20 p-2 space-y-1">
+                  <p className="text-xs font-semibold">Como organizar a sequência?</p>
+                  <div className="flex flex-col gap-1 text-xs">
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input type="radio" name="seq-mode-edit" checked={mode === "sequential"} onChange={() => { setMode("sequential"); setTime(""); }} className="mt-0.5" />
+                      <span><strong>Em sequência</strong> — um após o outro, sem pausa.</span>
+                    </label>
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input type="radio" name="seq-mode-edit" checked={mode === "gap"} onChange={() => { setMode("gap"); setTime(""); }} className="mt-0.5" />
+                      <span><strong>Em sequência com pausa</strong> — aceita intervalo entre os blocos.</span>
+                    </label>
+                    <label className="flex items-start gap-2 cursor-pointer">
+                      <input type="radio" name="seq-mode-edit" checked={mode === "parallel"} onChange={() => { setMode("parallel"); setTime(""); }} className="mt-0.5" />
+                      <span><strong>Em paralelo</strong> — todos no mesmo horário, com profissionais diferentes.</span>
+                    </label>
+                  </div>
+                  {mode === "parallel" && (() => {
+                    const profIds = items.map((it) => it.professionalId).filter((v) => v && v !== ANY_PRO);
+                    const distinct = new Set(profIds).size === items.length && profIds.length === items.length;
+                    if (!distinct) {
+                      return (
+                        <p className="text-xs text-destructive mt-1">
+                          No modo paralelo cada bloco precisa ter um profissional específico e diferente dos demais.
+                        </p>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+              )}
               {!itemsReady ? (
                 <p className="text-xs text-muted-foreground">Preencha os blocos.</p>
               ) : slotsForDay.length === 0 ? (
