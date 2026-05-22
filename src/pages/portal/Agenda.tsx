@@ -7,10 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DatePickerBR } from "@/components/ui/date-picker-br";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,7 +24,7 @@ import { CancelledHistoryDialog } from "@/components/schedule/CancelledHistoryDi
 import { AgendaTimeSlots } from "@/components/schedule/AgendaTimeSlots";
 import { DayScheduleDialog } from "@/components/schedule/DayScheduleDialog";
 import { NewAppointmentDialog } from "@/components/schedule/NewAppointmentDialog";
-import { TimeSelect } from "@/components/schedule/TimeSelect";
+import { EditAppointmentServicesDialog } from "@/components/schedule/EditAppointmentServicesDialog";
 import { 
   format, addDays, addMonths, addYears, startOfWeek, endOfWeek, 
   eachDayOfInterval, isSameDay, parseISO, startOfDay, startOfMonth, 
@@ -78,7 +76,7 @@ export default function PortalAgenda() {
   // Dialog states
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editMode, setEditMode] = useState(false);
+  const [editServicesOpen, setEditServicesOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [blocksRefreshKey, setBlocksRefreshKey] = useState(0);
@@ -87,13 +85,6 @@ export default function PortalAgenda() {
   const [newApptDefaultTime, setNewApptDefaultTime] = useState<string | undefined>();
   const [dayScheduleOpen, setDayScheduleOpen] = useState(false);
   const [dayScheduleDate, setDayScheduleDate] = useState<Date>(new Date());
-  
-  // Edit form state
-  const [editDate, setEditDate] = useState("");
-  const [editTime, setEditTime] = useState("");
-  const [editServiceId, setEditServiceId] = useState("");
-  const [editProfessionalId, setEditProfessionalId] = useState("");
-  const [editNotes, setEditNotes] = useState("");
   
   // Filters
   const [filterService, setFilterService] = useState<string>("all");
@@ -281,35 +272,6 @@ export default function PortalAgenda() {
     }
   };
 
-  const handleEditAppointment = async () => {
-    if (!selectedAppointment) return;
-
-    try {
-      const scheduledAt = new Date(`${editDate}T${editTime}`);
-      const service = services.find(s => s.id === editServiceId);
-
-      const { error } = await supabase
-        .from("appointments")
-        .update({
-          scheduled_at: scheduledAt.toISOString(),
-          service_id: editServiceId,
-          professional_id: editProfessionalId,
-          duration_minutes: service?.duration_minutes || selectedAppointment.duration_minutes,
-          price: service?.price || selectedAppointment.price,
-          notes: editNotes,
-        })
-        .eq("id", selectedAppointment.id);
-
-      if (error) throw error;
-      toast.success("Agendamento atualizado");
-      fetchAppointments();
-      setEditMode(false);
-      setDialogOpen(false);
-    } catch (error) {
-      console.error("Error updating appointment:", error);
-      toast.error("Erro ao atualizar agendamento");
-    }
-  };
 
   const handleOpenTabFromAppointment = async () => {
     if (!selectedAppointment || !establishment) return;
