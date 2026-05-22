@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -82,6 +82,7 @@ export function NewAppointmentDialog({
   const [time, setTime] = useState("");
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
+  const savingRef = useRef(false);
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [allowOutsideHours, setAllowOutsideHours] = useState(false);
@@ -515,12 +516,14 @@ export function NewAppointmentDialog({
 
   const handleConfirmCreate = async () => {
     if (!selectedClient) return;
+    if (savingRef.current) return;
     const slot = slotsForDay.find((s) => s.time === time);
     const seq = resolveSequence(time, date, !!slot?.outside);
     if (!seq) {
       toast.error("Não foi possível encaixar a sequência neste horário", { position: "top-center", duration: 2500 });
       return;
     }
+    savingRef.current = true;
     setSaving(true);
     try {
       const res = await submitCreate(allowOverlap);
@@ -538,6 +541,7 @@ export function NewAppointmentDialog({
       console.error("Erro ao criar agendamento", err);
       toast.error(err?.message || "Erro ao criar agendamento", { position: "top-center", duration: 3000 });
     } finally {
+      savingRef.current = false;
       setSaving(false);
     }
   };
