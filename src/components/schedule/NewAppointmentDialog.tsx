@@ -777,15 +777,26 @@ export function NewAppointmentDialog({
               <div className="space-y-2">
                 <div className="flex items-center justify-between gap-2 flex-wrap">
                   <Label>Horários disponíveis</Label>
-                  <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground">
-                    <input
-                      type="checkbox"
-                      checked={allowOutsideHours}
-                      onChange={(e) => { setAllowOutsideHours(e.target.checked); setTime(""); }}
-                      className="h-3.5 w-3.5"
-                    />
-                    Permitir fora do expediente
-                  </label>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground">
+                      <input
+                        type="checkbox"
+                        checked={allowOutsideHours}
+                        onChange={(e) => { setAllowOutsideHours(e.target.checked); setTime(""); }}
+                        className="h-3.5 w-3.5"
+                      />
+                      Permitir fora do expediente
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground">
+                      <input
+                        type="checkbox"
+                        checked={allowOverlap}
+                        onChange={(e) => { setAllowOverlap(e.target.checked); setTime(""); }}
+                        className="h-3.5 w-3.5"
+                      />
+                      Permitir sobreposição
+                    </label>
+                  </div>
                 </div>
                 {items.length >= 2 && (
                   <div className="rounded-md border bg-muted/20 p-2 space-y-1">
