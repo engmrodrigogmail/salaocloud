@@ -941,6 +941,9 @@ export default function InternoAgenda() {
                     <Button variant="outline" size="sm" onClick={() => openEditDialog(selectedAppointment!)}>
                       <Edit className="h-4 w-4 mr-1" /> Editar
                     </Button>
+                    <Button variant="outline" size="sm" onClick={() => { setDialogOpen(false); setEditServicesOpen(true); }}>
+                      <Edit className="h-4 w-4 mr-1" /> Editar serviços
+                    </Button>
                     <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
                       <Trash2 className="h-4 w-4 mr-1" /> Excluir
                     </Button>
