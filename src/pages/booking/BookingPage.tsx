@@ -317,7 +317,12 @@ const BookingPage = () => {
       if (!svc) return false;
       const profId =
         it.professionalId && it.professionalId !== ANY_PRO ? it.professionalId : null;
-      if (!allowGap) {
+      if (mode === "parallel") {
+        // Parallel: same start, distinct specific professionals required
+        if (!profId) return false;
+        if (!isBlockFree(start, svc.duration_minutes, profId)) return false;
+        // cursor does not advance
+      } else if (mode === "sequential") {
         if (profId) {
           if (!isBlockFree(cursor, svc.duration_minutes, profId)) return false;
         } else {
@@ -351,6 +356,10 @@ const BookingPage = () => {
         }
         if (!placed) return false;
       }
+    }
+    if (mode === "parallel") {
+      const ids = items.map((i) => i.professionalId);
+      if (new Set(ids).size !== ids.length) return false;
     }
     return true;
   };
