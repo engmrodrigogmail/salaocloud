@@ -131,6 +131,40 @@ export function CommissionDetailsTable({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [establishmentId, serviceFrom, serviceTo, paymentFrom, paymentTo]);
 
+  // Auto-refresh: foco da janela, retorno à aba e realtime nas comissões deste estabelecimento
+  useEffect(() => {
+    if (!establishmentId) return;
+
+    const onFocus = () => fetchData();
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") fetchData();
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisibility);
+
+    const channel = supabase
+      .channel(`commissions-tracking-${establishmentId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "professional_commissions",
+          filter: `establishment_id=eq.${establishmentId}`,
+        },
+        () => fetchData(),
+      )
+      .subscribe();
+
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [establishmentId]);
+
+
   const fetchData = async () => {
     setLoading(true);
     try {
