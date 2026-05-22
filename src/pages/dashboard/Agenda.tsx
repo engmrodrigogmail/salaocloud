@@ -34,6 +34,9 @@ type Appointment = Tables<"appointments"> & {
   services?: { name: string } | null;
   professionals?: { name: string } | null;
   clients?: { cpf: string | null } | null;
+  _partIndex?: number;
+  _partTotal?: number;
+  _partOfAppointmentId?: string;
 };
 
 export default function Agenda() {
