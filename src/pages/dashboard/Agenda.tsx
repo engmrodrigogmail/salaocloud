@@ -153,7 +153,12 @@ export default function Agenda() {
           *,
           services:service_id(name),
           professionals:professional_id(name),
-          clients:client_id(cpf)
+          clients:client_id(cpf),
+          appointment_services(
+            id, service_id, professional_id, position, starts_at, duration_minutes, price,
+            services:service_id(name),
+            professionals:professional_id(name)
+          )
         `)
         .eq("establishment_id", establishmentId)
         .gte("scheduled_at", startDate.toISOString())
@@ -161,7 +166,36 @@ export default function Agenda() {
         .order("scheduled_at");
 
       if (error) throw error;
-      setAppointments(data || []);
+
+      // Expand multi-service appointments: each appointment_services row becomes
+      // a virtual card in its own professional column / time. Single-service
+      // appointments (or those without rows) keep the original behavior.
+      const expanded: any[] = [];
+      for (const apt of data || []) {
+        const parts = (apt as any).appointment_services || [];
+        if (parts.length > 1) {
+          const sorted = [...parts].sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
+          sorted.forEach((p: any, idx: number) => {
+            expanded.push({
+              ...apt,
+              scheduled_at: p.starts_at,
+              duration_minutes: p.duration_minutes,
+              price: p.price,
+              service_id: p.service_id,
+              professional_id: p.professional_id,
+              services: p.services,
+              professionals: p.professionals,
+              _partIndex: idx + 1,
+              _partTotal: sorted.length,
+              _partOfAppointmentId: apt.id,
+            });
+          });
+        } else {
+          expanded.push(apt);
+        }
+      }
+      setAppointments(expanded);
+
     } catch (error) {
       console.error("Error fetching appointments:", error);
       toast.error("Erro ao carregar agendamentos");
