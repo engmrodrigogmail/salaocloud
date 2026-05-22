@@ -377,7 +377,7 @@ export function EditAppointmentServicesDialog({
     const [h, m] = time.split(":").map(Number);
     return resolveSequence(setMinutes(setHours(new Date(yy, mm - 1, dd), h), m));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [time, date, items, allowGap]);
+  }, [time, date, items, mode]);
 
   const updateItem = (idx: number, patch: Partial<Item>) => {
     setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, ...patch } : it)));
