@@ -5213,6 +5213,10 @@ export type Database = {
         Returns: undefined
       }
       unfreeze_tab: { Args: { _tab_id: string }; Returns: Json }
+      update_appointment_services: {
+        Args: { _appointment_id: string; _payload: Json }
+        Returns: Json
+      }
       update_professional_pin: { Args: { _pin_hash: string }; Returns: Json }
       validate_client_session: {
         Args: { _token_hash: string }
