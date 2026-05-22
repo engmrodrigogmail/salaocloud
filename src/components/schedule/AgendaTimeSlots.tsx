@@ -14,6 +14,9 @@ type Appointment = Tables<"appointments"> & {
   professionals?: { name: string } | null;
   clients?: { cpf: string | null } | null;
   confirmed_at?: string | null;
+  _partIndex?: number;
+  _partTotal?: number;
+  _partOfAppointmentId?: string;
 };
 
 type Professional = Tables<"professionals">;
