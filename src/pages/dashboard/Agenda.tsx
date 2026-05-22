@@ -681,6 +681,11 @@ export default function Agenda() {
                                   <div className="flex items-center gap-2">
                                     <span className="font-semibold">{apt.client_name}</span>
                                     {getStatusBadge(apt.status)}
+                                    {apt._partTotal && apt._partTotal > 1 && (
+                                      <span className="text-[10px] font-semibold bg-muted rounded px-1.5 py-0.5">
+                                        Parte {apt._partIndex}/{apt._partTotal}
+                                      </span>
+                                    )}
                                   </div>
                                   <p className="text-sm text-muted-foreground flex items-center gap-2">
                                     <Phone className="h-3 w-3" />
