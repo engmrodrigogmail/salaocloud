@@ -7,10 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DatePickerBR } from "@/components/ui/date-picker-br";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
@@ -26,7 +24,7 @@ import { CancelledHistoryDialog } from "@/components/schedule/CancelledHistoryDi
 import { AgendaTimeSlots } from "@/components/schedule/AgendaTimeSlots";
 import { DayScheduleDialog } from "@/components/schedule/DayScheduleDialog";
 import { NewAppointmentDialog } from "@/components/schedule/NewAppointmentDialog";
-import { TimeSelect } from "@/components/schedule/TimeSelect";
+import { EditAppointmentServicesDialog } from "@/components/schedule/EditAppointmentServicesDialog";
 import { 
   format, addDays, addMonths, addYears, startOfWeek, endOfWeek, 
   eachDayOfInterval, isSameDay, parseISO, startOfDay, startOfMonth, 
@@ -78,7 +76,7 @@ export default function PortalAgenda() {
   // Dialog states
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editMode, setEditMode] = useState(false);
+  const [editServicesOpen, setEditServicesOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [blocksRefreshKey, setBlocksRefreshKey] = useState(0);
@@ -87,13 +85,6 @@ export default function PortalAgenda() {
   const [newApptDefaultTime, setNewApptDefaultTime] = useState<string | undefined>();
   const [dayScheduleOpen, setDayScheduleOpen] = useState(false);
   const [dayScheduleDate, setDayScheduleDate] = useState<Date>(new Date());
-  
-  // Edit form state
-  const [editDate, setEditDate] = useState("");
-  const [editTime, setEditTime] = useState("");
-  const [editServiceId, setEditServiceId] = useState("");
-  const [editProfessionalId, setEditProfessionalId] = useState("");
-  const [editNotes, setEditNotes] = useState("");
   
   // Filters
   const [filterService, setFilterService] = useState<string>("all");
@@ -281,35 +272,6 @@ export default function PortalAgenda() {
     }
   };
 
-  const handleEditAppointment = async () => {
-    if (!selectedAppointment) return;
-
-    try {
-      const scheduledAt = new Date(`${editDate}T${editTime}`);
-      const service = services.find(s => s.id === editServiceId);
-
-      const { error } = await supabase
-        .from("appointments")
-        .update({
-          scheduled_at: scheduledAt.toISOString(),
-          service_id: editServiceId,
-          professional_id: editProfessionalId,
-          duration_minutes: service?.duration_minutes || selectedAppointment.duration_minutes,
-          price: service?.price || selectedAppointment.price,
-          notes: editNotes,
-        })
-        .eq("id", selectedAppointment.id);
-
-      if (error) throw error;
-      toast.success("Agendamento atualizado");
-      fetchAppointments();
-      setEditMode(false);
-      setDialogOpen(false);
-    } catch (error) {
-      console.error("Error updating appointment:", error);
-      toast.error("Erro ao atualizar agendamento");
-    }
-  };
 
   const handleOpenTabFromAppointment = async () => {
     if (!selectedAppointment || !establishment) return;
@@ -395,18 +357,6 @@ export default function PortalAgenda() {
 
   const openViewDialog = (apt: Appointment) => {
     setSelectedAppointment(apt);
-    setEditMode(false);
-    setDialogOpen(true);
-  };
-
-  const openEditDialog = (apt: Appointment) => {
-    setSelectedAppointment(apt);
-    setEditDate(format(parseISO(apt.scheduled_at), "yyyy-MM-dd"));
-    setEditTime(format(parseISO(apt.scheduled_at), "HH:mm"));
-    setEditServiceId(apt.service_id);
-    setEditProfessionalId(apt.professional_id);
-    setEditNotes(apt.notes || "");
-    setEditMode(true);
     setDialogOpen(true);
   };
 
@@ -823,154 +773,102 @@ export default function PortalAgenda() {
         )}
       </div>
 
-      {/* View/Edit Dialog */}
+      {/* View Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editMode ? "Editar Agendamento" : "Detalhes do Agendamento"}</DialogTitle>
+            <DialogTitle>Detalhes do Agendamento</DialogTitle>
           </DialogHeader>
-          
+
           {selectedAppointment && (
-            <>
-              {editMode ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>Data</Label>
-                      <DatePickerBR value={editDate} onChange={setEditDate} className="w-full" />
-                    </div>
-                    <div>
-                      <Label>Horário</Label>
-                      <TimeSelect value={editTime} onChange={setEditTime} />
-                    </div>
-                  </div>
-                  <div>
-                    <Label>Serviço</Label>
-                    <Select value={editServiceId} onValueChange={setEditServiceId}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {services.map(s => (
-                          <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Profissional</Label>
-                    <Select value={editProfessionalId} onValueChange={setEditProfessionalId}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {professionals.map(p => (
-                          <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div>
-                    <Label>Observações</Label>
-                    <Textarea value={editNotes} onChange={(e) => setEditNotes(e.target.value)} />
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Cliente:</span>
-                    {selectedAppointment.client_id ? (
-                      <button
-                        onClick={() => navigate(`/portal/${slug}/clientes/${selectedAppointment.client_id}`, { state: { from: "agenda" } })}
-                        className="font-medium text-primary hover:underline text-right"
-                      >
-                        {selectedAppointment.client_name}
-                      </button>
-                    ) : (
-                      <span className="font-medium">{selectedAppointment.client_name}</span>
-                    )}
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Telefone:</span>
-                    <span>{selectedAppointment.client_phone}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">CPF:</span>
-                    <span>{formatCpf(selectedAppointment.clients?.cpf)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Serviço:</span>
-                    <span>{selectedAppointment.services?.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Profissional:</span>
-                    <span>{selectedAppointment.professionals?.name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Data/Hora:</span>
-                    <span>{format(parseISO(selectedAppointment.scheduled_at), "dd/MM/yyyy HH:mm")}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Preço:</span>
-                    <span>{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(selectedAppointment.price)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Status:</span>
-                    {getStatusBadge(selectedAppointment.status)}
-                  </div>
-                  {selectedAppointment.notes && (
-                    <div>
-                      <span className="text-muted-foreground">Observações:</span>
-                      <p className="mt-1 text-sm">{selectedAppointment.notes}</p>
-                    </div>
-                  )}
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Cliente:</span>
+                {selectedAppointment.client_id ? (
+                  <button
+                    onClick={() => navigate(`/portal/${slug}/clientes/${selectedAppointment.client_id}`, { state: { from: "agenda" } })}
+                    className="font-medium text-primary hover:underline text-right"
+                  >
+                    {selectedAppointment.client_name}
+                  </button>
+                ) : (
+                  <span className="font-medium">{selectedAppointment.client_name}</span>
+                )}
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Telefone:</span>
+                <span>{selectedAppointment.client_phone}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">CPF:</span>
+                <span>{formatCpf(selectedAppointment.clients?.cpf)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Serviço:</span>
+                <span>{selectedAppointment.services?.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Profissional:</span>
+                <span>{selectedAppointment.professionals?.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Data/Hora:</span>
+                <span>{format(parseISO(selectedAppointment.scheduled_at), "dd/MM/yyyy HH:mm")}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Preço:</span>
+                <span>{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(selectedAppointment.price)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Status:</span>
+                {getStatusBadge(selectedAppointment.status)}
+              </div>
+              {selectedAppointment.notes && (
+                <div>
+                  <span className="text-muted-foreground">Observações:</span>
+                  <p className="mt-1 text-sm">{selectedAppointment.notes}</p>
                 </div>
               )}
-            </>
+            </div>
           )}
 
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            {editMode ? (
-              <>
-                <Button variant="outline" onClick={() => setEditMode(false)}>Cancelar</Button>
-                <Button onClick={handleEditAppointment}>Salvar</Button>
-              </>
-            ) : (
-              <>
-                <div className="flex gap-2 w-full sm:w-auto">
-                  <Button variant="outline" size="sm" onClick={() => openEditDialog(selectedAppointment!)}>
-                    <Edit className="h-4 w-4 mr-1" /> Editar
-                  </Button>
-                  <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
-                    <Trash2 className="h-4 w-4 mr-1" /> Excluir
-                  </Button>
-                </div>
-                {selectedAppointment?.status === "pending" && (
-                  <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "confirmed")}>
-                    <Check className="h-4 w-4 mr-1" /> Confirmar
-                  </Button>
-                )}
-                {(selectedAppointment?.status === "pending" || selectedAppointment?.status === "confirmed") && (
-                  <Button size="sm" variant="secondary" onClick={handleOpenTabFromAppointment}>
-                    <Receipt className="h-4 w-4 mr-1" /> Abrir comanda
-                  </Button>
-                )}
-                {selectedAppointment?.status === "confirmed" && (
-                  <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "completed")}>
-                    <Check className="h-4 w-4 mr-1" /> Concluir
-                  </Button>
-                )}
-                {selectedAppointment?.status === "in_service" && (
-                  <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "completed")}>
-                    <Check className="h-4 w-4 mr-1" /> Finalizar Atendimento
-                  </Button>
-                )}
-                {(selectedAppointment?.status === "pending" || selectedAppointment?.status === "confirmed") && (
-                  <Button size="sm" variant="outline" className="border-orange-300 text-orange-700 hover:bg-orange-50" onClick={() => updateAppointmentStatus(selectedAppointment.id, "no_show")}>
-                    <X className="h-4 w-4 mr-1" /> Marcou falta
-                  </Button>
-                )}
-                <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
-                  <X className="h-4 w-4 mr-1" /> Fechar
-                </Button>
-              </>
+            <div className="flex gap-2 w-full sm:w-auto flex-wrap">
+              <Button variant="outline" size="sm" onClick={() => { setDialogOpen(false); setEditServicesOpen(true); }}>
+                <Edit className="h-4 w-4 mr-1" /> Editar serviços
+              </Button>
+              <Button variant="destructive" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
+                <Trash2 className="h-4 w-4 mr-1" /> Excluir
+              </Button>
+            </div>
+            {selectedAppointment?.status === "pending" && (
+              <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "confirmed")}>
+                <Check className="h-4 w-4 mr-1" /> Confirmar
+              </Button>
             )}
+            {(selectedAppointment?.status === "pending" || selectedAppointment?.status === "confirmed") && (
+              <Button size="sm" variant="secondary" onClick={handleOpenTabFromAppointment}>
+                <Receipt className="h-4 w-4 mr-1" /> Abrir comanda
+              </Button>
+            )}
+            {selectedAppointment?.status === "confirmed" && (
+              <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "completed")}>
+                <Check className="h-4 w-4 mr-1" /> Concluir
+              </Button>
+            )}
+            {selectedAppointment?.status === "in_service" && (
+              <Button size="sm" onClick={() => updateAppointmentStatus(selectedAppointment.id, "completed")}>
+                <Check className="h-4 w-4 mr-1" /> Finalizar Atendimento
+              </Button>
+            )}
+            {(selectedAppointment?.status === "pending" || selectedAppointment?.status === "confirmed") && (
+              <Button size="sm" variant="outline" className="border-orange-300 text-orange-700 hover:bg-orange-50" onClick={() => updateAppointmentStatus(selectedAppointment.id, "no_show")}>
+                <X className="h-4 w-4 mr-1" /> Marcou falta
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
+              <X className="h-4 w-4 mr-1" /> Fechar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -990,6 +888,18 @@ export default function PortalAgenda() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {establishment && (
+        <EditAppointmentServicesDialog
+          open={editServicesOpen}
+          onOpenChange={setEditServicesOpen}
+          appointmentId={selectedAppointment?.id ?? null}
+          establishmentId={establishment.id}
+          services={services}
+          professionals={professionals}
+          onSaved={() => { fetchAppointments(); }}
+        />
+      )}
     </PortalLayout>
   );
 }
