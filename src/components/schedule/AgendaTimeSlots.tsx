@@ -294,7 +294,7 @@ export function AgendaTimeSlots({
           const isInactive = apt.status === "cancelled" || apt.status === "no_show";
           return (
             <div
-              key={apt.id}
+              key={`${apt.id}-${apt._partIndex ?? 0}`}
               onClick={() => onAppointmentClick(apt)}
               className={`p-1.5 rounded border-l-2 text-xs cursor-pointer hover:opacity-80 transition-opacity ${colors.bg} ${colors.border} ${isInactive ? "opacity-60" : ""}`}
             >
