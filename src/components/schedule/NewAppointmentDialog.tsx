@@ -85,6 +85,7 @@ export function NewAppointmentDialog({
   const [newClientOpen, setNewClientOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [allowOutsideHours, setAllowOutsideHours] = useState(false);
+  const [allowOverlap, setAllowOverlap] = useState(false);
   type SeqMode = "sequential" | "gap" | "parallel";
   const [mode, setMode] = useState<SeqMode>("sequential");
 
