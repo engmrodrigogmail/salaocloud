@@ -36,6 +36,8 @@ import { ptBR } from "date-fns/locale";
 interface Commission {
   id: string;
   professional_id: string;
+  tab_item_id: string | null;
+  commission_rule_id: string | null;
   commission_amount: number;
   reference_value: number;
   description: string | null;
@@ -45,7 +47,7 @@ interface Commission {
   paid_at: string | null;
   professionals: { name: string } | null;
   commission_rules: { name: string; commission_type: string; commission_value: number } | null;
-  tab_items: { name: string; quantity: number } | null;
+  tab_items: { name: string; quantity: number; total_price: number | null } | null;
 }
 
 interface Professional {
