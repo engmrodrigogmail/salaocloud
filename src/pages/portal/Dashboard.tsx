@@ -327,14 +327,14 @@ export default function PortalDashboard() {
                 <span className="text-xs text-muted-foreground">no-shows</span>
               </div>
               <div className="pt-2 border-t">
-                <div className="text-sm font-semibold">{fmtBRL(stats.theoreticalRevenue)}</div>
+                <div className="text-sm font-semibold">{money(stats.theoreticalRevenue)}</div>
                 <p className="text-[11px] text-muted-foreground italic mb-1">
                   Receita prevista do período (todos os agendamentos, exceto faltas e cancelados)
                 </p>
                 <div className="space-y-0.5 text-[11px] text-muted-foreground">
-                  <div className="flex justify-between"><span>Concluídos</span><span className="tabular-nums">{fmtBRL(stats.theoreticalBreakdown.completed)}</span></div>
-                  <div className="flex justify-between"><span>Em atendimento</span><span className="tabular-nums">{fmtBRL(stats.theoreticalBreakdown.inService)}</span></div>
-                  <div className="flex justify-between"><span>Pendentes / Confirmados</span><span className="tabular-nums">{fmtBRL(stats.theoreticalBreakdown.upcoming)}</span></div>
+                  <div className="flex justify-between"><span>Concluídos</span><span className="tabular-nums">{money(stats.theoreticalBreakdown.completed)}</span></div>
+                  <div className="flex justify-between"><span>Em atendimento</span><span className="tabular-nums">{money(stats.theoreticalBreakdown.inService)}</span></div>
+                  <div className="flex justify-between"><span>Pendentes / Confirmados</span><span className="tabular-nums">{money(stats.theoreticalBreakdown.upcoming)}</span></div>
                 </div>
               </div>
             </CardContent>
