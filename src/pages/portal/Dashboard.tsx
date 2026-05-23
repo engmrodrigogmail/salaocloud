@@ -51,6 +51,8 @@ export default function PortalDashboard() {
   const [customFrom, setCustomFrom] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
   const [customTo, setCustomTo] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
   const range = usePeriodRange(period, customFrom, customTo);
+  const [showFinancials, setShowFinancials] = useState(false);
+  const money = (n: number) => (showFinancials ? fmtBRL(n) : "***");
   const [stats, setStats] = useState({
     periodAppointments: 0,
     todayAppointments: 0,
