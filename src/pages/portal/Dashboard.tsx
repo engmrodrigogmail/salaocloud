@@ -271,7 +271,20 @@ export default function PortalDashboard() {
         
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl font-bold">Dashboard</h1>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowFinancials((v) => !v)}
+                aria-label={showFinancials ? "Ocultar valores financeiros" : "Mostrar valores financeiros"}
+                title={showFinancials ? "Ocultar valores financeiros" : "Mostrar valores financeiros"}
+              >
+                {showFinancials ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </Button>
+            </div>
             <p className="text-muted-foreground">
               Visão geral do {establishment?.name} <span className="text-xs">({range.label})</span>
             </p>
