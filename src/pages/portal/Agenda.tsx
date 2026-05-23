@@ -91,6 +91,19 @@ export default function PortalAgenda() {
   const [filterProfessional, setFilterProfessional] = useState<string>("all");
   const [filterSearch, setFilterSearch] = useState("");
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const [cleaningDuplicates, setCleaningDuplicates] = useState(false);
+  const [appointmentStats, setAppointmentStats] = useState({
+    total: 0,
+    confirmed: 0,
+    pending: 0,
+    cancelled: 0,
+    in_service: 0,
+    completed: 0,
+    no_show: 0,
+    duplicates: 0,
+  });
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate(`/auth?redirect=/portal/${slug}/agenda`);
