@@ -21,6 +21,8 @@ import {
   Wallet,
   Receipt,
   CalendarX,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
