@@ -62,6 +62,13 @@ Deno.serve(async (req) => {
       .eq("id", tab.id);
     if (updErr) throw updErr;
 
+    // Regenerate pending commissions (paid ones are preserved by the RPC)
+    try {
+      await admin.rpc("recalculate_tab_commissions", { _tab_id: tab.id });
+    } catch (e) {
+      console.error("recalculate_tab_commissions failed:", e);
+    }
+
     // Stamp most recent deletion record
     const { data: lastDel } = await admin
       .from("tab_deletions")
