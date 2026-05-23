@@ -21,6 +21,8 @@ import {
   Wallet,
   Receipt,
   CalendarX,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -49,6 +51,8 @@ export default function PortalDashboard() {
   const [customFrom, setCustomFrom] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
   const [customTo, setCustomTo] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
   const range = usePeriodRange(period, customFrom, customTo);
+  const [showFinancials, setShowFinancials] = useState(false);
+  const money = (n: number) => (showFinancials ? fmtBRL(n) : "***");
   const [stats, setStats] = useState({
     periodAppointments: 0,
     todayAppointments: 0,
@@ -267,7 +271,20 @@ export default function PortalDashboard() {
         
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-3xl font-bold">Dashboard</h1>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowFinancials((v) => !v)}
+                aria-label={showFinancials ? "Ocultar valores financeiros" : "Mostrar valores financeiros"}
+                title={showFinancials ? "Ocultar valores financeiros" : "Mostrar valores financeiros"}
+              >
+                {showFinancials ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </Button>
+            </div>
             <p className="text-muted-foreground">
               Visão geral do {establishment?.name} <span className="text-xs">({range.label})</span>
             </p>
@@ -310,14 +327,14 @@ export default function PortalDashboard() {
                 <span className="text-xs text-muted-foreground">no-shows</span>
               </div>
               <div className="pt-2 border-t">
-                <div className="text-sm font-semibold">{fmtBRL(stats.theoreticalRevenue)}</div>
+                <div className="text-sm font-semibold">{money(stats.theoreticalRevenue)}</div>
                 <p className="text-[11px] text-muted-foreground italic mb-1">
                   Receita prevista do período (todos os agendamentos, exceto faltas e cancelados)
                 </p>
                 <div className="space-y-0.5 text-[11px] text-muted-foreground">
-                  <div className="flex justify-between"><span>Concluídos</span><span className="tabular-nums">{fmtBRL(stats.theoreticalBreakdown.completed)}</span></div>
-                  <div className="flex justify-between"><span>Em atendimento</span><span className="tabular-nums">{fmtBRL(stats.theoreticalBreakdown.inService)}</span></div>
-                  <div className="flex justify-between"><span>Pendentes / Confirmados</span><span className="tabular-nums">{fmtBRL(stats.theoreticalBreakdown.upcoming)}</span></div>
+                  <div className="flex justify-between"><span>Concluídos</span><span className="tabular-nums">{money(stats.theoreticalBreakdown.completed)}</span></div>
+                  <div className="flex justify-between"><span>Em atendimento</span><span className="tabular-nums">{money(stats.theoreticalBreakdown.inService)}</span></div>
+                  <div className="flex justify-between"><span>Pendentes / Confirmados</span><span className="tabular-nums">{money(stats.theoreticalBreakdown.upcoming)}</span></div>
                 </div>
               </div>
             </CardContent>
@@ -330,7 +347,7 @@ export default function PortalDashboard() {
             </CardHeader>
             <CardContent className="space-y-2">
               <div>
-                <div className="text-2xl font-bold">{fmtBRL(stats.periodRevenue)}</div>
+                <div className="text-2xl font-bold">{money(stats.periodRevenue)}</div>
                 <p className="text-xs text-muted-foreground">comandas fechadas no período</p>
               </div>
               <div className="flex items-center gap-2 pt-2 border-t">
@@ -348,12 +365,12 @@ export default function PortalDashboard() {
             </CardHeader>
             <CardContent className="space-y-1">
               <div className={`text-2xl font-bold ${stats.cashInflow - stats.cashOutflow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                {fmtBRL(stats.cashInflow - stats.cashOutflow)}
+                {money(stats.cashInflow - stats.cashOutflow)}
               </div>
               <p className="text-[11px] text-muted-foreground">entradas − saídas no período</p>
               <div className="pt-2 border-t text-xs space-y-0.5">
-                <div className="flex justify-between"><span className="text-muted-foreground">Entradas</span><span className="font-medium text-emerald-600">{fmtBRL(stats.cashInflow)}</span></div>
-                <div className="flex justify-between"><span className="text-muted-foreground">Saídas</span><span className="font-medium text-red-600">{fmtBRL(stats.cashOutflow)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Entradas</span><span className="font-medium text-emerald-600">{money(stats.cashInflow)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Saídas</span><span className="font-medium text-red-600">{money(stats.cashOutflow)}</span></div>
               </div>
             </CardContent>
           </Card>
@@ -364,14 +381,14 @@ export default function PortalDashboard() {
               <Receipt className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="text-2xl font-bold text-red-600">{fmtBRL(stats.expensesPaid)}</div>
+              <div className="text-2xl font-bold text-red-600">{money(stats.expensesPaid)}</div>
               <p className="text-xs text-muted-foreground">despesas pagas (fluxo de caixa)</p>
               {stats.expensesByCategory.length > 0 ? (
                 <div className="pt-2 border-t space-y-1 max-h-40 overflow-y-auto">
                   {stats.expensesByCategory.map((c) => (
                     <div key={c.name} className="flex justify-between text-xs">
                       <span className="text-muted-foreground truncate pr-2">{c.name}</span>
-                      <span className="font-medium">{fmtBRL(c.total)}</span>
+                      <span className="font-medium">{money(c.total)}</span>
                     </div>
                   ))}
                 </div>
@@ -388,7 +405,7 @@ export default function PortalDashboard() {
             </CardHeader>
             <CardContent>
               <div className={`text-2xl font-bold ${stats.commissionsPending > 0 ? "text-orange-600" : ""}`}>
-                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(stats.commissionsPending)}
+                {money(stats.commissionsPending)}
               </div>
               <p className="text-xs text-muted-foreground">a acertar com profissionais</p>
             </CardContent>
@@ -401,7 +418,7 @@ export default function PortalDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-emerald-600">
-                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(stats.commissionsPaid)}
+                {money(stats.commissionsPaid)}
               </div>
               <p className="text-xs text-muted-foreground">saída de caixa no período</p>
             </CardContent>
