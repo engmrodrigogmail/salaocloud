@@ -418,7 +418,7 @@ export default function PortalDashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-emerald-600">
-                {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(stats.commissionsPaid)}
+                {money(stats.commissionsPaid)}
               </div>
               <p className="text-xs text-muted-foreground">saída de caixa no período</p>
             </CardContent>
