@@ -36,6 +36,8 @@ import { ptBR } from "date-fns/locale";
 interface Commission {
   id: string;
   professional_id: string;
+  tab_item_id: string | null;
+  commission_rule_id: string | null;
   commission_amount: number;
   reference_value: number;
   description: string | null;
@@ -45,7 +47,7 @@ interface Commission {
   paid_at: string | null;
   professionals: { name: string } | null;
   commission_rules: { name: string; commission_type: string; commission_value: number } | null;
-  tab_items: { name: string; quantity: number } | null;
+  tab_items: { name: string; quantity: number; total_price: number | null } | null;
 }
 
 interface Professional {
@@ -101,7 +103,7 @@ export function CommissionReportTab({ establishmentId }: CommissionReportTabProp
           *,
           professionals:professional_id(name),
           commission_rules:commission_rule_id(name, commission_type, commission_value),
-          tab_items:tab_item_id(name, quantity)
+          tab_items:tab_item_id(name, quantity, total_price)
         `)
         .eq("establishment_id", establishmentId)
         .gte("created_at", `${dateFrom}T00:00:00`)
@@ -398,6 +400,139 @@ export function CommissionReportTab({ establishmentId }: CommissionReportTabProp
           </CardContent>
         </Card>
       )}
+
+      {/* Reconciliação / Drill-down */}
+      {commissions.length > 0 && (() => {
+        const byItem = new Map<string, { name: string; itemTotal: number; rows: Commission[] }>();
+        let orphan = 0;
+        for (const c of commissions) {
+          if (!c.tab_item_id) { orphan += 1; continue; }
+          const key = c.tab_item_id;
+          if (!byItem.has(key)) {
+            byItem.set(key, {
+              name: c.tab_items?.name || "Item",
+              itemTotal: Number(c.tab_items?.total_price ?? 0),
+              rows: [],
+            });
+          }
+          byItem.get(key)!.rows.push(c);
+        }
+        const distinctItems = byItem.size;
+        const duplicated = Array.from(byItem.entries()).filter(([, v]) => v.rows.length > 1);
+        const sumItems = Array.from(byItem.values()).reduce((s, v) => s + v.itemTotal, 0);
+        const sumReference = commissions.reduce((s, c) => s + c.reference_value, 0);
+        const inflation = sumReference - sumItems;
+        return (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Reconciliação (drill-down)
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1">
+                Mostra de onde vêm os totais e por que o "Valor Referência" pode ser maior que o
+                valor real dos itens da comanda — itens com mais de uma comissão (ex.: profissional + assistente)
+                somam a referência mais de uma vez.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                <div className="rounded-lg border p-3">
+                  <p className="text-muted-foreground text-xs">Itens distintos</p>
+                  <p className="text-xl font-bold">{distinctItems}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-muted-foreground text-xs">Comissões geradas</p>
+                  <p className="text-xl font-bold">{commissions.length}</p>
+                  {commissions.length > distinctItems && (
+                    <p className="text-xs text-orange-500">
+                      +{commissions.length - distinctItems} extras (multi-regra)
+                    </p>
+                  )}
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-muted-foreground text-xs">Soma itens (real)</p>
+                  <p className="text-xl font-bold">{formatCurrency(sumItems)}</p>
+                </div>
+                <div className="rounded-lg border p-3">
+                  <p className="text-muted-foreground text-xs">Soma referências</p>
+                  <p className="text-xl font-bold">{formatCurrency(sumReference)}</p>
+                  {Math.abs(inflation) > 0.01 && (
+                    <p className="text-xs text-orange-500">
+                      {inflation > 0 ? "+" : ""}{formatCurrency(inflation)} de duplicação
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {orphan > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {orphan} comissão(ões) sem item de comanda vinculado (avulsas/manuais).
+                </p>
+              )}
+
+              {duplicated.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Nenhum item gerou mais de uma comissão no período. ✓
+                </p>
+              ) : (
+                <div>
+                  <p className="text-sm font-medium mb-2">
+                    Itens com múltiplas comissões ({duplicated.length})
+                  </p>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Item</TableHead>
+                          <TableHead className="text-right">Valor item</TableHead>
+                          <TableHead className="text-center">Comissões</TableHead>
+                          <TableHead>Profissionais / Regras</TableHead>
+                          <TableHead className="text-right">Soma referências</TableHead>
+                          <TableHead className="text-right">Soma comissões</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {duplicated.map(([itemId, v]) => {
+                          const sumRef = v.rows.reduce((s, r) => s + r.reference_value, 0);
+                          const sumComm = v.rows.reduce((s, r) => s + r.commission_amount, 0);
+                          return (
+                            <TableRow key={itemId}>
+                              <TableCell className="font-medium">{v.name}</TableCell>
+                              <TableCell className="text-right">{formatCurrency(v.itemTotal)}</TableCell>
+                              <TableCell className="text-center">{v.rows.length}</TableCell>
+                              <TableCell>
+                                <ul className="text-xs space-y-1">
+                                  {v.rows.map((r) => (
+                                    <li key={r.id}>
+                                      <span className="font-medium">{r.professionals?.name || "—"}</span>
+                                      {" · "}
+                                      <span className="text-muted-foreground">
+                                        {r.commission_rules?.name || "comissão específica"}
+                                      </span>
+                                      {" → "}
+                                      {formatCurrency(r.commission_amount)}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </TableCell>
+                              <TableCell className="text-right">{formatCurrency(sumRef)}</TableCell>
+                              <TableCell className="text-right font-semibold">
+                                {formatCurrency(sumComm)}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
+
 
       {/* Detailed List */}
       <Card>
