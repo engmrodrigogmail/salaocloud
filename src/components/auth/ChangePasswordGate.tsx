@@ -151,12 +151,24 @@ export function ChangePasswordGate({ children }: ChangePasswordGateProps) {
 
             <div className="space-y-1.5">
               <Label className="text-sm">Confirmar senha</Label>
-              <Input
-                type={showPwd ? "text" : "password"}
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={saving}
-              />
+              <div className="relative">
+                <Input
+                  type={showPwd2 ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={saving}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd2((v) => !v)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  tabIndex={-1}
+                  aria-label={showPwd2 ? "Ocultar senha" : "Mostrar senha"}
+                >
+                  {showPwd2 ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
 
             <Button onClick={handleSubmit} disabled={saving} className="w-full">
