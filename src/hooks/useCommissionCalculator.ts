@@ -228,20 +228,49 @@ export function useCommissionCalculator(establishmentId: string | null) {
 
     const commissions: CalculatedCommission[] = [];
 
+    // Per-item helper: decide whether THIS item's commission should be reduced
+    const shouldReduceCommissionForItem = (item: TabItem): boolean => {
+      if (totalDiscount <= 0) return false;
+      if (dType === 'manual') {
+        // Manual com perItem: só reduz se ESTE item tem desconto explícito
+        if (hasPerItem) {
+          const d = Number(perItemAmounts![item.id] ?? 0) || 0;
+          if (d <= 0) return false;
+        } else if (hasManualScope) {
+          // Manual com escopo por ids: só itens no escopo
+          if (!manualItemIdSet.has(item.id)) return false;
+        }
+        return (tab as any)?.commission_discount_on_manual === true;
+      }
+      if (dType === 'coupon') {
+        if (!itemInCouponScope(item)) return false;
+        return (tab as any)?.commission_discount_on_coupon === true;
+      }
+      if (dType === 'loyalty') return (tab as any)?.commission_discount_on_loyalty === true;
+      return false;
+    };
+
     for (const item of items) {
       if (!item.professional_id) continue;
 
       const fullPrice = Number(item.total_price);
       let referenceValue: number;
-      if (reducesByType && hasPerItem) {
-        // Explicit per-item discount overrides proportional split
+      const reduceThisItem = shouldReduceCommissionForItem(item);
+
+      if (dType === 'manual' && hasPerItem) {
+        // Desconto por serviço: aplica APENAS ao serviço que recebeu o desconto
         const d = Number(perItemAmounts![item.id] ?? 0) || 0;
-        referenceValue = +Math.max(0, fullPrice - d).toFixed(2);
+        if (d > 0 && reduceThisItem) {
+          referenceValue = +Math.max(0, fullPrice - d).toFixed(2);
+        } else {
+          referenceValue = fullPrice;
+        }
       } else {
-        const inScope = itemInDiscountScope(item);
-        const itemFactor = (reducesByType && inScope) ? discountFactorScoped : 1;
+        // Cupom / fidelidade / manual sem perItem: proporcional dentro do escopo
+        const itemFactor = reduceThisItem ? discountFactorScoped : 1;
         referenceValue = +(fullPrice * itemFactor).toFixed(2);
       }
+
       let commissionAmount = 0;
       let description = "";
       let ruleId: string | null = null;
