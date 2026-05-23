@@ -697,6 +697,51 @@ export default function PortalAgenda() {
           </CardContent>
         </Card>
 
+        {/* Contadores de agendamentos */}
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+          <Card className="p-2 md:p-3">
+            <div className="text-[10px] md:text-xs text-muted-foreground">Total</div>
+            <div className="text-base md:text-lg font-bold">{appointmentStats.total}</div>
+          </Card>
+          <Card className="p-2 md:p-3">
+            <div className="text-[10px] md:text-xs text-muted-foreground">Confirmados</div>
+            <div className="text-base md:text-lg font-bold text-green-600">{appointmentStats.confirmed}</div>
+          </Card>
+          <Card className="p-2 md:p-3">
+            <div className="text-[10px] md:text-xs text-muted-foreground">Pendentes</div>
+            <div className="text-base md:text-lg font-bold text-yellow-600">{appointmentStats.pending}</div>
+          </Card>
+          <Card className="p-2 md:p-3">
+            <div className="text-[10px] md:text-xs text-muted-foreground">Em atendimento</div>
+            <div className="text-base md:text-lg font-bold text-blue-600">{appointmentStats.in_service}</div>
+          </Card>
+          <Card className="p-2 md:p-3">
+            <div className="text-[10px] md:text-xs text-muted-foreground">Concluídos</div>
+            <div className="text-base md:text-lg font-bold text-emerald-600">{appointmentStats.completed}</div>
+          </Card>
+          <Card className="p-2 md:p-3">
+            <div className="text-[10px] md:text-xs text-muted-foreground">Cancelados</div>
+            <div className="text-base md:text-lg font-bold text-red-600">{appointmentStats.cancelled}</div>
+          </Card>
+        </div>
+
+        {appointmentStats.duplicates > 0 && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex items-center justify-between gap-3">
+            <p className="text-sm text-orange-800">
+              ⚠️ Detectados {appointmentStats.duplicates} agendamento(s) potencialmente duplicado(s) no período.
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={cleaningDuplicates}
+              onClick={handleCleanupDuplicates}
+            >
+              {cleaningDuplicates ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
+              Limpar duplicatas
+            </Button>
+          </div>
+        )}
+
         {/* Legend - Compact inline */}
         <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
