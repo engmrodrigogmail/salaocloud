@@ -103,7 +103,7 @@ export function CommissionReportTab({ establishmentId }: CommissionReportTabProp
           *,
           professionals:professional_id(name),
           commission_rules:commission_rule_id(name, commission_type, commission_value),
-          tab_items:tab_item_id(name, quantity)
+          tab_items:tab_item_id(name, quantity, total_price)
         `)
         .eq("establishment_id", establishmentId)
         .gte("created_at", `${dateFrom}T00:00:00`)
