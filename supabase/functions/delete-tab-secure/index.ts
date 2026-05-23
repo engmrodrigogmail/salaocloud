@@ -129,6 +129,14 @@ Deno.serve(async (req) => {
     });
     if (insErr) throw insErr;
 
+    // Remove pending commissions linked to this tab (keep paid for audit)
+    const { error: delCommErr } = await admin
+      .from("professional_commissions")
+      .delete()
+      .eq("tab_id", tab.id)
+      .neq("status", "paid");
+    if (delCommErr) throw delCommErr;
+
     // Soft delete tab
     const { error: updErr } = await admin
       .from("tabs")
