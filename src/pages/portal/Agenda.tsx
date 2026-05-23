@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { PortalLayout } from "@/components/layouts/PortalLayout";
@@ -91,6 +91,19 @@ export default function PortalAgenda() {
   const [filterProfessional, setFilterProfessional] = useState<string>("all");
   const [filterSearch, setFilterSearch] = useState("");
 
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const [cleaningDuplicates, setCleaningDuplicates] = useState(false);
+  const [appointmentStats, setAppointmentStats] = useState({
+    total: 0,
+    confirmed: 0,
+    pending: 0,
+    cancelled: 0,
+    in_service: 0,
+    completed: 0,
+    no_show: 0,
+    duplicates: 0,
+  });
+
   useEffect(() => {
     if (!authLoading && !user) {
       navigate(`/auth?redirect=/portal/${slug}/agenda`);
@@ -161,6 +174,12 @@ export default function PortalAgenda() {
   const fetchAppointments = async () => {
     if (!establishment?.id) return;
 
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+
     setLoading(true);
     try {
       let startDate: Date;
@@ -198,13 +217,20 @@ export default function PortalAgenda() {
         .lte("scheduled_at", endDate.toISOString())
         .order("scheduled_at");
 
+      if (signal.aborted) return;
       if (error) throw error;
+
       const expanded: any[] = [];
+      const seen = new Set<string>();
+
       for (const apt of data || []) {
         const parts = (apt as any).appointment_services || [];
         if (parts.length > 1) {
           const sorted = [...parts].sort((a: any, b: any) => (a.position ?? 0) - (b.position ?? 0));
           sorted.forEach((p: any, idx: number) => {
+            const key = `${apt.id}-${p.service_id}-${p.professional_id}-${p.starts_at}`;
+            if (seen.has(key)) return;
+            seen.add(key);
             expanded.push({
               ...apt,
               scheduled_at: p.starts_at,
@@ -220,16 +246,57 @@ export default function PortalAgenda() {
             });
           });
         } else {
+          const key = `${apt.id}-${apt.service_id}-${apt.professional_id}-${apt.scheduled_at}`;
+          if (seen.has(key)) continue;
+          seen.add(key);
           expanded.push(apt);
         }
       }
       setAppointments(expanded);
-
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.name === "AbortError") return;
       console.error("Error fetching appointments:", error);
       toast.error("Erro ao carregar agendamentos");
     } finally {
       setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const seen = new Set<string>();
+    const duplicateIds = new Set<string>();
+    for (const apt of appointments) {
+      const key = `${apt.client_id ?? "null"}-${apt.service_id}-${apt.professional_id}-${apt.scheduled_at}`;
+      if (seen.has(key)) duplicateIds.add(apt.id);
+      seen.add(key);
+    }
+    setAppointmentStats({
+      total: appointments.length,
+      confirmed: appointments.filter((a) => a.status === "confirmed").length,
+      pending: appointments.filter((a) => a.status === "pending").length,
+      cancelled: appointments.filter((a) => a.status === "cancelled").length,
+      in_service: appointments.filter((a) => a.status === "in_service").length,
+      completed: appointments.filter((a) => a.status === "completed").length,
+      no_show: appointments.filter((a) => a.status === "no_show").length,
+      duplicates: duplicateIds.size,
+    });
+  }, [appointments]);
+
+  const handleCleanupDuplicates = async () => {
+    if (!establishment?.id) return;
+    setCleaningDuplicates(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cleanup-duplicate-appointments", {
+        body: { establishment_id: establishment.id },
+      });
+      if (error) throw error;
+      toast.success(`${data?.duplicates_deleted ?? 0} duplicata(s) removida(s)`, { position: "top-center", duration: 2000 });
+      await fetchAppointments();
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Erro ao limpar duplicatas", { position: "top-center", duration: 2000 });
+    } finally {
+      setCleaningDuplicates(false);
     }
   };
 
@@ -629,6 +696,51 @@ export default function PortalAgenda() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Contadores de agendamentos */}
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
+          <Card className="p-2 md:p-3">
+            <div className="text-[10px] md:text-xs text-muted-foreground">Total</div>
+            <div className="text-base md:text-lg font-bold">{appointmentStats.total}</div>
+          </Card>
+          <Card className="p-2 md:p-3">
+            <div className="text-[10px] md:text-xs text-muted-foreground">Confirmados</div>
+            <div className="text-base md:text-lg font-bold text-green-600">{appointmentStats.confirmed}</div>
+          </Card>
+          <Card className="p-2 md:p-3">
+            <div className="text-[10px] md:text-xs text-muted-foreground">Pendentes</div>
+            <div className="text-base md:text-lg font-bold text-yellow-600">{appointmentStats.pending}</div>
+          </Card>
+          <Card className="p-2 md:p-3">
+            <div className="text-[10px] md:text-xs text-muted-foreground">Em atendimento</div>
+            <div className="text-base md:text-lg font-bold text-blue-600">{appointmentStats.in_service}</div>
+          </Card>
+          <Card className="p-2 md:p-3">
+            <div className="text-[10px] md:text-xs text-muted-foreground">Concluídos</div>
+            <div className="text-base md:text-lg font-bold text-emerald-600">{appointmentStats.completed}</div>
+          </Card>
+          <Card className="p-2 md:p-3">
+            <div className="text-[10px] md:text-xs text-muted-foreground">Cancelados</div>
+            <div className="text-base md:text-lg font-bold text-red-600">{appointmentStats.cancelled}</div>
+          </Card>
+        </div>
+
+        {appointmentStats.duplicates > 0 && (
+          <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 flex items-center justify-between gap-3">
+            <p className="text-sm text-orange-800">
+              ⚠️ Detectados {appointmentStats.duplicates} agendamento(s) potencialmente duplicado(s) no período.
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={cleaningDuplicates}
+              onClick={handleCleanupDuplicates}
+            >
+              {cleaningDuplicates ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : null}
+              Limpar duplicatas
+            </Button>
+          </div>
+        )}
 
         {/* Legend - Compact inline */}
         <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
