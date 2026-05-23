@@ -26,6 +26,7 @@ export function ChangePasswordGate({ children }: ChangePasswordGateProps) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
+  const [showPwd2, setShowPwd2] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
