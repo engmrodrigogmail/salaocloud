@@ -717,9 +717,10 @@ export function NewAppointmentDialog({
                         )}
                       </div>
                       <SearchableSelect
+                        typeable
                         value={it.serviceId}
                         onValueChange={(v) => updateItem(idx, { serviceId: v, professionalId: "" })}
-                        placeholder="Selecione o serviço"
+                        placeholder="Digite para buscar serviço..."
                         searchPlaceholder="Buscar serviço..."
                         emptyText="Nenhum serviço encontrado."
                         options={sortedServices.map((s) => ({
@@ -732,9 +733,10 @@ export function NewAppointmentDialog({
                       <div className="flex gap-2">
                         <div className="flex-1 min-w-0">
                           <SearchableSelect
+                            typeable
                             value={it.professionalId === ANY_PRO ? "" : it.professionalId}
                             onValueChange={(v) => updateItem(idx, { professionalId: v })}
-                            placeholder="Profissional"
+                            placeholder="Digite para buscar profissional..."
                             searchPlaceholder="Buscar profissional..."
                             options={elig.map((p) => ({ value: p.id, label: p.name }))}
                           />
