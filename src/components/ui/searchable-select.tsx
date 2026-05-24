@@ -49,6 +49,9 @@ interface SearchableSelectProps {
   allowClear?: boolean;
   clearLabel?: string;
   id?: string;
+  /** Modo "combobox": trigger é um input editável que filtra enquanto digita.
+   *  Ao focar/clicar abre a lista completa rolável. */
+  typeable?: boolean;
 }
 
 const collator = new Intl.Collator("pt-BR", { sensitivity: "base" });
