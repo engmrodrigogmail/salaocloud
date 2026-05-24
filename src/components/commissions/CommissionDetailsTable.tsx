@@ -638,8 +638,9 @@ function HeaderFilter({
   value: string;
   onChange: (v: string) => void;
 }) {
+  const [open, setOpen] = useState(false);
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
@@ -655,14 +656,33 @@ function HeaderFilter({
           <Input
             value={value}
             onChange={(e) => onChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                setOpen(false);
+              }
+            }}
             placeholder="Digite para filtrar..."
             autoFocus
           />
-          {value && (
-            <Button variant="ghost" size="sm" className="w-full" onClick={() => onChange("")}>
-              Limpar
+          <div className="flex gap-2">
+            {value && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex-1"
+                onClick={() => {
+                  onChange("");
+                  setOpen(false);
+                }}
+              >
+                Limpar
+              </Button>
+            )}
+            <Button size="sm" className="flex-1" onClick={() => setOpen(false)}>
+              Aplicar
             </Button>
-          )}
+          </div>
         </div>
       </PopoverContent>
     </Popover>
