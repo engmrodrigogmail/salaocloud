@@ -1,8 +1,10 @@
 import * as React from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Command as CommandPrimitive } from "cmdk";
+import { Check, ChevronsUpDown, Search as SearchIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
+  PopoverAnchor,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
