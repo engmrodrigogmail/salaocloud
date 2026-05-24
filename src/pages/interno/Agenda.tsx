@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -594,33 +595,35 @@ export default function InternoAgenda() {
                   />
                 </div>
               </div>
-              <Select value={filterService} onValueChange={setFilterService}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Serviço" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Todos Serviços</SelectItem>
-                  {services.map(s => (
-                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Select 
-                value={filterProfessional} 
-                onValueChange={setFilterProfessional}
-                disabled={role === "professional" && !isOwner}
-              >
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="Profissional" />
-                </SelectTrigger>
-                <SelectContent>
-                  {/* Only show "Todos" option for owners */}
-                  {isOwner && <SelectItem value="all">Todos Profissionais</SelectItem>}
-                  {professionals.map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="w-40">
+                <SearchableSelect
+                  typeable
+                  value={filterService}
+                  onValueChange={(v) => setFilterService(v || "all")}
+                  placeholder="Serviço"
+                  searchPlaceholder="Buscar serviço..."
+                  emptyText="Nenhum serviço encontrado."
+                  options={[
+                    { value: "all", label: "Todos Serviços" },
+                    ...services.map((s) => ({ value: s.id, label: s.name })),
+                  ]}
+                />
+              </div>
+              <div className="w-40">
+                <SearchableSelect
+                  typeable
+                  disabled={role === "professional" && !isOwner}
+                  value={filterProfessional}
+                  onValueChange={(v) => setFilterProfessional(v || (isOwner ? "all" : filterProfessional))}
+                  placeholder="Profissional"
+                  searchPlaceholder="Buscar profissional..."
+                  emptyText="Nenhum profissional encontrado."
+                  options={[
+                    ...(isOwner ? [{ value: "all", label: "Todos Profissionais" }] : []),
+                    ...professionals.map((p) => ({ value: p.id, label: p.name })),
+                  ]}
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
