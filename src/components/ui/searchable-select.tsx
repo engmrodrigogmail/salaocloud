@@ -74,8 +74,11 @@ export function SearchableSelect({
   allowClear,
   clearLabel = "Nenhum",
   id,
+  typeable,
 }: SearchableSelectProps) {
   const [open, setOpen] = React.useState(false);
+  const [search, setSearch] = React.useState("");
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
   const grouped = React.useMemo(() => {
     const map = new Map<string, SearchableSelectOption[]>();
