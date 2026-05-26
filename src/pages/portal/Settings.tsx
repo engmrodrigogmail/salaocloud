@@ -77,6 +77,8 @@ export default function PortalSettings() {
   const [savingPortal, setSavingPortal] = useState(false);
   const [discountPinThreshold, setDiscountPinThreshold] = useState("10");
   const [savingCheckout, setSavingCheckout] = useState(false);
+  const [privacyTabItems, setPrivacyTabItems] = useState(false);
+  const [savingPrivacyTabItems, setSavingPrivacyTabItems] = useState(false);
   const [activeTab, setActiveTab] = useState("working-hours");
 
   // Sobre (dados de cadastro + senha)
