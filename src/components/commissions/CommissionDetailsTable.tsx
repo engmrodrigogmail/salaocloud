@@ -104,6 +104,8 @@ export function CommissionDetailsTable({
   const [professionals, setProfessionals] = useState<{ id: string; name: string }[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkPaying, setBulkPaying] = useState(false);
+  const [payDialogOpen, setPayDialogOpen] = useState(false);
+  const [payTargets, setPayTargets] = useState<CommissionPiece[]>([]);
 
   // Confirm "Gerar recibo?" após pagar selecionadas
   const [askReceiptOpen, setAskReceiptOpen] = useState(false);
