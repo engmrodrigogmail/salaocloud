@@ -140,6 +140,7 @@ const BookingPage = () => {
           .select("*")
           .eq("establishment_id", est.id)
           .eq("is_active", true)
+          .eq("visible_to_clients", true)
           .order("name"),
         supabase
           .from("professionals")

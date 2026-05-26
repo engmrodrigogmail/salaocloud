@@ -3888,6 +3888,7 @@ export type Database = {
           name: string
           price: number
           updated_at: string
+          visible_to_clients: boolean
         }
         Insert: {
           category_id?: string | null
@@ -3900,6 +3901,7 @@ export type Database = {
           name: string
           price?: number
           updated_at?: string
+          visible_to_clients?: boolean
         }
         Update: {
           category_id?: string | null
@@ -3912,6 +3914,7 @@ export type Database = {
           name?: string
           price?: number
           updated_at?: string
+          visible_to_clients?: boolean
         }
         Relationships: [
           {

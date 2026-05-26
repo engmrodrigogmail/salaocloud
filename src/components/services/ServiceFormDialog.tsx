@@ -39,6 +39,7 @@ interface Service {
   price: number;
   is_active: boolean;
   category_id?: string | null;
+  visible_to_clients?: boolean;
 }
 
 interface ServiceCategory {
@@ -82,6 +83,7 @@ export function ServiceFormDialog({
     duration_minutes: "30",
     price: "",
     is_active: true,
+    visible_to_clients: true,
     category_id: "none" as string,
   });
 
@@ -128,6 +130,7 @@ export function ServiceFormDialog({
       duration_minutes: String(editingService.duration_minutes),
       price: String(editingService.price),
       is_active: editingService.is_active,
+      visible_to_clients: editingService.visible_to_clients ?? true,
       category_id: editingService.category_id || "none",
     });
 
@@ -165,6 +168,7 @@ export function ServiceFormDialog({
       duration_minutes: "30",
       price: "",
       is_active: true,
+      visible_to_clients: true,
       category_id: "none",
     });
     setSelectedProfessionals(new Set());
@@ -230,6 +234,7 @@ export function ServiceFormDialog({
             duration_minutes: parseInt(formData.duration_minutes) || 30,
             price: parseFloat(formData.price) || 0,
             is_active: formData.is_active,
+            visible_to_clients: formData.visible_to_clients,
             category_id: categoryIdValue,
           })
           .eq("id", editingService.id);
@@ -245,6 +250,7 @@ export function ServiceFormDialog({
             duration_minutes: parseInt(formData.duration_minutes) || 30,
             price: parseFloat(formData.price) || 0,
             is_active: formData.is_active,
+            visible_to_clients: formData.visible_to_clients,
             category_id: categoryIdValue,
           })
           .select()
@@ -380,6 +386,19 @@ export function ServiceFormDialog({
                 <Switch
                   checked={formData.is_active}
                   onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5 pr-3">
+                  <Label>Visível para clientes</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Quando desativado, este serviço não aparece para o cliente na hora de agendar.
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.visible_to_clients}
+                  onCheckedChange={(checked) => setFormData({ ...formData, visible_to_clients: checked })}
                 />
               </div>
             </div>
