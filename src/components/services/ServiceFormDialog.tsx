@@ -168,6 +168,7 @@ export function ServiceFormDialog({
       duration_minutes: "30",
       price: "",
       is_active: true,
+      visible_to_clients: true,
       category_id: "none",
     });
     setSelectedProfessionals(new Set());
