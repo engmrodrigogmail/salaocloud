@@ -104,9 +104,9 @@ const App = () => (
               <Route path="/cliente/redefinir-senha" element={<ClientResetPassword />} />
               <Route path="/redefinir-senha" element={<OwnerResetPassword />} />
               <Route path="/instalar" element={<Install />} />
+              <Route path="/install" element={<Install />} />
               <Route path="/termos" element={<Termos />} />
               <Route path="/privacidade" element={<Privacidade />} />
-              <Route path="/instalar" element={<Install />} />
 
               {/* Onboarding */}
               <Route
