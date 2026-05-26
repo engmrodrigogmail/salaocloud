@@ -273,17 +273,11 @@ export function CommissionDetailsTable({
     return t;
   }, [filtered]);
 
-  const handleMarkPaid = async (id: string) => {
-    const { error } = await supabase
-      .from("professional_commissions")
-      .update({ status: "paid", paid_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) {
-      toast.error("Erro ao marcar como paga");
-      return;
-    }
-    toast.success("Comissão marcada como paga");
-    fetchData();
+  const handleMarkPaid = (id: string) => {
+    const r = rows.find((x) => x.id === id);
+    if (!r) return;
+    setPayTargets([{ id: r.id, amount: r.commission_amount }]);
+    setPayDialogOpen(true);
   };
 
   const selectablePendingIds = useMemo(
@@ -315,21 +309,43 @@ export function CommissionDetailsTable({
     return total;
   }, [filtered, selected]);
 
-  const handlePaySelected = async () => {
+  const handlePaySelected = () => {
     const ids = Array.from(selected).filter((id) => selectablePendingIds.includes(id));
     if (ids.length === 0) {
       toast.error("Selecione ao menos uma comissão pendente");
       return;
     }
+    const targets = rows
+      .filter((r) => ids.includes(r.id))
+      .map((r) => ({ id: r.id, amount: r.commission_amount }));
+    setPayTargets(targets);
+    setPayDialogOpen(true);
+  };
+
+  const handleConfirmPayment = async (allocation: Record<string, string>) => {
+    const ids = Object.keys(allocation);
+    if (ids.length === 0) return;
     setBulkPaying(true);
     const paidAt = new Date().toISOString();
-    const { error } = await supabase
-      .from("professional_commissions")
-      .update({ status: "paid", paid_at: paidAt })
-      .in("id", ids);
+    // Agrupa por forma de pagamento para minimizar updates
+    const byMethod = new Map<string, string[]>();
+    for (const id of ids) {
+      const m = allocation[id];
+      const arr = byMethod.get(m) ?? [];
+      arr.push(id);
+      byMethod.set(m, arr);
+    }
+    let hadError = false;
+    for (const [method, methodIds] of byMethod) {
+      const { error } = await supabase
+        .from("professional_commissions")
+        .update({ status: "paid", paid_at: paidAt, payment_method: method })
+        .in("id", methodIds);
+      if (error) hadError = true;
+    }
     setBulkPaying(false);
-    if (error) {
-      toast.error("Erro ao pagar comissões selecionadas");
+    if (hadError) {
+      toast.error("Erro ao registrar pagamento");
       return;
     }
     toast.success(`${ids.length} comissão(ões) marcadas como pagas`);
