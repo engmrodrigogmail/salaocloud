@@ -130,6 +130,7 @@ export function ServiceFormDialog({
       duration_minutes: String(editingService.duration_minutes),
       price: String(editingService.price),
       is_active: editingService.is_active,
+      visible_to_clients: editingService.visible_to_clients ?? true,
       category_id: editingService.category_id || "none",
     });
 
