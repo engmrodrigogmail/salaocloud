@@ -801,8 +801,38 @@ export default function PortalSettings() {
               </CardContent>
             </Card>
 
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5 text-primary" />
+                  Privacidade da comanda por profissional
+                </CardTitle>
+                <CardDescription>
+                  Quando ativada, profissionais comuns só conseguem visualizar e lançar
+                  itens vinculados a si mesmos na comanda do cliente. Dono, gerentes e
+                  recepcionistas (com permissão de fechar comandas) continuam vendo a
+                  comanda inteira. Útil para evitar comparações de produção entre colegas.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex items-start justify-between gap-4">
+                <div className="space-y-1 text-sm">
+                  <p className="font-medium">Restringir itens por profissional</p>
+                  <p className="text-muted-foreground">
+                    Cada profissional vê e lança apenas os próprios serviços. Itens de
+                    colegas ficam invisíveis e protegidos no banco de dados.
+                  </p>
+                </div>
+                <Switch
+                  checked={privacyTabItems}
+                  disabled={savingPrivacyTabItems}
+                  onCheckedChange={handleSavePrivacyTabItems}
+                />
+              </CardContent>
+            </Card>
+
             {establishment?.id && <PaymentMethodsCard establishmentId={establishment.id} />}
           </TabsContent>
+
 
           <TabsContent value="notifications" className="space-y-6">
             {establishment?.id && <NotificationSettingsCard establishmentId={establishment.id} />}
