@@ -65,12 +65,8 @@ export default function Install() {
             <div className="mx-auto mb-4">
               <img src={logo} alt="Salão Cloud" className="h-24 w-auto mx-auto" />
             </div>
-            <CardTitle className="text-2xl text-green-600 flex items-center justify-center gap-2">
-              <Check className="h-6 w-6" />
-              App Instalado!
-            </CardTitle>
             <CardDescription>
-              O Salão Cloud já está instalado no seu dispositivo.
+              O Salão Cloud já está presente no menu e tela de ícones do seu celular.
             </CardDescription>
           </CardHeader>
           <CardContent>
