@@ -262,6 +262,28 @@ export default function PortalSettings() {
     }
   };
 
+  const handleSavePrivacyTabItems = async (next: boolean) => {
+    if (!establishment) return;
+    setSavingPrivacyTabItems(true);
+    const prev = privacyTabItems;
+    setPrivacyTabItems(next);
+    try {
+      const { error } = await supabase
+        .from("establishments")
+        .update({ privacy_tab_items_per_professional: next } as never)
+        .eq("id", establishment.id);
+      if (error) throw error;
+      toast.success(next
+        ? "Privacidade ativada: profissionais comuns só veem e lançam os próprios serviços."
+        : "Privacidade desativada: profissionais voltam a ver toda a comanda.");
+    } catch (e) {
+      console.error("Error saving privacy setting:", e);
+      setPrivacyTabItems(prev);
+      toast.error("Erro ao salvar privacidade da comanda");
+    } finally {
+      setSavingPrivacyTabItems(false);
+    }
+
   const handleSaveAbout = async () => {
     if (!establishment) return;
     if (!aboutForm.name.trim()) {
