@@ -71,7 +71,7 @@ export default function Install() {
           </CardHeader>
           <CardContent>
             <Button onClick={() => window.location.href = "/"} className="w-full">
-              Abrir o App
+              Abrir Sistema
             </Button>
           </CardContent>
         </Card>
