@@ -44,6 +44,7 @@ import { DatePickerBR } from "@/components/ui/date-picker-br";
 import { Checkbox } from "@/components/ui/checkbox";
 import { AddCommissionDialog } from "./AddCommissionDialog";
 import { IssueReceiptDialog } from "./IssueReceiptDialog";
+import { PayCommissionsDialog, CommissionPiece } from "./PayCommissionsDialog";
 import { ReceiptCommissionRow } from "@/lib/commissionReceiptPdf";
 
 type StatusFilter = "all" | "pending" | "paid" | "cancelled";
