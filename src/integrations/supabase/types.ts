@@ -3265,6 +3265,7 @@ export type Database = {
           override_by: string | null
           override_reason: string | null
           paid_at: string | null
+          payment_method: string | null
           period_end: string | null
           period_start: string | null
           professional_id: string
@@ -3292,6 +3293,7 @@ export type Database = {
           override_by?: string | null
           override_reason?: string | null
           paid_at?: string | null
+          payment_method?: string | null
           period_end?: string | null
           period_start?: string | null
           professional_id: string
@@ -3319,6 +3321,7 @@ export type Database = {
           override_by?: string | null
           override_reason?: string | null
           paid_at?: string | null
+          payment_method?: string | null
           period_end?: string | null
           period_start?: string | null
           professional_id?: string
