@@ -151,6 +151,7 @@ export default function PortalSettings() {
       setDiscountPinThreshold(
         threshold === null || threshold === undefined ? "10" : String(threshold),
       );
+      setPrivacyTabItems((data as any).privacy_tab_items_per_professional === true);
     } catch (error) {
       console.error("Error fetching establishment:", error);
       toast.error("Erro ao carregar dados");
