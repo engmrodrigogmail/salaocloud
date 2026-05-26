@@ -35,6 +35,8 @@ export default function InternoComandas() {
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<"owner" | "manager" | "professional">("professional");
   const [canClose, setCanClose] = useState<boolean>(true);
+  const [privacyTabItems, setPrivacyTabItems] = useState<boolean>(false);
+  const [currentProfessionalId, setCurrentProfessionalId] = useState<string | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
