@@ -388,6 +388,19 @@ export function ServiceFormDialog({
                   onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
                 />
               </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5 pr-3">
+                  <Label>Visível para clientes</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Quando desativado, este serviço não aparece para o cliente na hora de agendar.
+                  </p>
+                </div>
+                <Switch
+                  checked={formData.visible_to_clients}
+                  onCheckedChange={(checked) => setFormData({ ...formData, visible_to_clients: checked })}
+                />
+              </div>
             </div>
 
             <Separator />
