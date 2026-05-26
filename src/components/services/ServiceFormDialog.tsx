@@ -250,6 +250,7 @@ export function ServiceFormDialog({
             duration_minutes: parseInt(formData.duration_minutes) || 30,
             price: parseFloat(formData.price) || 0,
             is_active: formData.is_active,
+            visible_to_clients: formData.visible_to_clients,
             category_id: categoryIdValue,
           })
           .select()
