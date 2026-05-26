@@ -644,6 +644,14 @@ export function CommissionDetailsTable({
           totalPaid={receiptQueue[0].total}
         />
       )}
+
+      <PayCommissionsDialog
+        open={payDialogOpen}
+        onOpenChange={setPayDialogOpen}
+        establishmentId={establishmentId}
+        commissions={payTargets}
+        onConfirm={handleConfirmPayment}
+      />
     </div>
   );
 }
