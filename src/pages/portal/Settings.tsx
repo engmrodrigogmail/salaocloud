@@ -283,6 +283,9 @@ export default function PortalSettings() {
     } finally {
       setSavingPrivacyTabItems(false);
     }
+  };
+
+
 
   const handleSaveAbout = async () => {
     if (!establishment) return;
