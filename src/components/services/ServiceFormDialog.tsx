@@ -39,6 +39,7 @@ interface Service {
   price: number;
   is_active: boolean;
   category_id?: string | null;
+  visible_to_clients?: boolean;
 }
 
 interface ServiceCategory {
