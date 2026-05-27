@@ -57,6 +57,7 @@ PROFISSIONAIS
 
 SERVIÇOS E PRODUTOS
 - Serviços: Portal → Serviços. Categorias: Portal → Categorias.
+- **Visível para clientes (NOVO)**: no cadastro/edição do serviço existe um toggle "Visível para clientes". Quando desligado, o serviço continua disponível para uso interno (comandas, agenda manual), mas NÃO aparece na vitrine pública nem na tela de agendamento online do cliente. Padrão: visível. Útil para serviços internos, promocionais limitados ou em teste.
 - Produtos (revenda): Portal → Produtos.
 
 COMISSÕES
