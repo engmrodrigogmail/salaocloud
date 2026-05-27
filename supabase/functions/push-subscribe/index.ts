@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
 
       const { error } = await admin.from("client_push_subscriptions").upsert(
         { ...baseRow, client_id: client.id },
-        { onConflict: "endpoint" },
+        { onConflict: "client_id,endpoint" },
       );
       if (error) return jsonResponse({ error: error.message }, 500);
       return jsonResponse({ ok: true });
