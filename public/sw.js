@@ -50,18 +50,17 @@ self.addEventListener('push', (event) => {
     'review_request',
   ].includes(category);
 
+  // IMPORTANTE: para garantir heads-up + tela de bloqueio no Android,
+  // NÃO usar `requireInteraction`, NÃO setar `silent` explicitamente e
+  // só incluir `image` quando realmente existir. Caso contrário, alguns
+  // Androids (Samsung/Xiaomi/MIUI) suprimem o banner/lockscreen.
   const options = {
     body: payload.body,
     icon: '/logo-192.png',
     badge: '/logo-192.png',
-    image: payload.image,
     data: { url: payload.url || '/', ...payload.data },
     tag: payload.tag || category || undefined,
     renotify: !!(payload.tag || category),
-    requireInteraction: true,
-    // silent: false força o sistema a usar o som/vibração padrão do canal.
-    // Sem isto, alguns navegadores tratam como "silent" por padrão.
-    silent: false,
     vibrate: isCritical ? [200, 100, 200, 100, 200] : [200, 100, 200],
     timestamp: Date.now(),
     actions: [
@@ -69,6 +68,7 @@ self.addEventListener('push', (event) => {
       { action: 'close', title: 'Fechar' },
     ],
   };
+  if (payload.image) options.image = payload.image;
 
   event.waitUntil(
     self.registration.showNotification(payload.title || 'Salão Cloud', options)
