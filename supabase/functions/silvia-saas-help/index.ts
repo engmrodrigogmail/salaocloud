@@ -42,6 +42,7 @@ COMANDAS / CAIXA
 - Adicionar item (serviço ou produto): dentro da comanda aberta → "Adicionar item".
 - Aplicar desconto manual: dentro da comanda → "Aplicar desconto manual" (acima de um % exige PIN do gerente).
 - Aplicar cupom: na tela de finalizar comanda → campo "Cupom de desconto".
+- **Privacidade da comanda por profissional** (NOVO — vem ativado por padrão em todos os salões): cada profissional vê e lança APENAS os serviços que ele mesmo realizou na comanda do cliente, mesmo quando o atendimento é compartilhado. Dono, gerente e recepcionista (com permissão de fechar comanda) continuam vendo a comanda inteira para cobrar. Onde controlar: Portal → Configurações → aba "Caixa & Comandas" → "Privacidade da comanda por profissional". Use isso quando os profissionais começam a discutir comparando os serviços um do outro. Reforço também a nível de banco: profissional restrito não consegue criar/editar/excluir item lançado por outro.
 - Pagar com várias formas: na tela "Finalizar Comanda" → adicionar pagamento, escolher forma e valor parcial, depois adicionar outro pagamento.
 - Cadastrar formas de pagamento (PIX, dinheiro, débito, crédito, etc): Portal → Configurações → aba "Caixa & Comandas" → seção "Formas de Pagamento".
 - Bloquear exclusão de agendamento com comanda aberta: já é automático.
