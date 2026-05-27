@@ -2198,6 +2198,7 @@ export type Database = {
           no_show_tolerance_minutes: number
           owner_id: string
           phone: string | null
+          privacy_tab_items_per_professional: boolean
           show_catalog: boolean
           show_prices: boolean
           show_professional_names: boolean
@@ -2239,6 +2240,7 @@ export type Database = {
           no_show_tolerance_minutes?: number
           owner_id: string
           phone?: string | null
+          privacy_tab_items_per_professional?: boolean
           show_catalog?: boolean
           show_prices?: boolean
           show_professional_names?: boolean
@@ -2280,6 +2282,7 @@ export type Database = {
           no_show_tolerance_minutes?: number
           owner_id?: string
           phone?: string | null
+          privacy_tab_items_per_professional?: boolean
           show_catalog?: boolean
           show_prices?: boolean
           show_professional_names?: boolean
@@ -5091,6 +5094,10 @@ export type Database = {
         Args: { _payload: Json }
         Returns: Json
       }
+      current_professional_id_for_tab: {
+        Args: { _tab_id: string }
+        Returns: string
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -5193,6 +5200,7 @@ export type Database = {
         Args: { _establishment_id: string }
         Returns: boolean
       }
+      is_tab_privileged_user: { Args: { _tab_id: string }; Returns: boolean }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -5222,6 +5230,7 @@ export type Database = {
         Args: { _establishment_id: string }
         Returns: undefined
       }
+      tab_privacy_enabled: { Args: { _tab_id: string }; Returns: boolean }
       unfreeze_tab: { Args: { _tab_id: string }; Returns: Json }
       update_appointment_services: {
         Args: { _appointment_id: string; _payload: Json }

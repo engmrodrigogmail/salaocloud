@@ -35,6 +35,8 @@ export default function InternoComandas() {
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<"owner" | "manager" | "professional">("professional");
   const [canClose, setCanClose] = useState<boolean>(true);
+  const [privacyTabItems, setPrivacyTabItems] = useState<boolean>(false);
+  const [currentProfessionalId, setCurrentProfessionalId] = useState<string | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [services, setServices] = useState<Service[]>([]);
   const [professionals, setProfessionals] = useState<Professional[]>([]);
@@ -47,7 +49,11 @@ export default function InternoComandas() {
   const [activeView, setActiveView] = useState<"open" | "history" | "deleted">("open");
 
   const { tabs, fetchTabs, createTab, closeTab, cancelTab, undoTabOpening, recalculateTotal, freezeTab, unfreezeTab } = useTabs(establishmentId);
-  const { items, fetchItems, addItem, updateItem, removeItem } = useTabItems(selectedTab?.id || null);
+  const { items: allItems, fetchItems, addItem, updateItem, removeItem } = useTabItems(selectedTab?.id || null);
+  const isRestrictedView = privacyTabItems && userRole === "professional" && !!currentProfessionalId;
+  const items = isRestrictedView
+    ? allItems.filter((it) => it.professional_id === currentProfessionalId)
+    : allItems;
   const { paymentMethods } = usePaymentMethods(establishmentId);
   const { products } = useProducts(establishmentId);
 
@@ -208,13 +214,14 @@ export default function InternoComandas() {
     try {
       const { data } = await supabase
         .from("establishments")
-        .select("id, owner_id, discount_pin_threshold_percent")
+        .select("id, owner_id, discount_pin_threshold_percent, privacy_tab_items_per_professional")
         .eq("slug", slug)
         .single();
       if (!data) { navigate("/"); return; }
       setEstablishmentId(data.id);
       const t = (data as any).discount_pin_threshold_percent;
       if (typeof t === "number") setDiscountPinThreshold(t);
+      setPrivacyTabItems((data as any).privacy_tab_items_per_professional === true);
 
       // Resolve current user role
       if (user && (data as any).owner_id === user.id) {
@@ -223,14 +230,14 @@ export default function InternoComandas() {
       } else if (user) {
         const { data: prof } = await supabase
           .from("professionals")
-          .select("is_manager, can_close_tabs")
+          .select("id, is_manager, can_close_tabs")
           .eq("establishment_id", data.id)
           .eq("user_id", user.id)
           .maybeSingle();
         const isManager = !!(prof as any)?.is_manager;
         setUserRole(isManager ? "manager" : "professional");
-        // Gerentes sempre podem fechar; demais profissionais dependem da flag.
         setCanClose(isManager ? true : (prof as any)?.can_close_tabs !== false);
+        setCurrentProfessionalId((prof as any)?.id ?? null);
       }
     } catch { navigate("/"); }
     finally { setLoading(false); }
@@ -474,7 +481,7 @@ export default function InternoComandas() {
         )}
 
         <NewTabDialog open={newTabOpen} onOpenChange={setNewTabOpen} onSubmit={handleCreateTab} clients={clients} professionals={professionals} services={services} userRole={userRole} />
-        <AddItemDialog open={addItemOpen} onOpenChange={setAddItemOpen} onAddItem={handleAddItem} products={products} services={services} professionals={professionals} professionalServices={professionalServices} establishmentId={establishmentId || undefined} defaultProfessionalId={selectedTab?.professional_id || null} />
+        <AddItemDialog open={addItemOpen} onOpenChange={setAddItemOpen} onAddItem={handleAddItem} products={products} services={services} professionals={isRestrictedView ? professionals.filter(p => p.id === currentProfessionalId) : professionals} professionalServices={professionalServices} establishmentId={establishmentId || undefined} defaultProfessionalId={isRestrictedView ? currentProfessionalId : (selectedTab?.professional_id || null)} />
         <CheckoutDialog
           open={checkoutOpen}
           onOpenChange={setCheckoutOpen}

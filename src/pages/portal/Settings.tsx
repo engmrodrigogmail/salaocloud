@@ -77,6 +77,8 @@ export default function PortalSettings() {
   const [savingPortal, setSavingPortal] = useState(false);
   const [discountPinThreshold, setDiscountPinThreshold] = useState("10");
   const [savingCheckout, setSavingCheckout] = useState(false);
+  const [privacyTabItems, setPrivacyTabItems] = useState(false);
+  const [savingPrivacyTabItems, setSavingPrivacyTabItems] = useState(false);
   const [activeTab, setActiveTab] = useState("working-hours");
 
   // Sobre (dados de cadastro + senha)
@@ -149,6 +151,7 @@ export default function PortalSettings() {
       setDiscountPinThreshold(
         threshold === null || threshold === undefined ? "10" : String(threshold),
       );
+      setPrivacyTabItems((data as any).privacy_tab_items_per_professional === true);
     } catch (error) {
       console.error("Error fetching establishment:", error);
       toast.error("Erro ao carregar dados");
@@ -258,6 +261,31 @@ export default function PortalSettings() {
       setSavingCheckout(false);
     }
   };
+
+  const handleSavePrivacyTabItems = async (next: boolean) => {
+    if (!establishment) return;
+    setSavingPrivacyTabItems(true);
+    const prev = privacyTabItems;
+    setPrivacyTabItems(next);
+    try {
+      const { error } = await supabase
+        .from("establishments")
+        .update({ privacy_tab_items_per_professional: next } as never)
+        .eq("id", establishment.id);
+      if (error) throw error;
+      toast.success(next
+        ? "Privacidade ativada: profissionais comuns só veem e lançam os próprios serviços."
+        : "Privacidade desativada: profissionais voltam a ver toda a comanda.");
+    } catch (e) {
+      console.error("Error saving privacy setting:", e);
+      setPrivacyTabItems(prev);
+      toast.error("Erro ao salvar privacidade da comanda");
+    } finally {
+      setSavingPrivacyTabItems(false);
+    }
+  };
+
+
 
   const handleSaveAbout = async () => {
     if (!establishment) return;
@@ -773,8 +801,38 @@ export default function PortalSettings() {
               </CardContent>
             </Card>
 
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5 text-primary" />
+                  Privacidade da comanda por profissional
+                </CardTitle>
+                <CardDescription>
+                  Quando ativada, profissionais comuns só conseguem visualizar e lançar
+                  itens vinculados a si mesmos na comanda do cliente. Dono, gerentes e
+                  recepcionistas (com permissão de fechar comandas) continuam vendo a
+                  comanda inteira. Útil para evitar comparações de produção entre colegas.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex items-start justify-between gap-4">
+                <div className="space-y-1 text-sm">
+                  <p className="font-medium">Restringir itens por profissional</p>
+                  <p className="text-muted-foreground">
+                    Cada profissional vê e lança apenas os próprios serviços. Itens de
+                    colegas ficam invisíveis e protegidos no banco de dados.
+                  </p>
+                </div>
+                <Switch
+                  checked={privacyTabItems}
+                  disabled={savingPrivacyTabItems}
+                  onCheckedChange={handleSavePrivacyTabItems}
+                />
+              </CardContent>
+            </Card>
+
             {establishment?.id && <PaymentMethodsCard establishmentId={establishment.id} />}
           </TabsContent>
+
 
           <TabsContent value="notifications" className="space-y-6">
             {establishment?.id && <NotificationSettingsCard establishmentId={establishment.id} />}
