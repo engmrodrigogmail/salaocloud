@@ -544,7 +544,7 @@ export function SupportChat() {
       <div className="fixed bottom-6 right-6 z-50">
         {/* Label */}
         {!isOpen && (
-          <div className="absolute -top-10 right-0 bg-white dark:bg-gray-800 text-foreground text-sm px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap animate-bounce">
+          <div className="pointer-events-none absolute -top-10 right-0 bg-white dark:bg-gray-800 text-foreground text-sm px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap animate-bounce">
             <span className="font-medium">Fale com a Silvia!</span>
             <div className="absolute -bottom-1 right-6 w-2 h-2 bg-white dark:bg-gray-800 transform rotate-45" />
           </div>

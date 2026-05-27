@@ -1,8 +1,9 @@
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
 export function HeroSection() {
+  const navigate = useNavigate();
   return (
     <section
       id="inicio"
@@ -51,20 +52,18 @@ export function HeroSection() {
             <Button
               size="lg"
               className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold uppercase tracking-premium px-7 h-12 rounded-sm text-xs group"
-              asChild
+              onClick={() => navigate("/auth?mode=signup")}
             >
-              <Link to="/auth?mode=signup">
-                Sou Salão
-                <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={16} />
-              </Link>
+              Sou Salão
+              <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={16} />
             </Button>
             <Button
               size="lg"
               variant="outline"
               className="border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-transparent font-semibold uppercase tracking-premium px-7 h-12 rounded-sm text-xs"
-              asChild
+              onClick={() => navigate("/cliente")}
             >
-              <Link to="/cliente">Sou Cliente do Salão</Link>
+              Sou Cliente do Salão
             </Button>
           </div>
 
