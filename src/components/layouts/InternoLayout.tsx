@@ -246,6 +246,18 @@ export function InternoLayout({ children }: InternoLayoutProps) {
         className="lg:pl-64 pt-16 salon-photo-bg min-h-screen"
         style={{ ['--salon-bg-image' as any]: `url(${salonBg})` }}
       >
+        {isOwner && establishmentId ? (
+          <EnablePushBanner
+            scope="establishment"
+            establishmentId={establishmentId}
+            storageKey={`push-banner-dismissed:interno:est:${establishmentId}:${user?.id ?? "anon"}`}
+          />
+        ) : professionalId ? (
+          <EnablePushBanner
+            scope="professional"
+            storageKey={`push-banner-dismissed:interno:prof:${professionalId}`}
+          />
+        ) : null}
         <div className="p-4 sm:p-6">{children}</div>
       </main>
       <SilviaHelpButton profile={isOwner || isManager ? "recepcionista" : "profissional"} />
