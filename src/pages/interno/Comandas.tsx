@@ -481,7 +481,7 @@ export default function InternoComandas() {
         )}
 
         <NewTabDialog open={newTabOpen} onOpenChange={setNewTabOpen} onSubmit={handleCreateTab} clients={clients} professionals={professionals} services={services} userRole={userRole} />
-        <AddItemDialog open={addItemOpen} onOpenChange={setAddItemOpen} onAddItem={handleAddItem} products={products} services={services} professionals={professionals} professionalServices={professionalServices} establishmentId={establishmentId || undefined} defaultProfessionalId={selectedTab?.professional_id || null} />
+        <AddItemDialog open={addItemOpen} onOpenChange={setAddItemOpen} onAddItem={handleAddItem} products={products} services={services} professionals={isRestrictedView ? professionals.filter(p => p.id === currentProfessionalId) : professionals} professionalServices={professionalServices} establishmentId={establishmentId || undefined} defaultProfessionalId={isRestrictedView ? currentProfessionalId : (selectedTab?.professional_id || null)} />
         <CheckoutDialog
           open={checkoutOpen}
           onOpenChange={setCheckoutOpen}
