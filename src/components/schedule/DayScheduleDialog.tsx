@@ -100,6 +100,22 @@ export function DayScheduleDialog({
     [appointments, selectedDate],
   );
 
+  // Datas com agendamentos (exclui cancelados) — para marcar pontinho no calendário
+  const datesWithAppointments = useMemo(() => {
+    const set = new Set<string>();
+    const out: Date[] = [];
+    appointments.forEach((a) => {
+      if (a.status === "cancelled") return;
+      const d = parseISO(a.scheduled_at);
+      const key = format(d, "yyyy-MM-dd");
+      if (!set.has(key)) {
+        set.add(key);
+        out.push(new Date(d.getFullYear(), d.getMonth(), d.getDate()));
+      }
+    });
+    return out;
+  }, [appointments]);
+
   // Group by 30-min slot bucket
   const slotBuckets = useMemo(() => {
     const map: Record<number, Appointment[]> = {};
