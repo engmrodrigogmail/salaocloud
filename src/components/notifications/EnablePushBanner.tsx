@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bell, X, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePushNotifications, type PushScope } from "@/hooks/usePushNotifications";
@@ -23,6 +23,8 @@ interface EnablePushBannerProps {
  */
 export function EnablePushBanner({ scope, clientId, establishmentId, storageKey }: EnablePushBannerProps) {
   const push = usePushNotifications();
+  const syncTriedRef = useRef(false);
+  const [syncFailed, setSyncFailed] = useState(false);
   const [dismissed, setDismissed] = useState(() => {
     try {
       return sessionStorage.getItem(storageKey) === "1";
@@ -31,17 +33,32 @@ export function EnablePushBanner({ scope, clientId, establishmentId, storageKey 
     }
   });
 
-  // Limpa eventual flag antiga de localStorage (versão anterior do banner)
-  try {
-    if (typeof localStorage !== "undefined" && localStorage.getItem(storageKey)) {
-      localStorage.removeItem(storageKey);
+  useEffect(() => {
+    // Limpa eventual flag antiga de localStorage (versão anterior do banner)
+    try {
+      if (typeof localStorage !== "undefined" && localStorage.getItem(storageKey)) {
+        localStorage.removeItem(storageKey);
+      }
+    } catch {
+      /* ignore */
     }
-  } catch {
-    /* ignore */
-  }
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (!push.supported || dismissed || syncTriedRef.current) return;
+    if (!push.isSubscribed || push.permission !== "granted") return;
+    if (scope === "client" && !clientId) return;
+    if (scope === "establishment" && !establishmentId) return;
+
+    syncTriedRef.current = true;
+    void push
+      .subscribe({ scope, client_id: clientId, establishment_id: establishmentId })
+      .then((ok) => setSyncFailed(!ok))
+      .catch(() => setSyncFailed(true));
+  }, [clientId, dismissed, establishmentId, push, scope]);
 
   if (!push.supported) return null;
-  if (push.isSubscribed) return null;
+  if (push.isSubscribed && !syncFailed) return null;
   if (dismissed) return null;
 
   const blocked = push.permission === "denied";
