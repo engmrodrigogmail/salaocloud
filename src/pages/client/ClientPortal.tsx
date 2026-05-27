@@ -32,6 +32,7 @@ import { EstablishmentNameHeader } from "@/components/branding/EstablishmentName
 import { EstablishmentAIChat } from "@/components/ai-assistant/EstablishmentAIChat";
 import { Vitrine, type ShowcaseImage } from "@/components/showcase/Vitrine";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { EnablePushBanner } from "@/components/notifications/EnablePushBanner";
 
 type Establishment = Tables<"establishments"> & { cancellation_policy?: string | null };
 type Service = Tables<"services">;
@@ -1898,6 +1899,13 @@ const ClientPortal = () => {
         name={establishment.name}
         subtitle={client?.name ? `Olá, ${client.name}` : undefined}
       />
+      {client?.id && (
+        <EnablePushBanner
+          scope="client"
+          clientId={client.id}
+          storageKey={`push-banner-dismissed:${client.id}`}
+        />
+      )}
       <div className="border-b border-border bg-background">
         <div className="max-w-7xl mx-auto px-4 py-2 flex justify-end items-center gap-1">
           {showcaseImages.length > 0 && (
