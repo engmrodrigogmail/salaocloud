@@ -49,7 +49,11 @@ export default function InternoComandas() {
   const [activeView, setActiveView] = useState<"open" | "history" | "deleted">("open");
 
   const { tabs, fetchTabs, createTab, closeTab, cancelTab, undoTabOpening, recalculateTotal, freezeTab, unfreezeTab } = useTabs(establishmentId);
-  const { items, fetchItems, addItem, updateItem, removeItem } = useTabItems(selectedTab?.id || null);
+  const { items: allItems, fetchItems, addItem, updateItem, removeItem } = useTabItems(selectedTab?.id || null);
+  const isRestrictedView = privacyTabItems && userRole === "professional" && !!currentProfessionalId;
+  const items = isRestrictedView
+    ? allItems.filter((it) => it.professional_id === currentProfessionalId)
+    : allItems;
   const { paymentMethods } = usePaymentMethods(establishmentId);
   const { products } = useProducts(establishmentId);
 
