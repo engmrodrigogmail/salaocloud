@@ -35,6 +35,7 @@ import { ChangePasswordGate } from "@/components/auth/ChangePasswordGate";
 import logo from "@/assets/logo-salaocloud-v5.png";
 import salonBg from "@/assets/salon-dark-bg.png";
 import { SilviaHelpButton } from "@/components/help/SilviaHelpButton";
+import { EnablePushBanner } from "@/components/notifications/EnablePushBanner";
 
 interface InternoLayoutProps {
   children: React.ReactNode;
