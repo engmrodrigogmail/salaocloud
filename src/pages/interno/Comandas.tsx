@@ -210,13 +210,14 @@ export default function InternoComandas() {
     try {
       const { data } = await supabase
         .from("establishments")
-        .select("id, owner_id, discount_pin_threshold_percent")
+        .select("id, owner_id, discount_pin_threshold_percent, privacy_tab_items_per_professional")
         .eq("slug", slug)
         .single();
       if (!data) { navigate("/"); return; }
       setEstablishmentId(data.id);
       const t = (data as any).discount_pin_threshold_percent;
       if (typeof t === "number") setDiscountPinThreshold(t);
+      setPrivacyTabItems((data as any).privacy_tab_items_per_professional === true);
 
       // Resolve current user role
       if (user && (data as any).owner_id === user.id) {
@@ -225,14 +226,14 @@ export default function InternoComandas() {
       } else if (user) {
         const { data: prof } = await supabase
           .from("professionals")
-          .select("is_manager, can_close_tabs")
+          .select("id, is_manager, can_close_tabs")
           .eq("establishment_id", data.id)
           .eq("user_id", user.id)
           .maybeSingle();
         const isManager = !!(prof as any)?.is_manager;
         setUserRole(isManager ? "manager" : "professional");
-        // Gerentes sempre podem fechar; demais profissionais dependem da flag.
         setCanClose(isManager ? true : (prof as any)?.can_close_tabs !== false);
+        setCurrentProfessionalId((prof as any)?.id ?? null);
       }
     } catch { navigate("/"); }
     finally { setLoading(false); }
