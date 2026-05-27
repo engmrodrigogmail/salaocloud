@@ -32,6 +32,7 @@ import { EstablishmentNameHeader } from "@/components/branding/EstablishmentName
 import { EstablishmentAIChat } from "@/components/ai-assistant/EstablishmentAIChat";
 import { Vitrine, type ShowcaseImage } from "@/components/showcase/Vitrine";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { EnablePushBanner } from "@/components/notifications/EnablePushBanner";
 
 type Establishment = Tables<"establishments"> & { cancellation_policy?: string | null };
 type Service = Tables<"services">;
