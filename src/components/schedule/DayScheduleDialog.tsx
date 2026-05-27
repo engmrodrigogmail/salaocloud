@@ -209,6 +209,11 @@ export function DayScheduleDialog({
                   }}
                   locale={ptBR}
                   initialFocus
+                  modifiers={{ hasAppt: datesWithAppointments }}
+                  modifiersClassNames={{
+                    hasAppt:
+                      "relative after:content-[''] after:absolute after:bottom-1 after:left-1/2 after:-translate-x-1/2 after:h-1.5 after:w-1.5 after:rounded-full after:bg-orange-500 after:shadow-[0_0_4px_rgba(249,115,22,0.6)] aria-selected:after:bg-primary-foreground",
+                  }}
                   className={cn("p-3 pointer-events-auto")}
                 />
               </PopoverContent>
