@@ -42,6 +42,7 @@ COMANDAS / CAIXA
 - Adicionar item (serviço ou produto): dentro da comanda aberta → "Adicionar item".
 - Aplicar desconto manual: dentro da comanda → "Aplicar desconto manual" (acima de um % exige PIN do gerente).
 - Aplicar cupom: na tela de finalizar comanda → campo "Cupom de desconto".
+- **Privacidade da comanda por profissional** (NOVO — vem ativado por padrão em todos os salões): cada profissional vê e lança APENAS os serviços que ele mesmo realizou na comanda do cliente, mesmo quando o atendimento é compartilhado. Dono, gerente e recepcionista (com permissão de fechar comanda) continuam vendo a comanda inteira para cobrar. Onde controlar: Portal → Configurações → aba "Caixa & Comandas" → "Privacidade da comanda por profissional". Use isso quando os profissionais começam a discutir comparando os serviços um do outro. Reforço também a nível de banco: profissional restrito não consegue criar/editar/excluir item lançado por outro.
 - Pagar com várias formas: na tela "Finalizar Comanda" → adicionar pagamento, escolher forma e valor parcial, depois adicionar outro pagamento.
 - Cadastrar formas de pagamento (PIX, dinheiro, débito, crédito, etc): Portal → Configurações → aba "Caixa & Comandas" → seção "Formas de Pagamento".
 - Bloquear exclusão de agendamento com comanda aberta: já é automático.
@@ -56,6 +57,7 @@ PROFISSIONAIS
 
 SERVIÇOS E PRODUTOS
 - Serviços: Portal → Serviços. Categorias: Portal → Categorias.
+- **Visível para clientes (NOVO)**: no cadastro/edição do serviço existe um toggle "Visível para clientes". Quando desligado, o serviço continua disponível para uso interno (comandas, agenda manual), mas NÃO aparece na vitrine pública nem na tela de agendamento online do cliente. Padrão: visível. Útil para serviços internos, promocionais limitados ou em teste.
 - Produtos (revenda): Portal → Produtos.
 
 COMISSÕES
@@ -64,6 +66,7 @@ COMISSÕES
 - Ver comissões dos profissionais: Portal → Comissões → aba "Acompanhamento" (tabela detalhada com filtros por coluna — profissional, serviço, cliente, status — e duplo filtro de período por data do serviço e data do pagamento). Aba "Relatório" mostra o agregado por profissional.
 - Profissional vê as próprias em Interno → Comissões.
 - Status da comissão: **Acerto Pendente** (ainda não pago ao profissional) e **Paga** (já acertada). Para marcar como paga: Portal → Comissões → aba "Acompanhamento" → botão "Marcar Paga" na linha ou seleção múltipla + "Pagar selecionadas". Quando marcada como paga, o sistema gera automaticamente a despesa no Financeiro (categoria Comissões) na data do pagamento.
+- **Formas de pagamento ao marcar comissão como paga (NOVO)**: ao confirmar o pagamento, abre o diálogo "Pagar Comissões" onde o salão escolhe **uma ou mais** formas (PIX, dinheiro, débito, crédito, transferência, etc.) e o valor pago em cada uma. O total das formas precisa fechar com o total da comissão. Os pagamentos ficam registrados na comissão e aparecem no relatório (não cai mais como "não informado"). Pagamentos antigos sem forma registrada podem ser ajustados pelo super admin.
 - Filtrar comissões pendentes vs pagas por período: já existe nos cards do Dashboard (Portal → Dashboard) e no Financeiro (Portal → Financeiro). Use o filtro de período da página + o seletor de status.
 - Modal "Ver detalhe das comissões" no Financeiro: dentro de Portal → Financeiro → aba DRE → botão "Ver detalhe das comissões". Abre tabela somente leitura com data, profissional, serviço, cliente, valor bruto, desconto da comanda (% e R$), abatimento da comissão, comissão final, status e data do pagamento. Tem os mesmos filtros por coluna e por período da aba Acompanhamento, mantendo o usuário ancorado no contexto do Financeiro.
 - **Recibo de pagamento de comissão (PDF)**: após "Pagar selecionadas" o sistema pergunta "Gerar recibo?". Se sim, abre uma tela com duas áreas de assinatura (responsável pelo salão em cima, profissional embaixo, divididas por linha horizontal) — gera **um recibo por profissional** com nome do salão, valor total por extenso, tabela detalhada (serviço, cliente, bruto, comissão) e os dois nomes abaixo das assinaturas. As imagens das assinaturas são descartadas assim que o PDF é gerado; reemissão exige nova coleta. O recibo pode ser baixado ou compartilhado (Web Share / WhatsApp).
