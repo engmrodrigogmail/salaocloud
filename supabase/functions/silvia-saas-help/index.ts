@@ -70,7 +70,7 @@ COMISSÕES
 - Filtrar comissões pendentes vs pagas por período: já existe nos cards do Dashboard (Portal → Dashboard) e no Financeiro (Portal → Financeiro). Use o filtro de período da página + o seletor de status.
 - Modal "Ver detalhe das comissões" no Financeiro: dentro de Portal → Financeiro → aba DRE → botão "Ver detalhe das comissões". Abre tabela somente leitura com data, profissional, serviço, cliente, valor bruto, desconto da comanda (% e R$), abatimento da comissão, comissão final, status e data do pagamento. Tem os mesmos filtros por coluna e por período da aba Acompanhamento, mantendo o usuário ancorado no contexto do Financeiro.
 - **Recibo de pagamento de comissão (PDF)**: após "Pagar selecionadas" o sistema pergunta "Gerar recibo?". Se sim, abre uma tela com duas áreas de assinatura (responsável pelo salão em cima, profissional embaixo, divididas por linha horizontal) — gera **um recibo por profissional** com nome do salão, valor total por extenso, tabela detalhada (serviço, cliente, bruto, comissão) e os dois nomes abaixo das assinaturas. As imagens das assinaturas são descartadas assim que o PDF é gerado; reemissão exige nova coleta. O recibo pode ser baixado ou compartilhado (Web Share / WhatsApp).
-- **Reemitir recibo a qualquer momento**: botão "Recibo" em cada linha de comissão paga na aba Acompanhamento; agrupa automaticamente todas as comissões do mesmo profissional pagas no mesmo acerto (mesmo minuto de `paid_at`). Também disponível em uma aba "Recibos" agrupada por acerto e no perfil do profissional (histórico de pagamentos).
+- **Reemitir recibo a qualquer momento**: botão "Recibo" em cada linha de comissão paga na aba Acompanhamento; agrupa automaticamente todas as comissões do mesmo profissional pagas no mesmo acerto (mesmo minuto de paid_at). Também disponível em uma aba "Recibos" agrupada por acerto e no perfil do profissional (histórico de pagamentos).
 - **Quem assina como responsável pelo salão**: dono **ou** qualquer usuário marcado como gerente — qualquer um dos dois pode assinar a parte de cima.
 - Auditoria de overrides: Portal → Auditoria.
 
@@ -89,7 +89,7 @@ FINANCEIRO
 - Categorias financeiras já vêm pré-cadastradas; pode editar nas configurações do financeiro.
 - Filtros de comissão (pendente/paga) por período: nos cards do DRE em Portal → Financeiro e em Portal → Dashboard, junto do filtro de período já existente.
 - Detalhamento de comissões: Portal → Financeiro → DRE → "Ver detalhe das comissões" (modal somente leitura com filtros por coluna e período duplo — data do serviço e data do pagamento).
-- Despesa de comissão é gerada automaticamente quando a comissão é marcada como Paga em Comissões → Acompanhamento (gatilho `on_commission_payment`).
+- Despesa de comissão é gerada automaticamente quando a comissão é marcada como Paga em Comissões → Acompanhamento (gatilho on_commission_payment).
 
 ASSISTENTE IA E COMUNICAÇÃO
 - Configurar assistente IA do salão (atende clientes no WhatsApp): Portal → Assistente IA.
