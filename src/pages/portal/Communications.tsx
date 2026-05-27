@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -60,16 +60,45 @@ export default function PortalCommunications() {
         .from("establishments").select("id").eq("slug", slug).maybeSingle();
       if (est?.id) {
         setEstablishmentId(est.id);
-        const { data: cs } = await supabase
-          .from("clients")
-          .select("id, name, email, phone")
-          .eq("establishment_id", est.id)
-          .order("name", { ascending: true });
-        setClients((cs ?? []) as ClientLite[]);
+        await loadClients(est.id, "");
         await loadHistory(est.id);
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
+
+  const loadClients = async (estId: string, search: string) => {
+    const q = search.trim();
+    let query = supabase
+      .from("clients")
+      .select("id, name, email, phone")
+      .eq("establishment_id", estId)
+      .order("name", { ascending: true })
+      .limit(500);
+    if (q) {
+      // OR ilike em name/email/phone (escapando vírgulas e parênteses)
+      const safe = q.replace(/[%,()]/g, " ");
+      query = query.or(
+        `name.ilike.%${safe}%,email.ilike.%${safe}%,phone.ilike.%${safe}%`,
+      );
+    }
+    const { data } = await query;
+    setClients((data ?? []) as ClientLite[]);
+  };
+
+  // Debounce de busca server-side
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (!establishmentId) return;
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => {
+      loadClients(establishmentId, clientSearch);
+    }, 250);
+    return () => {
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clientSearch, establishmentId]);
 
   const loadHistory = async (estId: string) => {
     setHistoryLoading(true);
@@ -111,15 +140,10 @@ export default function PortalCommunications() {
     }
   };
 
+  // Mantém selecionados visíveis no topo mesmo se não corresponderem à busca atual
   const filteredClients = useMemo(() => {
-    const q = clientSearch.toLowerCase().trim();
-    if (!q) return clients;
-    return clients.filter(c =>
-      c.name?.toLowerCase().includes(q)
-      || c.email?.toLowerCase().includes(q)
-      || c.phone?.includes(q),
-    );
-  }, [clients, clientSearch]);
+    return clients;
+  }, [clients]);
 
   const toggleClient = (id: string) => {
     setSelectedClients(prev => {
