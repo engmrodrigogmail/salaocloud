@@ -35,6 +35,7 @@ import { ChangePasswordGate } from "@/components/auth/ChangePasswordGate";
 import logo from "@/assets/logo-salaocloud-v5.png";
 import salonBg from "@/assets/salon-dark-bg.png";
 import { SilviaHelpButton } from "@/components/help/SilviaHelpButton";
+import { EnablePushBanner } from "@/components/notifications/EnablePushBanner";
 
 interface InternoLayoutProps {
   children: React.ReactNode;
@@ -245,6 +246,18 @@ export function InternoLayout({ children }: InternoLayoutProps) {
         className="lg:pl-64 pt-16 salon-photo-bg min-h-screen"
         style={{ ['--salon-bg-image' as any]: `url(${salonBg})` }}
       >
+        {isOwner && establishmentId ? (
+          <EnablePushBanner
+            scope="establishment"
+            establishmentId={establishmentId}
+            storageKey={`push-banner-dismissed:interno:est:${establishmentId}:${user?.id ?? "anon"}`}
+          />
+        ) : professionalId ? (
+          <EnablePushBanner
+            scope="professional"
+            storageKey={`push-banner-dismissed:interno:prof:${professionalId}`}
+          />
+        ) : null}
         <div className="p-4 sm:p-6">{children}</div>
       </main>
       <SilviaHelpButton profile={isOwner || isManager ? "recepcionista" : "profissional"} />

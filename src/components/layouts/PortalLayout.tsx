@@ -54,6 +54,7 @@ import { usePortalTour } from "@/hooks/usePortalTour";
 import { useEduAccess } from "@/hooks/useEduAccess";
 import { useTrackPageAccess } from "@/hooks/useTrackPageAccess";
 import { SilviaHelpButton } from "@/components/help/SilviaHelpButton";
+import { EnablePushBanner } from "@/components/notifications/EnablePushBanner";
 import logo from "@/assets/logo-salaocloud-v5.png";
 import salonBg from "@/assets/salon-dark-bg.png";
 
@@ -309,6 +310,13 @@ export function PortalLayout({ children }: PortalLayoutProps) {
         className={`lg:pl-64 ${isImpersonating ? 'pt-[104px]' : 'pt-16'} salon-photo-bg min-h-screen`}
         style={{ ['--salon-bg-image' as any]: `url(${salonBg})` }}
       >
+        {establishmentId && (
+          <EnablePushBanner
+            scope="establishment"
+            establishmentId={establishmentId}
+            storageKey={`push-banner-dismissed:portal:${establishmentId}:${user?.id ?? "anon"}`}
+          />
+        )}
         <div className="p-4 sm:p-6">{children}</div>
       </main>
       <SilviaHelpButton profile="dono" />
