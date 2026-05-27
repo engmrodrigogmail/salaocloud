@@ -1,0 +1,2 @@
+ALTER TABLE public.establishments ALTER COLUMN privacy_tab_items_per_professional SET DEFAULT true;
+UPDATE public.establishments SET privacy_tab_items_per_professional = true WHERE privacy_tab_items_per_professional IS DISTINCT FROM true;
