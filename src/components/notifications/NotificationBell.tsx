@@ -47,10 +47,10 @@ export function NotificationBell({
   useEffect(() => {
     if (!recipientId) return;
     if (!push.supported || push.isLoading) return;
-    if (push.permission === "denied") return;
+    if (push.permission !== "granted") return;
     if (autoTriedRef.current) return;
-    // Sempre tenta inscrever quando permission é "default" ou "granted".
-    // autoTriedRef evita múltiplas tentativas simultâneas no mesmo mount.
+    // Só ressincroniza quando a permissão já foi concedida. No iPhone, pedir
+    // permissão sem um toque do usuário faz o iOS negar/falhar a ativação.
     autoTriedRef.current = true;
     push
       .subscribe({
