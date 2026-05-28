@@ -154,6 +154,7 @@ export default function PortalSettings() {
         threshold === null || threshold === undefined ? "10" : String(threshold),
       );
       setPrivacyTabItems((data as any).privacy_tab_items_per_professional === true);
+      setHideClientContacts((data as any).privacy_hide_client_contacts_from_professionals !== false);
     } catch (error) {
       console.error("Error fetching establishment:", error);
       toast.error("Erro ao carregar dados");
