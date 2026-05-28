@@ -79,6 +79,8 @@ export default function PortalSettings() {
   const [savingCheckout, setSavingCheckout] = useState(false);
   const [privacyTabItems, setPrivacyTabItems] = useState(false);
   const [savingPrivacyTabItems, setSavingPrivacyTabItems] = useState(false);
+  const [hideClientContacts, setHideClientContacts] = useState(true);
+  const [savingHideClientContacts, setSavingHideClientContacts] = useState(false);
   const [activeTab, setActiveTab] = useState("working-hours");
 
   // Sobre (dados de cadastro + senha)
