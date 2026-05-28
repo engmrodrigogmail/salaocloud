@@ -288,6 +288,31 @@ export default function PortalSettings() {
     }
   };
 
+  const handleSaveHideClientContacts = async (next: boolean) => {
+    if (!establishment) return;
+    setSavingHideClientContacts(true);
+    const prev = hideClientContacts;
+    // toggle semantics: switch ON = professionals PODEM ver (hide = false)
+    const hide = !next;
+    setHideClientContacts(hide);
+    try {
+      const { error } = await supabase
+        .from("establishments")
+        .update({ privacy_hide_client_contacts_from_professionals: hide } as never)
+        .eq("id", establishment.id);
+      if (error) throw error;
+      toast.success(hide
+        ? "Privacidade ativada: profissionais comuns não acessam contatos dos clientes."
+        : "Profissionais agora podem ver e editar contatos dos clientes.");
+    } catch (e) {
+      console.error("Error saving client contacts privacy:", e);
+      setHideClientContacts(prev);
+      toast.error("Erro ao salvar privacidade de contatos");
+    } finally {
+      setSavingHideClientContacts(false);
+    }
+  };
+
 
 
   const handleSaveAbout = async () => {
