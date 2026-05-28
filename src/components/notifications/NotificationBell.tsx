@@ -11,6 +11,7 @@ import {
   type NotificationRecipientType,
 } from "@/hooks/useNotifications";
 import { usePushNotifications, type PushScope } from "@/hooks/usePushNotifications";
+import { getPushFailureInstruction } from "@/lib/pushPlatform";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -73,7 +74,7 @@ export function NotificationBell({
       establishment_id: pushScope === "establishment" ? recipientId ?? undefined : undefined,
     });
     if (ok) toast.success("Notificações ativadas neste dispositivo!", { position: "top-center" });
-    else toast.error("Não foi possível ativar as notificações.", { position: "top-center" });
+    else toast.error(getPushFailureInstruction(), { position: "top-center", duration: 10000 });
   };
 
   return (
