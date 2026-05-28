@@ -67,6 +67,24 @@ Deno.serve(async (req) => {
         break;
     }
 
+    // Bloqueia push do salão demo (todos os tipos de destinatário ligados a ele)
+    const DEMO_ESTABLISHMENT_ID = "741f11ed-9400-4d39-af47-418da6677303";
+    let isDemo = false;
+    if (input.recipient_type === "establishment") {
+      isDemo = input.recipient_id === DEMO_ESTABLISHMENT_ID;
+    } else if (input.recipient_type === "professional") {
+      const { data: p } = await admin
+        .from("professionals").select("establishment_id").eq("id", input.recipient_id).maybeSingle();
+      isDemo = p?.establishment_id === DEMO_ESTABLISHMENT_ID;
+    } else if (input.recipient_type === "client") {
+      const { data: c } = await admin
+        .from("clients").select("establishment_id").eq("id", input.recipient_id).maybeSingle();
+      isDemo = c?.establishment_id === DEMO_ESTABLISHMENT_ID;
+    }
+    if (isDemo) {
+      return json({ ok: true, skipped: "demo_establishment", sent: 0, failed: 0, total: 0 });
+    }
+
     const { data: subs, error: subsErr } = await admin
       .from(table)
       .select("id, endpoint, p256dh, auth")
