@@ -137,7 +137,6 @@ Deno.serve(async (req) => {
         ...baseRow,
         user_id: userId,
         professional_id: p.id,
-        establishment_id: p.establishment_id,
       }));
 
       const { error } = await admin.from("professional_push_subscriptions").upsert(
