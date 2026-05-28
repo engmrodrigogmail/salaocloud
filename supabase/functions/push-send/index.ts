@@ -101,7 +101,9 @@ Deno.serve(async (req) => {
       .eq("is_active", true);
     if (subsErr) return json({ error: subsErr.message }, 500);
 
-    // 1. Grava notification (in-app)
+    // 1. Grava notification (in-app) — já marcamos delivered_push=true porque
+    //    o envio do push é feito logo abaixo nesta mesma chamada. Isso evita
+    //    que o cron `push-process-pending` reenviar a mesma notificação.
     let notification_id: string | null = null;
     if (!input.skip_history) {
       const { data: notif, error: notifErr } = await admin
@@ -115,6 +117,7 @@ Deno.serve(async (req) => {
           body: input.body,
           link: input.link ?? null,
           data: input.data ?? {},
+          delivered_push: true,
         })
         .select("id")
         .single();
