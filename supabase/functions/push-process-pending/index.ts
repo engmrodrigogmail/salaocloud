@@ -118,8 +118,18 @@ Deno.serve(async (req) => {
     .lte("scheduled_at", horizonAhead)
     .limit(200);
 
+  const DEMO_ESTABLISHMENT_ID = "741f11ed-9400-4d39-af47-418da6677303";
+
   for (const a of appts ?? []) {
     if (!a.client_id) continue;
+    if (a.establishment_id === DEMO_ESTABLISHMENT_ID) {
+      // Salão demo: não envia lembretes; marca como enviado para não reprocessar
+      await admin
+        .from("appointments")
+        .update({ reminder_sent_at: new Date().toISOString() })
+        .eq("id", a.id);
+      continue;
+    }
 
     // Settings do estabelecimento
     const { data: settings } = await admin
