@@ -75,6 +75,7 @@ export default function InternoAgenda() {
   const [currentProfessionalId, setCurrentProfessionalId] = useState<string | null>(null);
   const [isOwner, setIsOwner] = useState(false);
   const [isManager, setIsManager] = useState(false);
+  const [canViewClientContacts, setCanViewClientContacts] = useState(true);
   
   // Dialog states
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
@@ -141,7 +142,7 @@ export default function InternoAgenda() {
     try {
       const { data, error } = await supabase
         .from("establishments")
-        .select("id, name, owner_id, working_hours, agenda_slot_interval, agenda_expand_hours")
+        .select("id, name, owner_id, working_hours, agenda_slot_interval, agenda_expand_hours, privacy_hide_client_contacts_from_professionals")
         .eq("slug", slug)
         .single();
 
@@ -153,24 +154,30 @@ export default function InternoAgenda() {
       // Check if user is owner OR a professional of this establishment
       const ownerCheck = data.owner_id === user?.id;
       setIsOwner(ownerCheck);
-      
-      if (!ownerCheck) {
+
+      const hideContacts = (data as any).privacy_hide_client_contacts_from_professionals !== false;
+
+      if (ownerCheck) {
+        setCanViewClientContacts(true);
+      } else {
         // Check if user is a professional of this establishment
         const { data: professional } = await supabase
           .from("professionals")
-          .select("id, is_manager")
+          .select("id, is_manager, can_close_tabs")
           .eq("establishment_id", data.id)
           .eq("user_id", user?.id)
           .maybeSingle();
-        
+
         if (!professional) {
           navigate("/");
           return;
         }
-        
+
         // Store the professional's ID for filtering
         setCurrentProfessionalId(professional.id);
         setIsManager(!!professional.is_manager);
+        const privileged = !!professional.is_manager || (professional as any).can_close_tabs === true;
+        setCanViewClientContacts(privileged || !hideContacts);
       }
 
       setEstablishment({
@@ -801,14 +808,18 @@ export default function InternoAgenda() {
                 <span className="text-muted-foreground">Cliente:</span>
                 <span className="font-medium">{selectedAppointment.client_name}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Telefone:</span>
-                <span>{selectedAppointment.client_phone}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">CPF:</span>
-                <span>{formatCpf(selectedAppointment.clients?.cpf)}</span>
-              </div>
+              {canViewClientContacts && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Telefone:</span>
+                    <span>{selectedAppointment.client_phone || "—"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">CPF:</span>
+                    <span>{formatCpf(selectedAppointment.clients?.cpf)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Serviço:</span>
                 <span>{selectedAppointment.services?.name}</span>

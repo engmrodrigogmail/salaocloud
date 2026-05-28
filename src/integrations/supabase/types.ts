@@ -2198,6 +2198,7 @@ export type Database = {
           no_show_tolerance_minutes: number
           owner_id: string
           phone: string | null
+          privacy_hide_client_contacts_from_professionals: boolean
           privacy_tab_items_per_professional: boolean
           show_catalog: boolean
           show_prices: boolean
@@ -2240,6 +2241,7 @@ export type Database = {
           no_show_tolerance_minutes?: number
           owner_id: string
           phone?: string | null
+          privacy_hide_client_contacts_from_professionals?: boolean
           privacy_tab_items_per_professional?: boolean
           show_catalog?: boolean
           show_prices?: boolean
@@ -2282,6 +2284,7 @@ export type Database = {
           no_show_tolerance_minutes?: number
           owner_id?: string
           phone?: string | null
+          privacy_hide_client_contacts_from_professionals?: boolean
           privacy_tab_items_per_professional?: boolean
           show_catalog?: boolean
           show_prices?: boolean
@@ -5068,6 +5071,10 @@ export type Database = {
         Returns: {
           marked_count: number
         }[]
+      }
+      can_view_client_contacts: {
+        Args: { _establishment_id: string; _user_id: string }
+        Returns: boolean
       }
       clear_must_change_password: { Args: never; Returns: Json }
       close_tab_atomic:
