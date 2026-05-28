@@ -11,6 +11,7 @@ import {
   type NotificationRecipientType,
 } from "@/hooks/useNotifications";
 import { usePushNotifications, type PushScope } from "@/hooks/usePushNotifications";
+import { getPushFailureInstruction } from "@/lib/pushPlatform";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -46,10 +47,10 @@ export function NotificationBell({
   useEffect(() => {
     if (!recipientId) return;
     if (!push.supported || push.isLoading) return;
-    if (push.permission === "denied") return;
+    if (push.permission !== "granted") return;
     if (autoTriedRef.current) return;
-    // Sempre tenta inscrever quando permission é "default" ou "granted".
-    // autoTriedRef evita múltiplas tentativas simultâneas no mesmo mount.
+    // Só ressincroniza quando a permissão já foi concedida. No iPhone, pedir
+    // permissão sem um toque do usuário faz o iOS negar/falhar a ativação.
     autoTriedRef.current = true;
     push
       .subscribe({
@@ -73,7 +74,7 @@ export function NotificationBell({
       establishment_id: pushScope === "establishment" ? recipientId ?? undefined : undefined,
     });
     if (ok) toast.success("Notificações ativadas neste dispositivo!", { position: "top-center" });
-    else toast.error("Não foi possível ativar as notificações.", { position: "top-center" });
+    else toast.error(getPushFailureInstruction(), { position: "top-center", duration: 10000 });
   };
 
   return (

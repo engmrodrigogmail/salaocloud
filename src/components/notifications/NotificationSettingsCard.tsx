@@ -9,6 +9,7 @@ import { Bell, Save } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
+import { getPushFailureInstruction } from "@/lib/pushPlatform";
 
 interface Settings {
   appointment_reminder_enabled: boolean;
@@ -72,6 +73,12 @@ export function NotificationSettingsCard({ establishmentId }: { establishmentId:
     }
   };
 
+  const handleEnablePush = async () => {
+    const ok = await push.subscribe({ scope: "establishment", establishment_id: establishmentId });
+    if (ok) toast.success("Notificações ativadas neste dispositivo!", { position: "top-center", duration: 2000 });
+    else toast.error(getPushFailureInstruction(), { position: "top-center", duration: 10000 });
+  };
+
   if (loading) return null;
 
   return (
@@ -101,8 +108,8 @@ export function NotificationSettingsCard({ establishmentId }: { establishmentId:
             ) : (
               <Button
                 size="sm"
-                onClick={() => push.subscribe({ scope: "establishment", establishment_id: establishmentId })}
-                disabled={push.isLoading || push.permission === "denied"}
+                onClick={handleEnablePush}
+                disabled={push.isLoading}
               >
                 Ativar
               </Button>

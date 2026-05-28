@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Bell, X, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePushNotifications, type PushScope } from "@/hooks/usePushNotifications";
+import { getPushBlockedInstruction, getPushFailureInstruction } from "@/lib/pushPlatform";
 import { toast } from "sonner";
 
 interface EnablePushBannerProps {
@@ -69,25 +70,7 @@ export function EnablePushBanner({ scope, clientId, establishmentId, storageKey 
       toast.success("Notificações ativadas neste dispositivo!", { position: "top-center", duration: 2000 });
       return;
     }
-    // Detecta iOS + se está rodando dentro do PWA instalado (standalone)
-    const ua = navigator.userAgent || "";
-    const isIOS = /iPad|iPhone|iPod/.test(ua) || (ua.includes("Mac") && "ontouchend" in document);
-    const isStandalone =
-      window.matchMedia?.("(display-mode: standalone)").matches ||
-      // @ts-expect-error - propriedade legada do Safari iOS
-      window.navigator.standalone === true;
-
-    if (isIOS && !isStandalone) {
-      toast.error(
-        "No iPhone é preciso abrir o app pelo ícone instalado na tela inicial. Se ainda não instalou: Safari → botão Compartilhar → 'Adicionar à Tela de Início', depois abra pelo ícone e toque em Ativar.",
-        { position: "top-center", duration: 8000 },
-      );
-    } else {
-      toast.error(
-        "Não foi possível ativar. Verifique se as notificações deste site estão liberadas no navegador.",
-        { position: "top-center", duration: 4000 },
-      );
-    }
+    toast.error(getPushFailureInstruction(), { position: "top-center", duration: 10000 });
   };
 
   const handleDismiss = () => {
@@ -107,7 +90,7 @@ export function EnablePushBanner({ scope, clientId, establishmentId, storageKey 
           <p className="text-xs sm:text-sm flex-1 leading-tight">
             <span className="font-medium">Notificações bloqueadas.</span>{" "}
             <span className="text-muted-foreground">
-              Toque no cadeado ao lado do endereço do site e libere "Notificações".
+              {getPushBlockedInstruction()}
             </span>
           </p>
           <Button
