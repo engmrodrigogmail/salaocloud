@@ -35,6 +35,15 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // push-send é destinado apenas a triggers/cron/admin server-side.
+    // Exige Authorization com a service role key — nunca aceita JWT de usuário.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    if (token !== serviceKey) {
+      return json({ error: "forbidden" }, 403);
+    }
+
     const input = (await req.json()) as SendInput;
     if (!input?.recipient_type || !input?.recipient_id || !input?.title || !input?.body) {
       return json({ error: "invalid_payload" }, 400);
@@ -42,7 +51,7 @@ Deno.serve(async (req) => {
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      serviceKey,
     );
 
     // Resolve subscriptions table + filter
