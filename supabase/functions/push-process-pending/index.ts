@@ -30,12 +30,43 @@ function tableForRecipient(type: string): { table: string; column: string } | nu
   }
 }
 
+const DEMO_ESTABLISHMENT_ID = "741f11ed-9400-4d39-af47-418da6677303";
+
+async function isDemoRecipient(
+  admin: ReturnType<typeof createClient>,
+  recipient_type: string,
+  recipient_id: string,
+): Promise<boolean> {
+  if (recipient_type === "establishment") return recipient_id === DEMO_ESTABLISHMENT_ID;
+  if (recipient_type === "professional") {
+    const { data: p } = await admin
+      .from("professionals")
+      .select("establishment_id")
+      .eq("id", recipient_id)
+      .maybeSingle();
+    return p?.establishment_id === DEMO_ESTABLISHMENT_ID;
+  }
+  if (recipient_type === "client") {
+    const { data: c } = await admin
+      .from("clients")
+      .select("establishment_id")
+      .eq("id", recipient_id)
+      .maybeSingle();
+    return c?.establishment_id === DEMO_ESTABLISHMENT_ID;
+  }
+  return false;
+}
+
 async function sendToRecipient(
   admin: ReturnType<typeof createClient>,
   recipient_type: string,
   recipient_id: string,
   payload: PushPayload,
 ): Promise<{ sent: number; failed: number; total: number }> {
+  if (await isDemoRecipient(admin, recipient_type, recipient_id)) {
+    return { sent: 0, failed: 0, total: 0 };
+  }
+
   const target = tableForRecipient(recipient_type);
   if (!target) return { sent: 0, failed: 0, total: 0 };
 
@@ -89,6 +120,12 @@ Deno.serve(async (req) => {
     .limit(50);
 
   for (const n of pending ?? []) {
+    if (await isDemoRecipient(admin, n.recipient_type, n.recipient_id)) {
+      await admin.from("notifications").update({ delivered_push: true }).eq("id", n.id);
+      result.notifications_processed++;
+      continue;
+    }
+
     const payload: PushPayload = {
       title: n.title,
       body: n.body,
@@ -117,8 +154,6 @@ Deno.serve(async (req) => {
     .gte("scheduled_at", now.toISOString())
     .lte("scheduled_at", horizonAhead)
     .limit(200);
-
-  const DEMO_ESTABLISHMENT_ID = "741f11ed-9400-4d39-af47-418da6677303";
 
   for (const a of appts ?? []) {
     if (!a.client_id) continue;
