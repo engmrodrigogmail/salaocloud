@@ -808,14 +808,18 @@ export default function InternoAgenda() {
                 <span className="text-muted-foreground">Cliente:</span>
                 <span className="font-medium">{selectedAppointment.client_name}</span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Telefone:</span>
-                <span>{selectedAppointment.client_phone}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">CPF:</span>
-                <span>{formatCpf(selectedAppointment.clients?.cpf)}</span>
-              </div>
+              {canViewClientContacts && (
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Telefone:</span>
+                    <span>{selectedAppointment.client_phone || "—"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">CPF:</span>
+                    <span>{formatCpf(selectedAppointment.clients?.cpf)}</span>
+                  </div>
+                </>
+              )}
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Serviço:</span>
                 <span>{selectedAppointment.services?.name}</span>
