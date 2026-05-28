@@ -159,7 +159,8 @@ Deno.serve(async (req) => {
       return json({ ok: true, total: 0, sent: 0, failed: 0, notifications_created: 0 });
     }
 
-    // 1. Insere notificações em lote
+    // 1. Insere notificações em lote — já marcamos delivered_push=true porque
+    //    o push será disparado logo abaixo. Evita reenvio pelo cron.
     const rows = recipients.map((r) => ({
       recipient_type: r.type,
       recipient_id: r.id,
@@ -169,6 +170,7 @@ Deno.serve(async (req) => {
       body: input.body,
       link: input.link ?? null,
       data: input.category ? { category: input.category } : {},
+      delivered_push: true,
     }));
     const { data: inserted, error: insertErr } = await admin
       .from("notifications")

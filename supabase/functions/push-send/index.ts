@@ -35,6 +35,15 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // push-send é destinado apenas a triggers/cron/admin server-side.
+    // Exige Authorization com a service role key — nunca aceita JWT de usuário.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    if (token !== serviceKey) {
+      return json({ error: "forbidden" }, 403);
+    }
+
     const input = (await req.json()) as SendInput;
     if (!input?.recipient_type || !input?.recipient_id || !input?.title || !input?.body) {
       return json({ error: "invalid_payload" }, 400);
@@ -42,7 +51,7 @@ Deno.serve(async (req) => {
 
     const admin = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      serviceKey,
     );
 
     // Resolve subscriptions table + filter
@@ -92,7 +101,9 @@ Deno.serve(async (req) => {
       .eq("is_active", true);
     if (subsErr) return json({ error: subsErr.message }, 500);
 
-    // 1. Grava notification (in-app)
+    // 1. Grava notification (in-app) — já marcamos delivered_push=true porque
+    //    o envio do push é feito logo abaixo nesta mesma chamada. Isso evita
+    //    que o cron `push-process-pending` reenviar a mesma notificação.
     let notification_id: string | null = null;
     if (!input.skip_history) {
       const { data: notif, error: notifErr } = await admin
@@ -106,6 +117,7 @@ Deno.serve(async (req) => {
           body: input.body,
           link: input.link ?? null,
           data: input.data ?? {},
+          delivered_push: true,
         })
         .select("id")
         .single();
