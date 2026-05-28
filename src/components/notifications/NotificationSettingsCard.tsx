@@ -109,7 +109,7 @@ export function NotificationSettingsCard({ establishmentId }: { establishmentId:
               <Button
                 size="sm"
                 onClick={handleEnablePush}
-                disabled={push.isLoading || push.permission === "denied"}
+                disabled={push.isLoading}
               >
                 Ativar
               </Button>
