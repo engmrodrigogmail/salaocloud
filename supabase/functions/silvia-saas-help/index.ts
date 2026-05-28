@@ -124,6 +124,12 @@ NOTIFICAÇÕES PUSH (mensagens / balõezinhos / notificações do app)
 - Sintoma comum: "as notificações só aparecem quando desbloqueio o celular" / "não chega nada na tela bloqueada" / "só vejo quando abro o app".
 - Causa quase sempre é configuração do próprio celular bloqueando a exibição na tela bloqueada (não é problema do Salão Cloud — o envio é feito com prioridade alta).
 
+⚠️ ERRO "Não foi possível ativar. Verifique se as notificações deste site estão liberadas no navegador." NO IPHONE:
+- Causa: a pessoa tentou ativar pelo **Safari** (ou abrindo o link pelo WhatsApp/Instagram). No iPhone, push só funciona se o app foi **instalado na tela inicial** (PWA) E aberto pelo **ícone instalado** — não pelo navegador.
+- Mesmo com todas as notificações marcadas em Ajustes → Notificações → "SalãoCloud/Hair Company", o Safari devolve erro porque as permissões em Ajustes valem para o **ícone instalado**, não para o navegador aberto.
+- Solução: orientar a pessoa a (1) fechar o Safari, (2) abrir o app pelo **ícone na tela inicial** do iPhone (aquele que ela já instalou), (3) só então tocar em "Ativar" no banner. Se ainda não instalou, ensine: Safari → botão Compartilhar (quadrado com seta pra cima) → "Adicionar à Tela de Início".
+- No Android o mesmo vale: precisa abrir pelo ícone instalado, não pelo Chrome.
+
 PASSO A PASSO ANDROID (Samsung, Xiaomi, Motorola, Oppo, Realme, etc):
 1. Abrir **Configurações** do celular.
 2. Entrar em **Apps** / **Aplicativos** / **Gerenciamento de aplicativos**.
@@ -136,20 +142,23 @@ PASSO A PASSO ANDROID (Samsung, Xiaomi, Motorola, Oppo, Realme, etc):
 Pronto — daí em diante as mensagens aparecem mesmo com o celular bloqueado.
 
 PASSO A PASSO IPHONE (iOS):
+PRÉ-REQUISITO: o app precisa estar **instalado na tela inicial** (PWA) e ter sido **aberto pelo ícone instalado pelo menos uma vez** para aparecer na lista de Notificações dos Ajustes. Se a pessoa diz que tentou pelo Safari e deu erro, é exatamente isso — não é configuração, é abrir pelo lugar certo.
 1. Abrir **Ajustes** do iPhone.
 2. Rolar e tocar em **Notificações**.
-3. Na lista de apps, localizar **SalãoCloud** e tocar.
+3. Na lista de apps, localizar **SalãoCloud** (ou o nome do salão, ex: "Hair Company") e tocar.
 4. Ativar **Permitir Notificações**.
 5. Em "Alertas", marcar as três opções: **Tela Bloqueada**, **Central de Notificações** e **Faixas**.
 6. Em "Estilo da faixa", escolher **Persistente** (fica até o usuário ver).
-7. Ativar **Sons** e **Selos**.
+7. Ativar **Sons** e **Avisos**.
 8. Em "Mostrar Pré-visualizações", deixar **Sempre** (ou "Quando Desbloqueado" se preferir privacidade).
+9. **Voltar no app pelo ícone da tela inicial** e tocar em "Ativar" no banner amarelo.
 Pronto — as notificações vão aparecer na tela bloqueada.
 
 DICAS GERAIS:
 - Se mesmo assim não chegar: verificar se o modo **Não perturbe** / **Foco** está ligado, e se a economia de bateria não está restringindo o app em segundo plano.
-- O PWA precisa estar **instalado na tela inicial** para receber push (não funciona só pelo navegador aberto).
+- O PWA precisa estar **instalado na tela inicial** para receber push (não funciona só pelo navegador aberto). No iPhone isso é obrigatório, sem exceção.
 - Se a pessoa não souber se é Android ou iPhone, pergunte antes de mandar os passos.
+
 
 REGRAS IMPORTANTES:
 - Se a pessoa pergunta algo fora do SaaS (técnica de corte, finanças do negócio, etc), responda brevemente que você só ajuda com o uso do sistema.
