@@ -858,6 +858,37 @@ export default function PortalSettings() {
               </CardContent>
             </Card>
 
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Eye className="h-5 w-5 text-primary" />
+                  Contatos dos clientes para profissionais
+                </CardTitle>
+                <CardDescription>
+                  Por padrão, profissionais comuns <strong>não acessam</strong> telefone,
+                  e-mail e CPF dos clientes — nem na agenda, nem em consultas. Eles podem
+                  apenas cadastrar um cliente novo no balcão na primeira vez. Gerentes,
+                  recepcionistas (com permissão de fechar comandas) e o dono continuam
+                  vendo tudo. Ative a opção abaixo se quiser liberar para todos.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex items-start justify-between gap-4">
+                <div className="space-y-1 text-sm">
+                  <p className="font-medium">Permitir que profissionais vejam e editem contatos</p>
+                  <p className="text-muted-foreground">
+                    Quando ligado, qualquer profissional ativo passa a enxergar telefone,
+                    e-mail e CPF dos clientes do salão.
+                  </p>
+                </div>
+                <Switch
+                  checked={!hideClientContacts}
+                  disabled={savingHideClientContacts}
+                  onCheckedChange={handleSaveHideClientContacts}
+                />
+              </CardContent>
+            </Card>
+
+
             {establishment?.id && <PaymentMethodsCard establishmentId={establishment.id} />}
           </TabsContent>
 
