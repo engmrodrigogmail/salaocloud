@@ -132,11 +132,9 @@ Deno.serve(async (req) => {
       url: n.link ?? undefined,
       data: { notification_id: n.id, ...((n.data as Record<string, unknown>) ?? {}) },
     };
-    const sendResult = await sendToRecipient(admin, n.recipient_type, n.recipient_id, payload);
-    if (sendResult.sent > 0 || sendResult.total === 0) {
-      await admin.from("notifications").update({ delivered_push: true }).eq("id", n.id);
-      result.notifications_processed++;
-    }
+    await sendToRecipient(admin, n.recipient_type, n.recipient_id, payload);
+    await admin.from("notifications").update({ delivered_push: true }).eq("id", n.id);
+    result.notifications_processed++;
   }
 
   // ============ 2) LEMBRETES DE AGENDAMENTO ============
