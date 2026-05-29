@@ -5072,6 +5072,10 @@ export type Database = {
           marked_count: number
         }[]
       }
+      can_professional_view_tab: {
+        Args: { _tab_id: string; _user_id: string }
+        Returns: boolean
+      }
       can_view_client_contacts: {
         Args: { _establishment_id: string; _user_id: string }
         Returns: boolean
