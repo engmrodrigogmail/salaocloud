@@ -48,12 +48,36 @@ export default function InternoComandas() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [activeView, setActiveView] = useState<"open" | "history" | "deleted">("open");
 
-  const { tabs, fetchTabs, createTab, closeTab, cancelTab, undoTabOpening, recalculateTotal, freezeTab, unfreezeTab } = useTabs(establishmentId);
-  const { items: allItems, fetchItems, addItem, updateItem, removeItem } = useTabItems(selectedTab?.id || null);
+  const { tabs: allTabs, fetchTabs, createTab, closeTab, cancelTab, undoTabOpening, recalculateTotal, freezeTab, unfreezeTab } = useTabs(establishmentId);
+  const [participatedTabIds, setParticipatedTabIds] = useState<Set<string>>(new Set());
   const isRestrictedView = privacyTabItems && userRole === "professional" && !!currentProfessionalId;
+  const tabs = isRestrictedView
+    ? allTabs.filter((t: any) => t.professional_id === currentProfessionalId || participatedTabIds.has(t.id))
+    : allTabs;
+  const { items: allItems, fetchItems, addItem, updateItem, removeItem } = useTabItems(selectedTab?.id || null);
   const items = isRestrictedView
     ? allItems.filter((it) => it.professional_id === currentProfessionalId)
     : allItems;
+
+  // When privacy is on, fetch which tabs the current professional participates in (has items)
+  useEffect(() => {
+    if (!isRestrictedView || allTabs.length === 0) {
+      setParticipatedTabIds(new Set());
+      return;
+    }
+    const tabIds = allTabs.map((t: any) => t.id);
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("tab_items")
+        .select("tab_id")
+        .eq("professional_id", currentProfessionalId!)
+        .in("tab_id", tabIds);
+      if (cancelled) return;
+      setParticipatedTabIds(new Set((data || []).map((r: any) => r.tab_id)));
+    })();
+    return () => { cancelled = true; };
+  }, [isRestrictedView, currentProfessionalId, allTabs]);
   const { paymentMethods } = usePaymentMethods(establishmentId);
   const { products } = useProducts(establishmentId);
 
