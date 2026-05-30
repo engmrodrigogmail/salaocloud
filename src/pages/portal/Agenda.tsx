@@ -377,9 +377,10 @@ export default function PortalAgenda() {
       setDialogOpen(false);
       fetchAppointments();
       navigate(`/interno/${slug}/comandas`);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error opening tab from appointment:", error);
-      toast.error("Erro ao abrir comanda");
+      const msg = error?.message || error?.error_description || error?.hint || error?.details;
+      toast.error(msg ? `Erro ao abrir comanda: ${msg}` : "Erro ao abrir comanda");
     }
   };
 
