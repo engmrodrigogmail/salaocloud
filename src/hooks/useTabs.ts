@@ -286,9 +286,10 @@ export function useTabs(establishmentId: string | null) {
       toast.success("Comanda aberta com sucesso");
       await fetchTabs("open");
       return { ...(data as Tab), appointment_id: appointmentId } as Tab;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating tab:", error);
-      toast.error("Erro ao abrir comanda");
+      const msg = error?.message || error?.hint || error?.details;
+      toast.error(msg ? `Erro ao abrir comanda: ${msg}` : "Erro ao abrir comanda");
       return null;
     }
   };
