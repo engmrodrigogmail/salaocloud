@@ -329,22 +329,18 @@ export default function InternoAgenda() {
   const handleOpenTabFromAppointment = async () => {
     if (!selectedAppointment || !establishment) return;
     try {
-      const { data: tab, error: tabError } = await supabase
-        .from("tabs")
-        .insert({
+      const { data: tab, error: tabError } = await supabase.rpc("create_tab_secure", {
+        _payload: {
           establishment_id: establishment.id,
           client_name: selectedAppointment.client_name,
           client_id: selectedAppointment.client_id ?? null,
           appointment_id: selectedAppointment.id,
           professional_id: selectedAppointment.professional_id,
-          status: "open",
-          subtotal: 0,
-          total: 0,
-        })
-        .select("id")
-        .single();
+        },
+      });
 
-      if (tabError || !tab) throw tabError;
+      if (tabError || !tab) throw tabError ?? new Error("Falha ao abrir comanda");
+
 
       const { error: updError } = await supabase
         .from("appointments")

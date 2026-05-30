@@ -5105,6 +5105,56 @@ export type Database = {
         Args: { _payload: Json }
         Returns: Json
       }
+      create_tab_secure: {
+        Args: { _payload: Json }
+        Returns: {
+          appointment_id: string | null
+          client_id: string | null
+          client_name: string
+          closed_at: string | null
+          closed_by: string | null
+          commission_discount_on_coupon: boolean
+          commission_discount_on_loyalty: boolean
+          commission_discount_on_manual: boolean
+          coupon_id: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          deleted_by_user_id: string | null
+          deletion_mark: string | null
+          deletion_reason: string | null
+          discount_amount: number | null
+          discount_authorized_by: string | null
+          discount_type: string | null
+          establishment_id: string
+          frozen_at: string | null
+          frozen_by: string | null
+          id: string
+          is_deleted: boolean
+          is_retroactive: boolean
+          loyalty_redemption_id: string | null
+          manager_pin_used: boolean
+          manager_professional_id: string | null
+          manual_discount_item_amounts: Json | null
+          manual_discount_item_ids: string[] | null
+          notes: string | null
+          opened_at: string
+          professional_id: string | null
+          recognized_at: string | null
+          recognized_by: string | null
+          recovered_at: string | null
+          status: string
+          subtotal: number
+          total: number
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "tabs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       current_professional_id_for_tab: {
         Args: { _tab_id: string }
         Returns: string

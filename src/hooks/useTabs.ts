@@ -186,31 +186,24 @@ export function useTabs(establishmentId: string | null) {
         appointmentId = appt.id;
       }
 
-      const insertPayload: any = {
+      const rpcPayload: any = {
         establishment_id: establishmentId,
         client_name: tabData.client_name,
-        client_id: tabData.client_id,
-        appointment_id: appointmentId,
-        professional_id: tabData.professional_id,
-        notes: tabData.notes,
-        status: "open",
-        subtotal: 0,
-        total: 0,
+        client_id: tabData.client_id ?? null,
+        appointment_id: appointmentId ?? null,
+        professional_id: tabData.professional_id ?? null,
+        notes: tabData.notes ?? null,
         is_retroactive: !!tabData.is_retroactive,
       };
       if (tabData.opened_at) {
-        insertPayload.opened_at = tabData.opened_at;
-        insertPayload.created_at = tabData.opened_at;
-        insertPayload.updated_at = tabData.opened_at;
+        rpcPayload.opened_at = tabData.opened_at;
       }
 
-      const { data, error } = await supabase
-        .from("tabs")
-        .insert(insertPayload)
-        .select()
-        .single();
+      const { data, error } = await supabase.rpc("create_tab_secure", {
+        _payload: rpcPayload,
+      });
 
-      if (error) {
+      if (error || !data) {
         // Rollback: if we created an appointment for this tab, mark it cancelled
         if (appointmentId && !tabData.appointment_id) {
           await supabase
@@ -218,8 +211,9 @@ export function useTabs(establishmentId: string | null) {
             .update({ status: "cancelled" })
             .eq("id", appointmentId);
         }
-        throw error;
+        throw error ?? new Error("Falha ao criar comanda");
       }
+
 
       // Insert services as tab_items. If the appointment has multiple services
       // (appointment_services), insert one item per block with the correct

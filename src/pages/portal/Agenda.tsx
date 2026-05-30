@@ -343,23 +343,19 @@ export default function PortalAgenda() {
   const handleOpenTabFromAppointment = async () => {
     if (!selectedAppointment || !establishment) return;
     try {
-      // Create blank tab linked to this appointment + client
-      const { data: tab, error: tabError } = await supabase
-        .from("tabs")
-        .insert({
+      // Create blank tab linked to this appointment + client (via RPC para contornar RLS RESTRICTIVE)
+      const { data: tab, error: tabError } = await supabase.rpc("create_tab_secure", {
+        _payload: {
           establishment_id: establishment.id,
           client_name: selectedAppointment.client_name,
           client_id: selectedAppointment.client_id ?? null,
           appointment_id: selectedAppointment.id,
           professional_id: selectedAppointment.professional_id,
-          status: "open",
-          subtotal: 0,
-          total: 0,
-        })
-        .select("id")
-        .single();
+        },
+      });
 
-      if (tabError || !tab) throw tabError;
+      if (tabError || !tab) throw tabError ?? new Error("Falha ao abrir comanda");
+
 
       // Mark appointment as in_service, saving previous status for undo
       const { error: updError } = await supabase
