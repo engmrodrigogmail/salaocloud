@@ -360,9 +360,10 @@ export default function InternoAgenda() {
       setDialogOpen(false);
       fetchAppointments();
       navigate(`/interno/${slug}/comandas`, { state: { openTabId: tab.id } });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error opening tab from appointment:", error);
-      toast.error("Erro ao abrir comanda");
+      const msg = error?.message || error?.error_description || error?.hint || error?.details;
+      toast.error(msg ? `Erro ao abrir comanda: ${msg}` : "Erro ao abrir comanda");
     }
   };
 
