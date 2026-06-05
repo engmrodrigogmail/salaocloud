@@ -926,6 +926,19 @@ export default function InternoAgenda() {
           onSaved={() => { fetchAppointments(); }}
         />
       )}
+
+      {establishment && (
+        <EditAppointmentServicesDialog
+          open={reopenOpen}
+          onOpenChange={setReopenOpen}
+          appointmentId={selectedAppointment?.id ?? null}
+          establishmentId={establishment.id}
+          services={services}
+          professionals={professionals}
+          dialogMode="reopen"
+          onSaved={() => { fetchAppointments(); }}
+        />
+      )}
     </InternoLayout>
   );
 }
