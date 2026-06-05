@@ -423,10 +423,19 @@ export function EditAppointmentServicesDialog({
     }
     setSaving(true);
     try {
+      // Quando é remanejo de um no_show, anexamos uma nota explicando
+      // que o agendamento foi remanejado da data original.
+      let finalNotes = notes;
+      if (isReopen && originalSchedAt) {
+        const stamp = format(parseISO(originalSchedAt), "dd/MM/yyyy 'às' HH:mm");
+        const remanejoLine = `Remanejado em ${format(new Date(), "dd/MM/yyyy HH:mm")} (falta original: ${stamp}).`;
+        finalNotes = finalNotes ? `${finalNotes}\n${remanejoLine}` : remanejoLine;
+      }
+
       const { data, error } = await supabase.rpc("update_appointment_services", {
         _appointment_id: appointmentId,
         _payload: {
-          notes,
+          notes: finalNotes,
           allow_overlap: allowOverlap,
           items: seq.map((it, idx) => ({
             service_id: it.serviceId,
@@ -445,7 +454,26 @@ export function EditAppointmentServicesDialog({
         toast.error(r?.error || "Erro ao salvar");
         return;
       }
-      toast.success("Agendamento atualizado");
+
+      // Remanejo: volta o status do agendamento de no_show → pending,
+      // preservando previous_status para auditoria.
+      if (isReopen) {
+        const { error: stErr } = await supabase
+          .from("appointments")
+          .update({
+            status: "pending",
+            previous_status: "no_show",
+            confirmed_at: null,
+          })
+          .eq("id", appointmentId);
+        if (stErr) {
+          console.error("reopen status flip", stErr);
+          toast.error("Serviços atualizados, mas não foi possível reabrir o status. Verifique a permissão.");
+          return;
+        }
+      }
+
+      toast.success(isReopen ? "Agendamento remanejado" : "Agendamento atualizado");
       onOpenChange(false);
       onSaved?.();
     } catch (e: any) {
