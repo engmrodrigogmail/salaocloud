@@ -64,6 +64,7 @@ export default function InternoAgenda() {
   const { user, role, loading: authLoading } = useAuth();
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [editServicesOpen, setEditServicesOpen] = useState(false);
+  const [reopenOpen, setReopenOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
