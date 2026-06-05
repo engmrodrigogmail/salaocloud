@@ -64,6 +64,7 @@ export default function InternoAgenda() {
   const { user, role, loading: authLoading } = useAuth();
   const [establishment, setEstablishment] = useState<Establishment | null>(null);
   const [editServicesOpen, setEditServicesOpen] = useState(false);
+  const [reopenOpen, setReopenOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -882,6 +883,15 @@ export default function InternoAgenda() {
                 <X className="h-4 w-4 mr-1" /> Marcou falta
               </Button>
             )}
+            {selectedAppointment?.status === "no_show" && (() => {
+              const hoursSince = (Date.now() - parseISO(selectedAppointment.scheduled_at).getTime()) / 36e5;
+              if (hoursSince > 24) return null;
+              return (
+                <Button size="sm" variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50" onClick={() => { setDialogOpen(false); setReopenOpen(true); }}>
+                  <Calendar className="h-4 w-4 mr-1" /> Remanejar
+                </Button>
+              );
+            })()}
             <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
               <X className="h-4 w-4 mr-1" /> Fechar
             </Button>
@@ -913,6 +923,19 @@ export default function InternoAgenda() {
           establishmentId={establishment.id}
           services={services}
           professionals={professionals}
+          onSaved={() => { fetchAppointments(); }}
+        />
+      )}
+
+      {establishment && (
+        <EditAppointmentServicesDialog
+          open={reopenOpen}
+          onOpenChange={setReopenOpen}
+          appointmentId={selectedAppointment?.id ?? null}
+          establishmentId={establishment.id}
+          services={services}
+          professionals={professionals}
+          dialogMode="reopen"
           onSaved={() => { fetchAppointments(); }}
         />
       )}

@@ -77,6 +77,7 @@ export default function PortalAgenda() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editServicesOpen, setEditServicesOpen] = useState(false);
+  const [reopenOpen, setReopenOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [blocksRefreshKey, setBlocksRefreshKey] = useState(0);
@@ -975,6 +976,15 @@ export default function PortalAgenda() {
                 <X className="h-4 w-4 mr-1" /> Marcou falta
               </Button>
             )}
+            {selectedAppointment?.status === "no_show" && (() => {
+              const hoursSince = (Date.now() - parseISO(selectedAppointment.scheduled_at).getTime()) / 36e5;
+              if (hoursSince > 24) return null;
+              return (
+                <Button size="sm" variant="outline" className="border-blue-300 text-blue-700 hover:bg-blue-50" onClick={() => { setDialogOpen(false); setReopenOpen(true); }}>
+                  <Calendar className="h-4 w-4 mr-1" /> Remanejar
+                </Button>
+              );
+            })()}
             <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>
               <X className="h-4 w-4 mr-1" /> Fechar
             </Button>
@@ -1006,6 +1016,19 @@ export default function PortalAgenda() {
           establishmentId={establishment.id}
           services={services}
           professionals={professionals}
+          onSaved={() => { fetchAppointments(); }}
+        />
+      )}
+
+      {establishment && (
+        <EditAppointmentServicesDialog
+          open={reopenOpen}
+          onOpenChange={setReopenOpen}
+          appointmentId={selectedAppointment?.id ?? null}
+          establishmentId={establishment.id}
+          services={services}
+          professionals={professionals}
+          dialogMode="reopen"
           onSaved={() => { fetchAppointments(); }}
         />
       )}

@@ -60,6 +60,13 @@ interface Props {
   services: Service[];
   professionals: Professional[];
   onSaved?: () => void;
+  /**
+   * 'edit' (default) — edição normal de serviços.
+   * 'reopen' — agendamento está como no_show e usuário quer remanejá-lo.
+   * Após salvar, o status volta para 'pending' e uma nota de remanejo é
+   * anexada às observações.
+   */
+  dialogMode?: "edit" | "reopen";
 }
 
 export function EditAppointmentServicesDialog({
@@ -70,7 +77,9 @@ export function EditAppointmentServicesDialog({
   services,
   professionals,
   onSaved,
+  dialogMode = "edit",
 }: Props) {
+  const isReopen = dialogMode === "reopen";
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
@@ -80,6 +89,7 @@ export function EditAppointmentServicesDialog({
   type SeqMode = "sequential" | "gap" | "parallel";
   const [mode, setMode] = useState<SeqMode>("sequential");
   const [allowOverlap, setAllowOverlap] = useState(true);
+  const [originalSchedAt, setOriginalSchedAt] = useState<string | null>(null);
 
 
   const [estabWH, setEstabWH] = useState<WH>(DEFAULT_WH);
@@ -167,6 +177,7 @@ export function EditAppointmentServicesDialog({
           setMode("sequential");
         }
         setNotes(appt?.notes || "");
+        setOriginalSchedAt(appt?.scheduled_at ?? null);
       } catch (e) {
         console.error("load edit dialog", e);
         toast.error("Erro ao carregar agendamento");
@@ -412,10 +423,19 @@ export function EditAppointmentServicesDialog({
     }
     setSaving(true);
     try {
+      // Quando é remanejo de um no_show, anexamos uma nota explicando
+      // que o agendamento foi remanejado da data original.
+      let finalNotes = notes;
+      if (isReopen && originalSchedAt) {
+        const stamp = format(parseISO(originalSchedAt), "dd/MM/yyyy 'às' HH:mm");
+        const remanejoLine = `Remanejado em ${format(new Date(), "dd/MM/yyyy HH:mm")} (falta original: ${stamp}).`;
+        finalNotes = finalNotes ? `${finalNotes}\n${remanejoLine}` : remanejoLine;
+      }
+
       const { data, error } = await supabase.rpc("update_appointment_services", {
         _appointment_id: appointmentId,
         _payload: {
-          notes,
+          notes: finalNotes,
           allow_overlap: allowOverlap,
           items: seq.map((it, idx) => ({
             service_id: it.serviceId,
@@ -434,7 +454,26 @@ export function EditAppointmentServicesDialog({
         toast.error(r?.error || "Erro ao salvar");
         return;
       }
-      toast.success("Agendamento atualizado");
+
+      // Remanejo: volta o status do agendamento de no_show → pending,
+      // preservando previous_status para auditoria.
+      if (isReopen) {
+        const { error: stErr } = await supabase
+          .from("appointments")
+          .update({
+            status: "pending",
+            previous_status: "no_show",
+            confirmed_at: null,
+          })
+          .eq("id", appointmentId);
+        if (stErr) {
+          console.error("reopen status flip", stErr);
+          toast.error("Serviços atualizados, mas não foi possível reabrir o status. Verifique a permissão.");
+          return;
+        }
+      }
+
+      toast.success(isReopen ? "Agendamento remanejado" : "Agendamento atualizado");
       onOpenChange(false);
       onSaved?.();
     } catch (e: any) {
@@ -450,10 +489,12 @@ export function EditAppointmentServicesDialog({
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" /> Editar agendamento
+            <Calendar className="h-5 w-5" /> {isReopen ? "Remanejar agendamento" : "Editar agendamento"}
           </DialogTitle>
           <DialogDescription>
-            Altere os serviços, profissionais e horários da sequência.
+            {isReopen
+              ? "Escolha a nova data/hora e revise serviços. O status de 'Falta' será removido."
+              : "Altere os serviços, profissionais e horários da sequência."}
           </DialogDescription>
         </DialogHeader>
 
