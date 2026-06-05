@@ -77,6 +77,7 @@ export default function PortalAgenda() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editServicesOpen, setEditServicesOpen] = useState(false);
+  const [reopenOpen, setReopenOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [blockDialogOpen, setBlockDialogOpen] = useState(false);
   const [blocksRefreshKey, setBlocksRefreshKey] = useState(0);
