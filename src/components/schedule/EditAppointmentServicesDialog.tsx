@@ -60,6 +60,13 @@ interface Props {
   services: Service[];
   professionals: Professional[];
   onSaved?: () => void;
+  /**
+   * 'edit' (default) — edição normal de serviços.
+   * 'reopen' — agendamento está como no_show e usuário quer remanejá-lo.
+   * Após salvar, o status volta para 'pending' e uma nota de remanejo é
+   * anexada às observações.
+   */
+  mode?: "edit" | "reopen";
 }
 
 export function EditAppointmentServicesDialog({
