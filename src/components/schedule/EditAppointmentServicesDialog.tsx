@@ -177,6 +177,7 @@ export function EditAppointmentServicesDialog({
           setMode("sequential");
         }
         setNotes(appt?.notes || "");
+        setOriginalSchedAt(appt?.scheduled_at ?? null);
       } catch (e) {
         console.error("load edit dialog", e);
         toast.error("Erro ao carregar agendamento");
