@@ -459,10 +459,12 @@ export function EditAppointmentServicesDialog({
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" /> Editar agendamento
+            <Calendar className="h-5 w-5" /> {isReopen ? "Remanejar agendamento" : "Editar agendamento"}
           </DialogTitle>
           <DialogDescription>
-            Altere os serviços, profissionais e horários da sequência.
+            {isReopen
+              ? "Escolha a nova data/hora e revise serviços. O status de 'Falta' será removido."
+              : "Altere os serviços, profissionais e horários da sequência."}
           </DialogDescription>
         </DialogHeader>
 
