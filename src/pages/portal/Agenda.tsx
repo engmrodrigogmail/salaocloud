@@ -1019,6 +1019,19 @@ export default function PortalAgenda() {
           onSaved={() => { fetchAppointments(); }}
         />
       )}
+
+      {establishment && (
+        <EditAppointmentServicesDialog
+          open={reopenOpen}
+          onOpenChange={setReopenOpen}
+          appointmentId={selectedAppointment?.id ?? null}
+          establishmentId={establishment.id}
+          services={services}
+          professionals={professionals}
+          dialogMode="reopen"
+          onSaved={() => { fetchAppointments(); }}
+        />
+      )}
     </PortalLayout>
   );
 }
