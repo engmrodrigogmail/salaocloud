@@ -66,7 +66,7 @@ interface Props {
    * Após salvar, o status volta para 'pending' e uma nota de remanejo é
    * anexada às observações.
    */
-  mode?: "edit" | "reopen";
+  dialogMode?: "edit" | "reopen";
 }
 
 export function EditAppointmentServicesDialog({
@@ -77,9 +77,9 @@ export function EditAppointmentServicesDialog({
   services,
   professionals,
   onSaved,
-  mode = "edit",
+  dialogMode = "edit",
 }: Props) {
-  const isReopen = mode === "reopen";
+  const isReopen = dialogMode === "reopen";
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
