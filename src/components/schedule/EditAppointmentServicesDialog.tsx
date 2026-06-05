@@ -89,6 +89,7 @@ export function EditAppointmentServicesDialog({
   type SeqMode = "sequential" | "gap" | "parallel";
   const [mode, setMode] = useState<SeqMode>("sequential");
   const [allowOverlap, setAllowOverlap] = useState(true);
+  const [originalSchedAt, setOriginalSchedAt] = useState<string | null>(null);
 
 
   const [estabWH, setEstabWH] = useState<WH>(DEFAULT_WH);
