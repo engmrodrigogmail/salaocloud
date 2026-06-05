@@ -77,7 +77,9 @@ export function EditAppointmentServicesDialog({
   services,
   professionals,
   onSaved,
+  mode = "edit",
 }: Props) {
+  const isReopen = mode === "reopen";
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [items, setItems] = useState<Item[]>([]);
