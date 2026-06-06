@@ -14,6 +14,7 @@ export default function Install() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
+  const [playProtectOpen, setPlayProtectOpen] = useState(false);
 
   useEffect(() => {
     // Check if already installed
