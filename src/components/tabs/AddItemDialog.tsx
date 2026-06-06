@@ -214,11 +214,11 @@ export function AddItemDialog({
     });
   };
 
-  const resetForm = () => {
+  const resetForm = (opts?: { keepProfessional?: boolean }) => {
     setQuantity("1");
     setSelectedProduct(null);
     setSelectedService(null);
-    setSelectedProfessional("");
+    if (!opts?.keepProfessional) setSelectedProfessional("");
     setOverridePrice("");
     setCustomName("");
     setCustomPrice("");
