@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, Smartphone, Share, Plus, Check, Chrome, Apple } from "lucide-react";
+import { Download, Smartphone, Share, Plus, Check, Chrome, Apple, ShieldAlert, ChevronDown } from "lucide-react";
 import logo from "@/assets/logo-salaocloud-v5.png";
 
 interface BeforeInstallPromptEvent extends Event {
