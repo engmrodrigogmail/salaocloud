@@ -221,6 +221,37 @@ export function useCommissionCalculator(establishmentId: string | null) {
       ? Math.max(0, 1 - totalDiscount / eligibleBase)
       : 1;
 
+    // Waterfall: desconto manual SEM perItem e SEM escopo de itens
+    // Subtrai a partir do item mais caro até esgotar o desconto.
+    // Preserva itens menores (que normalmente têm % maior de comissão).
+    const useWaterfall =
+      reducesByType &&
+      dType === 'manual' &&
+      !hasPerItem &&
+      !hasManualScope &&
+      totalDiscount > 0;
+
+    const waterfallAmounts: Record<string, number> = {};
+    if (useWaterfall) {
+      const sorted = [...items].sort((a, b) => {
+        const dp = Number(b.total_price) - Number(a.total_price);
+        if (dp !== 0) return dp;
+        const da = (a as any).created_at ? new Date((a as any).created_at).getTime() : 0;
+        const db = (b as any).created_at ? new Date((b as any).created_at).getTime() : 0;
+        if (da !== db) return da - db;
+        return String(a.id).localeCompare(String(b.id));
+      });
+      let remaining = totalDiscount;
+      for (const it of sorted) {
+        if (remaining <= 0) break;
+        const take = Math.min(remaining, Number(it.total_price) || 0);
+        if (take > 0) {
+          waterfallAmounts[it.id] = take;
+          remaining = +(remaining - take).toFixed(2);
+        }
+      }
+    }
+
     const [rules, psCommissions] = await Promise.all([
       fetchActiveRules(),
       fetchProfessionalServiceCommissions(professionalIds),
