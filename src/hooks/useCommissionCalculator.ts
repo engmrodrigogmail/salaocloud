@@ -296,8 +296,12 @@ export function useCommissionCalculator(establishmentId: string | null) {
         } else {
           referenceValue = fullPrice;
         }
+      } else if (useWaterfall) {
+        // Waterfall: subtrai do item mais caro primeiro
+        const d = waterfallAmounts[item.id] ?? 0;
+        referenceValue = +Math.max(0, fullPrice - d).toFixed(2);
       } else {
-        // Cupom / fidelidade / manual sem perItem: proporcional dentro do escopo
+        // Cupom / fidelidade: proporcional dentro do escopo
         const itemFactor = reduceThisItem ? discountFactorScoped : 1;
         referenceValue = +(fullPrice * itemFactor).toFixed(2);
       }
