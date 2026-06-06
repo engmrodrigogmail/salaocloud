@@ -2547,7 +2547,11 @@ const ClientPortal = () => {
                 const slots: string[] = [];
                 const startMinTotal = oh * 60 + om;
                 const endMinTotal = ch * 60;
-                for (let t = startMinTotal; t + totalDuration <= endMinTotal; t += 15) {
+                const effectiveDuration =
+                  seqMode === "parallel" && bookingItems.length > 1
+                    ? Math.max(...bookingItems.map((i) => i.duration))
+                    : totalDuration;
+                for (let t = startMinTotal; t + effectiveDuration <= endMinTotal; t += 15) {
                   const hour = Math.floor(t / 60);
                   const minute = t % 60;
                   const slotDate = setMinutes(setHours(selectedDate, hour), minute);
@@ -2556,12 +2560,51 @@ const ClientPortal = () => {
                   if (resolveSequenceAt(selectedDate, time)) slots.push(time);
                 }
 
+                const parallelIds = bookingItems.map((i) => i.professionalId);
+                const parallelHasAny = parallelIds.some((id) => !id);
+                const parallelHasDup = new Set(parallelIds).size !== parallelIds.length;
+
                 return (
-                  <div>
+                  <div className="space-y-3">
+                    {bookingItems.length > 1 && (
+                      <div className="rounded-md border p-2 space-y-1 bg-muted/20">
+                        <p className="text-xs font-semibold text-muted-foreground">Como agendar os serviços?</p>
+                        {([
+                          { v: "sequential", label: "Em sequência (um após o outro)" },
+                          { v: "gap", label: "Em sequência com pausa (com intervalo)" },
+                          { v: "parallel", label: "Em paralelo (profissionais diferentes ao mesmo tempo)" },
+                        ] as const).map((opt) => (
+                          <label key={opt.v} className="flex items-center gap-2 text-xs cursor-pointer">
+                            <input
+                              type="radio"
+                              name="clientSeqMode"
+                              checked={seqMode === opt.v}
+                              onChange={() => {
+                                setSeqMode(opt.v);
+                                setSelectedTime(null);
+                              }}
+                              className="h-3.5 w-3.5"
+                            />
+                            {opt.label}
+                          </label>
+                        ))}
+                        {seqMode === "parallel" && parallelHasAny && (
+                          <p className="text-[11px] text-destructive">
+                            No modo paralelo, escolha um profissional específico para cada serviço (não use "Qualquer profissional").
+                          </p>
+                        )}
+                        {seqMode === "parallel" && !parallelHasAny && parallelHasDup && (
+                          <p className="text-[11px] text-destructive">
+                            No modo paralelo, cada serviço precisa ter um profissional diferente.
+                          </p>
+                        )}
+                      </div>
+                    )}
                     <Label className="mb-2 block">Horário</Label>
                     {slots.length === 0 ? (
                       <p className="text-sm text-muted-foreground text-center py-4">
                         Nenhum horário disponível nesta data para a sequência escolhida
+                        {seqMode === "sequential" && bookingItems.length > 1 && ". Tente \"Em sequência com pausa\" ou \"Em paralelo\""}.
                       </p>
                     ) : (
                       <div className="grid grid-cols-4 gap-2">
