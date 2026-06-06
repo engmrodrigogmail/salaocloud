@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Download, Smartphone, Share, Plus, Check, Chrome, Apple } from "lucide-react";
+import { Download, Smartphone, Share, Plus, Check, Chrome, Apple, ShieldAlert, ChevronDown } from "lucide-react";
 import logo from "@/assets/logo-salaocloud-v5.png";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -14,6 +14,7 @@ export default function Install() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
+  const [playProtectOpen, setPlayProtectOpen] = useState(false);
 
   useEffect(() => {
     // Check if already installed
@@ -149,6 +150,45 @@ export default function Install() {
                   <li>Selecione "Adicionar à tela inicial"</li>
                   <li>Confirme tocando em "Adicionar"</li>
                 </ol>
+              </div>
+
+              {/* Play Protect Warning */}
+              <div className="border border-amber-200 dark:border-amber-900/50 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setPlayProtectOpen(!playProtectOpen)}
+                  className="w-full flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-950/30 text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <ShieldAlert className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                    <span className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                      Apareceu "App de risco bloqueado"?
+                    </span>
+                  </div>
+                  <ChevronDown
+                    className={`h-4 w-4 text-amber-600 dark:text-amber-400 transition-transform ${playProtectOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {playProtectOpen && (
+                  <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 space-y-3 text-sm text-amber-900 dark:text-amber-200">
+                    <p>
+                      O <strong>Google Play Protect</strong> pode exibir este aviso ao instalar apps
+                      direto do navegador. O Salão Cloud é seguro — este alerta ocorre porque o Chrome
+                      cria um app temporário (WebAPK) que o Play Protect ainda não reconhece.
+                    </p>
+                    <div className="bg-white dark:bg-background rounded-md p-3 border border-amber-200 dark:border-amber-900/50">
+                      <p className="font-medium mb-2">Como resolver:</p>
+                      <ol className="list-decimal list-inside space-y-1.5 text-muted-foreground">
+                        <li>No aviso do Play Protect, toque em <strong>"Mais detalhes"</strong></li>
+                        <li>Toque em <strong>"Instalar mesmo assim"</strong></li>
+                        <li>Pronto! O app será instalado normalmente</li>
+                      </ol>
+                    </div>
+                    <p className="text-xs text-amber-700 dark:text-amber-400">
+                      <strong>Dica:</strong> Atualize o Chrome e o Google Play Services na Play Store
+                      para reduzir a chance deste aviso aparecer.
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           ) : (
