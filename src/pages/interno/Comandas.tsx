@@ -269,8 +269,26 @@ export default function InternoComandas() {
 
   const fetchClients = async () => {
     if (!establishmentId) return;
-    const { data } = await supabase.from("clients").select("*").eq("establishment_id", establishmentId);
-    setClients(data || []);
+    // Supabase default cap is 1000 rows per query; salons with more clients
+    // would silently lose entries (e.g. ANDREA Monumento). Paginate explicitly.
+    const pageSize = 1000;
+    let from = 0;
+    const all: Client[] = [];
+    // Loop until we get a short page
+    // (cap at 50 pages = 50k clients as a safety net)
+    for (let page = 0; page < 50; page++) {
+      const { data, error } = await supabase
+        .from("clients")
+        .select("*")
+        .eq("establishment_id", establishmentId)
+        .order("name", { ascending: true })
+        .range(from, from + pageSize - 1);
+      if (error || !data) break;
+      all.push(...(data as Client[]));
+      if (data.length < pageSize) break;
+      from += pageSize;
+    }
+    setClients(all);
   };
 
   const fetchServices = async () => {
