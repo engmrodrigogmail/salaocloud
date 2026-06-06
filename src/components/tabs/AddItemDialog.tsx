@@ -143,7 +143,10 @@ export function AddItemDialog({
 
   const submit = async (payload: AddItemPayload) => {
     await onAddItem(payload);
-    resetForm();
+    // Preserve the selected professional so consecutive items in the same
+    // tab don't lose it (which was causing commissions to be skipped from
+    // the 2nd item onward).
+    resetForm({ keepProfessional: true });
   };
 
   const handleAddProduct = async () => {
@@ -211,11 +214,11 @@ export function AddItemDialog({
     });
   };
 
-  const resetForm = () => {
+  const resetForm = (opts?: { keepProfessional?: boolean }) => {
     setQuantity("1");
     setSelectedProduct(null);
     setSelectedService(null);
-    setSelectedProfessional("");
+    if (!opts?.keepProfessional) setSelectedProfessional("");
     setOverridePrice("");
     setCustomName("");
     setCustomPrice("");
