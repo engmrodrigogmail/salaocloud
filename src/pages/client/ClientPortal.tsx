@@ -1285,29 +1285,71 @@ const ClientPortal = () => {
   const resolveSequenceAt = (date: Date, time: string) => {
     if (!bookingItems.length) return null;
     const [hh, mm] = time.split(":").map(Number);
-    let cursor = setMinutes(setHours(date, hh), mm);
+    const startDate = setMinutes(setHours(date, hh), mm);
     const out: Array<{ serviceId: string; professionalId: string; startsAt: Date; duration: number; price: number }> = [];
-    for (const it of bookingItems) {
-      const cursorTime = format(cursor, "HH:mm");
-      let profId = it.professionalId;
-      if (!profId) {
-        const elig = getProfessionalsForService(it.serviceId);
-        const free = elig.find((p) =>
-          availability.isProfessionalAvailable(cursor, cursorTime, p.id, it.duration)
-        );
-        if (!free) return null;
-        profId = free.id;
-      } else {
-        if (!availability.isProfessionalAvailable(cursor, cursorTime, profId, it.duration)) return null;
+
+    if (seqMode === "parallel" && bookingItems.length > 1) {
+      // Todos começam no mesmo horário, exigem profissional específico e distinto
+      const ids: string[] = [];
+      for (const it of bookingItems) {
+        if (!it.professionalId) return null;
+        ids.push(it.professionalId);
+        const t = format(startDate, "HH:mm");
+        if (!availability.isProfessionalAvailable(startDate, t, it.professionalId, it.duration)) return null;
+        out.push({
+          serviceId: it.serviceId,
+          professionalId: it.professionalId,
+          startsAt: new Date(startDate),
+          duration: it.duration,
+          price: it.price,
+        });
       }
+      if (new Set(ids).size !== ids.length) return null;
+      return out;
+    }
+
+    let cursor = startDate;
+    for (const it of bookingItems) {
+      const maxHorizon = addMinutes(startDate, 12 * 60);
+      let placed: Date | null = null;
+      let profId = it.professionalId;
+
+      const tryAt = (probe: Date): string | null => {
+        const probeTime = format(probe, "HH:mm");
+        if (profId) {
+          return availability.isProfessionalAvailable(probe, probeTime, profId, it.duration) ? profId : null;
+        }
+        const elig = getProfessionalsForService(it.serviceId);
+        const free = elig.find((p) => availability.isProfessionalAvailable(probe, probeTime, p.id, it.duration));
+        return free?.id ?? null;
+      };
+
+      if (seqMode === "gap") {
+        for (let probe = cursor; isBefore(probe, maxHorizon); probe = addMinutes(probe, 15)) {
+          const found = tryAt(probe);
+          if (found) {
+            profId = found;
+            placed = probe;
+            break;
+          }
+        }
+        if (!placed) return null;
+      } else {
+        // sequential
+        const found = tryAt(cursor);
+        if (!found) return null;
+        profId = found;
+        placed = cursor;
+      }
+
       out.push({
         serviceId: it.serviceId,
-        professionalId: profId,
-        startsAt: new Date(cursor),
+        professionalId: profId!,
+        startsAt: new Date(placed),
         duration: it.duration,
         price: it.price,
       });
-      cursor = addMinutes(cursor, it.duration);
+      cursor = addMinutes(placed, it.duration);
     }
     return out;
   };
