@@ -134,6 +134,8 @@ const ClientPortal = () => {
   const [policyAccepted, setPolicyAccepted] = useState(false);
   // Multi-serviço: lista de serviços extras (item 0 = selectedService/selectedProfessional)
   const [extraItems, setExtraItems] = useState<Array<{ serviceId: string; professionalId: string | null }>>([]);
+  type SeqMode = "sequential" | "gap" | "parallel";
+  const [seqMode, setSeqMode] = useState<SeqMode>("sequential");
 
   // Filters for agenda view
   const [filterDate, setFilterDate] = useState<Date>(startOfDay(new Date()));
