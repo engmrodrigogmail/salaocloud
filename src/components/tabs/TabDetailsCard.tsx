@@ -424,13 +424,16 @@ export function TabDetailsCard({
               )}
             </div>
           ) : (
-            <ScrollArea className="max-h-[40vh]">
+            <div
+              className="max-h-[60vh] overflow-y-auto pr-2 pb-2"
+              style={{ scrollbarGutter: "stable" }}
+            >
               <div className="space-y-4">
                 {renderItemGroup(serviceItems, "Serviços", <Scissors className="h-4 w-4" />)}
                 {renderItemGroup(productItems, "Produtos", <Package className="h-4 w-4" />)}
                 {renderItemGroup(customItems, "Itens Avulsos", <PenLine className="h-4 w-4" />)}
               </div>
-            </ScrollArea>
+            </div>
           )}
         </CardContent>
       </Card>
