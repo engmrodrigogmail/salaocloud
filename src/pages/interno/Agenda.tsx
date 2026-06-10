@@ -330,6 +330,23 @@ export default function InternoAgenda() {
   const handleOpenTabFromAppointment = async () => {
     if (!selectedAppointment || !establishment) return;
     try {
+      // Safety: re-check if there is already an open/awaiting_closure tab linked to this
+      // appointment (e.g. user clicked another simultaneous-service card and a tab was
+      // already created). In that case, just navigate to it — never create a duplicate.
+      const { data: existingTab } = await supabase
+        .from("tabs")
+        .select("id")
+        .eq("appointment_id", selectedAppointment.id)
+        .in("status", ["open", "awaiting_closure"])
+        .maybeSingle();
+
+      if (existingTab?.id) {
+        toast.info("Já existe uma comanda aberta para este agendamento.");
+        setDialogOpen(false);
+        navigate(`/interno/${slug}/comandas`, { state: { openTabId: existingTab.id } });
+        return;
+      }
+
       const { data: tab, error: tabError } = await supabase.rpc("create_tab_secure", {
         _payload: {
           establishment_id: establishment.id,
