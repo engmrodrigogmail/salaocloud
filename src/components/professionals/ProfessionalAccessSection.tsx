@@ -155,3 +155,129 @@ export function ProfessionalAccessSection({
     </div>
   );
 }
+
+function ResetPasswordBlock({
+  establishmentId,
+  professionalId,
+}: {
+  establishmentId: string;
+  professionalId: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [show, setShow] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleReset = async () => {
+    if (password.length < 6) {
+      toast.error("A senha precisa ter pelo menos 6 caracteres");
+      return;
+    }
+    if (password !== confirm) {
+      toast.error("As senhas não conferem");
+      return;
+    }
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("reset-professional-password", {
+        body: {
+          establishment_id: establishmentId,
+          professional_id: professionalId,
+          new_password: password,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success("Senha redefinida! O profissional trocará no próximo login.");
+      setPassword("");
+      setConfirm("");
+      setOpen(false);
+    } catch (err: any) {
+      toast.error(err.message || "Não foi possível redefinir a senha");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!open) {
+    return (
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => setOpen(true)}
+        className="w-full sm:w-auto"
+      >
+        <KeyRound className="h-4 w-4 mr-2" />
+        Resetar senha
+      </Button>
+    );
+  }
+
+  return (
+    <div className="rounded-md border p-3 space-y-3">
+      <Alert>
+        <KeyRound className="h-4 w-4" />
+        <AlertDescription className="text-xs">
+          Defina uma nova senha (mín. 6 caracteres). O profissional será obrigado a
+          trocá-la no próximo login.
+        </AlertDescription>
+      </Alert>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label className="text-sm">Nova senha *</Label>
+          <div className="relative">
+            <Input
+              type={show ? "text" : "password"}
+              placeholder="Mínimo 6 caracteres"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShow((v) => !v)}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground"
+              tabIndex={-1}
+            >
+              {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+        <div className="space-y-1.5">
+          <Label className="text-sm">Confirmar senha *</Label>
+          <Input
+            type={show ? "text" : "password"}
+            placeholder="Repita a senha"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            disabled={loading}
+          />
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        <Button type="button" size="sm" onClick={handleReset} disabled={loading}>
+          {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <KeyRound className="h-4 w-4 mr-2" />}
+          Salvar nova senha
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setOpen(false);
+            setPassword("");
+            setConfirm("");
+          }}
+          disabled={loading}
+        >
+          Cancelar
+        </Button>
+      </div>
+    </div>
+  );
+}
