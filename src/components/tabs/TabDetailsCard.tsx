@@ -67,8 +67,8 @@ interface TabDetailsCardProps {
   appointmentSuggestions?: AppointmentSuggestion[];
   dismissedAppointmentSuggestions?: AppointmentSuggestion[];
   onConfirmAppointmentService?: (suggestion: AppointmentSuggestion) => Promise<void> | void;
-  onDismissAppointmentSuggestion?: (appointmentId: string) => void;
-  onRestoreAppointmentSuggestion?: (appointmentId: string) => void;
+  onDismissAppointmentSuggestion?: (suggestionKey: string) => void;
+  onRestoreAppointmentSuggestion?: (suggestionKey: string) => void;
 }
 
 export function TabDetailsCard({
