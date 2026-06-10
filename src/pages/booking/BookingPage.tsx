@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -18,9 +18,11 @@ import {
   Plus,
   X,
   Sparkles,
+  Info,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   format,
   addDays,
@@ -111,6 +113,60 @@ const BookingPage = () => {
   const [clientCpf, setClientCpf] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [notes, setNotes] = useState("");
+
+  const parallelHintShownRef = useRef(false);
+
+  const PARALLEL_HINT_KEY = `booking_parallel_hint_dismissed_${slug ?? "global"}`;
+
+  useEffect(() => {
+    const firstItem = items[0];
+    if (
+      !parallelHintShownRef.current &&
+      firstItem?.serviceId &&
+      firstItem?.professionalId &&
+      items.length === 1 &&
+      localStorage.getItem(PARALLEL_HINT_KEY) !== "true"
+    ) {
+      parallelHintShownRef.current = true;
+      toast.custom(
+        (t) => (
+          <div className="rounded-lg border bg-background p-4 shadow-lg max-w-sm space-y-3">
+            <div className="flex items-start gap-3">
+              <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <p className="text-sm font-medium">Incluir mais serviços?</p>
+                <p className="text-xs text-muted-foreground">
+                  Se desejar adicionar outros serviços para serem realizados ao mesmo tempo, no próximo passo selecione a opção <strong>"Em paralelo"</strong>.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="dont-show-again"
+                className="h-4 w-4"
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    localStorage.setItem(PARALLEL_HINT_KEY, "true");
+                  }
+                }}
+              />
+              <Label htmlFor="dont-show-again" className="text-xs font-normal cursor-pointer">
+                Não mostrar novamente
+              </Label>
+            </div>
+            <Button
+              size="sm"
+              className="w-full"
+              onClick={() => toast.dismiss(t)}
+            >
+              Entendi
+            </Button>
+          </div>
+        ),
+        { duration: Infinity }
+      );
+    }
+  }, [items, PARALLEL_HINT_KEY]);
 
   useEffect(() => {
     if (slug) fetchEstablishmentData();
