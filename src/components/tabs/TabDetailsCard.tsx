@@ -387,7 +387,7 @@ export function TabDetailsCard({
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => onRestoreAppointmentSuggestion(suggestion.appointment_id)}
+                    onClick={() => onRestoreAppointmentSuggestion(suggestion.suggestion_key)}
                   >
                     <Undo2 className="h-4 w-4 mr-1" />
                     Restaurar
