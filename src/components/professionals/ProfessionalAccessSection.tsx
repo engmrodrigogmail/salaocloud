@@ -74,21 +74,28 @@ export function ProfessionalAccessSection({
 
   if (hasAccess) {
     return (
-      <div className="rounded-md border bg-muted/30 p-3 flex items-start gap-3">
-        <ShieldCheck className="h-5 w-5 text-success mt-0.5" />
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Acesso ativo</span>
-            <Badge variant="outline" className="text-xs">{defaultEmail || "—"}</Badge>
+      <div className="space-y-3">
+        <div className="rounded-md border bg-muted/30 p-3 flex items-start gap-3">
+          <ShieldCheck className="h-5 w-5 text-success mt-0.5" />
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Acesso ativo</span>
+              <Badge variant="outline" className="text-xs">{defaultEmail || "—"}</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Este profissional já pode acessar o /interno com email e senha. Você
+              pode resetar a senha abaixo — ele será obrigado a trocá-la no próximo login.
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Este profissional já pode acessar o /interno com email e senha. Para resetar a
-            senha, peça que ele use a opção “Esqueci minha senha” na tela de login.
-          </p>
         </div>
+        <ResetPasswordBlock
+          establishmentId={establishmentId}
+          professionalId={professionalId}
+        />
       </div>
     );
   }
+
 
   return (
     <div className="space-y-3">
