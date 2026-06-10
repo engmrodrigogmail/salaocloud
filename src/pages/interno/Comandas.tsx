@@ -113,9 +113,14 @@ export default function InternoComandas() {
     }
   }, [pendingOpenTabId, tabs]);
 
-  // Appointment suggestions (pre-populated services from booking; client may have multiple
-  // simultaneous appointments — load all sibling appointments and let the salon confirm one by one)
+  // Appointment suggestions (pre-populated services from booking).
+  // Sources:
+  //  1) appointment_services rows of the linked appointment (handles parallel/sequential bookings
+  //     created as ONE appointment with multiple services).
+  //  2) Sibling appointments (same client + same scheduled_at) for legacy data where
+  //     parallel bookings produced separate appointment rows.
   type AppointmentSuggestion = {
+    suggestion_key: string; // unique per service+professional combination
     appointment_id: string;
     service_id: string;
     service_name: string;
@@ -145,8 +150,15 @@ export default function InternoComandas() {
         .maybeSingle();
       if (cancelled || !rootAppt) return;
 
-      // Build query for sibling appointments (same client, same exact scheduled time)
-      // Exclude cancelled/completed; include the root appointment itself.
+      // 1) appointment_services children of the linked appointment (covers parallel/sequential
+      //    bookings stored as a single appointment with multiple services)
+      const { data: apptSvcRows } = await supabase
+        .from("appointment_services")
+        .select("id, service_id, professional_id, price, services:service_id(name), professionals:professional_id(name)")
+        .eq("appointment_id", selectedTab.appointment_id);
+      if (cancelled) return;
+
+      // 2) Sibling appointments (legacy: parallel created as separate appointments)
       let q = supabase
         .from("appointments")
         .select("id, service_id, professional_id, price, scheduled_at, services:service_id(name), professionals:professional_id(name)")
@@ -163,11 +175,24 @@ export default function InternoComandas() {
       }
 
       const { data: appts } = await q;
-      if (cancelled || !appts) return;
+      if (cancelled) return;
 
-      const list: AppointmentSuggestion[] = (appts as any[])
-        .filter((a) => !!a.service_id)
-        .map((a) => ({
+      const fromAppointmentServices: AppointmentSuggestion[] = (apptSvcRows || [])
+        .filter((r: any) => !!r.service_id)
+        .map((r: any) => ({
+          suggestion_key: `${r.service_id}|${r.professional_id ?? ""}`,
+          appointment_id: selectedTab.appointment_id!,
+          service_id: r.service_id as string,
+          service_name: r.services?.name ?? "Serviço agendado",
+          professional_id: r.professional_id ?? null,
+          professional_name: r.professionals?.name ?? null,
+          price: Number(r.price) || 0,
+        }));
+
+      const fromSiblings: AppointmentSuggestion[] = (appts || [])
+        .filter((a: any) => !!a.service_id)
+        .map((a: any) => ({
+          suggestion_key: `${a.service_id}|${a.professional_id ?? ""}`,
           appointment_id: a.id as string,
           service_id: a.service_id as string,
           service_name: a.services?.name ?? "Serviço agendado",
@@ -176,7 +201,16 @@ export default function InternoComandas() {
           price: Number(a.price) || 0,
         }));
 
-      setAllAppointmentSuggestions(list);
+      // Merge with dedup by suggestion_key (service+professional)
+      const seen = new Set<string>();
+      const merged: AppointmentSuggestion[] = [];
+      for (const s of [...fromAppointmentServices, ...fromSiblings]) {
+        if (seen.has(s.suggestion_key)) continue;
+        seen.add(s.suggestion_key);
+        merged.push(s);
+      }
+
+      setAllAppointmentSuggestions(merged);
     };
     loadSuggestions();
     return () => { cancelled = true; };
@@ -191,11 +225,11 @@ export default function InternoComandas() {
 
   const appointmentSuggestions = allAppointmentSuggestions
     .filter((s) => !isAlreadyAdded(s))
-    .filter((s) => !dismissedSuggestionIds.has(s.appointment_id));
+    .filter((s) => !dismissedSuggestionIds.has(s.suggestion_key));
 
   const dismissedSuggestions = allAppointmentSuggestions
     .filter((s) => !isAlreadyAdded(s))
-    .filter((s) => dismissedSuggestionIds.has(s.appointment_id));
+    .filter((s) => dismissedSuggestionIds.has(s.suggestion_key));
 
   const handleConfirmAppointmentService = async (suggestion: AppointmentSuggestion) => {
     if (!selectedTab) return;
@@ -209,26 +243,26 @@ export default function InternoComandas() {
     });
     // If it was previously dismissed, clear that flag too
     setDismissedSuggestionIds((prev) => {
-      if (!prev.has(suggestion.appointment_id)) return prev;
+      if (!prev.has(suggestion.suggestion_key)) return prev;
       const next = new Set(prev);
-      next.delete(suggestion.appointment_id);
+      next.delete(suggestion.suggestion_key);
       return next;
     });
   };
 
-  const handleDismissSuggestion = (appointmentId: string) => {
+  const handleDismissSuggestion = (suggestionKey: string) => {
     setDismissedSuggestionIds((prev) => {
       const next = new Set(prev);
-      next.add(appointmentId);
+      next.add(suggestionKey);
       return next;
     });
   };
 
-  const handleRestoreSuggestion = (appointmentId: string) => {
+  const handleRestoreSuggestion = (suggestionKey: string) => {
     setDismissedSuggestionIds((prev) => {
-      if (!prev.has(appointmentId)) return prev;
+      if (!prev.has(suggestionKey)) return prev;
       const next = new Set(prev);
-      next.delete(appointmentId);
+      next.delete(suggestionKey);
       return next;
     });
   };
