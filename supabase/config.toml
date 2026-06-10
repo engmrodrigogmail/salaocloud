@@ -1,28 +1,23 @@
 project_id = "gdjlajktmjskhpugzinh"
 
-[functions.stripe-webhook]
-verify_jwt = false
-
-[functions.zapi-webhook]
-verify_jwt = false
-
-[functions.handle-email-suppression]
-verify_jwt = false
-
-[functions.handle-email-unsubscribe]
-verify_jwt = false
-
-[functions.process-email-queue]
-verify_jwt = false
-
-[functions.auto-mark-no-shows]
-verify_jwt = false
-
-[functions.push-process-pending]
-verify_jwt = false
-
-[functions.stripe-bootstrap-sc]
-verify_jwt = false
-
-[functions.admin-reset-owner-password]
-verify_jwt = false
+[functions]
+  [functions.admin-reset-owner-password]
+    verify_jwt = false
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.auto-mark-no-shows]
+    verify_jwt = false
+  [functions.handle-email-suppression]
+    verify_jwt = false
+  [functions.handle-email-unsubscribe]
+    verify_jwt = false
+  [functions.process-email-queue]
+    verify_jwt = false
+  [functions.push-process-pending]
+    verify_jwt = false
+  [functions.stripe-bootstrap-sc]
+    verify_jwt = false
+  [functions.stripe-webhook]
+    verify_jwt = false
+  [functions.zapi-webhook]
+    verify_jwt = false
