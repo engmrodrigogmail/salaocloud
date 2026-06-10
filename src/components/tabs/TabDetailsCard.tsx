@@ -32,6 +32,7 @@ import { RecoverTabDialog } from "./RecoverTabDialog";
 import { ReopenTabDialog } from "./ReopenTabDialog";
 
 interface AppointmentSuggestion {
+  suggestion_key: string;
   appointment_id: string;
   service_id: string;
   service_name: string;
