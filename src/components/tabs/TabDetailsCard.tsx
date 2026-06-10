@@ -320,7 +320,7 @@ export function TabDetailsCard({
                       size="icon"
                       variant="ghost"
                       className="h-7 w-7"
-                      onClick={() => onDismissAppointmentSuggestion(suggestion.appointment_id)}
+                      onClick={() => onDismissAppointmentSuggestion(suggestion.suggestion_key)}
                       aria-label="Descartar sugestão"
                     >
                       <X className="h-4 w-4" />
