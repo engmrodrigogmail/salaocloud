@@ -308,7 +308,7 @@ export function TabDetailsCard({
       {tab.status === "open" && appointmentSuggestions && appointmentSuggestions.length > 0 && (
         <div className="space-y-2">
           {appointmentSuggestions.map((suggestion) => (
-            <Card key={suggestion.appointment_id} className="border-primary/40 bg-primary/5">
+            <Card key={suggestion.suggestion_key} className="border-primary/40 bg-primary/5">
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="text-base flex items-center gap-2">
