@@ -32,6 +32,7 @@ import { RecoverTabDialog } from "./RecoverTabDialog";
 import { ReopenTabDialog } from "./ReopenTabDialog";
 
 interface AppointmentSuggestion {
+  suggestion_key: string;
   appointment_id: string;
   service_id: string;
   service_name: string;
@@ -66,8 +67,8 @@ interface TabDetailsCardProps {
   appointmentSuggestions?: AppointmentSuggestion[];
   dismissedAppointmentSuggestions?: AppointmentSuggestion[];
   onConfirmAppointmentService?: (suggestion: AppointmentSuggestion) => Promise<void> | void;
-  onDismissAppointmentSuggestion?: (appointmentId: string) => void;
-  onRestoreAppointmentSuggestion?: (appointmentId: string) => void;
+  onDismissAppointmentSuggestion?: (suggestionKey: string) => void;
+  onRestoreAppointmentSuggestion?: (suggestionKey: string) => void;
 }
 
 export function TabDetailsCard({
@@ -307,7 +308,7 @@ export function TabDetailsCard({
       {tab.status === "open" && appointmentSuggestions && appointmentSuggestions.length > 0 && (
         <div className="space-y-2">
           {appointmentSuggestions.map((suggestion) => (
-            <Card key={suggestion.appointment_id} className="border-primary/40 bg-primary/5">
+            <Card key={suggestion.suggestion_key} className="border-primary/40 bg-primary/5">
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="text-base flex items-center gap-2">
@@ -319,7 +320,7 @@ export function TabDetailsCard({
                       size="icon"
                       variant="ghost"
                       className="h-7 w-7"
-                      onClick={() => onDismissAppointmentSuggestion(suggestion.appointment_id)}
+                      onClick={() => onDismissAppointmentSuggestion(suggestion.suggestion_key)}
                       aria-label="Descartar sugestão"
                     >
                       <X className="h-4 w-4" />
@@ -370,7 +371,7 @@ export function TabDetailsCard({
           <CardContent className="space-y-2">
             {dismissedAppointmentSuggestions.map((suggestion) => (
               <div
-                key={suggestion.appointment_id}
+                key={suggestion.suggestion_key}
                 className="flex items-center justify-between gap-2 text-sm"
               >
                 <div className="min-w-0 flex-1">
@@ -386,7 +387,7 @@ export function TabDetailsCard({
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => onRestoreAppointmentSuggestion(suggestion.appointment_id)}
+                    onClick={() => onRestoreAppointmentSuggestion(suggestion.suggestion_key)}
                   >
                     <Undo2 className="h-4 w-4 mr-1" />
                     Restaurar
