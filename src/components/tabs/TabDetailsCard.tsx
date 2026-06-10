@@ -371,7 +371,7 @@ export function TabDetailsCard({
           <CardContent className="space-y-2">
             {dismissedAppointmentSuggestions.map((suggestion) => (
               <div
-                key={suggestion.appointment_id}
+                key={suggestion.suggestion_key}
                 className="flex items-center justify-between gap-2 text-sm"
               >
                 <div className="min-w-0 flex-1">
