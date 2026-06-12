@@ -57,14 +57,6 @@ export function HeroSection() {
               Sou Salão
               <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={16} />
             </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground bg-transparent font-semibold uppercase tracking-premium px-7 h-12 rounded-sm text-xs"
-              onClick={() => navigate("/cliente")}
-            >
-              Sou Cliente do Salão
-            </Button>
           </div>
 
           {/* Social proof */}
