@@ -41,6 +41,14 @@ interface BroadcastInput {
   category?: string;
 }
 
+const CRITICAL_CATEGORIES = new Set([
+  "new_appointment",
+  "cancelled_appointment",
+  "appointment_confirmation",
+  "appointment_reminder",
+  "review_request",
+]);
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -220,6 +228,8 @@ Deno.serve(async (req) => {
         body: input.body,
         url: input.link ?? undefined,
         tag: input.category,
+        category: input.category,
+        is_critical: input.category ? CRITICAL_CATEGORIES.has(input.category) : undefined,
         data: { category: input.category },
       };
       const result = await sendWebPush(
