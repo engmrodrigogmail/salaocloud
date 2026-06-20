@@ -31,6 +31,13 @@ function tableForRecipient(type: string): { table: string; column: string } | nu
 }
 
 const DEMO_ESTABLISHMENT_ID = "741f11ed-9400-4d39-af47-418da6677303";
+const CRITICAL_CATEGORIES = new Set([
+  "new_appointment",
+  "cancelled_appointment",
+  "appointment_confirmation",
+  "appointment_reminder",
+  "review_request",
+]);
 
 async function isDemoRecipient(
   admin: ReturnType<typeof createClient>,
@@ -112,10 +119,14 @@ Deno.serve(async (req) => {
   const result = { notifications_processed: 0, reminders_processed: 0 };
 
   // ============ 1) NOTIFICATIONS PENDENTES ============
+  // Aguarda uma janela curta para não duplicar pushes que acabaram de ser criados
+  // por `push-send` e ainda estão finalizando o envio imediato.
+  const pendingRecoveryCutoff = new Date(Date.now() - 90 * 1000).toISOString();
   const { data: pending } = await admin
     .from("notifications")
     .select("id, recipient_type, recipient_id, title, body, link, data")
     .eq("delivered_push", false)
+    .lt("created_at", pendingRecoveryCutoff)
     .order("created_at", { ascending: true })
     .limit(50);
 
@@ -130,6 +141,9 @@ Deno.serve(async (req) => {
       title: n.title,
       body: n.body,
       url: n.link ?? undefined,
+      tag: (n.data as Record<string, unknown> | null)?.category as string | undefined,
+      category: (n.data as Record<string, unknown> | null)?.category as string | undefined,
+      is_critical: CRITICAL_CATEGORIES.has(String((n.data as Record<string, unknown> | null)?.category ?? "")),
       data: { notification_id: n.id, ...((n.data as Record<string, unknown>) ?? {}) },
     };
     await sendToRecipient(admin, n.recipient_type, n.recipient_id, payload);
@@ -227,6 +241,10 @@ Deno.serve(async (req) => {
       title: estab?.name ? `Lembrete — ${estab.name}` : "Lembrete de agendamento",
       body,
       url: estab?.slug ? `/${estab.slug}` : "/",
+      tag: "appointment_reminder",
+      category: "appointment_reminder",
+      is_critical: true,
+      ttl: Math.max(60, Math.floor((new Date(a.scheduled_at).getTime() - now.getTime()) / 1000)),
       data: { notification_id: notif?.id, appointment_id: a.id, category: "appointment_reminder" },
     });
 

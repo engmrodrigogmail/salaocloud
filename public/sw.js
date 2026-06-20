@@ -40,9 +40,18 @@ self.addEventListener('push', (event) => {
     if (event.data) payload.body = event.data.text();
   }
 
-  const category = (payload.data && payload.data.category) || payload.tag || '';
+  const data = payload.data || {};
+  const category = payload.category || data.category || payload.tag || '';
+  const uniqueTagSuffix =
+    data.notification_id ||
+    data.appointment_id ||
+    data.tab_id ||
+    `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const notificationTag = (payload.tag || category)
+    ? `${String(payload.tag || category).slice(0, 48)}-${String(uniqueTagSuffix).slice(0, 36)}`
+    : undefined;
   // Categorias críticas pedem interação explícita do usuário
-  const isCritical = [
+  const isCritical = payload.is_critical === true || [
     'new_appointment',
     'cancelled_appointment',
     'appointment_confirmation',
@@ -58,9 +67,9 @@ self.addEventListener('push', (event) => {
     body: payload.body,
     icon: '/logo-192.png',
     badge: '/logo-192.png',
-    data: { url: payload.url || '/', ...payload.data },
-    tag: payload.tag || category || undefined,
-    renotify: !!(payload.tag || category),
+    data: { url: payload.url || '/', category, ...data },
+    tag: notificationTag,
+    renotify: false,
     vibrate: isCritical ? [200, 100, 200, 100, 200] : [200, 100, 200],
     timestamp: Date.now(),
     actions: [
@@ -96,9 +105,13 @@ self.addEventListener('notificationclick', (event) => {
         if (url.origin === self.location.origin && 'focus' in client) {
           await client.focus();
           if ('navigate' in client) {
-            try { await client.navigate(absoluteUrl); } catch {}
+            try {
+              await client.navigate(absoluteUrl);
+              return;
+            } catch {}
+          } else {
+            return;
           }
-          return;
         }
       } catch {}
     }

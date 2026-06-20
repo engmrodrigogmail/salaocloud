@@ -35,11 +35,11 @@ async function getVapidPublicKey(): Promise<string> {
   return cachedKey;
 }
 
-function urlBase64ToUint8Array(base64: string): Uint8Array {
+function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
   const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
   const raw = atob(b64);
-  const out = new Uint8Array(raw.length);
+  const out = new Uint8Array(new ArrayBuffer(raw.length));
   for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
   return out;
 }
@@ -108,10 +108,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
           const keyArray = urlBase64ToUint8Array(publicKey);
           sub = await reg.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: keyArray.buffer.slice(
-              keyArray.byteOffset,
-              keyArray.byteOffset + keyArray.byteLength,
-            ) as ArrayBuffer,
+            applicationServerKey: keyArray,
           });
         }
 
