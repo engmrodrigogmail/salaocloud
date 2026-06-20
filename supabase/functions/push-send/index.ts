@@ -27,9 +27,18 @@ interface SendInput {
   link?: string;
   data?: Record<string, unknown>;
   category?: string;
+  is_critical?: boolean;
   // Se true, NÃO grava em notifications (só envia push). Default false.
   skip_history?: boolean;
 }
+
+const CRITICAL_CATEGORIES = new Set([
+  "new_appointment",
+  "cancelled_appointment",
+  "appointment_confirmation",
+  "appointment_reminder",
+  "review_request",
+]);
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -101,9 +110,8 @@ Deno.serve(async (req) => {
       .eq("is_active", true);
     if (subsErr) return json({ error: subsErr.message }, 500);
 
-    // 1. Grava notification (in-app) — já marcamos delivered_push=true porque
-    //    o envio do push é feito logo abaixo nesta mesma chamada. Isso evita
-    //    que o cron `push-process-pending` reenviar a mesma notificação.
+    // 1. Grava notification (in-app) como pendente até a tentativa de envio terminar.
+    //    Se a função cair antes do envio, o cron `push-process-pending` ainda consegue recuperar.
     let notification_id: string | null = null;
     if (!input.skip_history) {
       const { data: notif, error: notifErr } = await admin
@@ -117,7 +125,7 @@ Deno.serve(async (req) => {
           body: input.body,
           link: input.link ?? null,
           data: input.data ?? {},
-          delivered_push: true,
+          delivered_push: false,
         })
         .select("id")
         .single();
@@ -131,7 +139,9 @@ Deno.serve(async (req) => {
       body: input.body,
       url: input.link,
       tag: input.category,
-      data: { notification_id, ...(input.data ?? {}) },
+      category: input.category,
+      is_critical: input.is_critical ?? (input.category ? CRITICAL_CATEGORIES.has(input.category) : undefined),
+      data: { notification_id, category: input.category, ...(input.data ?? {}) },
     };
 
     let sent = 0;
@@ -151,6 +161,10 @@ Deno.serve(async (req) => {
 
     if (goneIds.length > 0) {
       await admin.from(table).update({ is_active: false }).in("id", goneIds);
+    }
+
+    if (notification_id) {
+      await admin.from("notifications").update({ delivered_push: true }).eq("id", notification_id);
     }
 
     return json({ ok: true, notification_id, sent, failed, total: subs?.length ?? 0 });
