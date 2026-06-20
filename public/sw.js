@@ -59,17 +59,18 @@ self.addEventListener('push', (event) => {
     'review_request',
   ].includes(category);
 
-  // IMPORTANTE: para garantir heads-up + tela de bloqueio no Android,
-  // NÃO usar `requireInteraction`, NÃO setar `silent` explicitamente e
-  // só incluir `image` quando realmente existir. Caso contrário, alguns
-  // Androids (Samsung/Xiaomi/MIUI) suprimem o banner/lockscreen.
+  // `requireInteraction: true` em categorias críticas faz a notificação
+  // persistir na tela de bloqueio até o usuário interagir, em vez de
+  // sumir após poucos segundos. Combinado com `urgency: "high"` no envio
+  // (ver web-push.ts), garante heads-up + lockscreen no Android.
   const options = {
     body: payload.body,
     icon: '/logo-192.png',
     badge: '/logo-192.png',
     data: { url: payload.url || '/', category, ...data },
     tag: notificationTag,
-    renotify: false,
+    renotify: true,
+    requireInteraction: isCritical,
     vibrate: isCritical ? [200, 100, 200, 100, 200] : [200, 100, 200],
     timestamp: Date.now(),
     actions: [
