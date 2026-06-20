@@ -66,7 +66,8 @@ export async function sendWebPush(
     return { ok: false, gone: false, error: "VAPID keys not configured" };
   }
   try {
-    const ttl = Math.max(0, Math.min(60 * 60 * 24, Number(payload.ttl ?? 60 * 60 * 24)));
+    const rawTtl = Number(payload.ttl ?? 60 * 60 * 24);
+    const ttl = Number.isFinite(rawTtl) ? Math.max(0, Math.min(60 * 60 * 24, rawTtl)) : 60 * 60 * 24;
     const res = await webpush.sendNotification(
       { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
       JSON.stringify(payload),
