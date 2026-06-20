@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           auth: string
           created_at: string
+          device_type: string | null
           endpoint: string
           id: string
           is_active: boolean
@@ -30,6 +31,7 @@ export type Database = {
         Insert: {
           auth: string
           created_at?: string
+          device_type?: string | null
           endpoint: string
           id?: string
           is_active?: boolean
@@ -42,6 +44,7 @@ export type Database = {
         Update: {
           auth?: string
           created_at?: string
+          device_type?: string | null
           endpoint?: string
           id?: string
           is_active?: boolean
@@ -1170,6 +1173,7 @@ export type Database = {
           auth: string
           client_id: string
           created_at: string
+          device_type: string | null
           endpoint: string
           id: string
           is_active: boolean
@@ -1182,6 +1186,7 @@ export type Database = {
           auth: string
           client_id: string
           created_at?: string
+          device_type?: string | null
           endpoint: string
           id?: string
           is_active?: boolean
@@ -1194,6 +1199,7 @@ export type Database = {
           auth?: string
           client_id?: string
           created_at?: string
+          device_type?: string | null
           endpoint?: string
           id?: string
           is_active?: boolean
@@ -2053,6 +2059,7 @@ export type Database = {
         Row: {
           auth: string
           created_at: string
+          device_type: string | null
           endpoint: string
           establishment_id: string
           id: string
@@ -2066,6 +2073,7 @@ export type Database = {
         Insert: {
           auth: string
           created_at?: string
+          device_type?: string | null
           endpoint: string
           establishment_id: string
           id?: string
@@ -2079,6 +2087,7 @@ export type Database = {
         Update: {
           auth?: string
           created_at?: string
+          device_type?: string | null
           endpoint?: string
           establishment_id?: string
           id?: string
@@ -3400,6 +3409,7 @@ export type Database = {
         Row: {
           auth: string
           created_at: string
+          device_type: string | null
           endpoint: string
           id: string
           is_active: boolean
@@ -3413,6 +3423,7 @@ export type Database = {
         Insert: {
           auth: string
           created_at?: string
+          device_type?: string | null
           endpoint: string
           id?: string
           is_active?: boolean
@@ -3426,6 +3437,7 @@ export type Database = {
         Update: {
           auth?: string
           created_at?: string
+          device_type?: string | null
           endpoint?: string
           id?: string
           is_active?: boolean
