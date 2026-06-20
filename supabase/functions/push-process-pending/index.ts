@@ -119,10 +119,14 @@ Deno.serve(async (req) => {
   const result = { notifications_processed: 0, reminders_processed: 0 };
 
   // ============ 1) NOTIFICATIONS PENDENTES ============
+  // Aguarda uma janela curta para não duplicar pushes que acabaram de ser criados
+  // por `push-send` e ainda estão finalizando o envio imediato.
+  const pendingRecoveryCutoff = new Date(Date.now() - 90 * 1000).toISOString();
   const { data: pending } = await admin
     .from("notifications")
     .select("id, recipient_type, recipient_id, title, body, link, data")
     .eq("delivered_push", false)
+    .lt("created_at", pendingRecoveryCutoff)
     .order("created_at", { ascending: true })
     .limit(50);
 
