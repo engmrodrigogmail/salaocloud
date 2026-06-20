@@ -108,10 +108,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
           const keyArray = urlBase64ToUint8Array(publicKey);
           sub = await reg.pushManager.subscribe({
             userVisibleOnly: true,
-            applicationServerKey: keyArray.buffer.slice(
-              keyArray.byteOffset,
-              keyArray.byteOffset + keyArray.byteLength,
-            ) as ArrayBuffer,
+            applicationServerKey: keyArray,
           });
         }
 
