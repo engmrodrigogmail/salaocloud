@@ -29,6 +29,18 @@ self.addEventListener('message', (event) => {
 });
 
 // =================== PUSH NOTIFICATIONS ===================
+function getDeviceType() {
+  try {
+    const ua = (self.navigator?.userAgent || '').toLowerCase();
+    if (ua.includes('android')) return 'android';
+    if (ua.includes('iphone') || ua.includes('ipad') || ua.includes('ipod')) return 'ios';
+    if (ua.includes('windows')) return 'windows';
+    if (ua.includes('mac')) return 'macos';
+    if (ua.includes('linux')) return 'linux';
+  } catch {}
+  return 'unknown';
+}
+
 self.addEventListener('push', (event) => {
   let payload = { title: 'Salão Cloud', body: 'Você tem uma nova notificação', url: '/', data: {} };
   try {
@@ -59,18 +71,30 @@ self.addEventListener('push', (event) => {
     'review_request',
   ].includes(category);
 
-  // `requireInteraction: true` em categorias críticas faz a notificação
-  // persistir na tela de bloqueio até o usuário interagir, em vez de
-  // sumir após poucos segundos. Combinado com `urgency: "high"` no envio
-  // (ver web-push.ts), garante heads-up + lockscreen no Android.
+  const deviceType = getDeviceType();
+
+  // ✅ IMPORTANTE: Para garantir que notificações apareçam na tela bloqueada:
+  // - requireInteraction: true (em críticas) mantém a notificação visível até interação
+  // - silent: false garante que som/vibração do canal de notificação sejam tocados
+  // - sound: 'default' é uma dica para alguns navegadores (não-padrão; ignorado em outros)
+  // - renotify: true faz notificações com mesma tag "piscarem" novamente
+  // - urgency: "high" + TTL no envio (web-push.ts) força entrega heads-up via FCM/APNs
   const options = {
     body: payload.body,
     icon: '/logo-192.png',
     badge: '/logo-192.png',
-    data: { url: payload.url || '/', category, ...data },
+    data: {
+      url: payload.url || '/',
+      category,
+      device_type: deviceType,
+      is_critical: isCritical,
+      ...data,
+    },
     tag: notificationTag,
     renotify: true,
     requireInteraction: isCritical,
+    silent: false,
+    sound: 'default',
     vibrate: isCritical ? [200, 100, 200, 100, 200] : [200, 100, 200],
     timestamp: Date.now(),
     actions: [
@@ -80,9 +104,22 @@ self.addEventListener('push', (event) => {
   };
   if (payload.image) options.image = payload.image;
 
-  event.waitUntil(
-    self.registration.showNotification(payload.title || 'Salão Cloud', options)
-  );
+  event.waitUntil((async () => {
+    try {
+      console.log('[push-notification] Mostrando notificação:', {
+        title: payload.title,
+        category,
+        isCritical,
+        deviceType,
+        requireInteraction: isCritical,
+        tag: notificationTag,
+        timestamp: new Date().toISOString(),
+      });
+      await self.registration.showNotification(payload.title || 'Salão Cloud', options);
+    } catch (e) {
+      console.error('[push-notification] Erro ao mostrar notificação:', e);
+    }
+  })());
 });
 
 self.addEventListener('notificationclick', (event) => {

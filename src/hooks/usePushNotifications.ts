@@ -35,6 +35,17 @@ async function getVapidPublicKey(): Promise<string> {
   return cachedKey;
 }
 
+function getDeviceType(): string {
+  if (typeof navigator === "undefined") return "unknown";
+  const ua = (navigator.userAgent || "").toLowerCase();
+  if (ua.includes("android")) return "android";
+  if (ua.includes("iphone") || ua.includes("ipad") || ua.includes("ipod")) return "ios";
+  if (ua.includes("windows")) return "windows";
+  if (ua.includes("mac")) return "macos";
+  if (ua.includes("linux")) return "linux";
+  return "unknown";
+}
+
 function urlBase64ToUint8Array(base64: string): Uint8Array<ArrayBuffer> {
   const padding = "=".repeat((4 - (base64.length % 4)) % 4);
   const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
@@ -114,6 +125,12 @@ export function usePushNotifications(): UsePushNotificationsResult {
 
         // 4. Persiste no backend
         const json = sub.toJSON();
+        const deviceType = getDeviceType();
+        console.log("[push-subscribe] Inscrevendo para notificações:", {
+          scope,
+          deviceType,
+          endpoint: sub.endpoint.substring(0, 60) + "...",
+        });
         const payload: Record<string, unknown> = {
           scope,
           subscription: {
@@ -121,6 +138,7 @@ export function usePushNotifications(): UsePushNotificationsResult {
             keys: { p256dh: json.keys?.p256dh, auth: json.keys?.auth },
           },
           user_agent: navigator.userAgent,
+          device_type: deviceType,
         };
         if (scope === "client") {
           if (!client_id) {

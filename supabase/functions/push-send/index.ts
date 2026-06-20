@@ -134,15 +134,32 @@ Deno.serve(async (req) => {
     }
 
     // 2. Envia push para cada subscription
+    const isCritical = input.is_critical ?? (input.category ? CRITICAL_CATEGORIES.has(input.category) : false);
     const payload: PushPayload = {
       title: input.title,
       body: input.body,
       url: input.link,
       tag: input.category,
       category: input.category,
-      is_critical: input.is_critical ?? (input.category ? CRITICAL_CATEGORIES.has(input.category) : undefined),
-      data: { notification_id, category: input.category, ...(input.data ?? {}) },
+      is_critical: isCritical,
+      data: {
+        notification_id,
+        category: input.category,
+        is_critical: isCritical,
+        timestamp: new Date().toISOString(),
+        ...(input.data ?? {}),
+      },
     };
+
+    console.log("[push-send] 📢 Enviando notificações:", {
+      recipientType: input.recipient_type,
+      recipientId: input.recipient_id,
+      title: input.title,
+      category: input.category,
+      isCritical,
+      subscriptionsCount: subs?.length ?? 0,
+      timestamp: new Date().toISOString(),
+    });
 
     let sent = 0;
     let failed = 0;
@@ -158,6 +175,13 @@ Deno.serve(async (req) => {
         if (result.gone) goneIds.push(sub.id);
       }
     }
+
+    console.log("[push-send] ✅ Resultado:", {
+      sent,
+      failed,
+      total: subs?.length ?? 0,
+      gone: goneIds.length,
+    });
 
     if (goneIds.length > 0) {
       await admin.from(table).update({ is_active: false }).in("id", goneIds);

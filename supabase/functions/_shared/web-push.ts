@@ -63,40 +63,46 @@ export async function sendWebPush(
   payload: PushPayload,
 ): Promise<PushSendResult> {
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+    console.error("[web-push] ❌ VAPID keys não configuradas");
     return { ok: false, gone: false, error: "VAPID keys not configured" };
   }
   try {
     const rawTtl = Number(payload.ttl ?? 60 * 60 * 24);
     const ttl = Number.isFinite(rawTtl) ? Math.max(0, Math.min(60 * 60 * 24, rawTtl)) : 60 * 60 * 24;
+    const endpointHost = (() => { try { return new URL(sub.endpoint).host; } catch { return "?"; } })();
+    const category = payload.category || String(payload.data?.category ?? payload.tag ?? "sem_categoria");
+
+    console.log("[web-push] 📤 Enviando notificação:", {
+      host: endpointHost,
+      title: payload.title,
+      category,
+      isCritical: payload.is_critical ?? false,
+      urgency: "high",
+      ttl,
+      timestamp: new Date().toISOString(),
+    });
+
     const res = await webpush.sendNotification(
       { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
       JSON.stringify(payload),
       {
         TTL: ttl,
         // "high" garante heads-up + tela de bloqueio + som no Android (FCM).
-        // Sem isso, o Chrome/FCM entrega como "normal" e o sistema pode
-        // suprimir o banner e o som.
         urgency: "high",
       },
     );
-    try {
-      const endpointHost = new URL(sub.endpoint).host;
-      const category = payload.category || String(payload.data?.category ?? payload.tag ?? "sem_categoria");
-      console.log(`[web-push] Enviado host=${endpointHost} status=${res.statusCode} urgency=high ttl=${ttl} category=${category}`);
-    } catch {
-      console.log(`[web-push] Enviado status=${res.statusCode} urgency=high ttl=${ttl}`);
-    }
+    console.log(`[web-push] ✅ Enviado host=${endpointHost} status=${res.statusCode} urgency=high ttl=${ttl} category=${category}`);
     return { ok: true, statusCode: res.statusCode };
   } catch (e: any) {
     const statusCode = e?.statusCode;
-    // 404/410 => endpoint expirado/inválido — caller deve marcar inativo
     const gone = statusCode === 404 || statusCode === 410;
-    try {
-      const endpointHost = new URL(sub.endpoint).host;
-      console.warn(`[web-push] Falha no envio host=${endpointHost} status=${statusCode ?? "n/a"} gone=${gone}`);
-    } catch {
-      console.warn(`[web-push] Falha no envio status=${statusCode ?? "n/a"} gone=${gone}`);
-    }
+    const endpointHost = (() => { try { return new URL(sub.endpoint).host; } catch { return "?"; } })();
+    console.warn("[web-push] ❌ Falha no envio:", {
+      host: endpointHost,
+      statusCode: statusCode ?? "n/a",
+      gone,
+      error: e?.body || e?.message || String(e),
+    });
     return { ok: false, statusCode, gone, error: e?.body || e?.message || String(e) };
   }
 }

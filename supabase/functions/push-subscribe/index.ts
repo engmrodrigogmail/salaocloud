@@ -20,11 +20,21 @@ interface SubscriptionInput {
     keys: { p256dh: string; auth: string };
   };
   user_agent?: string;
+  device_type?: string;
   // For client scope (no auth):
   client_id?: string;
   establishment_id?: string;
-  // For establishment/professional scope (resolved server-side from auth):
-  // nothing extra needed
+}
+
+function inferDeviceType(ua: string | null | undefined): string {
+  const s = (ua || "").toLowerCase();
+  if (!s) return "unknown";
+  if (s.includes("android")) return "android";
+  if (s.includes("iphone") || s.includes("ipad") || s.includes("ipod")) return "ios";
+  if (s.includes("windows")) return "windows";
+  if (s.includes("mac")) return "macos";
+  if (s.includes("linux")) return "linux";
+  return "unknown";
 }
 
 Deno.serve(async (req) => {
@@ -32,7 +42,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = (await req.json()) as SubscriptionInput;
-    const { scope, subscription, user_agent } = body;
+    const { scope, subscription, user_agent, device_type } = body;
 
     if (!scope || !subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
       return jsonResponse({ error: "invalid_payload" }, 400);
@@ -42,11 +52,14 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceKey);
 
+    const resolvedDeviceType = device_type || inferDeviceType(user_agent);
+
     const baseRow = {
       endpoint: subscription.endpoint,
       p256dh: subscription.keys.p256dh,
       auth: subscription.keys.auth,
       user_agent: user_agent ?? null,
+      device_type: resolvedDeviceType,
       is_active: true,
       last_used_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
