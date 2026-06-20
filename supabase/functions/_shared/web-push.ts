@@ -78,6 +78,13 @@ export async function sendWebPush(
         urgency: "high",
       },
     );
+    try {
+      const endpointHost = new URL(sub.endpoint).host;
+      const category = payload.category || String(payload.data?.category ?? payload.tag ?? "sem_categoria");
+      console.log(`[web-push] Enviado host=${endpointHost} status=${res.statusCode} urgency=high ttl=${ttl} category=${category}`);
+    } catch {
+      console.log(`[web-push] Enviado status=${res.statusCode} urgency=high ttl=${ttl}`);
+    }
     return { ok: true, statusCode: res.statusCode };
   } catch (e: any) {
     const statusCode = e?.statusCode;
