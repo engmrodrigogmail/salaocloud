@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
           title: input.title,
           body: input.body,
           link: input.link ?? null,
-          data: input.data ?? {},
+          data: { category: input.category, ...(input.data ?? {}) },
           delivered_push: false,
         })
         .select("id")
