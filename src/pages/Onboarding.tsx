@@ -71,6 +71,7 @@ export default function Onboarding() {
       city: "",
       state: "",
       description: "",
+      coupon_code: "",
     },
   });
 
