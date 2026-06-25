@@ -3064,6 +3064,7 @@ export type Database = {
           max_redemptions: number | null
           min_months: number | null
           name: string
+          trial_edu_quota: number | null
           updated_at: string
           valid_from: string
           valid_until: string | null
@@ -3086,6 +3087,7 @@ export type Database = {
           max_redemptions?: number | null
           min_months?: number | null
           name: string
+          trial_edu_quota?: number | null
           updated_at?: string
           valid_from?: string
           valid_until?: string | null
@@ -3108,6 +3110,7 @@ export type Database = {
           max_redemptions?: number | null
           min_months?: number | null
           name?: string
+          trial_edu_quota?: number | null
           updated_at?: string
           valid_from?: string
           valid_until?: string | null
