@@ -188,6 +188,8 @@ export default function AdminCoupons() {
         valid_until: couponForm.valid_until || null,
         grants_trial_days: couponForm.grants_trial_days ? parseInt(couponForm.grants_trial_days) : null,
         feature_mode: couponForm.feature_mode || "all",
+        trial_edu_quota: couponForm.trial_edu_quota ? parseInt(couponForm.trial_edu_quota) : null,
+
         created_by: user?.id,
       })
       .select()
