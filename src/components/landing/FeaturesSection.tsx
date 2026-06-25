@@ -45,9 +45,14 @@ const features = [
     description: "Comissões calculadas automaticamente por serviço ou produto. Configure regras personalizadas e acompanhe os ganhos da equipe.",
   },
   {
-    icon: Gift,
-    title: "Programa de Fidelidade",
-    description: "Crie programas de pontos e recompensas para seus clientes. Aumente a retenção e transforme clientes em fãs!",
+    icon: Lock,
+    title: "Sigilo Profissional",
+    description: "Configure quem vê o quê: cada profissional enxerga apenas seus próprios atendimentos, comissões e clientes. Confidencialidade total da equipe.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Vendas e Custos ao Vivo",
+    description: "Saiba quanto está sendo seu lucro instantâneo e acumulado, em tempo real na tela. Acompanhe vendas, custos e margens. Evite surpresas!",
   },
   {
     icon: Percent,
