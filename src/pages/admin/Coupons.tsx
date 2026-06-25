@@ -666,11 +666,23 @@ export default function AdminCoupons() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="secondary">
-                              {coupon.discount_type === "percentage"
-                                ? `${coupon.discount_value}%`
-                                : `R$ ${coupon.discount_value}`}
-                            </Badge>
+                            <div className="flex flex-col gap-1">
+                              <Badge variant="secondary">
+                                {coupon.discount_type === "percentage"
+                                  ? `${coupon.discount_value}%`
+                                  : `R$ ${coupon.discount_value}`}
+                              </Badge>
+                              {(coupon as any).grants_trial_days > 0 && (
+                                <Badge variant="outline" className="text-xs w-fit">
+                                  Trial {(coupon as any).grants_trial_days} dias
+                                </Badge>
+                              )}
+                              {(coupon as any).feature_mode && (coupon as any).feature_mode !== "all" && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  {FEATURE_MODES.find((m) => m.value === (coupon as any).feature_mode)?.label}
+                                </span>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>
                             {coupon.applicable_plans.length === 0 ? (
