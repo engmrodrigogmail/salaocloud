@@ -96,6 +96,7 @@ export default function AdminCoupons() {
   const [coupons, setCoupons] = useState<PlatformCoupon[]>([]);
   const [redemptions, setRedemptions] = useState<CouponRedemption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [availablePlans, setAvailablePlans] = useState<PlanOption[]>([]);
   const [isAddCouponOpen, setIsAddCouponOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<PlatformCoupon | null>(null);
   const [selectedCouponForRedemptions, setSelectedCouponForRedemptions] = useState<string | null>(null);
