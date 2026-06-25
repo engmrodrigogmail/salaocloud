@@ -184,6 +184,8 @@ export default function AdminCoupons() {
         min_months: couponForm.min_months ? parseInt(couponForm.min_months) : 1,
         valid_from: couponForm.valid_from || new Date().toISOString(),
         valid_until: couponForm.valid_until || null,
+        grants_trial_days: couponForm.grants_trial_days ? parseInt(couponForm.grants_trial_days) : null,
+        feature_mode: couponForm.feature_mode || "all",
         created_by: user?.id,
       })
       .select()
