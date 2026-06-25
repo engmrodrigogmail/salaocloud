@@ -116,7 +116,9 @@ export default function AdminCoupons() {
     valid_until: "",
     grants_trial_days: "",
     feature_mode: "all" as "all" | "all_except_edu" | "only_listed",
+    trial_edu_quota: "",
   });
+
 
   useEffect(() => {
     fetchCoupons();
