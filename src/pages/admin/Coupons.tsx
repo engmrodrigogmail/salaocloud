@@ -56,7 +56,7 @@ interface PlatformCoupon {
   applicable_features: string[];
   max_redemptions: number | null;
   current_redemptions: number;
-  min_months: number | null;
+  
   valid_from: string;
   valid_until: string | null;
   is_active: boolean;
@@ -111,7 +111,7 @@ export default function AdminCoupons() {
     applicable_plans: [] as string[],
     applicable_features: [] as string[],
     max_redemptions: "",
-    min_months: "1",
+
     valid_from: "",
     valid_until: "",
     grants_trial_days: "",
@@ -183,7 +183,6 @@ export default function AdminCoupons() {
         applicable_plans: couponForm.applicable_plans,
         applicable_features: couponForm.applicable_features,
         max_redemptions: couponForm.max_redemptions ? parseInt(couponForm.max_redemptions) : null,
-        min_months: couponForm.min_months ? parseInt(couponForm.min_months) : 1,
         valid_from: couponForm.valid_from || new Date().toISOString(),
         valid_until: couponForm.valid_until || null,
         grants_trial_days: couponForm.grants_trial_days ? parseInt(couponForm.grants_trial_days) : null,
@@ -224,7 +223,7 @@ export default function AdminCoupons() {
         applicable_plans: couponForm.applicable_plans,
         applicable_features: couponForm.applicable_features,
         max_redemptions: couponForm.max_redemptions ? parseInt(couponForm.max_redemptions) : null,
-        min_months: couponForm.min_months ? parseInt(couponForm.min_months) : 1,
+        
         valid_from: couponForm.valid_from,
         valid_until: couponForm.valid_until || null,
         grants_trial_days: couponForm.grants_trial_days ? parseInt(couponForm.grants_trial_days) : null,
@@ -283,7 +282,7 @@ export default function AdminCoupons() {
       applicable_plans: [],
       applicable_features: [],
       max_redemptions: "",
-      min_months: "1",
+
       valid_from: "",
       valid_until: "",
       grants_trial_days: "",
@@ -487,20 +486,6 @@ export default function AdminCoupons() {
                       }
                       placeholder="Ilimitado"
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Mínimo de Meses</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      value={couponForm.min_months}
-                      onChange={(e) =>
-                        setCouponForm({ ...couponForm, min_months: e.target.value })
-                      }
-                    />
-                    <p className="text-xs text-muted-foreground">
-                      Duração mínima (em meses) da assinatura para o cupom ser aceito. Não se aplica a cupons de trial.
-                    </p>
                   </div>
                 </div>
 
@@ -757,7 +742,7 @@ export default function AdminCoupons() {
                                     applicable_plans: coupon.applicable_plans || [],
                                     applicable_features: coupon.applicable_features || [],
                                     max_redemptions: coupon.max_redemptions?.toString() || "",
-                                    min_months: coupon.min_months?.toString() || "1",
+                                    
                                     valid_from: coupon.valid_from.slice(0, 16),
                                     valid_until: coupon.valid_until?.slice(0, 16) || "",
                                     grants_trial_days: (coupon as any).grants_trial_days?.toString() || "",
@@ -973,20 +958,6 @@ export default function AdminCoupons() {
                     }
                     placeholder="Ilimitado"
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label>Mínimo de Meses</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={couponForm.min_months}
-                    onChange={(e) =>
-                      setCouponForm({ ...couponForm, min_months: e.target.value })
-                    }
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Duração mínima da assinatura para aceitar o cupom. Não se aplica a cupons de trial.
-                  </p>
                 </div>
 
               </div>

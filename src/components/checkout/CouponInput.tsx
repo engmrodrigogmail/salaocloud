@@ -162,9 +162,6 @@ export function CouponInput({
                 .join(", ")}
             </p>
           )}
-          {appliedCoupon.min_months && appliedCoupon.min_months > 1 && (
-            <p>Requer assinatura mínima de {appliedCoupon.min_months} meses</p>
-          )}
         </div>
       )}
     </div>

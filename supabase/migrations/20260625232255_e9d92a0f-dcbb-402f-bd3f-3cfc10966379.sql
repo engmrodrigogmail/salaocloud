@@ -1,0 +1,1 @@
+ALTER TABLE public.platform_coupons DROP COLUMN IF EXISTS min_months;
