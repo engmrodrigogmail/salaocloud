@@ -34,10 +34,91 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { priceId, planSlug, couponCode, billingCycle, successUrl, cancelUrl } = await req.json();
-    logStep("Request body", { priceId, planSlug, couponCode, billingCycle, successUrl, cancelUrl });
+    const { priceId, planSlug, couponCode, billingCycle, successUrl, cancelUrl, establishmentId } = await req.json();
+    logStep("Request body", { priceId, planSlug, couponCode, billingCycle, successUrl, cancelUrl, establishmentId });
 
     if (!priceId) throw new Error("Price ID is required");
+
+    // === TRIAL COUPON PATH ===
+    // If coupon grants trial days AND 100% off, skip Stripe and activate trial directly.
+    if (couponCode && establishmentId) {
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL") ?? "",
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+        { auth: { persistSession: false } }
+      );
+      const { data: pc } = await supabaseAdmin
+        .from("platform_coupons")
+        .select("*")
+        .eq("code", couponCode.toUpperCase())
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (pc && pc.grants_trial_days && Number(pc.grants_trial_days) > 0 &&
+          pc.discount_type === "percentage" && Number(pc.discount_value) >= 100) {
+        // Validate window
+        const now = new Date();
+        if (pc.valid_from && new Date(pc.valid_from) > now) {
+          throw new Error("Cupom ainda não está vigente");
+        }
+        if (pc.valid_until && new Date(pc.valid_until) < now) {
+          throw new Error("Cupom expirado");
+        }
+        // Block duplicate redemption by same owner (any establishment they own)
+        const { data: ownedEsts } = await supabaseAdmin
+          .from("establishments")
+          .select("id")
+          .eq("owner_id", user.id);
+        const ownedIds = (ownedEsts ?? []).map((e: any) => e.id);
+        if (ownedIds.length > 0) {
+          const { data: prev } = await supabaseAdmin
+            .from("platform_coupon_redemptions")
+            .select("id")
+            .eq("coupon_id", pc.id)
+            .in("establishment_id", ownedIds)
+            .limit(1);
+          if (prev && prev.length > 0) {
+            throw new Error("Este cupom já foi utilizado por este proprietário");
+          }
+        }
+
+        const trialEnds = new Date(now.getTime() + Number(pc.grants_trial_days) * 24 * 60 * 60 * 1000);
+        const { error: updErr } = await supabaseAdmin
+          .from("establishments")
+          .update({
+            status: "active",
+            subscription_plan: "trial",
+            trial_ends_at: trialEnds.toISOString(),
+            trial_coupon_id: pc.id,
+            trial_features_allowed: pc.feature_mode ?? "all",
+          })
+          .eq("id", establishmentId)
+          .eq("owner_id", user.id);
+        if (updErr) throw new Error(`Falha ao ativar trial: ${updErr.message}`);
+
+        await supabaseAdmin.from("platform_coupon_redemptions").insert({
+          coupon_id: pc.id,
+          establishment_id: establishmentId,
+          applied_to_plan: planSlug ?? null,
+          discount_amount: null,
+          is_active: true,
+        });
+        await supabaseAdmin
+          .from("platform_coupons")
+          .update({ current_redemptions: (pc.current_redemptions ?? 0) + 1 })
+          .eq("id", pc.id);
+
+        logStep("Trial activated via coupon", { establishmentId, trialEnds });
+
+        const originHdr = req.headers.get("origin") || "https://preview.lovable.dev";
+        const redirect = successUrl || `${originHdr}/dashboard?trial=1`;
+        return new Response(JSON.stringify({ url: redirect, trial: true, trial_ends_at: trialEnds.toISOString() }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+    }
+
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { 
       apiVersion: "2025-08-27.basil" 
