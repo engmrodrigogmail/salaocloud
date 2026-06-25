@@ -30,10 +30,15 @@ export function HeroSection() {
 
       <div className="container mx-auto px-6 lg:px-10 pt-32 md:pt-36 pb-16 relative z-10 min-h-[90vh] flex items-center">
         <div className="w-full md:max-w-[55%] lg:max-w-[50%]">
-          {/* Eyebrow */}
-          <p className="text-xs uppercase tracking-premium text-primary font-semibold mb-5">
-            Salão Cloud
-          </p>
+          {/* Eyebrow / trial badge */}
+          <div className="flex items-center gap-3 mb-5">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-premium">
+              7 dias grátis
+            </span>
+            <span className="text-xs uppercase tracking-premium text-primary font-semibold">
+              Salão Cloud
+            </span>
+          </div>
 
           {/* Headline */}
           <h1 className="font-display font-bold leading-[1.05] tracking-tight mb-5 text-foreground text-4xl sm:text-5xl md:text-[3.5rem] lg:text-[4rem]">
@@ -43,18 +48,21 @@ export function HeroSection() {
           </h1>
 
           {/* Subtitle */}
-          <p className="text-xl md:text-2xl text-primary font-medium mb-10">
+          <p className="text-xl md:text-2xl text-primary font-medium mb-3">
             O seu salão, conectado.
+          </p>
+          <p className="text-base md:text-lg text-muted-foreground mb-8 max-w-lg">
+            Teste todas as funcionalidades por <strong className="text-foreground">7 dias gratuitos</strong>. Sem cartão, sem compromisso. Depois, apenas <strong className="text-foreground">R$ 129,90/mês</strong> com tudo liberado.
           </p>
 
           {/* CTAs */}
-          <div className="flex flex-wrap items-center gap-3 mb-6">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
             <Button
               size="lg"
               className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold uppercase tracking-premium px-7 h-12 rounded-sm text-xs group"
-              onClick={() => navigate("/auth?mode=signup")}
+              onClick={() => navigate("/auth?mode=signup&trial=1")}
             >
-              Sou Salão
+              Sou Salão — 7 dias grátis
               <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={16} />
             </Button>
           </div>
