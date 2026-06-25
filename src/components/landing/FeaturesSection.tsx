@@ -6,7 +6,8 @@ import {
   Clock, 
   Smartphone,
   CreditCard,
-  Gift,
+  Lock,
+  TrendingUp,
   Percent,
   Receipt,
   HelpCircle
