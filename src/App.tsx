@@ -84,6 +84,8 @@ import TrainingPerfil from "./pages/treinamento/Perfil";
 import TrainingModulo from "./pages/treinamento/Modulo";
 import TrainingAdmin from "./pages/treinamento/Admin";
 import { TrainingProtectedRoute } from "./components/training/TrainingProtectedRoute";
+import { SubscriptionGate } from "./components/auth/SubscriptionGate";
+import SubscriptionExpired from "./pages/SubscriptionExpired";
 
 const queryClient = new QueryClient();
 
