@@ -74,18 +74,21 @@ interface CouponRedemption {
   establishment_name?: string;
 }
 
-const SUBSCRIPTION_PLANS = [
-  { value: "basic", label: "Básico" },
-  { value: "professional", label: "Profissional" },
-  { value: "premium", label: "Premium" },
-];
+interface PlanOption { value: string; label: string }
 
 const SAAS_FEATURES = [
   { value: "ai_assistant", label: "Assistente Virtual IA" },
+  { value: "edu", label: "Consultas Edu" },
   { value: "reports", label: "Relatórios" },
   { value: "commissions", label: "Controle de Comissões" },
   { value: "api_access", label: "Acesso à API" },
   { value: "multi_units", label: "Multi-unidades" },
+];
+
+const FEATURE_MODES = [
+  { value: "all", label: "Todas as funcionalidades" },
+  { value: "all_except_edu", label: "Tudo exceto consultas Edu" },
+  { value: "only_listed", label: "Apenas funcionalidades listadas" },
 ];
 
 export default function AdminCoupons() {
