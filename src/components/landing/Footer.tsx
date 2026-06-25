@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Instagram, Facebook, Linkedin, Mail, MapPin, MessageCircle } from "lucide-react";
+import { Instagram, Facebook, Linkedin, MapPin } from "lucide-react";
 import logo from "@/assets/logo-salaocloud-v5.png";
 
 const footerLinks = {
@@ -32,19 +32,6 @@ export function Footer() {
               Menos preocupação. Mais clientes. O sistema completo para gestão de salões e barbearias.
             </p>
             <div className="space-y-3 text-sm text-muted-foreground">
-              <div className="flex items-center gap-3">
-                <Mail size={16} className="text-primary" />
-                <span>contato@salaocloud.com.br</span>
-              </div>
-              <a
-                href="https://wa.me/5511947551416"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 hover:text-primary transition-colors"
-              >
-                <MessageCircle size={16} className="text-primary" />
-                <span>11 94755-1416</span>
-              </a>
               <div className="flex items-center gap-3">
                 <MapPin size={16} className="text-primary" />
                 <span>São Paulo, SP - Brasil</span>
