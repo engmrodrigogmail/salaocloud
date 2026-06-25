@@ -56,7 +56,7 @@ interface PlatformCoupon {
   applicable_features: string[];
   max_redemptions: number | null;
   current_redemptions: number;
-  min_months: number | null;
+  
   valid_from: string;
   valid_until: string | null;
   is_active: boolean;
