@@ -65,7 +65,7 @@ export function Header() {
             className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs uppercase tracking-premium h-9 px-5 rounded-sm font-medium"
             asChild
           >
-            <Link to="/auth?mode=signup">Começar</Link>
+            <Link to="/auth?mode=signup&trial=1">7 dias grátis</Link>
           </Button>
         </div>
 
@@ -105,7 +105,7 @@ export function Header() {
                 className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-sm uppercase tracking-premium text-xs"
                 asChild
               >
-                <Link to="/auth?mode=signup">Começar</Link>
+                <Link to="/auth?mode=signup&trial=1">7 dias grátis</Link>
               </Button>
             </div>
           </nav>
