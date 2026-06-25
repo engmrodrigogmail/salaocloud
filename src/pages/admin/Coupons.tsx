@@ -276,6 +276,8 @@ export default function AdminCoupons() {
       min_months: "1",
       valid_from: "",
       valid_until: "",
+      grants_trial_days: "",
+      feature_mode: "all",
     });
   };
 
