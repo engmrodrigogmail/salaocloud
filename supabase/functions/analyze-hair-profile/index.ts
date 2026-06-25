@@ -337,46 +337,49 @@ Principal resultado esperado pela cliente: ${expectedResult || "(não respondido
       const isImageTooLarge = lower.includes("image exceeds 5 mb") || lower.includes("base64: image exceeds");
       const isOverloaded = statusCode === 529 || lower.includes("overloaded") || lower.includes("temporarily unavailable");
 
-      try {
-        const { data: estInfo } = await admin
-          .from("establishments")
-          .select("name, slug")
-          .eq("id", body.establishment_id)
-          .maybeSingle();
+      // Só notifica super admins em falhas acionáveis (créditos/cota).
+      // Foto > 5MB é tratada na UX do salão; 529/overloaded é transitório da Anthropic.
+      const shouldNotifyAdmin = isCredit && !isImageTooLarge && !isOverloaded;
+      if (shouldNotifyAdmin) {
+        try {
+          const { data: estInfo } = await admin
+            .from("establishments")
+            .select("name, slug")
+            .eq("id", body.establishment_id)
+            .maybeSingle();
 
-        const { data: admins } = await admin
-          .from("user_roles")
-          .select("user_id")
-          .eq("role", "super_admin");
+          const { data: admins } = await admin
+            .from("user_roles")
+            .select("user_id")
+            .eq("role", "super_admin");
 
-        const title = isCredit
-          ? "⚠️ Edu IA: créditos esgotados (Anthropic)"
-          : "⚠️ Edu IA: erro na API Claude";
-        const bodyMsg =
-          `Salão: ${estInfo?.name ?? body.establishment_id} • Status ${statusCode}. ` +
-          `Detalhe: ${errText.slice(0, 400)}`;
+          const title = "⚠️ Edu IA: créditos esgotados (Anthropic)";
+          const bodyMsg =
+            `Salão: ${estInfo?.name ?? body.establishment_id} • Status ${statusCode}. ` +
+            `Detalhe: ${errText.slice(0, 400)}`;
 
-        for (const a of admins ?? []) {
-          await admin.from("notifications").insert({
-            sender_type: "system",
-            recipient_type: "admin",
-            recipient_id: a.user_id,
-            title,
-            body: bodyMsg,
-            link: "/admin/edu",
-            data: {
-              category: "edu_ai_failure",
-              establishment_id: body.establishment_id,
-              establishment_slug: estInfo?.slug ?? null,
-              status: statusCode,
-              model: attemptedModel,
-              detail: errText.slice(0, 1000),
-              is_credit_issue: isCredit,
-            },
-          });
+          for (const a of admins ?? []) {
+            await admin.from("notifications").insert({
+              sender_type: "system",
+              recipient_type: "admin",
+              recipient_id: a.user_id,
+              title,
+              body: bodyMsg,
+              link: "/admin/edu",
+              data: {
+                category: "edu_ai_failure",
+                establishment_id: body.establishment_id,
+                establishment_slug: estInfo?.slug ?? null,
+                status: statusCode,
+                model: attemptedModel,
+                detail: errText.slice(0, 1000),
+                is_credit_issue: true,
+              },
+            });
+          }
+        } catch (notifyErr) {
+          console.error("notify super admins failed", notifyErr);
         }
-      } catch (notifyErr) {
-        console.error("notify super admins failed", notifyErr);
       }
 
       return json(
