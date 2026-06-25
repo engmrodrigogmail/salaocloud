@@ -345,7 +345,7 @@ export default function AdminCoupons() {
                 Novo Cupom
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg max-h-[90vh]">
               <DialogHeader>
                 <DialogTitle>Novo Cupom da Plataforma</DialogTitle>
                 <DialogDescription>
@@ -666,11 +666,23 @@ export default function AdminCoupons() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="secondary">
-                              {coupon.discount_type === "percentage"
-                                ? `${coupon.discount_value}%`
-                                : `R$ ${coupon.discount_value}`}
-                            </Badge>
+                            <div className="flex flex-col gap-1">
+                              <Badge variant="secondary">
+                                {coupon.discount_type === "percentage"
+                                  ? `${coupon.discount_value}%`
+                                  : `R$ ${coupon.discount_value}`}
+                              </Badge>
+                              {(coupon as any).grants_trial_days > 0 && (
+                                <Badge variant="outline" className="text-xs w-fit">
+                                  Trial {(coupon as any).grants_trial_days} dias
+                                </Badge>
+                              )}
+                              {(coupon as any).feature_mode && (coupon as any).feature_mode !== "all" && (
+                                <span className="text-[10px] text-muted-foreground">
+                                  {FEATURE_MODES.find((m) => m.value === (coupon as any).feature_mode)?.label}
+                                </span>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>
                             {coupon.applicable_plans.length === 0 ? (
@@ -836,7 +848,7 @@ export default function AdminCoupons() {
           open={!!editingCoupon}
           onOpenChange={(open) => !open && setEditingCoupon(null)}
         >
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh]">
             <DialogHeader>
               <DialogTitle>Editar Cupom</DialogTitle>
             </DialogHeader>
@@ -944,26 +956,57 @@ export default function AdminCoupons() {
                   />
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label>Funcionalidades Aplicáveis</Label>
+                <div className="flex flex-wrap gap-4">
+                  {SAAS_FEATURES.map((feature) => (
+                    <div key={feature.value} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`edit-feature-${feature.value}`}
+                        checked={couponForm.applicable_features.includes(feature.value)}
+                        onCheckedChange={() => handleFeatureToggle(feature.value)}
+                      />
+                      <Label htmlFor={`edit-feature-${feature.value}`} className="font-normal">
+                        {feature.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Selecione funcionalidades específicas para aplicar desconto (ex: desconto em WhatsApp)
+                </p>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Válido a partir de</Label>
+                  <Label>Trial concedido (dias)</Label>
                   <Input
-                    type="datetime-local"
-                    value={couponForm.valid_from}
+                    type="number"
+                    min={0}
+                    value={couponForm.grants_trial_days}
                     onChange={(e) =>
-                      setCouponForm({ ...couponForm, valid_from: e.target.value })
+                      setCouponForm({ ...couponForm, grants_trial_days: e.target.value })
                     }
+                    placeholder="Ex: 7 (deixe vazio se não for trial)"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Se preenchido com 100% de desconto, ativa período de experiência sem cobrança.
+                  </p>
                 </div>
                 <div className="space-y-2">
-                  <Label>Válido até</Label>
-                  <Input
-                    type="datetime-local"
-                    value={couponForm.valid_until}
-                    onChange={(e) =>
-                      setCouponForm({ ...couponForm, valid_until: e.target.value })
+                  <Label>Funcionalidades no trial</Label>
+                  <Select
+                    value={couponForm.feature_mode}
+                    onValueChange={(v) =>
+                      setCouponForm({ ...couponForm, feature_mode: v as any })
                     }
-                  />
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {FEATURE_MODES.map((m) => (
+                        <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
               <Button onClick={handleUpdateCoupon} className="w-full">
