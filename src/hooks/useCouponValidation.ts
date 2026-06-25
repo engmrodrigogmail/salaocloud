@@ -19,7 +19,7 @@ export interface ValidatedCoupon {
   applies_to: string;
   applicable_plans: string[];
   applicable_features: string[];
-  min_months: number | null;
+  
 }
 
 interface ValidationParams {
@@ -108,19 +108,6 @@ export function useCouponValidation() {
         return result;
       }
 
-      // Check minimum months requirement
-      if (coupon.min_months && subscriptionMonths < coupon.min_months) {
-        const result: CouponValidationResult = {
-          isValid: false,
-          coupon: null,
-          error: `Este cupom requer assinatura mínima de ${coupon.min_months} mês(es)`,
-          discountAmount: 0,
-          discountPercentage: 0,
-        };
-        setValidationResult(result);
-        setIsValidating(false);
-        return result;
-      }
 
       // Check if coupon applies to the selected plan
       const applicablePlans = coupon.applicable_plans || [];
@@ -177,7 +164,7 @@ export function useCouponValidation() {
         applies_to: coupon.applies_to,
         applicable_plans: coupon.applicable_plans || [],
         applicable_features: coupon.applicable_features || [],
-        min_months: coupon.min_months,
+        
       };
 
       const result: CouponValidationResult = {
