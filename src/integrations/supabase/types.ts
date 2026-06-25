@@ -3062,7 +3062,6 @@ export type Database = {
           id: string
           is_active: boolean
           max_redemptions: number | null
-          min_months: number | null
           name: string
           trial_edu_quota: number | null
           updated_at: string
@@ -3085,7 +3084,6 @@ export type Database = {
           id?: string
           is_active?: boolean
           max_redemptions?: number | null
-          min_months?: number | null
           name: string
           trial_edu_quota?: number | null
           updated_at?: string
@@ -3108,7 +3106,6 @@ export type Database = {
           id?: string
           is_active?: boolean
           max_redemptions?: number | null
-          min_months?: number | null
           name?: string
           trial_edu_quota?: number | null
           updated_at?: string
