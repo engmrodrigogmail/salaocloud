@@ -116,7 +116,9 @@ export default function AdminCoupons() {
     valid_until: "",
     grants_trial_days: "",
     feature_mode: "all" as "all" | "all_except_edu" | "only_listed",
+    trial_edu_quota: "",
   });
+
 
   useEffect(() => {
     fetchCoupons();
@@ -186,6 +188,8 @@ export default function AdminCoupons() {
         valid_until: couponForm.valid_until || null,
         grants_trial_days: couponForm.grants_trial_days ? parseInt(couponForm.grants_trial_days) : null,
         feature_mode: couponForm.feature_mode || "all",
+        trial_edu_quota: couponForm.trial_edu_quota ? parseInt(couponForm.trial_edu_quota) : null,
+
         created_by: user?.id,
       })
       .select()
@@ -225,7 +229,9 @@ export default function AdminCoupons() {
         valid_until: couponForm.valid_until || null,
         grants_trial_days: couponForm.grants_trial_days ? parseInt(couponForm.grants_trial_days) : null,
         feature_mode: couponForm.feature_mode || "all",
+        trial_edu_quota: couponForm.trial_edu_quota ? parseInt(couponForm.trial_edu_quota) : null,
         updated_at: new Date().toISOString(),
+
       })
       .eq("id", editingCoupon.id);
 
@@ -282,8 +288,10 @@ export default function AdminCoupons() {
       valid_until: "",
       grants_trial_days: "",
       feature_mode: "all",
+      trial_edu_quota: "",
     });
   };
+
 
   const generateRandomCode = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -490,8 +498,12 @@ export default function AdminCoupons() {
                         setCouponForm({ ...couponForm, min_months: e.target.value })
                       }
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Duração mínima (em meses) da assinatura para o cupom ser aceito. Não se aplica a cupons de trial.
+                    </p>
                   </div>
                 </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Válido a partir de</Label>
@@ -547,6 +559,22 @@ export default function AdminCoupons() {
                     </Select>
                   </div>
                 </div>
+                <div className="space-y-2">
+                  <Label>Limite de consultas Edu no trial</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    value={couponForm.trial_edu_quota}
+                    onChange={(e) =>
+                      setCouponForm({ ...couponForm, trial_edu_quota: e.target.value })
+                    }
+                    placeholder="Ex: 3 (deixe vazio para sem limite específico)"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Quantidade total de consultas ao Edu permitidas durante o período de teste. Vazio = usa o limite mensal padrão do plano.
+                  </p>
+                </div>
+
                 <Button onClick={handleAddCoupon} className="w-full">
                   Criar Cupom
                 </Button>
@@ -734,7 +762,9 @@ export default function AdminCoupons() {
                                     valid_until: coupon.valid_until?.slice(0, 16) || "",
                                     grants_trial_days: (coupon as any).grants_trial_days?.toString() || "",
                                     feature_mode: ((coupon as any).feature_mode ?? "all") as any,
+                                    trial_edu_quota: (coupon as any).trial_edu_quota?.toString() || "",
                                   });
+
                                 }}
                               >
                                 <Edit size={16} />
@@ -954,7 +984,11 @@ export default function AdminCoupons() {
                       setCouponForm({ ...couponForm, min_months: e.target.value })
                     }
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Duração mínima da assinatura para aceitar o cupom. Não se aplica a cupons de trial.
+                  </p>
                 </div>
+
               </div>
               <div className="space-y-2">
                 <Label>Funcionalidades Aplicáveis</Label>
@@ -1009,6 +1043,22 @@ export default function AdminCoupons() {
                   </Select>
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label>Limite de consultas Edu no trial</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={couponForm.trial_edu_quota}
+                  onChange={(e) =>
+                    setCouponForm({ ...couponForm, trial_edu_quota: e.target.value })
+                  }
+                  placeholder="Ex: 3 (deixe vazio para sem limite específico)"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Quantidade total de consultas ao Edu permitidas durante o período de teste. Vazio = usa o limite mensal padrão do plano.
+                </p>
+              </div>
+
               <Button onClick={handleUpdateCoupon} className="w-full">
                 Salvar Alterações
               </Button>
