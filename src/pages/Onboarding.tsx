@@ -32,6 +32,7 @@ const onboardingSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   description: z.string().optional(),
+  coupon_code: z.string().optional(),
 });
 
 type OnboardingFormData = z.infer<typeof onboardingSchema>;
