@@ -345,7 +345,7 @@ export default function AdminCoupons() {
                 Novo Cupom
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg max-h-[90vh]">
               <DialogHeader>
                 <DialogTitle>Novo Cupom da Plataforma</DialogTitle>
                 <DialogDescription>
@@ -848,7 +848,7 @@ export default function AdminCoupons() {
           open={!!editingCoupon}
           onOpenChange={(open) => !open && setEditingCoupon(null)}
         >
-          <DialogContent className="max-w-lg">
+          <DialogContent className="max-w-lg max-h-[90vh]">
             <DialogHeader>
               <DialogTitle>Editar Cupom</DialogTitle>
             </DialogHeader>
