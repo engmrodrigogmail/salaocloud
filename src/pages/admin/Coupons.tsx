@@ -284,8 +284,10 @@ export default function AdminCoupons() {
       valid_until: "",
       grants_trial_days: "",
       feature_mode: "all",
+      trial_edu_quota: "",
     });
   };
+
 
   const generateRandomCode = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
