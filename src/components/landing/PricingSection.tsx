@@ -152,6 +152,11 @@ export function PricingSection() {
                 ))}
               </ul>
 
+              <p className="text-[11px] text-muted-foreground/80 mb-4 italic">
+                Consultas Edu limitadas a 50/mês no plano pago. Pacotes adicionais disponíveis.
+              </p>
+
+
               <Button
                 className="w-full h-12 font-semibold uppercase tracking-premium text-xs rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground"
                 asChild
