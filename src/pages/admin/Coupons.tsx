@@ -1043,6 +1043,22 @@ export default function AdminCoupons() {
                   </Select>
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label>Limite de consultas Edu no trial</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={couponForm.trial_edu_quota}
+                  onChange={(e) =>
+                    setCouponForm({ ...couponForm, trial_edu_quota: e.target.value })
+                  }
+                  placeholder="Ex: 3 (deixe vazio para sem limite específico)"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Quantidade total de consultas ao Edu permitidas durante o período de teste. Vazio = usa o limite mensal padrão do plano.
+                </p>
+              </div>
+
               <Button onClick={handleUpdateCoupon} className="w-full">
                 Salvar Alterações
               </Button>
