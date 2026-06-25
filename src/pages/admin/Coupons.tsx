@@ -514,6 +514,39 @@ export default function AdminCoupons() {
                     />
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Trial concedido (dias)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={couponForm.grants_trial_days}
+                      onChange={(e) =>
+                        setCouponForm({ ...couponForm, grants_trial_days: e.target.value })
+                      }
+                      placeholder="Ex: 7 (deixe vazio se não for trial)"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Se preenchido com 100% de desconto, ativa período de experiência sem cobrança.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Funcionalidades no trial</Label>
+                    <Select
+                      value={couponForm.feature_mode}
+                      onValueChange={(v) =>
+                        setCouponForm({ ...couponForm, feature_mode: v as any })
+                      }
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {FEATURE_MODES.map((m) => (
+                          <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
                 <Button onClick={handleAddCoupon} className="w-full">
                   Criar Cupom
                 </Button>
