@@ -1637,6 +1637,8 @@ export type Database = {
       }
       edu_access_control: {
         Row: {
+          consultations_extra_balance: number
+          consultations_used_month: number
           created_at: string
           edu_profile: string
           establishment_id: string
@@ -1644,10 +1646,13 @@ export type Database = {
           granted_by: string | null
           id: string
           is_active: boolean
+          month_reference: string | null
           revoked_at: string | null
           updated_at: string
         }
         Insert: {
+          consultations_extra_balance?: number
+          consultations_used_month?: number
           created_at?: string
           edu_profile?: string
           establishment_id: string
@@ -1655,10 +1660,13 @@ export type Database = {
           granted_by?: string | null
           id?: string
           is_active?: boolean
+          month_reference?: string | null
           revoked_at?: string | null
           updated_at?: string
         }
         Update: {
+          consultations_extra_balance?: number
+          consultations_used_month?: number
           created_at?: string
           edu_profile?: string
           establishment_id?: string
@@ -1666,6 +1674,7 @@ export type Database = {
           granted_by?: string | null
           id?: string
           is_active?: boolean
+          month_reference?: string | null
           revoked_at?: string | null
           updated_at?: string
         }
@@ -1692,6 +1701,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      edu_packages: {
+        Row: {
+          consultations_count: number
+          created_at: string
+          display_order: number
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+          stripe_price_id: string | null
+          stripe_product_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          consultations_count: number
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name: string
+          price: number
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          consultations_count?: number
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+          stripe_price_id?: string | null
+          stripe_product_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       email_send_log: {
         Row: {
@@ -2219,7 +2267,9 @@ export type Database = {
           stripe_customer_id: string | null
           stripe_subscription_id: string | null
           subscription_plan: Database["public"]["Enums"]["subscription_plan"]
+          trial_coupon_id: string | null
           trial_ends_at: string | null
+          trial_features_allowed: string
           updated_at: string
           working_hours: Json | null
           zip_code: string | null
@@ -2262,7 +2312,9 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           subscription_plan?: Database["public"]["Enums"]["subscription_plan"]
+          trial_coupon_id?: string | null
           trial_ends_at?: string | null
+          trial_features_allowed?: string
           updated_at?: string
           working_hours?: Json | null
           zip_code?: string | null
@@ -2305,12 +2357,22 @@ export type Database = {
           stripe_customer_id?: string | null
           stripe_subscription_id?: string | null
           subscription_plan?: Database["public"]["Enums"]["subscription_plan"]
+          trial_coupon_id?: string | null
           trial_ends_at?: string | null
+          trial_features_allowed?: string
           updated_at?: string
           working_hours?: Json | null
           zip_code?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "establishments_trial_coupon_id_fkey"
+            columns: ["trial_coupon_id"]
+            isOneToOne: false
+            referencedRelation: "platform_coupons"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       finance_categories: {
         Row: {
@@ -2995,6 +3057,8 @@ export type Database = {
           description: string | null
           discount_type: string
           discount_value: number
+          feature_mode: string
+          grants_trial_days: number | null
           id: string
           is_active: boolean
           max_redemptions: number | null
@@ -3015,6 +3079,8 @@ export type Database = {
           description?: string | null
           discount_type?: string
           discount_value: number
+          feature_mode?: string
+          grants_trial_days?: number | null
           id?: string
           is_active?: boolean
           max_redemptions?: number | null
@@ -3035,6 +3101,8 @@ export type Database = {
           description?: string | null
           discount_type?: string
           discount_value?: number
+          feature_mode?: string
+          grants_trial_days?: number | null
           id?: string
           is_active?: boolean
           max_redemptions?: number | null
@@ -3050,6 +3118,7 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          edu_monthly_limit_paid: number
           id: string
           key: string
           updated_at: string
@@ -3058,6 +3127,7 @@ export type Database = {
         Insert: {
           created_at?: string
           description?: string | null
+          edu_monthly_limit_paid?: number
           id?: string
           key: string
           updated_at?: string
@@ -3066,6 +3136,7 @@ export type Database = {
         Update: {
           created_at?: string
           description?: string | null
+          edu_monthly_limit_paid?: number
           id?: string
           key?: string
           updated_at?: string
@@ -5113,6 +5184,10 @@ export type Database = {
             }
             Returns: Json
           }
+      consume_edu_consultation: {
+        Args: { _establishment_id: string }
+        Returns: Json
+      }
       create_appointment_with_services: {
         Args: { _payload: Json }
         Returns: Json
@@ -5269,6 +5344,10 @@ export type Database = {
         Returns: boolean
       }
       is_admin_trial: { Args: { _establishment_id: string }; Returns: boolean }
+      is_establishment_active: {
+        Args: { _establishment_id: string }
+        Returns: boolean
+      }
       is_finance_authorized: {
         Args: { _establishment_id: string }
         Returns: boolean
