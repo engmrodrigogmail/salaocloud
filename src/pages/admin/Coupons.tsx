@@ -411,7 +411,7 @@ export default function AdminCoupons() {
                 <div className="space-y-2">
                   <Label>Planos Aplicáveis</Label>
                   <div className="flex flex-wrap gap-4">
-                    {SUBSCRIPTION_PLANS.map((plan) => (
+                    {availablePlans.map((plan) => (
                       <div key={plan.value} className="flex items-center space-x-2">
                         <Checkbox
                           id={`plan-${plan.value}`}
@@ -627,7 +627,7 @@ export default function AdminCoupons() {
                               <div className="flex flex-wrap gap-1">
                                 {coupon.applicable_plans.map((plan) => (
                                   <Badge key={plan} variant="outline" className="text-xs">
-                                    {SUBSCRIPTION_PLANS.find((p) => p.value === plan)?.label || plan}
+                                    {availablePlans.find((p) => p.value === plan)?.label || plan}
                                   </Badge>
                                 ))}
                               </div>
@@ -743,7 +743,7 @@ export default function AdminCoupons() {
                               {redemption.establishment_name || "Estabelecimento"}
                             </TableCell>
                             <TableCell>
-                              {SUBSCRIPTION_PLANS.find(
+                              {availablePlans.find(
                                 (p) => p.value === redemption.applied_to_plan
                               )?.label || redemption.applied_to_plan || "-"}
                             </TableCell>
@@ -851,7 +851,7 @@ export default function AdminCoupons() {
               <div className="space-y-2">
                 <Label>Planos Aplicáveis</Label>
                 <div className="flex flex-wrap gap-4">
-                  {SUBSCRIPTION_PLANS.map((plan) => (
+                  {availablePlans.map((plan) => (
                     <div key={plan.value} className="flex items-center space-x-2">
                       <Checkbox
                         id={`edit-plan-${plan.value}`}
