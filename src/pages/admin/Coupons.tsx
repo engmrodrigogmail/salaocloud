@@ -683,6 +683,8 @@ export default function AdminCoupons() {
                                     min_months: coupon.min_months?.toString() || "1",
                                     valid_from: coupon.valid_from.slice(0, 16),
                                     valid_until: coupon.valid_until?.slice(0, 16) || "",
+                                    grants_trial_days: (coupon as any).grants_trial_days?.toString() || "",
+                                    feature_mode: ((coupon as any).feature_mode ?? "all") as any,
                                   });
                                 }}
                               >
