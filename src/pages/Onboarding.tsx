@@ -714,6 +714,29 @@ export default function Onboarding() {
                       </div>
                     )}
                   </div>
+
+                  <FormField
+                    control={form.control}
+                    name="coupon_code"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cupom de desconto (opcional)</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Ex: CLOUD7DE"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                            className="uppercase"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Cupons de 100% com período de experiência liberam acesso imediato sem cobrança.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </>
               )}
 
