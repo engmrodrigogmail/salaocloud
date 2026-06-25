@@ -738,7 +738,9 @@ export default function AdminCoupons() {
                                     valid_until: coupon.valid_until?.slice(0, 16) || "",
                                     grants_trial_days: (coupon as any).grants_trial_days?.toString() || "",
                                     feature_mode: ((coupon as any).feature_mode ?? "all") as any,
+                                    trial_edu_quota: (coupon as any).trial_edu_quota?.toString() || "",
                                   });
+
                                 }}
                               >
                                 <Edit size={16} />
