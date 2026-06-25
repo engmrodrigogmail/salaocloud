@@ -984,7 +984,11 @@ export default function AdminCoupons() {
                       setCouponForm({ ...couponForm, min_months: e.target.value })
                     }
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Duração mínima da assinatura para aceitar o cupom. Não se aplica a cupons de trial.
+                  </p>
                 </div>
+
               </div>
               <div className="space-y-2">
                 <Label>Funcionalidades Aplicáveis</Label>
