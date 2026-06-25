@@ -32,6 +32,7 @@ const onboardingSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   description: z.string().optional(),
+  coupon_code: z.string().optional(),
 });
 
 type OnboardingFormData = z.infer<typeof onboardingSchema>;
@@ -70,6 +71,7 @@ export default function Onboarding() {
       city: "",
       state: "",
       description: "",
+      coupon_code: "",
     },
   });
 
@@ -149,7 +151,7 @@ export default function Onboarding() {
         console.error("Role error:", roleError);
       }
 
-      // 4. Cria sessão Stripe Checkout e redireciona
+      // 4. Cria sessão Stripe Checkout (ou ativa trial se cupom for 100% + dias de trial)
       const origin = window.location.origin;
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
         "create-checkout",
@@ -158,6 +160,8 @@ export default function Onboarding() {
             priceId: planData.stripe_price_id_monthly,
             planSlug: planData.slug,
             billingCycle: "monthly",
+            couponCode: data.coupon_code?.trim() || null,
+            establishmentId: created.id,
             successUrl: `${origin}/onboarding/aguardando?slug=${created.slug}`,
             cancelUrl: `${origin}/onboarding/aguardando?slug=${created.slug}&cancelled=1`,
           },
@@ -166,6 +170,17 @@ export default function Onboarding() {
 
       if (checkoutError || !checkoutData?.url) {
         throw new Error(checkoutError?.message || "Não foi possível iniciar o pagamento");
+      }
+
+      // Trial ativado: redireciona direto ao portal
+      if (checkoutData.trial) {
+        toast({
+          title: "Período de experiência ativado!",
+          description: `Você tem acesso até ${new Date(checkoutData.trial_ends_at).toLocaleDateString("pt-BR")}.`,
+        });
+        setCreatedSlug(created.slug);
+        setIsComplete(true);
+        return;
       }
 
       window.location.href = checkoutData.url;
@@ -699,6 +714,29 @@ export default function Onboarding() {
                       </div>
                     )}
                   </div>
+
+                  <FormField
+                    control={form.control}
+                    name="coupon_code"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cupom de desconto (opcional)</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="Ex: CLOUD7DE"
+                            {...field}
+                            value={field.value ?? ""}
+                            onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                            className="uppercase"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          Cupons de 100% com período de experiência liberam acesso imediato sem cobrança.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </>
               )}
 

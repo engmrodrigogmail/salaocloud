@@ -169,6 +169,24 @@ serve(async (req) => {
     if (!access?.is_active) return json({ error: "edu_not_active" }, 403);
     const eduProfile: "tecnico" | "acolhedor" = (access as any)?.edu_profile === "acolhedor" ? "acolhedor" : "tecnico";
 
+    // Consome 1 consulta do Edu (50/mês + saldo extra; bloqueia trial_features_allowed='all_except_edu')
+    const { data: consume, error: consumeErr } = await admin.rpc("consume_edu_consultation", {
+      _establishment_id: body.establishment_id,
+    });
+    if (consumeErr) {
+      console.error("consume_edu_consultation error", consumeErr);
+      return json({ error: "edu_quota_check_failed" }, 500);
+    }
+    if (!(consume as any)?.success) {
+      const reason = (consume as any)?.error || "edu_unavailable";
+      const userMessage = reason === "edu_blocked_during_trial"
+        ? "Consultas do Edu não estão liberadas durante o período de experiência. Faça upgrade do plano para liberar."
+        : reason === "no_balance"
+          ? "Você atingiu o limite mensal de consultas do Edu. Adquira um pacote adicional para continuar."
+          : "Consultas do Edu indisponíveis no momento.";
+      return json({ error: reason, user_message: userMessage }, 402);
+    }
+
     // Baixa as fotos do bucket privado e converte para base64
     const images: { mime: string; b64: string }[] = [];
     for (const path of body.photo_paths.slice(0, 3)) {

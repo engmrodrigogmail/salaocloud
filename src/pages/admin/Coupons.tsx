@@ -74,18 +74,21 @@ interface CouponRedemption {
   establishment_name?: string;
 }
 
-const SUBSCRIPTION_PLANS = [
-  { value: "basic", label: "Básico" },
-  { value: "professional", label: "Profissional" },
-  { value: "premium", label: "Premium" },
-];
+interface PlanOption { value: string; label: string }
 
 const SAAS_FEATURES = [
   { value: "ai_assistant", label: "Assistente Virtual IA" },
+  { value: "edu", label: "Consultas Edu" },
   { value: "reports", label: "Relatórios" },
   { value: "commissions", label: "Controle de Comissões" },
   { value: "api_access", label: "Acesso à API" },
   { value: "multi_units", label: "Multi-unidades" },
+];
+
+const FEATURE_MODES = [
+  { value: "all", label: "Todas as funcionalidades" },
+  { value: "all_except_edu", label: "Tudo exceto consultas Edu" },
+  { value: "only_listed", label: "Apenas funcionalidades listadas" },
 ];
 
 export default function AdminCoupons() {
@@ -93,6 +96,7 @@ export default function AdminCoupons() {
   const [coupons, setCoupons] = useState<PlatformCoupon[]>([]);
   const [redemptions, setRedemptions] = useState<CouponRedemption[]>([]);
   const [loading, setLoading] = useState(true);
+  const [availablePlans, setAvailablePlans] = useState<PlanOption[]>([]);
   const [isAddCouponOpen, setIsAddCouponOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<PlatformCoupon | null>(null);
   const [selectedCouponForRedemptions, setSelectedCouponForRedemptions] = useState<string | null>(null);
@@ -110,11 +114,24 @@ export default function AdminCoupons() {
     min_months: "1",
     valid_from: "",
     valid_until: "",
+    grants_trial_days: "",
+    feature_mode: "all" as "all" | "all_except_edu" | "only_listed",
   });
 
   useEffect(() => {
     fetchCoupons();
+    fetchAvailablePlans();
   }, []);
+
+  const fetchAvailablePlans = async () => {
+    const { data } = await supabase
+      .from("subscription_plans")
+      .select("slug, name")
+      .eq("is_active", true)
+      .order("display_order", { ascending: true });
+    setAvailablePlans((data ?? []).map((p: any) => ({ value: p.slug, label: p.name })));
+  };
+
 
   const fetchCoupons = async () => {
     setLoading(true);
@@ -167,6 +184,8 @@ export default function AdminCoupons() {
         min_months: couponForm.min_months ? parseInt(couponForm.min_months) : 1,
         valid_from: couponForm.valid_from || new Date().toISOString(),
         valid_until: couponForm.valid_until || null,
+        grants_trial_days: couponForm.grants_trial_days ? parseInt(couponForm.grants_trial_days) : null,
+        feature_mode: couponForm.feature_mode || "all",
         created_by: user?.id,
       })
       .select()
@@ -204,6 +223,8 @@ export default function AdminCoupons() {
         min_months: couponForm.min_months ? parseInt(couponForm.min_months) : 1,
         valid_from: couponForm.valid_from,
         valid_until: couponForm.valid_until || null,
+        grants_trial_days: couponForm.grants_trial_days ? parseInt(couponForm.grants_trial_days) : null,
+        feature_mode: couponForm.feature_mode || "all",
         updated_at: new Date().toISOString(),
       })
       .eq("id", editingCoupon.id);
@@ -259,6 +280,8 @@ export default function AdminCoupons() {
       min_months: "1",
       valid_from: "",
       valid_until: "",
+      grants_trial_days: "",
+      feature_mode: "all",
     });
   };
 
@@ -407,7 +430,7 @@ export default function AdminCoupons() {
                 <div className="space-y-2">
                   <Label>Planos Aplicáveis</Label>
                   <div className="flex flex-wrap gap-4">
-                    {SUBSCRIPTION_PLANS.map((plan) => (
+                    {availablePlans.map((plan) => (
                       <div key={plan.value} className="flex items-center space-x-2">
                         <Checkbox
                           id={`plan-${plan.value}`}
@@ -489,6 +512,39 @@ export default function AdminCoupons() {
                         setCouponForm({ ...couponForm, valid_until: e.target.value })
                       }
                     />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Trial concedido (dias)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={couponForm.grants_trial_days}
+                      onChange={(e) =>
+                        setCouponForm({ ...couponForm, grants_trial_days: e.target.value })
+                      }
+                      placeholder="Ex: 7 (deixe vazio se não for trial)"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Se preenchido com 100% de desconto, ativa período de experiência sem cobrança.
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Funcionalidades no trial</Label>
+                    <Select
+                      value={couponForm.feature_mode}
+                      onValueChange={(v) =>
+                        setCouponForm({ ...couponForm, feature_mode: v as any })
+                      }
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {FEATURE_MODES.map((m) => (
+                          <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 <Button onClick={handleAddCoupon} className="w-full">
@@ -623,7 +679,7 @@ export default function AdminCoupons() {
                               <div className="flex flex-wrap gap-1">
                                 {coupon.applicable_plans.map((plan) => (
                                   <Badge key={plan} variant="outline" className="text-xs">
-                                    {SUBSCRIPTION_PLANS.find((p) => p.value === plan)?.label || plan}
+                                    {availablePlans.find((p) => p.value === plan)?.label || plan}
                                   </Badge>
                                 ))}
                               </div>
@@ -664,6 +720,8 @@ export default function AdminCoupons() {
                                     min_months: coupon.min_months?.toString() || "1",
                                     valid_from: coupon.valid_from.slice(0, 16),
                                     valid_until: coupon.valid_until?.slice(0, 16) || "",
+                                    grants_trial_days: (coupon as any).grants_trial_days?.toString() || "",
+                                    feature_mode: ((coupon as any).feature_mode ?? "all") as any,
                                   });
                                 }}
                               >
@@ -739,7 +797,7 @@ export default function AdminCoupons() {
                               {redemption.establishment_name || "Estabelecimento"}
                             </TableCell>
                             <TableCell>
-                              {SUBSCRIPTION_PLANS.find(
+                              {availablePlans.find(
                                 (p) => p.value === redemption.applied_to_plan
                               )?.label || redemption.applied_to_plan || "-"}
                             </TableCell>
@@ -847,7 +905,7 @@ export default function AdminCoupons() {
               <div className="space-y-2">
                 <Label>Planos Aplicáveis</Label>
                 <div className="flex flex-wrap gap-4">
-                  {SUBSCRIPTION_PLANS.map((plan) => (
+                  {availablePlans.map((plan) => (
                     <div key={plan.value} className="flex items-center space-x-2">
                       <Checkbox
                         id={`edit-plan-${plan.value}`}

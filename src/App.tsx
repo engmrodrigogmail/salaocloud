@@ -84,6 +84,8 @@ import TrainingPerfil from "./pages/treinamento/Perfil";
 import TrainingModulo from "./pages/treinamento/Modulo";
 import TrainingAdmin from "./pages/treinamento/Admin";
 import { TrainingProtectedRoute } from "./components/training/TrainingProtectedRoute";
+import { SubscriptionGate } from "./components/auth/SubscriptionGate";
+import SubscriptionExpired from "./pages/SubscriptionExpired";
 
 const queryClient = new QueryClient();
 
@@ -233,35 +235,39 @@ const App = () => (
               />
 
               {/* Portal routes - Establishment Admin (configuration & settings) */}
-              <Route path="/portal/:slug" element={<PortalDashboard />} />
-              <Route path="/portal/:slug/agenda" element={<PortalAgenda />} />
-              <Route path="/portal/:slug/profissionais" element={<PortalProfessionals />} />
-              <Route path="/portal/:slug/servicos" element={<PortalServices />} />
-              <Route path="/portal/:slug/produtos" element={<PortalProducts />} />
-              <Route path="/portal/:slug/clientes" element={<PortalClients />} />
-              <Route path="/portal/:slug/clientes/:clientId" element={<PortalClientDetail />} />
-              <Route path="/portal/:slug/fidelidade" element={<PortalLoyalty />} />
-              <Route path="/portal/:slug/promocoes" element={<PortalPromotions />} />
-              <Route path="/portal/:slug/cupons" element={<PortalCoupons />} />
-              <Route path="/portal/:slug/configuracoes" element={<PortalSettings />} />
-              <Route path="/portal/:slug/comissoes" element={<PortalCommissions />} />
-              <Route path="/portal/:slug/financeiro" element={<PortalFinanceiro />} />
-             <Route path="/portal/:slug/assinatura" element={<PortalSubscription />} />
-            <Route path="/portal/:slug/auditoria" element={<PortalAuditOverrides />} />
-            <Route path="/portal/:slug/avaliacoes" element={<PortalReviews />} />
-             <Route path="/portal/:slug/vitrine" element={<PortalShowcase />} />
-              <Route path="/portal/:slug/assistente-ia" element={<PortalAIAssistant />} />
-              <Route path="/portal/:slug/conversas-ia" element={<PortalAIConversations />} />
-              <Route path="/portal/:slug/aprendizados-ia" element={<PortalAILearnings />} />
-              <Route path="/portal/:slug/comunicacao" element={<PortalCommunications />} />
-              <Route path="/portal/:slug/edu" element={<PortalEdu />} />
+              <Route path="/portal/:slug" element={<SubscriptionGate><PortalDashboard /></SubscriptionGate>} />
+              <Route path="/portal/:slug/agenda" element={<SubscriptionGate><PortalAgenda /></SubscriptionGate>} />
+              <Route path="/portal/:slug/profissionais" element={<SubscriptionGate><PortalProfessionals /></SubscriptionGate>} />
+              <Route path="/portal/:slug/servicos" element={<SubscriptionGate><PortalServices /></SubscriptionGate>} />
+              <Route path="/portal/:slug/produtos" element={<SubscriptionGate><PortalProducts /></SubscriptionGate>} />
+              <Route path="/portal/:slug/clientes" element={<SubscriptionGate><PortalClients /></SubscriptionGate>} />
+              <Route path="/portal/:slug/clientes/:clientId" element={<SubscriptionGate><PortalClientDetail /></SubscriptionGate>} />
+              <Route path="/portal/:slug/fidelidade" element={<SubscriptionGate><PortalLoyalty /></SubscriptionGate>} />
+              <Route path="/portal/:slug/promocoes" element={<SubscriptionGate><PortalPromotions /></SubscriptionGate>} />
+              <Route path="/portal/:slug/cupons" element={<SubscriptionGate><PortalCoupons /></SubscriptionGate>} />
+              <Route path="/portal/:slug/configuracoes" element={<SubscriptionGate><PortalSettings /></SubscriptionGate>} />
+              <Route path="/portal/:slug/comissoes" element={<SubscriptionGate><PortalCommissions /></SubscriptionGate>} />
+              <Route path="/portal/:slug/financeiro" element={<SubscriptionGate><PortalFinanceiro /></SubscriptionGate>} />
+              {/* Subscription page intentionally NOT gated so blocked owners can reactivate */}
+              <Route path="/portal/:slug/assinatura" element={<PortalSubscription />} />
+              <Route path="/portal/:slug/auditoria" element={<SubscriptionGate><PortalAuditOverrides /></SubscriptionGate>} />
+              <Route path="/portal/:slug/avaliacoes" element={<SubscriptionGate><PortalReviews /></SubscriptionGate>} />
+              <Route path="/portal/:slug/vitrine" element={<SubscriptionGate><PortalShowcase /></SubscriptionGate>} />
+              <Route path="/portal/:slug/assistente-ia" element={<SubscriptionGate><PortalAIAssistant /></SubscriptionGate>} />
+              <Route path="/portal/:slug/conversas-ia" element={<SubscriptionGate><PortalAIConversations /></SubscriptionGate>} />
+              <Route path="/portal/:slug/aprendizados-ia" element={<SubscriptionGate><PortalAILearnings /></SubscriptionGate>} />
+              <Route path="/portal/:slug/comunicacao" element={<SubscriptionGate><PortalCommunications /></SubscriptionGate>} />
+              <Route path="/portal/:slug/edu" element={<SubscriptionGate><PortalEdu /></SubscriptionGate>} />
 
               {/* Interno routes - Establishment Internal Operations */}
-              <Route path="/interno/:slug" element={<InternoDashboard />} />
-              <Route path="/interno/:slug/agenda" element={<InternoAgenda />} />
-              <Route path="/interno/:slug/comandas" element={<InternoComandas />} />
-              <Route path="/interno/:slug/comissoes" element={<InternoComissoes />} />
-              <Route path="/interno/:slug/perfil" element={<InternoPerfil />} />
+              <Route path="/interno/:slug" element={<SubscriptionGate><InternoDashboard /></SubscriptionGate>} />
+              <Route path="/interno/:slug/agenda" element={<SubscriptionGate><InternoAgenda /></SubscriptionGate>} />
+              <Route path="/interno/:slug/comandas" element={<SubscriptionGate><InternoComandas /></SubscriptionGate>} />
+              <Route path="/interno/:slug/comissoes" element={<SubscriptionGate><InternoComissoes /></SubscriptionGate>} />
+              <Route path="/interno/:slug/perfil" element={<SubscriptionGate><InternoPerfil /></SubscriptionGate>} />
+
+              {/* Subscription expired page */}
+              <Route path="/assinatura/expirada" element={<SubscriptionExpired />} />
 
               {/* Client review submission */}
               <Route path="/:slug/avaliar/:reviewId" element={<ClientReviewSubmit />} />
