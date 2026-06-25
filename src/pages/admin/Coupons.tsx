@@ -114,11 +114,24 @@ export default function AdminCoupons() {
     min_months: "1",
     valid_from: "",
     valid_until: "",
+    grants_trial_days: "",
+    feature_mode: "all" as "all" | "all_except_edu" | "only_listed",
   });
 
   useEffect(() => {
     fetchCoupons();
+    fetchAvailablePlans();
   }, []);
+
+  const fetchAvailablePlans = async () => {
+    const { data } = await supabase
+      .from("subscription_plans")
+      .select("slug, name")
+      .eq("is_active", true)
+      .order("display_order", { ascending: true });
+    setAvailablePlans((data ?? []).map((p: any) => ({ value: p.slug, label: p.name })));
+  };
+
 
   const fetchCoupons = async () => {
     setLoading(true);
