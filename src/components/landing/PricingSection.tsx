@@ -171,8 +171,8 @@ export function PricingSection() {
                 className="w-full h-12 font-semibold uppercase tracking-premium text-xs rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground"
                 asChild
               >
-                <Link to={`/auth?mode=signup&plan=${plan.slug}`}>
-                  Começar agora
+                <Link to={`/auth?mode=signup&trial=1&plan=${plan.slug}`}>
+                  Testar 7 dias grátis
                 </Link>
               </Button>
             </div>
