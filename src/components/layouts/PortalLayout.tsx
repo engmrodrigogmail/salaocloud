@@ -72,7 +72,9 @@ export function PortalLayout({ children }: PortalLayoutProps) {
   const { slug } = useParams<{ slug: string }>();
   const { user, signOut } = useAuth();
   const { isImpersonating } = useImpersonation();
-  const { startTour } = usePortalTour({ autoStart: true });
+  // Boas-vindas de primeiro acesso assumem o lugar do tour automático;
+  // o tour antigo continua disponível via menu de ajuda (startTour).
+  const { startTour } = usePortalTour({ autoStart: false });
   const { isActive: eduActive } = useEduAccess(establishmentId);
   useTrackPageAccess(establishmentId);
 
