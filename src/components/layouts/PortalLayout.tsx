@@ -323,6 +323,7 @@ export function PortalLayout({ children }: PortalLayoutProps) {
         <div className="p-4 sm:p-6">{children}</div>
       </main>
       <SilviaHelpButton profile="dono" />
+      <FirstAccessWelcome slug={slug} establishmentName={establishmentName} />
     </div>
     </ChangePasswordGate>
   );
