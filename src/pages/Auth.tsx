@@ -156,7 +156,11 @@ export default function Auth() {
     }
 
     setIsLoading(true);
-    const { error } = await signUp(data.email, data.password, data.fullName || undefined);
+    const isTrial = searchParams.get("trial") === "1";
+    const redirectTo = isTrial
+      ? `${window.location.origin}/auth?mode=signup&trial=1`
+      : `${window.location.origin}/auth`;
+    const { error } = await signUp(data.email, data.password, data.fullName || undefined, redirectTo);
     setIsLoading(false);
 
     if (error) {
