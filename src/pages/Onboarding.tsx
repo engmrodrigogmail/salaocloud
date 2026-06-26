@@ -57,6 +57,8 @@ export default function Onboarding() {
   const [isComplete, setIsComplete] = useState(false);
   const [createdSlug, setCreatedSlug] = useState("");
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isTrialFlow = searchParams.get("trial") === "1";
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -71,9 +73,16 @@ export default function Onboarding() {
       city: "",
       state: "",
       description: "",
-      coupon_code: "",
+      coupon_code: isTrialFlow ? "CLOUD7DE" : "",
     },
   });
+
+  // Garante que o cupom de trial seja aplicado mesmo se o usuário editar o campo
+  useEffect(() => {
+    if (isTrialFlow) {
+      form.setValue("coupon_code", "CLOUD7DE");
+    }
+  }, [isTrialFlow, form]);
 
   const generateSlug = (name: string) => {
     return name
