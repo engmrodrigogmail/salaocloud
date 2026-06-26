@@ -166,9 +166,10 @@ export default function Hub() {
       setDidAutoRedirect(true);
       goTo(targets[0]);
     } else if (targets.length === 0 && user) {
-      // Autenticado mas sem nenhum vínculo → onboarding
+      // Autenticado mas sem nenhum vínculo → onboarding (preserva trial para aplicar cupom automático)
       setDidAutoRedirect(true);
-      navigate("/onboarding", { replace: true });
+      const onboardingUrl = isTrialFlow ? "/onboarding?trial=1" : "/onboarding";
+      navigate(onboardingUrl, { replace: true });
     } else if (targets.length === 0 && !user && localClientSessions.length === 0) {
       // Sem auth E sem sessão cliente local → manda pro login
       setDidAutoRedirect(true);
