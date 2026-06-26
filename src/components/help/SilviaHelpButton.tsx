@@ -51,6 +51,29 @@ export function SilviaHelpButton({ profile }: SilviaHelpButtonProps) {
     }
   }, [messages, loading]);
 
+  // Abertura externa do painel (ex.: boas-vindas de primeiro acesso)
+  // dispara um onboarding guiado pela Silvia.
+  useEffect(() => {
+    if (profile !== "dono") return;
+    const handler = () => {
+      setOpen(true);
+      const kickoff =
+        "Acabei de entrar no meu portal pela primeira vez. Quero configurar o salão para começar a usar. Pode me guiar passo a passo nos cadastros básicos (profissionais, serviços, horários e formas de pagamento)?";
+      // pequeno atraso para o painel renderizar antes de enviar
+      setTimeout(() => {
+        // só envia se ainda não há mensagens — evita duplicar caso o usuário já tenha conversado
+        setMessages((prev) => {
+          if (prev.length > 0) return prev;
+          void send(kickoff);
+          return prev;
+        });
+      }, 250);
+    };
+    window.addEventListener("silvia:open-onboarding", handler);
+    return () => window.removeEventListener("silvia:open-onboarding", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
+
   const greeting =
     profile === "dono"
       ? "Oi! Sou a Silvia 💜 Posso te ajudar a achar funções no painel, criar cadastros, configurar o salão. O que você precisa?"
