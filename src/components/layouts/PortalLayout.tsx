@@ -54,6 +54,7 @@ import { usePortalTour } from "@/hooks/usePortalTour";
 import { useEduAccess } from "@/hooks/useEduAccess";
 import { useTrackPageAccess } from "@/hooks/useTrackPageAccess";
 import { SilviaHelpButton } from "@/components/help/SilviaHelpButton";
+import { FirstAccessWelcome } from "@/components/portal/FirstAccessWelcome";
 import { EnablePushBanner } from "@/components/notifications/EnablePushBanner";
 import logo from "@/assets/logo-salaocloud-v5.png";
 import salonBg from "@/assets/salon-dark-bg.png";
