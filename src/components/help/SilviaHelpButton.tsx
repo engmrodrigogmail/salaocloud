@@ -60,6 +60,8 @@ export function SilviaHelpButton({ profile }: SilviaHelpButtonProps) {
 
   const send = async (overrideText?: string) => {
     const text = (overrideText ?? input).trim();
+    // garante consistência ao reaproveitar a função sem digitar input
+    void text;
     if (!text || loading) return;
     setInput("");
     const next: Msg[] = [...messages, { role: "user", content: text }];
