@@ -32,6 +32,8 @@ interface AccessTarget {
  */
 export default function Hub() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isTrialFlow = searchParams.get("trial") === "1";
   const { user, role, loading: authLoading, signOut } = useAuth();
   const [loading, setLoading] = useState(true);
   const [targets, setTargets] = useState<AccessTarget[]>([]);
