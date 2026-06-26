@@ -729,7 +729,7 @@ export default function Onboarding() {
                     name="coupon_code"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Cupom de desconto (opcional)</FormLabel>
+                        <FormLabel>Cupom de desconto</FormLabel>
                         <FormControl>
                           <Input
                             placeholder="Ex: CLOUD7DE"
@@ -737,11 +737,21 @@ export default function Onboarding() {
                             value={field.value ?? ""}
                             onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                             className="uppercase"
+                            disabled={isTrialFlow}
                           />
                         </FormControl>
-                        <FormDescription>
-                          Cupons de 100% com período de experiência liberam acesso imediato sem cobrança.
-                        </FormDescription>
+                        {isTrialFlow ? (
+                          <FormDescription className="flex items-center gap-1.5 text-primary">
+                            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                              ✓
+                            </span>
+                            Cupom de 7 dias grátis aplicado automaticamente.
+                          </FormDescription>
+                        ) : (
+                          <FormDescription>
+                            Cupons de 100% com período de experiência liberam acesso imediato sem cobrança.
+                          </FormDescription>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
