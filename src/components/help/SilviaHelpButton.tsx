@@ -291,7 +291,7 @@ export function SilviaHelpButton({ profile }: SilviaHelpButtonProps) {
               className="flex-1"
             />
             <Button
-              onClick={send}
+              onClick={() => send()}
               disabled={!input.trim() || loading}
               size="icon"
             >
