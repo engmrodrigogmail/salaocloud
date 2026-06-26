@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Building2, GraduationCap, Loader2, LogOut, ShieldCheck, User, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,6 +32,8 @@ interface AccessTarget {
  */
 export default function Hub() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isTrialFlow = searchParams.get("trial") === "1";
   const { user, role, loading: authLoading, signOut } = useAuth();
   const [loading, setLoading] = useState(true);
   const [targets, setTargets] = useState<AccessTarget[]>([]);
@@ -164,9 +166,10 @@ export default function Hub() {
       setDidAutoRedirect(true);
       goTo(targets[0]);
     } else if (targets.length === 0 && user) {
-      // Autenticado mas sem nenhum vínculo → onboarding
+      // Autenticado mas sem nenhum vínculo → onboarding (preserva trial para aplicar cupom automático)
       setDidAutoRedirect(true);
-      navigate("/onboarding", { replace: true });
+      const onboardingUrl = isTrialFlow ? "/onboarding?trial=1" : "/onboarding";
+      navigate(onboardingUrl, { replace: true });
     } else if (targets.length === 0 && !user && localClientSessions.length === 0) {
       // Sem auth E sem sessão cliente local → manda pro login
       setDidAutoRedirect(true);

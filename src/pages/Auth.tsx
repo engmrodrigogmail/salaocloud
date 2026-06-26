@@ -77,11 +77,14 @@ export default function Auth() {
 
   // Toda autenticação bem-sucedida cai no /hub central — ele decide
   // se auto-redireciona (1 destino) ou mostra seletor (2+).
+  // Preserva o flag de trial=1 para que novos cadastros ganhem 7 dias grátis automaticamente.
   useEffect(() => {
     if (!loading && user) {
-      navigate("/hub", { replace: true });
+      const hasTrial = searchParams.get("trial") === "1";
+      const hubUrl = hasTrial ? "/hub?trial=1" : "/hub";
+      navigate(hubUrl, { replace: true });
     }
-  }, [user, loading, navigate]);
+  }, [user, loading, navigate, searchParams]);
 
   const handleLogin = async (data: LoginFormData) => {
     setIsLoading(true);
@@ -153,7 +156,11 @@ export default function Auth() {
     }
 
     setIsLoading(true);
-    const { error } = await signUp(data.email, data.password, data.fullName || undefined);
+    const isTrial = searchParams.get("trial") === "1";
+    const redirectTo = isTrial
+      ? `${window.location.origin}/auth?mode=signup&trial=1`
+      : `${window.location.origin}/auth`;
+    const { error } = await signUp(data.email, data.password, data.fullName || undefined, redirectTo);
     setIsLoading(false);
 
     if (error) {

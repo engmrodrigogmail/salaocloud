@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -57,6 +57,8 @@ export default function Onboarding() {
   const [isComplete, setIsComplete] = useState(false);
   const [createdSlug, setCreatedSlug] = useState("");
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isTrialFlow = searchParams.get("trial") === "1";
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -71,9 +73,16 @@ export default function Onboarding() {
       city: "",
       state: "",
       description: "",
-      coupon_code: "",
+      coupon_code: isTrialFlow ? "CLOUD7DE" : "",
     },
   });
+
+  // Garante que o cupom de trial seja aplicado mesmo se o usuário editar o campo
+  useEffect(() => {
+    if (isTrialFlow) {
+      form.setValue("coupon_code", "CLOUD7DE");
+    }
+  }, [isTrialFlow, form]);
 
   const generateSlug = (name: string) => {
     return name
@@ -720,7 +729,7 @@ export default function Onboarding() {
                     name="coupon_code"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Cupom de desconto (opcional)</FormLabel>
+                        <FormLabel>Cupom de desconto</FormLabel>
                         <FormControl>
                           <Input
                             placeholder="Ex: CLOUD7DE"
@@ -728,11 +737,21 @@ export default function Onboarding() {
                             value={field.value ?? ""}
                             onChange={(e) => field.onChange(e.target.value.toUpperCase())}
                             className="uppercase"
+                            disabled={isTrialFlow}
                           />
                         </FormControl>
-                        <FormDescription>
-                          Cupons de 100% com período de experiência liberam acesso imediato sem cobrança.
-                        </FormDescription>
+                        {isTrialFlow ? (
+                          <FormDescription className="flex items-center gap-1.5 text-primary">
+                            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-primary text-primary-foreground text-[10px] font-bold">
+                              ✓
+                            </span>
+                            Cupom de 7 dias grátis aplicado automaticamente.
+                          </FormDescription>
+                        ) : (
+                          <FormDescription>
+                            Cupons de 100% com período de experiência liberam acesso imediato sem cobrança.
+                          </FormDescription>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}

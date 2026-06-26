@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -117,6 +117,16 @@ export function PricingSection() {
                 </div>
               )}
 
+              <div className="mb-5 rounded-sm bg-primary/10 border border-primary/20 p-3 flex items-start gap-3">
+                <Sparkles className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-foreground">7 dias grátis para novos cadastros</p>
+                  <p className="text-xs text-muted-foreground">
+                    Teste tudo sem cartão. Após o período, a assinatura é ativada automaticamente — cancele quando quiser.
+                  </p>
+                </div>
+              </div>
+
               <h3 className="font-display text-2xl font-bold text-foreground">{plan.name}</h3>
               <p className="text-sm mt-1 text-muted-foreground min-h-[40px]">
                 {plan.description}
@@ -161,8 +171,8 @@ export function PricingSection() {
                 className="w-full h-12 font-semibold uppercase tracking-premium text-xs rounded-sm bg-primary hover:bg-primary/90 text-primary-foreground"
                 asChild
               >
-                <Link to={`/auth?mode=signup&plan=${plan.slug}`}>
-                  Começar agora
+                <Link to={`/auth?mode=signup&trial=1&plan=${plan.slug}`}>
+                  Testar 7 dias grátis
                 </Link>
               </Button>
             </div>
