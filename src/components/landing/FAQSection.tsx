@@ -10,7 +10,7 @@ export function FAQSection() {
     {
       question: "Como funciona o Salão Cloud?",
       answer:
-        "É uma plataforma online completa para gestão de salões de beleza. Você gerencia agenda, clientes, profissionais, comandas, comissões, fidelidade e muito mais — tudo em um único lugar, pelo computador ou celular.",
+        "É uma plataforma online completa para gestão de salões de beleza. Você gerencia agenda, clientes, profissionais, comandas, comissões e muito mais — tudo em um único lugar, pelo computador ou celular.",
     },
     {
       question: "Consigo cancelar a qualquer momento?",
@@ -31,11 +31,6 @@ export function FAQSection() {
       question: "Posso controlar as comissões da minha equipe?",
       answer:
         "Sim! Você pode definir comissões por porcentagem ou valor fixo, criar regras específicas por serviço ou produto, e acompanhar os ganhos de cada profissional em relatórios detalhados.",
-    },
-    {
-      question: "Como funciona o programa de fidelidade?",
-      answer:
-        "Você cria regras de pontos (ex: R$1 = 1 ponto) e define recompensas que os clientes podem resgatar. Tudo automático! O sistema acompanha os pontos de cada cliente.",
     },
     {
       question: "Funciona no celular?",
