@@ -5019,6 +5019,125 @@ export type Database = {
           },
         ]
       }
+      whatsapp_message_types: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          template: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          template: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          template?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_recipients: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          message_type_keys: string[]
+          name: string
+          notes: string | null
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          message_type_keys?: string[]
+          name: string
+          notes?: string | null
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          message_type_keys?: string[]
+          name?: string
+          notes?: string | null
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      whatsapp_send_log: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          message_body: string
+          message_type_key: string
+          recipient_id: string | null
+          recipient_name: string | null
+          recipient_phone: string
+          sent_at: string | null
+          status: string
+          zapi_message_id: string | null
+          zapi_response: Json | null
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          message_body: string
+          message_type_key: string
+          recipient_id?: string | null
+          recipient_name?: string | null
+          recipient_phone: string
+          sent_at?: string | null
+          status?: string
+          zapi_message_id?: string | null
+          zapi_response?: Json | null
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          message_body?: string
+          message_type_key?: string
+          recipient_id?: string | null
+          recipient_name?: string | null
+          recipient_phone?: string
+          sent_at?: string | null
+          status?: string
+          zapi_message_id?: string | null
+          zapi_response?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_send_log_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_recipients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       client_no_show_stats: {
