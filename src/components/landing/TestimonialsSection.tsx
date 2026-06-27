@@ -15,18 +15,18 @@ const testimonials: Testimonial[] = [
   // Clientes de estabelecimentos
   {
     name: "Fernanda Oliveira",
-    role: "Cliente há 2 anos",
+    role: "Cliente há 6 meses",
     type: "client",
     rating: 5,
-    content: "Gente, que maravilha! Agendo meus horários pelo celular em segundos e nunca mais perdi um compromisso. O salão que frequento virou outro depois que começou a usar!",
+    content: "Gente, que maravilha! Agendo meus horários pelo celular em segundos. O salão que frequento virou outro depois que começou a usar!",
     highlight: "Agendamento rápido e prático"
   },
   {
-    name: "Ricardo Santos",
+    name: "Solange Biafra",
     role: "Cliente frequente",
     type: "client",
     rating: 5,
-    content: "A experiência de agendamento online transformou minha rotina. Consigo verificar a disponibilidade do meu barbeiro preferido e reservar o horário ideal sem precisar ligar. Extremamente prático e eficiente.",
+    content: "A experiência de agendamento online transformou minha rotina. Consigo verificar a disponibilidade da minha depiladora e reservar o horário ideal sem precisar ligar. Extremamente prático e eficiente. Na minha opinião melhor que mandar mensagem pelo whatsapp e esperar resposta.",
     highlight: "Praticidade e controle total"
   },
   {
@@ -34,16 +34,16 @@ const testimonials: Testimonial[] = [
     role: "Cliente fidelizada",
     type: "client",
     rating: 5,
-    content: "Adoro o programa de fidelidade! Junto pontos a cada visita e já resgatei várias hidratações grátis. Super vale a pena! Recomendo pra todas as minhas amigas.",
-    highlight: "Programa de fidelidade que recompensa"
+    content: "Minha amiga fez a análise do da IA Edu e seguindo os conselhos dele o cabelo dela melhorou muito. Claro que também quis fazer kkk.",
+    highlight: "Edu. IA Hair Stylist. Exclusividade Salão Cloud"
   },
   // Representantes de estabelecimentos
   {
     name: "Marcos Almeida",
-    role: "Proprietário - Barbearia Premium",
+    role: "Proprietário - Salão Premium",
     type: "business",
     rating: 5,
-    content: "Cara, mudou TUDO no meu negócio! Antes eu vivia no telefone agendando cliente, agora eles marcam sozinhos e eu foco no que importa: atender bem. Minha agenda tá sempre cheia e organizada!",
+    content: "Cara, mudou TUDO no meu negócio! Antes eu vivia no telefone agendando cliente, agora eles marcam sozinhos e eu foco no que importa: atender bem.",
     highlight: "Mais tempo para focar no atendimento"
   },
   {
@@ -59,7 +59,7 @@ const testimonials: Testimonial[] = [
     role: "Dono - Studio Hair Design",
     type: "business",
     rating: 5,
-    content: "As comandas ficaram muito mais organizadas e consigo acompanhar o faturamento em tempo real. Investimento que se paga no primeiro mês!",
+    content: "As comandas ficaram muito mais organizadas e consigo acompanhar o faturamento em tempo real. Investimento que se paga no primeiro mês! Você percebe que vai dar certo quando em uma entrevista a cabeleireira que trabalhou em outro salão comenta que lá eles tinham e foi um sucesso. Muito satisfeito!",
     highlight: "Controle financeiro em tempo real"
   }
 ];
