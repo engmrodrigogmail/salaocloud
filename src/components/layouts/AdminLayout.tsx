@@ -165,11 +165,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-16 left-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-300 z-40 ${
+        className={`fixed top-16 left-0 bottom-0 w-64 bg-sidebar border-r border-sidebar-border transform transition-transform duration-300 z-40 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch] ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        <nav className="p-4 space-y-1">
+        <nav className="p-4 pb-8 space-y-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.href;
             return (
