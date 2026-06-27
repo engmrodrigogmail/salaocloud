@@ -33,11 +33,6 @@ export function FAQSection() {
         "Sim! Você pode definir comissões por porcentagem ou valor fixo, criar regras específicas por serviço ou produto, e acompanhar os ganhos de cada profissional em relatórios detalhados.",
     },
     {
-      question: "Como funciona o programa de fidelidade?",
-      answer:
-        "Você cria regras de pontos (ex: R$1 = 1 ponto) e define recompensas que os clientes podem resgatar. Tudo automático! O sistema acompanha os pontos de cada cliente.",
-    },
-    {
       question: "Funciona no celular?",
       answer:
         "100%! O Salão Cloud foi feito pensando em quem vive no celular. A área interna é otimizada para seus profissionais usarem no dia a dia, direto do smartphone.",
