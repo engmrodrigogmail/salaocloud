@@ -70,6 +70,7 @@ import PortalAILearnings from "./pages/portal/AILearnings";
 // Admin AI
 import AdminAIAddon from "./pages/admin/AIAddon";
 import AdminEdu from "./pages/admin/Edu";
+import AdminWhatsappReports from "./pages/admin/WhatsappReports";
 
 // Portal Edu
 import PortalEdu from "./pages/portal/Edu";
@@ -230,6 +231,14 @@ const App = () => (
                 element={
                   <ProtectedRoute allowedRoles={["super_admin"]}>
                     <AdminEdu />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/whatsapp-reports"
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin"]}>
+                    <AdminWhatsappReports />
                   </ProtectedRoute>
                 }
               />

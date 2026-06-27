@@ -51,6 +51,7 @@ const navItems = [
   { href: "/admin/portal-structure", label: "Estrutura do Portal", icon: Layout },
   { href: "/admin/integration-guides", label: "Guias de Integração", icon: BookOpen },
   { href: "/admin/comunicacao", label: "Comunicação", icon: MessageSquare },
+  { href: "/admin/whatsapp-reports", label: "WhatsApp / Relatórios", icon: MessageSquare },
   { href: "/admin/settings", label: "Configurações", icon: Settings },
 ];
 
