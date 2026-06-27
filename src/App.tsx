@@ -234,6 +234,14 @@ const App = () => (
                   </ProtectedRoute>
                 }
               />
+              <Route
+                path="/admin/whatsapp-reports"
+                element={
+                  <ProtectedRoute allowedRoles={["super_admin"]}>
+                    <AdminWhatsappReports />
+                  </ProtectedRoute>
+                }
+              />
 
               {/* Portal routes - Establishment Admin (configuration & settings) */}
               <Route path="/portal/:slug" element={<SubscriptionGate><PortalDashboard /></SubscriptionGate>} />
