@@ -21,3 +21,5 @@ project_id = "gdjlajktmjskhpugzinh"
     verify_jwt = false
   [functions.zapi-webhook]
     verify_jwt = false
+  [functions.whatsapp-notify-signup]
+    verify_jwt = false

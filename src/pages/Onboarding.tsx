@@ -151,6 +151,14 @@ export default function Onboarding() {
         throw estError;
       }
 
+      // Notifica super admins via WhatsApp (fire-and-forget)
+      supabase.functions.invoke("whatsapp-notify-signup", {
+        body: {
+          salon_name: data.name,
+          owner_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email || "",
+        },
+      }).catch((e) => console.warn("whatsapp-notify-signup failed", e));
+
       // 3. Garante role establishment
       const { error: roleError } = await supabase.from("user_roles").insert({
         user_id: user.id,
